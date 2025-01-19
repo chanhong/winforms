@@ -18,7 +18,7 @@ internal class MaskedTextBoxDesignerActionList : DesignerActionList
     private readonly IHelpService? _helpService;
 
     /// <summary>
-    /// Constructor receiving a MaskedTextBox control the action list applies to.  The ITypeDiscoveryService
+    /// Constructor receiving a MaskedTextBox control the action list applies to. The ITypeDiscoveryService
     /// service provider is used to populate the canned mask list control in the MaskDesignerDialog dialog and
     /// the IUIService provider is used to display the MaskDesignerDialog within VS.
     /// </summary>
@@ -57,8 +57,7 @@ internal class MaskedTextBoxDesignerActionList : DesignerActionList
     /// </summary>
     public override DesignerActionItemCollection GetSortedActionItems()
     {
-        DesignerActionItemCollection items = new DesignerActionItemCollection();
-        items.Add(new DesignerActionMethodItem(this, "SetMask", SR.MaskedTextBoxDesignerVerbsSetMaskDesc));
+        DesignerActionItemCollection items = [new DesignerActionMethodItem(this, "SetMask", SR.MaskedTextBoxDesignerVerbsSetMaskDesc)];
         return items;
     }
 }

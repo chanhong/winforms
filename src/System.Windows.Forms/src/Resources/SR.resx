@@ -2188,7 +2188,7 @@ To replace this default dialog please handle the DataError event.</value>
     <value>Occurs when the DataGridView compares two cell values to perform a sort operation.</value>
   </data>
   <data name="DataGridView_SortedDescr" xml:space="preserve">
-    <value>Occurs when the DataGridView compares two cell values to perform a sort operation.</value>
+    <value>Occurs when the DataGridView control completes a sorting operation.</value>
   </data>
   <data name="DataGridView_StandardTabDescr" xml:space="preserve">
     <value>Indicates whether the TAB key moves the focus to the next control in the tab order rather than moving focus to the next cell in the control.</value>
@@ -3462,9 +3462,6 @@ Stack trace where the illegal operation occurred was:
   <data name="InvalidCrossThreadControlCall" xml:space="preserve">
     <value>Action being performed on this control is being called from the wrong thread. Marshal to the correct thread using Control.Invoke or Control.BeginInvoke to perform this action.</value>
   </data>
-  <data name="InvalidExBoundArgument" xml:space="preserve">
-    <value>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than {2} and less than {3}.</value>
-  </data>
   <data name="InvalidFileFormat" xml:space="preserve">
     <value>File format is not valid.</value>
   </data>
@@ -3473,18 +3470,6 @@ Stack trace where the illegal operation occurred was:
   </data>
   <data name="InvalidGDIHandle" xml:space="preserve">
     <value>Win32 handle passed to {0} is not valid or is the wrong type.</value>
-  </data>
-  <data name="InvalidHighBoundArgument" xml:space="preserve">
-    <value>Value of '{1}' is not valid for '{0}'. '{0}' must be less than {2}.</value>
-  </data>
-  <data name="InvalidHighBoundArgumentEx" xml:space="preserve">
-    <value>Value of '{1}' is not valid for '{0}'. '{0}' must be less than or equal to {2}.</value>
-  </data>
-  <data name="InvalidLowBoundArgument" xml:space="preserve">
-    <value>Value of '{1}' is not valid for '{0}'. '{0}' must be greater than {2}.</value>
-  </data>
-  <data name="InvalidLowBoundArgumentEx" xml:space="preserve">
-    <value>Value of '{1}' is not valid for '{0}'. '{0}' must be greater than or equal to {2}.</value>
   </data>
   <data name="InvalidNullArgument" xml:space="preserve">
     <value>Null is not a valid value for '{0}'.</value>
@@ -4033,7 +4018,7 @@ Stack trace where the illegal operation occurred was:
     <value>Occurs whenever the state of a virtual item is changed.</value>
   </data>
   <data name="ListViewVirtualListSizeDescr" xml:space="preserve">
-    <value>Sets the count of the item collection when the ListView is in virtual mode.</value>
+    <value>Sets the count of the item collection when the ListView is in virtual mode. If VirtualMode is set to true, and the VirtualListSize property is greater than 0, you must handle the RetrieveVirtualItem event providing valid items.</value>
   </data>
   <data name="ListViewVirtualListSizeInvalidArgument" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'. {0} should be greater than or equal to 0.</value>
@@ -5028,9 +5013,6 @@ Stack trace where the illegal operation occurred was:
   <data name="ReadonlyControlsCollection" xml:space="preserve">
     <value>Collection is read only.</value>
   </data>
-  <data name="RegisterCFFailed" xml:space="preserve">
-    <value>Clipboard format registration did not succeed.</value>
-  </data>
   <data name="RelatedListManagerChild" xml:space="preserve">
     <value>Child list for field {0} cannot be created.</value>
   </data>
@@ -5577,6 +5559,9 @@ Stack trace where the illegal operation occurred was:
   <data name="TimerTimerDescr" xml:space="preserve">
     <value>Occurs whenever the specified interval time elapses.</value>
   </data>
+  <data name="ToolStripAllowClickThrough" xml:space="preserve">
+    <value>Allows the control to be interacted when window does not have focus.</value>
+  </data>
   <data name="ToolStripAllowItemReorderAndAllowDropCannotBeSetToTrue" xml:space="preserve">
     <value>AllowItemReorder and AllowDrop cannot both be true.</value>
   </data>
@@ -5889,6 +5874,9 @@ Stack trace where the illegal operation occurred was:
   <data name="ToolStripItemsDescr" xml:space="preserve">
     <value>Collection of items to display on the ToolStrip.</value>
   </data>
+  <data name="ToolStripItemSelectedChangedDescr" xml:space="preserve">
+    <value>Occurs when the Selected property value changes.</value>
+  </data>
   <data name="ToolStripItemSize" xml:space="preserve">
     <value>The size of the item.</value>
   </data>
@@ -6122,52 +6110,52 @@ Stack trace where the illegal operation occurred was:
   </data>
   <data name="toStringAlt" xml:space="preserve">
     <value>Alt</value>
-	<comment>{Locked="Alt"}</comment>
+    <comment>{Locked="Alt"}</comment>
   </data>
   <data name="toStringBack" xml:space="preserve">
     <value>Back</value>
   </data>
   <data name="toStringControl" xml:space="preserve">
     <value>Ctrl</value>
-	<comment>{Locked=!de; "Ctrl"}</comment>
+    <comment>{Locked=!de; "Ctrl"}</comment>
   </data>
   <data name="toStringDefault" xml:space="preserve">
     <value>(default)</value>
   </data>
   <data name="toStringDelete" xml:space="preserve">
     <value>Del</value>
-	<comment>{Locked=!fr,de,it,es; "Del"}</comment>
+    <comment>{Locked=!fr,de,it,es; "Del"}</comment>
   </data>
   <data name="toStringEnd" xml:space="preserve">
     <value>End</value>
-	<comment>{Locked=!fr,de,it,es; "End"}</comment>
+    <comment>{Locked=!fr,de,it,es; "End"}</comment>
   </data>
   <data name="toStringEnter" xml:space="preserve">
     <value>Enter</value>
-	<comment>{Locked=!fr,de,it,es; "Enter"}</comment>
+    <comment>{Locked=!fr,de,it,es; "Enter"}</comment>
   </data>
   <data name="toStringHome" xml:space="preserve">
     <value>Home</value>
-	<comment>{Locked=!fr,de,es; "Home"}</comment>
+    <comment>{Locked=!fr,de,es; "Home"}</comment>
   </data>
   <data name="toStringInsert" xml:space="preserve">
     <value>Insert</value>
-	<comment>{Locked=!fr,de,it,es,zh-Hant; "Insert"}</comment>
+    <comment>{Locked=!fr,de,it,es,zh-Hant; "Insert"}</comment>
   </data>
   <data name="toStringNone" xml:space="preserve">
     <value>(none)</value>
   </data>
   <data name="toStringPageDown" xml:space="preserve">
     <value>PgDn</value>
-	<comment>{Locked=!fr,de,it,es; "PgDn"}</comment>
+    <comment>{Locked=!fr,de,it,es; "PgDn"}</comment>
   </data>
   <data name="toStringPageUp" xml:space="preserve">
     <value>PgUp</value>
-	<comment>{Locked=!fr,de,it,es; "PgUp"}</comment>
+    <comment>{Locked=!fr,de,it,es; "PgUp"}</comment>
   </data>
   <data name="toStringShift" xml:space="preserve">
     <value>Shift</value>
-	<comment>{Locked=!fr,de,it,es; "Shift"}</comment>
+    <comment>{Locked=!fr,de,it,es; "Shift"}</comment>
   </data>
   <data name="TrackBarAutoSizeDescr" xml:space="preserve">
     <value>Indicates whether the control will resize itself automatically based on a computation of the default scroll bar dimensions.</value>
@@ -6969,5 +6957,89 @@ Stack trace where the illegal operation occurred was:
   </data>
   <data name="ResourceValueNotFound" xml:space="preserve">
     <value>The resource value '{0}' was not found.</value>
+  </data>
+  <data name="FolderBrowserDialogSelectedPathsDescr" xml:space="preserve">
+    <value>Retrieves the paths of all selected folders in the dialog box.</value>
+  </data>
+  <data name="FolderBrowserDialogMultiSelectDescr" xml:space="preserve">
+    <value>Controls whether multiple folders can be selected in the dialog.</value>
+  </data>
+  <data name="BindingNotSupported" xml:space="preserve">
+    <value>Binding operations are not supported when application trimming is enabled.</value>
+  </data>
+  <data name="BinaryFormatterNotSupported" xml:space="preserve">
+    <value>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</value>
+  </data>
+  <data name="ControlNotSupportedInTrimming" xml:space="preserve">
+    <value>'{0}' is not supported in trimmed applications.</value>
+  </data>
+  <data name="DesignTimeFeaturesNotSupported" xml:space="preserve">
+    <value>Design time features are not supported.</value>
+  </data>
+  <data name="ControlDarkModeDescr" xml:space="preserve">
+    <value>Determines the dark mode setting for the control. This ambient property inherits its value from its parent control or from the Application class.</value>
+  </data>
+  <data name="DarkModeNotSupported" xml:space="preserve">
+    <value>Dark mode cannot be activated, either because of an activated High-Contrast mode or because the underlying OS does not support it.</value>
+  </data>
+  <data name="FormBorderColorChangedDescr" xml:space="preserve">
+    <value>Occurs whenever the FormBorderColor property is changed.</value>
+  </data>
+  <data name="FormCaptionBackColorChangedDescr" xml:space="preserve">
+    <value>Occurs whenever the FormCaptionBackColor property is changed.</value>
+  </data>
+  <data name="FormCaptionTextColorChangedDescr" xml:space="preserve">
+    <value>Occurs whenever the FormCaptionTextColor property is changed.</value>
+  </data>
+  <data name="FormCornerPreferenceChangedDescr" xml:space="preserve">
+    <value>Occurs whenever the FormCornerPreference property is changed.</value>
+  </data>
+  <data name="FormCornerPreferenceDescr" xml:space="preserve">
+    <value>The rounding style of the Form's border.</value>
+  </data>
+  <data name="FormBorderColorDescr" xml:space="preserve">
+    <value>The color of the Form's border.</value>
+  </data>
+  <data name="FormCaptionBackColorDescr" xml:space="preserve">
+    <value>The back color of the Form's caption (title bar).</value>
+  </data>
+  <data name="FormCaptionTextColorDescr" xml:space="preserve">
+    <value>The color of the Form's text caption (title bar text).</value>
+  </data>
+  <data name="Form_HasAlreadyBeenShownAsync" xml:space="preserve">
+    <value>The form has already been shown asynchronously.</value>
+  </data>
+  <data name="FormOrTaskDialog_NoSyncContextForShowAsync" xml:space="preserve">
+    <value>Failed to retrieve the Synchronization Context for showing the Form asynchronously.</value>
+  </data>
+  <data name="ITypeDataObject_Not_Implemented" xml:space="preserve">
+    <value>Data object '{0}' doesn't implement the 'ITypedDataObject' interface and can't be read using 'TryGetData&lt;T&gt;(string, out T)' methods.</value>
+  </data>
+  <data name="BinaryFormatter_NotSupported_InClipboardOrDragDrop" xml:space="preserve">
+    <value>BinaryFormatter is not supported in clipboard or drag-and-drop operations.</value>
+  </data>
+  <data name="BinaryFormatter_NotSupported_InClipboardOrDragDrop_UseTypedAPI" xml:space="preserve">
+    <value>BinaryFormatter is not supported in clipboard or drag-and-drop operations. Please enable it and use 'TryGetData&lt;T&gt;' APIs with a 'resolver' function that defines a set of allowed types to deserialize '{0}'.</value>
+  </data>
+  <data name="ClipboardOrDragDrop_UseTypedAPI" xml:space="preserve">
+    <value>Please use 'TryGetData&lt;T&gt;' APIs with a 'resolver' function that defines a set of allowed types to deserialize '{0}'.</value>
+  </data>
+  <data name="ClipboardOrDragDrop_TypedAPI_InvalidResolver" xml:space="preserve">
+    <value>Type {0} is not found. If this type is allowed, please ensure that the 'resolver' function provided in 'TryGetData&lt;T&gt;' APIs supports it.</value>
+  </data>
+  <data name="ClipboardOrDragDrop_InvalidType" xml:space="preserve">
+    <value>'{0}' is not a concrete type, and could result in an unbounded deserialization attempt. Please use a concrete type or alternatively define a 'resolver' function that supports types that you are expecting to retrieve from the clipboard or use in drag-and-drop operations.</value>
+  </data>
+  <data name="ClipboardOrDragDrop_InvalidFormatTypeCombination" xml:space="preserve">
+    <value>The specified type '{0}' is not compatible with the specified format '{1}'.</value>
+  </data>
+  <data name="ClipboardOrDragDrop_JsonDeserializationFailed" xml:space="preserve">
+    <value>Failed to deserialize JSON data.</value>
+  </data>
+  <data name="ClipboardOrDragDrop_CannotJsonSerializeDataObject">
+    <value>An object of type 'DataObject' will serialize as empty. Use 'DataObject.SetDataAsJson' APIs on your object to JSON-serialize the data within your object, then use the '{0}' API with your object.</value>
+  </data>
+  <data name="NotSupportedExceptionOnClipboard">
+    <value>Clipboard contains a 'NotSupportedException' that indicates that write operation failed. '{0}'.</value>
   </data>
 </root>

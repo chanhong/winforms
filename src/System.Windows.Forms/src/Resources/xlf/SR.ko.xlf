@@ -287,6 +287,21 @@
         <target state="translated">IList 또는 IListSource를 복합 DataBinding의 데이터 소스로 사용할 수 있습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BinaryFormatterNotSupported">
+        <source>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</source>
+        <target state="translated">이 애플리케이션 내에서 BinaryFormatter 직렬화 및 역직렬화를 사용할 수 없습니다. 자세한 내용은 https://aka.ms/binaryformatter 페이지를 참조하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BinaryFormatter_NotSupported_InClipboardOrDragDrop">
+        <source>BinaryFormatter is not supported in clipboard or drag-and-drop operations.</source>
+        <target state="translated">BinaryFormatter는 클립보드 또는 끌어서 놓기 작업에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BinaryFormatter_NotSupported_InClipboardOrDragDrop_UseTypedAPI">
+        <source>BinaryFormatter is not supported in clipboard or drag-and-drop operations. Please enable it and use 'TryGetData&lt;T&gt;' APIs with a 'resolver' function that defines a set of allowed types to deserialize '{0}'.</source>
+        <target state="translated">BinaryFormatter는 클립보드 또는 끌어서 놓기 작업에서 지원되지 않습니다. 사용하도록 설정하고 '{0}' deserialize할 수 있는 형식 집합을 정의하는 'resolver' 함수와 함께 'TryGetData&lt;T&gt;' API를 사용하세요.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="BindableComponentBindingContextChangedDescr">
         <source>Occurs when the binding context has changed.</source>
         <target state="translated">바인딩 컨텍스트가 변경될 때 발생합니다.</target>
@@ -410,6 +425,11 @@
       <trans-unit id="BindingNavigatorToolStripName">
         <source>Binding Navigator</source>
         <target state="translated">바인딩 탐색기</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BindingNotSupported">
+        <source>Binding operations are not supported when application trimming is enabled.</source>
+        <target state="translated">애플리케이션 자르기가 사용하도록 설정된 경우 바인딩 작업이 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="BindingSourceAddingNewEventHandlerDescr">
@@ -945,6 +965,36 @@
       <trans-unit id="ClipboardOperationFailed">
         <source>Requested Clipboard operation did not succeed.</source>
         <target state="translated">요청한 클립보드 작업을 수행하지 못했습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_CannotJsonSerializeDataObject">
+        <source>An object of type 'DataObject' will serialize as empty. Use 'DataObject.SetDataAsJson' APIs on your object to JSON-serialize the data within your object, then use the '{0}' API with your object.</source>
+        <target state="translated">'DataObject' 형식의 개체는 비어 있는 것으로 직렬화됩니다. 개체에서 'DataObject.SetDataAsJson' API를 사용하여 개체 내에서 데이터를 JSON으로 직렬화한 다음 개체와 함께 '{0}' API를 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_InvalidFormatTypeCombination">
+        <source>The specified type '{0}' is not compatible with the specified format '{1}'.</source>
+        <target state="translated">지정한 형식 '{0}' 지정한 형식 '{1}' 호환되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_InvalidType">
+        <source>'{0}' is not a concrete type, and could result in an unbounded deserialization attempt. Please use a concrete type or alternatively define a 'resolver' function that supports types that you are expecting to retrieve from the clipboard or use in drag-and-drop operations.</source>
+        <target state="translated">'{0}' 구체적인 형식이 아니므로 바인딩되지 않은 역직렬화를 시도할 수 있습니다. 구체적인 형식을 사용하거나 클립보드에서 검색하거나 끌어서 놓기 작업에 사용할 형식을 지원하는 'resolver' 함수를 정의하십시오.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_JsonDeserializationFailed">
+        <source>Failed to deserialize JSON data.</source>
+        <target state="translated">JSON 데이터를 역직렬화하지 못했습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_TypedAPI_InvalidResolver">
+        <source>Type {0} is not found. If this type is allowed, please ensure that the 'resolver' function provided in 'TryGetData&lt;T&gt;' APIs supports it.</source>
+        <target state="translated">{0} 형식을 찾을 수 없습니다. 이 형식이 허용되는 경우 'TryGetData&lt;T&gt;' API에 제공된 'resolver' 함수가 이를 지원하는지 확인하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_UseTypedAPI">
+        <source>Please use 'TryGetData&lt;T&gt;' APIs with a 'resolver' function that defines a set of allowed types to deserialize '{0}'.</source>
+        <target state="translated">'{0}' 역직렬화할 수 있는 형식 집합을 정의하는 'resolver' 함수와 함께 'TryGetData&lt;T&gt;' API를 사용하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="ClipboardSecurityException">
@@ -1517,6 +1567,11 @@
         <target state="translated">포인터가 컨트롤 위로 이동할 때 나타나는 커서입니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ControlDarkModeDescr">
+        <source>Determines the dark mode setting for the control. This ambient property inherits its value from its parent control or from the Application class.</source>
+        <target state="translated">컨트롤의 다크 모드 설정을 결정합니다. 이 앰비언트 속성은 부모 컨트롤 또는 애플리케이션 클래스에서 해당 값을 상속합니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ControlDataContextChangedDescr">
         <source>Occurs when the value of the DataContext property changes.</source>
         <target state="translated">DataContext 속성의 값이 변경되면 발생합니다.</target>
@@ -1650,6 +1705,11 @@
       <trans-unit id="ControlNotChild">
         <source>'child' is not a child control of this parent.</source>
         <target state="translated">'child'는 이 부모의 자식 컨트롤이 아닙니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ControlNotSupportedInTrimming">
+        <source>'{0}' is not supported in trimmed applications.</source>
+        <target state="translated">'{0}'은(는) 트리밍된 애플리케이션에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ControlOnAutoSizeChangedDescr">
@@ -2165,6 +2225,11 @@
       <trans-unit id="CursorNonSerializableHandle">
         <source>Stock cursors cannot be serialized.</source>
         <target state="translated">스톡 커서를 serialize할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DarkModeNotSupported">
+        <source>Dark mode cannot be activated, either because of an activated High-Contrast mode or because the underlying OS does not support it.</source>
+        <target state="translated">활성화된 고대비 모드로 인해 또는 기본 OS에서 지원되지 않는 모드이므로 다크 모드를 활성화할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="DataBindingAddNewNotSupportedOnPropertyManager">
@@ -4135,8 +4200,8 @@ To replace this default dialog please handle the DataError event.</source>
         <note />
       </trans-unit>
       <trans-unit id="DataGridView_SortedDescr">
-        <source>Occurs when the DataGridView compares two cell values to perform a sort operation.</source>
-        <target state="translated">DataGridView가 정렬 작업을 수행하기 위해 두 셀 값을 비교할 때 발생합니다.</target>
+        <source>Occurs when the DataGridView control completes a sorting operation.</source>
+        <target state="translated">DataGridView 컨트롤이 정렬 작업을 완료할 때 발생합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="DataGridView_StandardTabDescr">
@@ -4627,6 +4692,11 @@ To replace this default dialog please handle the DataError event.</source>
       <trans-unit id="DescriptionWebBrowser">
         <source>Enables the user to browse Web pages inside your form.</source>
         <target state="translated">사용자가 폼에서 웹 페이지를 찾을 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DesignTimeFeaturesNotSupported">
+        <source>Design time features are not supported.</source>
+        <target state="translated">디자인 타임 기능은 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="DispInvokeFailed">
@@ -5205,6 +5275,11 @@ Do you want to replace it?</source>
         <target state="translated">대화 상자의 tree view 컨트롤 위에 표시되는 문자열입니다. 이 문자열을 사용하여 사용자에게 표시될 지시 사항을 지정할 수 있습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FolderBrowserDialogMultiSelectDescr">
+        <source>Controls whether multiple folders can be selected in the dialog.</source>
+        <target state="translated">대화 상자에서 여러 폴더를 선택할 수 있는지 여부를 제어합니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FolderBrowserDialogOkRequiresInteraction">
         <source>Controls whether the OK button of the dialog box is disabled until the user navigates the view or edits the filename (if applicable). Note: Disabling of the OK button does not prevent the dialog from being submitted by the Enter key.</source>
         <target state="translated">사용자가 파일 이름 보기 또는 편집으로 이동할 때까지 대화 상자의 확인 버튼을 사용하지 않을지를 제어합니다(해당하는 경우). 참고: 확인 버튼을 사용하지 않아도 Enter 키로 대화 상자를 제출할 수 있습니다.</target>
@@ -5218,6 +5293,11 @@ Do you want to replace it?</source>
       <trans-unit id="FolderBrowserDialogSelectedPath">
         <source>The path of the folder first selected in the dialog or the last one selected by the user.</source>
         <target state="translated">대화 상자에 처음 선택되어 있거나 사용자가 마지막에 선택한 폴더의 경로입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FolderBrowserDialogSelectedPathsDescr">
+        <source>Retrieves the paths of all selected folders in the dialog box.</source>
+        <target state="translated">대화 상자에서 선택한 모든 폴더의 경로를 검색합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="FolderBrowserDialogShowHiddenFiles">
@@ -5275,6 +5355,16 @@ Do you want to replace it?</source>
         <target state="translated">자동으로 스크롤되는 스크롤 막대의 현재 위치입니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FormBorderColorChangedDescr">
+        <source>Occurs whenever the FormBorderColor property is changed.</source>
+        <target state="translated">FormBorderColor 속성이 변경될 때마다 발생합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormBorderColorDescr">
+        <source>The color of the Form's border.</source>
+        <target state="translated">양식의 테두리 색입니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormBorderStyleDescr">
         <source>Indicates the appearance and behavior of the border and title bar of the form.</source>
         <target state="translated">폼의 테두리 및 제목 표시줄의 모양과 동작을 나타냅니다.</target>
@@ -5285,9 +5375,39 @@ Do you want to replace it?</source>
         <target state="translated">폼의 취소 단추입니다. 이 속성을 설정하면 &lt;Esc&gt; 키를 누를 때마다 단추가 '클릭'됩니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FormCaptionBackColorChangedDescr">
+        <source>Occurs whenever the FormCaptionBackColor property is changed.</source>
+        <target state="translated">FormCaptionBackColor 속성이 변경될 때마다 발생합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionBackColorDescr">
+        <source>The back color of the Form's caption (title bar).</source>
+        <target state="translated">양식의 캡션(제목 표시줄) 배경색입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionTextColorChangedDescr">
+        <source>Occurs whenever the FormCaptionTextColor property is changed.</source>
+        <target state="translated">FormCaptionTextColor 속성이 변경될 때마다 발생합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionTextColorDescr">
+        <source>The color of the Form's text caption (title bar text).</source>
+        <target state="translated">양식의 텍스트 캡션(제목 표시줄 텍스트) 색입니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormControlBoxDescr">
         <source>Determines whether a form has a Control/System menu box.</source>
         <target state="translated">폼에 컨트롤/시스템 메뉴 상자를 포함할지 여부를 결정합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCornerPreferenceChangedDescr">
+        <source>Occurs whenever the FormCornerPreference property is changed.</source>
+        <target state="translated">FormCornerPreference 속성이 변경될 때마다 발생합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCornerPreferenceDescr">
+        <source>The rounding style of the Form's border.</source>
+        <target state="translated">양식 테두리의 모서리 스타일입니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="FormDesktopBoundsDescr">
@@ -5490,6 +5610,11 @@ Do you want to replace it?</source>
         <target state="translated">컨트롤의 불투명도(%)입니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FormOrTaskDialog_NoSyncContextForShowAsync">
+        <source>Failed to retrieve the Synchronization Context for showing the Form asynchronously.</source>
+        <target state="translated">양식을 비동기적으로 표시하기 위한 동기화 컨텍스트를 검색하지 못했습니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormOwnedFormsDescr">
         <source>Array of forms owned by this form.</source>
         <target state="translated">이 폼에서 소유하는 폼 배열입니다.</target>
@@ -5533,6 +5658,11 @@ Do you want to replace it?</source>
       <trans-unit id="FormWindowStateDescr">
         <source>Determines the initial visual state of the form.</source>
         <target state="translated">폼의 초기 표시 상태를 결정합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Form_HasAlreadyBeenShownAsync">
+        <source>The form has already been shown asynchronously.</source>
+        <target state="translated">양식이 이미 비동기적으로 표시되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="FormatControlFormatDescr">
@@ -5683,6 +5813,11 @@ Do you want to replace it?</source>
       <trans-unit id="ISupportInitializeDescr">
         <source>Specifies support for transacted initialization. </source>
         <target state="translated">트랜잭트 초기화를 지원합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ITypeDataObject_Not_Implemented">
+        <source>Data object '{0}' doesn't implement the 'ITypedDataObject' interface and can't be read using 'TryGetData&lt;T&gt;(string, out T)' methods.</source>
+        <target state="translated">데이터 개체 '{0}' 'ITypedDataObject' 인터페이스를 구현하지 않으며 'TryGetData&lt;T&gt;(string, out T)' 메서드를 사용하여 읽을 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="IllegalCrossThreadCall">
@@ -5849,11 +5984,6 @@ Stack trace where the illegal operation occurred was:
         <target state="translated">이 컨트롤에서 수행 중인 작업이 잘못된 스레드에서 호출되고 있습니다. 이 작업을 수행하려면 Control.Invoke 또는 Control.BeginInvoke를 사용하여 올바른 스레드로 마샬링하십시오.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidExBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than {2} and less than {3}.</source>
-        <target state="translated">'{1}'의 값은 '{0}'에 사용할 수 없습니다. '{0}'은(는) {2}보다 커야 하며 {3}보다 작아야 합니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidFileFormat">
         <source>File format is not valid.</source>
         <target state="translated">파일 형식이 잘못되었습니다.</target>
@@ -5872,26 +6002,6 @@ Stack trace where the illegal operation occurred was:
       <trans-unit id="InvalidHdcType">
         <source>Invalid HDC type: {0}</source>
         <target state="translated">잘못된 HDC 형식: {0}</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidHighBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be less than {2}.</source>
-        <target state="translated">'{1}'의 값은 '{0}'에 사용할 수 없습니다. '{0}'은(는) {2}보다 작아야 합니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidHighBoundArgumentEx">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be less than or equal to {2}.</source>
-        <target state="translated">'{1}'의 값은 '{0}'에 사용할 수 없습니다. '{0}'은(는) {2}보다 작거나 같아야 합니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLowBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be greater than {2}.</source>
-        <target state="translated">'{1}'의 값은 '{0}'에 사용할 수 없습니다. '{0}'은(는) {2}보다 커야 합니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLowBoundArgumentEx">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be greater than or equal to {2}.</source>
-        <target state="translated">'{1}'의 값은 '{0}'에 사용할 수 없습니다. '{0}'은(는) {2}보다 크거나 같아야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidNullArgument">
@@ -6850,8 +6960,8 @@ Stack trace where the illegal operation occurred was:
         <note />
       </trans-unit>
       <trans-unit id="ListViewVirtualListSizeDescr">
-        <source>Sets the count of the item collection when the ListView is in virtual mode.</source>
-        <target state="translated">ListView가 가상 모드에 있는 경우 항목 컬렉션의 개수를 설정합니다.</target>
+        <source>Sets the count of the item collection when the ListView is in virtual mode. If VirtualMode is set to true, and the VirtualListSize property is greater than 0, you must handle the RetrieveVirtualItem event providing valid items.</source>
+        <target state="translated">ListView가 가상 모드에 있는 경우 항목 컬렉션의 개수를 설정합니다. VirtualMode가 true로 설정되어 있고 VirtualListSize 속성이 0보다 큰 경우 유효한 항목을 제공하는 RetrieveVirtualItem 이벤트를 처리해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ListViewVirtualListSizeInvalidArgument">
@@ -7312,6 +7422,11 @@ Stack trace where the illegal operation occurred was:
       <trans-unit id="NotSupported">
         <source>The type {0} on line {1}, position {2} threw the following exception while being converted: {3}</source>
         <target state="translated">줄 {1}, 위치 {2}의 {0} 형식이 변환되는 동안 다음 예외가 throw되었습니다. {3}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotSupportedExceptionOnClipboard">
+        <source>Clipboard contains a 'NotSupportedException' that indicates that write operation failed. '{0}'.</source>
+        <target state="new">Clipboard contains a 'NotSupportedException' that indicates that write operation failed. '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotifyIconBalloonTipIconDescr">
@@ -8599,11 +8714,6 @@ Stack trace where the illegal operation occurred was:
         <target state="translated">컬렉션이 읽기 전용입니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegisterCFFailed">
-        <source>Clipboard format registration did not succeed.</source>
-        <target state="translated">클립보드 형식을 등록하지 못했습니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="RelatedListManagerChild">
         <source>Child list for field {0} cannot be created.</source>
         <target state="translated">{0} 필드의 자식 목록을 만들 수 없습니다.</target>
@@ -9699,6 +9809,11 @@ Stack trace where the illegal operation occurred was:
         <target state="translated">ResumeUpdateMenuHandles에 대한 호출이 너무 많습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ToolStripAllowClickThrough">
+        <source>Allows the control to be interacted when window does not have focus.</source>
+        <target state="translated">창에 포커스가 없을 때 컨트롤이 상호 작용할 수 있도록 허용합니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ToolStripAllowItemReorderAndAllowDropCannotBeSetToTrue">
         <source>AllowItemReorder and AllowDrop cannot both be true.</source>
         <target state="translated">AllowItemReorder 및 AllowDrop이 모두 true일 수 없습니다.</target>
@@ -10227,6 +10342,11 @@ Stack trace where the illegal operation occurred was:
       <trans-unit id="ToolStripItemRightToLeftDescr">
         <source>Indicates whether the item should draw right-to-left for RTL languages.</source>
         <target state="translated">RTL 언어의 경우 항목을 오른쪽에서 왼쪽으로 그릴지 여부를 나타냅니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToolStripItemSelectedChangedDescr">
+        <source>Occurs when the Selected property value changes.</source>
+        <target state="translated">Selected 속성 값이 변경될 때 발생합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToolStripItemSize">

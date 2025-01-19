@@ -11,7 +11,7 @@ public partial class ListViewItem
 {
     public partial class ListViewSubItem
     {
-        internal class ListViewSubItemAccessibleObject : AccessibleObject
+        internal sealed class ListViewSubItemAccessibleObject : AccessibleObject
         {
             private readonly ListView _owningListView;
             private readonly ListViewItem _owningItem;
@@ -46,7 +46,7 @@ public partial class ListViewItem
                     }
 
                     // Previously bounds was provided using MSAA,
-                    // but using UIA we found out that PInvoke.SendMessage work incorrectly.
+                    // but using UIA we found out that PInvokeCore.SendMessage work incorrectly.
                     // When we need to get bounds for first sub item it will return width of all item.
                     int width = bounds.Width;
 
@@ -89,13 +89,13 @@ public partial class ListViewItem
             /// <summary>
             ///  Gets or sets the accessible name.
             /// </summary>
-            public override string? Name
-            {
-                get => base.Name ?? OwningSubItem?.Text ?? string.Empty;
-                set => base.Name = value;
-            }
+            public override string? Name => base.Name ?? OwningSubItem?.Text ?? string.Empty;
+
+            internal override bool CanGetNameInternal => false;
 
             public override AccessibleObject Parent => ParentInternal;
+
+            private protected override bool IsInternal => true;
 
             private ListViewItemBaseAccessibleObject ParentInternal
                 => (ListViewItemBaseAccessibleObject)_owningItem.AccessibilityObject;
@@ -104,18 +104,11 @@ public partial class ListViewItem
             {
                 get
                 {
-                    var owningItemRuntimeId = Parent.RuntimeId;
+                    int[] id = Parent.RuntimeId;
 
-                    Debug.Assert(owningItemRuntimeId.Length >= 4);
+                    Debug.Assert(id.Length >= 4);
 
-                    return new int[]
-                    {
-                        owningItemRuntimeId[0],
-                        owningItemRuntimeId[1],
-                        owningItemRuntimeId[2],
-                        owningItemRuntimeId[3],
-                        GetHashCode()
-                    };
+                    return [id[0], id[1], id[2], id[3], GetHashCode()];
                 }
             }
 
@@ -147,13 +140,12 @@ public partial class ListViewItem
 
             internal override IRawElementProviderSimple.Interface[]? GetColumnHeaderItems()
                 => _owningListView.View == View.Details && Column > -1
-                    ? new IRawElementProviderSimple.Interface[] { _owningListView.Columns[Column].AccessibilityObject }
+                    ? [_owningListView.Columns[Column].AccessibilityObject]
                     : null;
 
             internal override bool IsPatternSupported(UIA_PATTERN_ID patternId)
             {
-                if (patternId == UIA_PATTERN_ID.UIA_GridItemPatternId ||
-                    patternId == UIA_PATTERN_ID.UIA_TableItemPatternId)
+                if (patternId is UIA_PATTERN_ID.UIA_GridItemPatternId or UIA_PATTERN_ID.UIA_TableItemPatternId)
                 {
                     return _owningListView.View == View.Details;
                 }

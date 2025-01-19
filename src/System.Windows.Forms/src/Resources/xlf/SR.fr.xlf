@@ -287,6 +287,21 @@
         <target state="translated">DataBinding complexe accepte IList ou IListSource comme source de données.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BinaryFormatterNotSupported">
+        <source>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</source>
+        <target state="translated">La sérialisation et la désérialisation binaryFormatter sont désactivées dans cette application. Pour plus d’informations, consultez https://aka.ms/binaryformatter.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BinaryFormatter_NotSupported_InClipboardOrDragDrop">
+        <source>BinaryFormatter is not supported in clipboard or drag-and-drop operations.</source>
+        <target state="translated">BinaryFormatter n’est pas pris en charge dans les opérations de presse-papiers ou de glisser-déplacer.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BinaryFormatter_NotSupported_InClipboardOrDragDrop_UseTypedAPI">
+        <source>BinaryFormatter is not supported in clipboard or drag-and-drop operations. Please enable it and use 'TryGetData&lt;T&gt;' APIs with a 'resolver' function that defines a set of allowed types to deserialize '{0}'.</source>
+        <target state="translated">BinaryFormatter n’est pas pris en charge dans les opérations de presse-papiers ou de glisser-déplacer. Activez-la et utilisez les API 'TryGetData&lt;T&gt;' avec une fonction 'resolver' qui définit un ensemble de types autorisés pour désérialiser '{0}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="BindableComponentBindingContextChangedDescr">
         <source>Occurs when the binding context has changed.</source>
         <target state="translated">Se produit lorsque le contexte de liaison change.</target>
@@ -410,6 +425,11 @@
       <trans-unit id="BindingNavigatorToolStripName">
         <source>Binding Navigator</source>
         <target state="translated">Navigateur de liaisons</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BindingNotSupported">
+        <source>Binding operations are not supported when application trimming is enabled.</source>
+        <target state="translated">Les opérations de liaison ne sont pas prises en charge lorsque le découpage d’application est activé.</target>
         <note />
       </trans-unit>
       <trans-unit id="BindingSourceAddingNewEventHandlerDescr">
@@ -945,6 +965,36 @@
       <trans-unit id="ClipboardOperationFailed">
         <source>Requested Clipboard operation did not succeed.</source>
         <target state="translated">Échec de l'opération du Presse-papiers demandée.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_CannotJsonSerializeDataObject">
+        <source>An object of type 'DataObject' will serialize as empty. Use 'DataObject.SetDataAsJson' APIs on your object to JSON-serialize the data within your object, then use the '{0}' API with your object.</source>
+        <target state="translated">Un objet de type 'DataObject' va sérialiser comme vide. Utilisez les API « DataObject.SetDataAsJson » sur votre objet pour sérialiser les données au sein de votre objet, puis utilisez l’API '{0}' avec votre objet.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_InvalidFormatTypeCombination">
+        <source>The specified type '{0}' is not compatible with the specified format '{1}'.</source>
+        <target state="translated">Le type spécifié '{0}' n’est pas compatible avec le format spécifié '{1}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_InvalidType">
+        <source>'{0}' is not a concrete type, and could result in an unbounded deserialization attempt. Please use a concrete type or alternatively define a 'resolver' function that supports types that you are expecting to retrieve from the clipboard or use in drag-and-drop operations.</source>
+        <target state="translated">'{0}' n’est pas un type concret et peut entraîner une tentative de désérialisation non liée. Utilisez un type concret ou définissez une fonction « resolver » qui prend en charge les types que vous voulez récupérer à partir du Presse-papiers ou utilisez-la dans les opérations de glisser-déplacer.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_JsonDeserializationFailed">
+        <source>Failed to deserialize JSON data.</source>
+        <target state="translated">Nous n’avons pas pu désérialiser les données JSON.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_TypedAPI_InvalidResolver">
+        <source>Type {0} is not found. If this type is allowed, please ensure that the 'resolver' function provided in 'TryGetData&lt;T&gt;' APIs supports it.</source>
+        <target state="translated">Type {0} introuvable. Si ce type est autorisé, vérifiez que la fonction « resolver » fournie dans les API « TryGetData&lt;T&gt; » le prend en charge.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_UseTypedAPI">
+        <source>Please use 'TryGetData&lt;T&gt;' APIs with a 'resolver' function that defines a set of allowed types to deserialize '{0}'.</source>
+        <target state="translated">Utilisez les API 'TryGetData&lt;T&gt;' avec une fonction 'resolver' qui définit un ensemble de types autorisés pour désérialiser '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="ClipboardSecurityException">
@@ -1517,6 +1567,11 @@
         <target state="translated">Le curseur qui s'affiche lorsque le pointeur passe sur le contrôle.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ControlDarkModeDescr">
+        <source>Determines the dark mode setting for the control. This ambient property inherits its value from its parent control or from the Application class.</source>
+        <target state="translated">Permet de déterminer le paramètre du mode sombre pour le contrôle. Cette propriété ambiante hérite de sa valeur à partir de son contrôle parent ou de la classe d’application.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ControlDataContextChangedDescr">
         <source>Occurs when the value of the DataContext property changes.</source>
         <target state="translated">Se produit lorsque la valeur de la propriété DataContext change.</target>
@@ -1650,6 +1705,11 @@
       <trans-unit id="ControlNotChild">
         <source>'child' is not a child control of this parent.</source>
         <target state="translated">'child' n'est pas un contrôle enfant de ce parent.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ControlNotSupportedInTrimming">
+        <source>'{0}' is not supported in trimmed applications.</source>
+        <target state="translated">« {0} » n’est pas pris en charge dans les applications tronquées.</target>
         <note />
       </trans-unit>
       <trans-unit id="ControlOnAutoSizeChangedDescr">
@@ -2165,6 +2225,11 @@
       <trans-unit id="CursorNonSerializableHandle">
         <source>Stock cursors cannot be serialized.</source>
         <target state="translated">Les curseurs de stock ne peuvent pas être sérialisés.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DarkModeNotSupported">
+        <source>Dark mode cannot be activated, either because of an activated High-Contrast mode or because the underlying OS does not support it.</source>
+        <target state="translated">Désolé... Nous n’avons pas pu activer le mode sombre, soit en raison d’un mode Contraste élevé activé, soit parce que le système d’exploitation sous-jacent ne le prend pas en charge.</target>
         <note />
       </trans-unit>
       <trans-unit id="DataBindingAddNewNotSupportedOnPropertyManager">
@@ -4135,8 +4200,8 @@ Pour remplacer cette boîte de dialogue par défaut, traitez l'événement DataE
         <note />
       </trans-unit>
       <trans-unit id="DataGridView_SortedDescr">
-        <source>Occurs when the DataGridView compares two cell values to perform a sort operation.</source>
-        <target state="translated">Se produit lorsque le DataGridView compare deux valeurs de cellules pour effectuer une opération de tri.</target>
+        <source>Occurs when the DataGridView control completes a sorting operation.</source>
+        <target state="translated">Se produit lorsque le contrôle DataGridView termine une opération de tri.</target>
         <note />
       </trans-unit>
       <trans-unit id="DataGridView_StandardTabDescr">
@@ -4627,6 +4692,11 @@ Pour remplacer cette boîte de dialogue par défaut, traitez l'événement DataE
       <trans-unit id="DescriptionWebBrowser">
         <source>Enables the user to browse Web pages inside your form.</source>
         <target state="translated">Permet à l'utilisateur de parcourir les pages web au sein de votre formulaire.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DesignTimeFeaturesNotSupported">
+        <source>Design time features are not supported.</source>
+        <target state="translated">Les fonctionnalités au moment du design ne sont pas prises en charge.</target>
         <note />
       </trans-unit>
       <trans-unit id="DispInvokeFailed">
@@ -5205,6 +5275,11 @@ Voulez-vous le remplacer ?</target>
         <target state="translated">Chaîne affichée au-dessus du contrôle TreeView dans la boîte de dialogue. Cette chaîne peut être utilisée pour spécifier des instructions à l'utilisateur.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FolderBrowserDialogMultiSelectDescr">
+        <source>Controls whether multiple folders can be selected in the dialog.</source>
+        <target state="translated">Contrôle si plusieurs dossiers peuvent être sélectionnés dans la boîte de dialogue.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FolderBrowserDialogOkRequiresInteraction">
         <source>Controls whether the OK button of the dialog box is disabled until the user navigates the view or edits the filename (if applicable). Note: Disabling of the OK button does not prevent the dialog from being submitted by the Enter key.</source>
         <target state="translated">Contrôle si le bouton OK de la boîte de dialogue est désactivé jusqu'à ce que l'utilisateur navigue dans la vue ou modifie le nom de fichier (le cas échéant). Remarque : La désactivation du bouton OK n'empêche pas la soumission de la boîte de dialogue par la touche Entrée.</target>
@@ -5218,6 +5293,11 @@ Voulez-vous le remplacer ?</target>
       <trans-unit id="FolderBrowserDialogSelectedPath">
         <source>The path of the folder first selected in the dialog or the last one selected by the user.</source>
         <target state="translated">Chemin du dossier sélectionné en premier dans la boîte de dialogue ou le dernier sélectionné par l'utilisateur.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FolderBrowserDialogSelectedPathsDescr">
+        <source>Retrieves the paths of all selected folders in the dialog box.</source>
+        <target state="translated">Récupère les chemins d’accès de tous les dossiers sélectionnés dans la boîte de dialogue.</target>
         <note />
       </trans-unit>
       <trans-unit id="FolderBrowserDialogShowHiddenFiles">
@@ -5275,6 +5355,16 @@ Voulez-vous le remplacer ?</target>
         <target state="translated">La position actuelle de la barre de défilement automatique.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FormBorderColorChangedDescr">
+        <source>Occurs whenever the FormBorderColor property is changed.</source>
+        <target state="translated">Se produit lorsque la propriété FormBorderColor est modifiée.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormBorderColorDescr">
+        <source>The color of the Form's border.</source>
+        <target state="translated">Couleur de la bordure du formulaire.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormBorderStyleDescr">
         <source>Indicates the appearance and behavior of the border and title bar of the form.</source>
         <target state="translated">Indique l'apparence et le comportement de la bordure et de la barre de titre du formulaire.</target>
@@ -5285,9 +5375,39 @@ Voulez-vous le remplacer ?</target>
         <target state="translated">Le bouton d'annulation de ce formulaire. Si cette propriété est définie, le bouton est "cliqué" lorsque l'utilisateur appuie sur la touche "ÉCHAP".</target>
         <note />
       </trans-unit>
+      <trans-unit id="FormCaptionBackColorChangedDescr">
+        <source>Occurs whenever the FormCaptionBackColor property is changed.</source>
+        <target state="translated">Se produit lorsque la propriété FormCaptionBackColor est modifiée.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionBackColorDescr">
+        <source>The back color of the Form's caption (title bar).</source>
+        <target state="translated">Couleur d’arrière-plan de la légende du formulaire (barre de titre).</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionTextColorChangedDescr">
+        <source>Occurs whenever the FormCaptionTextColor property is changed.</source>
+        <target state="translated">Se produit lorsque la propriété FormCaptionTextColor est modifiée.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionTextColorDescr">
+        <source>The color of the Form's text caption (title bar text).</source>
+        <target state="translated">Couleur de légende de sous-titre du formulaire (texte de la barre de titre).</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormControlBoxDescr">
         <source>Determines whether a form has a Control/System menu box.</source>
         <target state="translated">Détermine si un formulaire a un menu Système.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCornerPreferenceChangedDescr">
+        <source>Occurs whenever the FormCornerPreference property is changed.</source>
+        <target state="translated">Se produit lorsque la propriété FormCornerPreference est modifiée.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCornerPreferenceDescr">
+        <source>The rounding style of the Form's border.</source>
+        <target state="translated">Style arrondi de la bordure du formulaire.</target>
         <note />
       </trans-unit>
       <trans-unit id="FormDesktopBoundsDescr">
@@ -5490,6 +5610,11 @@ Voulez-vous le remplacer ?</target>
         <target state="translated">Le pourcentage d'opacité du contrôle. </target>
         <note />
       </trans-unit>
+      <trans-unit id="FormOrTaskDialog_NoSyncContextForShowAsync">
+        <source>Failed to retrieve the Synchronization Context for showing the Form asynchronously.</source>
+        <target state="translated">Désolé... Nous n’avons pas pu récupérer le contexte de synchronisation pour montrer le formulaire de manière asynchrone.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormOwnedFormsDescr">
         <source>Array of forms owned by this form.</source>
         <target state="translated">Tableau de formulaires dont ce formulaire est propriétaire.</target>
@@ -5533,6 +5658,11 @@ Voulez-vous le remplacer ?</target>
       <trans-unit id="FormWindowStateDescr">
         <source>Determines the initial visual state of the form.</source>
         <target state="translated">Détermine l'état visuel initial du formulaire.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Form_HasAlreadyBeenShownAsync">
+        <source>The form has already been shown asynchronously.</source>
+        <target state="translated">Le formulaire a déjà été affiché de manière asynchrone.</target>
         <note />
       </trans-unit>
       <trans-unit id="FormatControlFormatDescr">
@@ -5683,6 +5813,11 @@ Voulez-vous le remplacer ?</target>
       <trans-unit id="ISupportInitializeDescr">
         <source>Specifies support for transacted initialization. </source>
         <target state="translated">Spécifie la prise en charge de l'initialisation traitée. </target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ITypeDataObject_Not_Implemented">
+        <source>Data object '{0}' doesn't implement the 'ITypedDataObject' interface and can't be read using 'TryGetData&lt;T&gt;(string, out T)' methods.</source>
+        <target state="translated">L’objet de données '{0}' n’implémente pas l’interface 'ITypedDataObject' et ne peut pas être lu à l’aide des méthodes 'TryGetData&lt;T&gt;(string, out T)'.</target>
         <note />
       </trans-unit>
       <trans-unit id="IllegalCrossThreadCall">
@@ -5849,11 +5984,6 @@ Cette opération non conforme s'est produite sur la trace de la pile :
         <target state="translated">L'action effectuée sur ce contrôle est appelée à partir d'un thread incorrect. Vous devez marshaler le thread correct en utilisant Control.Invoke ou Control.BeginInvoke pour effectuer cette action.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidExBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than {2} and less than {3}.</source>
-        <target state="translated">La valeur '{1}' n'est pas valide pour '{0}'. '{0}' doit être supérieur à {2} et inférieur à {3}.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidFileFormat">
         <source>File format is not valid.</source>
         <target state="translated">Format de fichier non valide.</target>
@@ -5872,26 +6002,6 @@ Cette opération non conforme s'est produite sur la trace de la pile :
       <trans-unit id="InvalidHdcType">
         <source>Invalid HDC type: {0}</source>
         <target state="translated">Type HDC non valide : {0}</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidHighBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be less than {2}.</source>
-        <target state="translated">La valeur '{1}' n'est pas valide pour '{0}'. '{0}' doit être inférieur à {2}.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidHighBoundArgumentEx">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be less than or equal to {2}.</source>
-        <target state="translated">La valeur '{1}' n'est pas valide pour '{0}'. '{0}' doit être inférieur ou égal à {2}.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLowBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be greater than {2}.</source>
-        <target state="translated">La valeur '{1}' n'est pas valide pour '{0}'. '{0}' doit être supérieur à {2}.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLowBoundArgumentEx">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be greater than or equal to {2}.</source>
-        <target state="translated">La valeur de '{1}' n'est pas valide pour '{0}'. '{0}' doit être supérieur ou égal à {2}.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidNullArgument">
@@ -6850,8 +6960,8 @@ Cette opération non conforme s'est produite sur la trace de la pile :
         <note />
       </trans-unit>
       <trans-unit id="ListViewVirtualListSizeDescr">
-        <source>Sets the count of the item collection when the ListView is in virtual mode.</source>
-        <target state="translated">Définit le nombre de la collection d'éléments lorsque le ListView est en mode virtuel.</target>
+        <source>Sets the count of the item collection when the ListView is in virtual mode. If VirtualMode is set to true, and the VirtualListSize property is greater than 0, you must handle the RetrieveVirtualItem event providing valid items.</source>
+        <target state="translated">Définit le nombre de la collection d’éléments lorsque le ListView est en mode virtuel. Si VirtualMode a la valeur true et que la propriété VirtualListSize est supérieure à 0, vous devez gérer l’événement RetrieveVirtualItem en fournissant des éléments valides.</target>
         <note />
       </trans-unit>
       <trans-unit id="ListViewVirtualListSizeInvalidArgument">
@@ -7312,6 +7422,11 @@ Cette opération non conforme s'est produite sur la trace de la pile :
       <trans-unit id="NotSupported">
         <source>The type {0} on line {1}, position {2} threw the following exception while being converted: {3}</source>
         <target state="translated">Le type {0} à la ligne {1}, position {2}, a levé l'exception suivante lors de sa conversion : {3}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotSupportedExceptionOnClipboard">
+        <source>Clipboard contains a 'NotSupportedException' that indicates that write operation failed. '{0}'.</source>
+        <target state="new">Clipboard contains a 'NotSupportedException' that indicates that write operation failed. '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotifyIconBalloonTipIconDescr">
@@ -8599,11 +8714,6 @@ Cette opération non conforme s'est produite sur la trace de la pile :
         <target state="translated">La collection est en lecture seule.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegisterCFFailed">
-        <source>Clipboard format registration did not succeed.</source>
-        <target state="translated">Impossible d'inscrire le format du Presse-papiers.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="RelatedListManagerChild">
         <source>Child list for field {0} cannot be created.</source>
         <target state="translated">Impossible de créer une liste enfant pour le champ {0}.</target>
@@ -9699,6 +9809,11 @@ Cette opération non conforme s'est produite sur la trace de la pile :
         <target state="translated">Trop d'appels vers ResumeUpdateMenuHandles.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ToolStripAllowClickThrough">
+        <source>Allows the control to be interacted when window does not have focus.</source>
+        <target state="translated">Permet d’interagir avec le contrôle quand la fenêtre n’a pas le focus.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ToolStripAllowItemReorderAndAllowDropCannotBeSetToTrue">
         <source>AllowItemReorder and AllowDrop cannot both be true.</source>
         <target state="translated">AllowItemReorder et AllowDrop ne peuvent pas être true en même temps.</target>
@@ -10227,6 +10342,11 @@ Cette opération non conforme s'est produite sur la trace de la pile :
       <trans-unit id="ToolStripItemRightToLeftDescr">
         <source>Indicates whether the item should draw right-to-left for RTL languages.</source>
         <target state="translated">Indique si l'élément doit être dessiné de droite à gauche pour les langues RTL.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToolStripItemSelectedChangedDescr">
+        <source>Occurs when the Selected property value changes.</source>
+        <target state="translated">Se produit en cas de modification d'une valeur de propriété.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToolStripItemSize">

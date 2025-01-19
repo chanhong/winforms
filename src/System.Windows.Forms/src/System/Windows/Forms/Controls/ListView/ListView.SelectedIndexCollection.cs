@@ -29,7 +29,7 @@ public partial class ListView
             {
                 if (_owner.IsHandleCreated)
                 {
-                    return (int)PInvoke.SendMessage(_owner, PInvoke.LVM_GETSELECTEDCOUNT);
+                    return (int)PInvokeCore.SendMessage(_owner, PInvoke.LVM_GETSELECTEDCOUNT);
                 }
                 else
                 {
@@ -55,11 +55,11 @@ public partial class ListView
                     int displayIndex = -1;
                     for (int i = 0; i < count; i++)
                     {
-                        int fidx = (int)PInvoke.SendMessage(
+                        int fidx = (int)PInvokeCore.SendMessage(
                             _owner,
                             PInvoke.LVM_GETNEXTITEM,
                             (WPARAM)displayIndex,
-                            (LPARAM)(uint)PInvoke.LVNI_SELECTED);
+                            (LPARAM)PInvoke.LVNI_SELECTED);
                         if (fidx > -1)
                         {
                             indices[i] = fidx;
@@ -103,11 +103,11 @@ public partial class ListView
                     int fidx = -1;
                     for (int count = 0; count <= index; count++)
                     {
-                        fidx = (int)PInvoke.SendMessage(
+                        fidx = (int)PInvokeCore.SendMessage(
                             _owner,
                             PInvoke.LVM_GETNEXTITEM,
                             (WPARAM)fidx,
-                            (LPARAM)(uint)PInvoke.LVNI_SELECTED);
+                            (LPARAM)PInvoke.LVNI_SELECTED);
                         Debug.Assert(fidx != -1, "Invalid index returned from LVM_GETNEXTITEM");
                     }
 
@@ -295,7 +295,7 @@ public partial class ListView
         {
             if (Count > 0)
             {
-                System.Array.Copy(IndicesArray, 0, dest, index, Count);
+                Array.Copy(IndicesArray, 0, dest, index, Count);
             }
         }
 

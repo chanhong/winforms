@@ -28,7 +28,7 @@ public sealed partial class NotifyIcon
             // This same post is done in Control's Dispose method, so if you change it, change it there too.
             if (Handle != 0)
             {
-                PInvoke.PostMessage(this, PInvoke.WM_CLOSE);
+                PInvokeCore.PostMessage(this, PInvokeCore.WM_CLOSE);
             }
 
             // This releases the handle from our window proc, re-routing it back to the system.
@@ -62,7 +62,7 @@ public sealed partial class NotifyIcon
         /// </summary>
         protected override void WndProc(ref Message m)
         {
-            Debug.Assert(_reference is not null, "NotifyIcon was garbage collected while it was still visible.  How did we let that happen?");
+            Debug.Assert(_reference is not null, "NotifyIcon was garbage collected while it was still visible. How did we let that happen?");
             _reference.WndProc(ref m);
         }
     }

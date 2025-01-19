@@ -5,7 +5,6 @@ using System.Collections;
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
-using System.Windows.Forms.TestUtilities;
 
 namespace System.Windows.Forms.Tests;
 
@@ -84,7 +83,7 @@ public class LinkAreaConverterTests
     {
         var converter = new LinkArea.LinkAreaConverter();
         InstanceDescriptor descriptor = Assert.IsType<InstanceDescriptor>(converter.ConvertTo(new LinkArea(1, 2), typeof(InstanceDescriptor)));
-        Assert.Equal(typeof(LinkArea).GetConstructor(new Type[] { typeof(int), typeof(int) }), descriptor.MemberInfo);
+        Assert.Equal(typeof(LinkArea).GetConstructor([typeof(int), typeof(int)]), descriptor.MemberInfo);
         Assert.Equal(new object[] { 1, 2 }, descriptor.Arguments);
     }
 
@@ -108,7 +107,7 @@ public class LinkAreaConverterTests
     public void LinkAreaConverter_ConvertTo_InvalidDestinationType_ThrowsNotSupportedException(Type destinationType)
     {
         var converter = new LinkArea.LinkAreaConverter();
-        Assert.Throws<NotSupportedException>(() => converter.ConvertTo(new LinkArea(), destinationType));
+        Assert.Throws<NotSupportedException>(() => converter.ConvertTo(default(LinkArea), destinationType));
     }
 
     [Fact]

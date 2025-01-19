@@ -55,15 +55,7 @@ public partial class DomainUpDown : UpDownBase
     [SRDescription(nameof(SR.DomainUpDownItemsDescr))]
     [Localizable(true)]
     [Editor($"System.Windows.Forms.Design.StringCollectionEditor, {AssemblyRef.SystemDesign}", typeof(UITypeEditor))]
-    public DomainUpDownItemCollection Items
-    {
-        get
-        {
-            _domainItems ??= new DomainUpDownItemCollection(this);
-
-            return _domainItems;
-        }
-    }
+    public DomainUpDownItemCollection Items => _domainItems ??= new DomainUpDownItemCollection(this);
 
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -105,10 +97,8 @@ public partial class DomainUpDown : UpDownBase
 
         set
         {
-            if (value < -1 || value >= Items.Count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidArgument, nameof(SelectedIndex), value));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value, Items.Count);
 
             if (value != SelectedIndex)
             {
@@ -295,7 +285,7 @@ public partial class DomainUpDown : UpDownBase
         // otherwise returns -1.
         int index = startPosition;
         int matchIndex = -1;
-        bool found = false;
+        bool found;
 
         if (!complete)
         {
@@ -305,14 +295,10 @@ public partial class DomainUpDown : UpDownBase
         // Attempt to match the string with Items[index]
         do
         {
-            if (complete)
-            {
-                found = Items[index]!.ToString()!.Equals(text);
-            }
-            else
-            {
-                found = Items[index]!.ToString()!.ToUpper(CultureInfo.InvariantCulture).StartsWith(text);
-            }
+            found = complete
+                ? Items[index]!.ToString()!.Equals(text)
+                : Items[index]!.ToString()!.ToUpper(CultureInfo.InvariantCulture)
+                    .StartsWith(text, StringComparison.Ordinal);
 
             if (found)
             {
@@ -350,16 +336,16 @@ public partial class DomainUpDown : UpDownBase
     {
         if (ReadOnly)
         {
-            char[] character = new char[] { e.KeyChar };
+            char[] character = [e.KeyChar];
             UnicodeCategory uc = char.GetUnicodeCategory(character[0]);
 
-            if (uc == UnicodeCategory.LetterNumber
-                || uc == UnicodeCategory.LowercaseLetter
-                || uc == UnicodeCategory.DecimalDigitNumber
-                || uc == UnicodeCategory.MathSymbol
-                || uc == UnicodeCategory.OtherLetter
-                || uc == UnicodeCategory.OtherNumber
-                || uc == UnicodeCategory.UppercaseLetter)
+            if (uc is UnicodeCategory.LetterNumber
+                or UnicodeCategory.LowercaseLetter
+                or UnicodeCategory.DecimalDigitNumber
+                or UnicodeCategory.MathSymbol
+                or UnicodeCategory.OtherLetter
+                or UnicodeCategory.OtherNumber
+                or UnicodeCategory.UppercaseLetter)
             {
                 // Attempt to match the character to a domain item
                 int matchIndex = MatchIndex(new string(character), false, _domainIndex + 1);
@@ -396,8 +382,6 @@ public partial class DomainUpDown : UpDownBase
         Debug.Assert(index < _domainItems.Count && index >= -1, "SelectValue: index out of range");
         if (_domainItems is null || index < -1 || index >= _domainItems.Count)
         {
-            // Defensive programming
-            index = -1;
             return;
         }
 
@@ -524,7 +508,7 @@ public partial class DomainUpDown : UpDownBase
     }
 
     // This is not a breaking change -- Even though this control previously autosized to height,
-    // it didn't actually have an AutoSize property.  The new AutoSize property enables the
+    // it didn't actually have an AutoSize property. The new AutoSize property enables the
     // smarter behavior.
     internal override Size GetPreferredSizeCore(Size proposedConstraints)
     {

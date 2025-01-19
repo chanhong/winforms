@@ -54,11 +54,15 @@ public partial class TrackBar : Control, ISupportInitialize
     {
         SetStyle(ControlStyles.UserPaint, false);
         SetStyle(ControlStyles.UseTextForAccessibility, false);
+
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
         _requestedDim = PreferredDimension;
     }
 
     /// <summary>
-    ///  Indicates if the control is being auto-sized.  If true, the
+    ///  Indicates if the control is being auto-sized. If true, the
     ///  TrackBar will adjust either its height or width [depending on
     ///  orientation] to make sure that only the required amount of
     ///  space is used.
@@ -75,7 +79,7 @@ public partial class TrackBar : Control, ISupportInitialize
         set
         {
             // Note that we intentionally do not call base.AutoSize. Labels size themselves by
-            // overriding SetBoundsCore (legacy behaviour). We let CommonProperties.GetAutoSize
+            // overriding SetBoundsCore (legacy behavior). We let CommonProperties.GetAutoSize
             // continue to return false to keep our LayoutEngines from messing with TextBoxes.
             // This is done for backwards compatibility since the new AutoSize behavior differs.
             if (_autoSize != value)
@@ -263,7 +267,7 @@ public partial class TrackBar : Control, ISupportInitialize
 
     /// <summary>
     ///  The number of ticks by which the TrackBar will change when an
-    ///  event considered a "large change" occurs.  These include, Clicking the
+    ///  event considered a "large change" occurs. These include, Clicking the
     ///  mouse to the side of the button, or using the PgUp/PgDn keys on the
     ///  keyboard.
     /// </summary>
@@ -288,7 +292,7 @@ public partial class TrackBar : Control, ISupportInitialize
             _largeChange = value;
             if (IsHandleCreated)
             {
-                PInvoke.SendMessage(this, PInvoke.TBM_SETPAGESIZE, 0, value);
+                PInvokeCore.SendMessage(this, PInvoke.TBM_SETPAGESIZE, 0, value);
             }
         }
     }
@@ -359,7 +363,7 @@ public partial class TrackBar : Control, ISupportInitialize
         get => _orientation;
         set
         {
-            if (value < Orientation.Horizontal || value > Orientation.Vertical)
+            if (value is < Orientation.Horizontal or > Orientation.Vertical)
             {
                 throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(Orientation));
             }
@@ -418,7 +422,7 @@ public partial class TrackBar : Control, ISupportInitialize
     {
         get
         {
-            int cyhscroll = PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYHSCROLL);
+            int cyhscroll = PInvokeCore.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYHSCROLL);
             return ((cyhscroll * 8) / 3);
         }
     }
@@ -433,7 +437,7 @@ public partial class TrackBar : Control, ISupportInitialize
             return;
         }
 
-        PInvoke.SendMessage(this, PInvoke.TBM_SETRANGEMAX, (WPARAM)(BOOL)true, (LPARAM)_maximum);
+        PInvokeCore.SendMessage(this, PInvoke.TBM_SETRANGEMAX, (WPARAM)(BOOL)true, (LPARAM)_maximum);
         Invalidate();
     }
 
@@ -467,7 +471,7 @@ public partial class TrackBar : Control, ISupportInitialize
 
     /// <summary>
     ///  The number of ticks by which the TrackBar will change when an
-    ///  event considered a "small change" occurs.  These are most commonly
+    ///  event considered a "small change" occurs. These are most commonly
     ///  seen by using the arrow keys to move the TrackBar thumb around.
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
@@ -491,7 +495,7 @@ public partial class TrackBar : Control, ISupportInitialize
             _smallChange = value;
             if (IsHandleCreated)
             {
-                PInvoke.SendMessage(this, PInvoke.TBM_SETLINESIZE, 0, value);
+                PInvokeCore.SendMessage(this, PInvoke.TBM_SETLINESIZE, 0, value);
             }
         }
     }
@@ -530,7 +534,7 @@ public partial class TrackBar : Control, ISupportInitialize
         get => _tickStyle;
         set
         {
-            if (value < TickStyle.None || value > TickStyle.Both)
+            if (value is < TickStyle.None or > TickStyle.Both)
             {
                 throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(TickStyle));
             }
@@ -566,24 +570,26 @@ public partial class TrackBar : Control, ISupportInitialize
             }
 
             _tickFrequency = value;
-            // Determine if the decision of whether the ticks drawing,
-            // is performed by the native control or the Windows Forms runtime
-            // is still valid. If it's no longer valid, we'll need to recreate the native control.
+
             bool recreateHandle = ShouldRecreateHandle();
-            if (IsHandleCreated)
+            if (!IsHandleCreated)
             {
-                PInvoke.SendMessage(this, PInvoke.TBM_SETTICFREQ, (WPARAM)value);
-                // If user opts out of TrackBarModernRendering then recreateHandle
-                // will always be false.
-                if (recreateHandle)
-                {
-                    RecreateHandle();
-                }
-                else
-                {
-                    DrawTicks();
-                    Invalidate();
-                }
+                return;
+            }
+
+            if (_autoDrawTicks)
+            {
+                PInvokeCore.SendMessage(this, PInvoke.TBM_SETTICFREQ, (WPARAM)value);
+            }
+
+            if (recreateHandle)
+            {
+                RecreateHandle();
+            }
+            else
+            {
+                DrawTicksManually();
+                Invalidate();
             }
         }
     }
@@ -762,11 +768,14 @@ public partial class TrackBar : Control, ISupportInitialize
 
     /// <summary>
     ///  Check if the value of the max is greater then the taskbar size.
-    ///  If so then we divide the value by size and only that many ticks to be drawn on the screen.
+    ///  If so then we divide the value by size and only that many ticks to be drawn on the screen
+    ///  via TBM_SETTIC.
     /// </summary>
-    private void DrawTicks()
+    /// <remarks>
+    ///  <para>This should not be called if <see cref="_autoDrawTicks"/> is <see langword="true"/></para>
+    /// </remarks>
+    private void DrawTicksManually()
     {
-        // Will be true if they opt out TrackBarModernRendering.
         if (_tickStyle == TickStyle.None || _autoDrawTicks)
         {
             return;
@@ -785,10 +794,10 @@ public partial class TrackBar : Control, ISupportInitialize
             }
         }
 
-        PInvoke.SendMessage(this, PInvoke.TBM_CLEARTICS, (WPARAM)1, (LPARAM)0);
+        PInvokeCore.SendMessage(this, PInvoke.TBM_CLEARTICS, (WPARAM)1, (LPARAM)0);
         for (int i = _minimum + drawnTickFrequency; i < _maximum - drawnTickFrequency; i += drawnTickFrequency)
         {
-            LRESULT lresult = PInvoke.SendMessage(this, PInvoke.TBM_SETTIC, lParam: (IntPtr)i);
+            LRESULT lresult = PInvokeCore.SendMessage(this, PInvoke.TBM_SETTIC, lParam: (IntPtr)i);
             Debug.Assert((bool)(BOOL)lresult);
         }
     }
@@ -808,7 +817,7 @@ public partial class TrackBar : Control, ISupportInitialize
     {
         if (IsHandleCreated)
         {
-            _value = (int)PInvoke.SendMessage(this, PInvoke.WM_USER);
+            _value = (int)PInvokeCore.SendMessage(this, PInvokeCore.WM_USER);
 
             // See SetTrackBarValue() for a description of why we sometimes reflect the trackbar value
             if (_orientation == Orientation.Vertical)
@@ -835,16 +844,11 @@ public partial class TrackBar : Control, ISupportInitialize
             return false;
         }
 
-        switch (keyData & Keys.KeyCode)
+        return (keyData & Keys.KeyCode) switch
         {
-            case Keys.PageUp:
-            case Keys.PageDown:
-            case Keys.Home:
-            case Keys.End:
-                return true;
-        }
-
-        return base.IsInputKey(keyData);
+            Keys.PageUp or Keys.PageDown or Keys.Home or Keys.End => true,
+            _ => base.IsInputKey(keyData),
+        };
     }
 
     protected override void OnHandleCreated(EventArgs e)
@@ -857,12 +861,19 @@ public partial class TrackBar : Control, ISupportInitialize
         }
 
         Debug.Assert(_autoDrawTicks == ShouldAutoDrawTicks());
-        PInvoke.SendMessage(this, PInvoke.TBM_SETRANGEMIN, (WPARAM)(BOOL)false, (LPARAM)_minimum);
-        PInvoke.SendMessage(this, PInvoke.TBM_SETRANGEMAX, (WPARAM)(BOOL)false, (LPARAM)_maximum);
-        PInvoke.SendMessage(this, PInvoke.TBM_SETTICFREQ, (WPARAM)_tickFrequency);
-        DrawTicks();
-        PInvoke.SendMessage(this, PInvoke.TBM_SETPAGESIZE, (WPARAM)0, (LPARAM)_largeChange);
-        PInvoke.SendMessage(this, PInvoke.TBM_SETLINESIZE, (WPARAM)0, (LPARAM)_smallChange);
+        PInvokeCore.SendMessage(this, PInvoke.TBM_SETRANGEMIN, (WPARAM)(BOOL)false, (LPARAM)_minimum);
+        PInvokeCore.SendMessage(this, PInvoke.TBM_SETRANGEMAX, (WPARAM)(BOOL)false, (LPARAM)_maximum);
+        if (_autoDrawTicks)
+        {
+            PInvokeCore.SendMessage(this, PInvoke.TBM_SETTICFREQ, (WPARAM)_tickFrequency);
+        }
+        else
+        {
+            DrawTicksManually();
+        }
+
+        PInvokeCore.SendMessage(this, PInvoke.TBM_SETPAGESIZE, (WPARAM)0, (LPARAM)_largeChange);
+        PInvokeCore.SendMessage(this, PInvoke.TBM_SETLINESIZE, (WPARAM)0, (LPARAM)_smallChange);
         SetTrackBarPosition();
         AdjustSize();
     }
@@ -929,7 +940,7 @@ public partial class TrackBar : Control, ISupportInitialize
         _cumulativeWheelData += e.Delta;
 
         float partialNotches;
-        partialNotches = (float)_cumulativeWheelData / (float)PInvoke.WHEEL_DELTA;
+        partialNotches = _cumulativeWheelData / (float)PInvoke.WHEEL_DELTA;
 
         if (wheelScrollLines == -1)
         {
@@ -937,7 +948,7 @@ public partial class TrackBar : Control, ISupportInitialize
         }
 
         // Evaluate number of bands to scroll
-        int scrollBands = (int)((float)wheelScrollLines * partialNotches);
+        int scrollBands = (int)(wheelScrollLines * partialNotches);
 
         if (scrollBands != 0)
         {
@@ -946,13 +957,13 @@ public partial class TrackBar : Control, ISupportInitialize
             {
                 absScrollBands = scrollBands;
                 Value = Math.Min(absScrollBands + Value, Maximum);
-                _cumulativeWheelData -= (int)((float)scrollBands * ((float)PInvoke.WHEEL_DELTA / (float)wheelScrollLines));
+                _cumulativeWheelData -= (int)(scrollBands * (PInvoke.WHEEL_DELTA / (float)wheelScrollLines));
             }
             else
             {
                 absScrollBands = -scrollBands;
                 Value = Math.Max(Value - absScrollBands, Minimum);
-                _cumulativeWheelData -= (int)((float)scrollBands * ((float)PInvoke.WHEEL_DELTA / (float)wheelScrollLines));
+                _cumulativeWheelData -= (int)(scrollBands * (PInvoke.WHEEL_DELTA / (float)wheelScrollLines));
             }
         }
 
@@ -1049,11 +1060,11 @@ public partial class TrackBar : Control, ISupportInitialize
             // will always be false.
             if (IsHandleCreated && !recreateHandle)
             {
-                PInvoke.SendMessage(this, PInvoke.TBM_SETRANGEMIN, (WPARAM)(BOOL)false, (LPARAM)_minimum);
-                PInvoke.SendMessage(this, PInvoke.TBM_SETRANGEMAX, (WPARAM)(BOOL)true, (LPARAM)_maximum);
+                PInvokeCore.SendMessage(this, PInvoke.TBM_SETRANGEMIN, (WPARAM)(BOOL)false, (LPARAM)_minimum);
+                PInvokeCore.SendMessage(this, PInvoke.TBM_SETRANGEMAX, (WPARAM)(BOOL)true, (LPARAM)_maximum);
                 if (!_autoDrawTicks)
                 {
-                    DrawTicks();
+                    DrawTicksManually();
                 }
 
                 Invalidate();
@@ -1108,12 +1119,12 @@ public partial class TrackBar : Control, ISupportInitialize
                 reflectedValue = Minimum + Maximum - _value;
             }
 
-            PInvoke.SendMessage(this, PInvoke.TBM_SETPOS, (WPARAM)(BOOL)true, (LPARAM)reflectedValue);
+            PInvokeCore.SendMessage(this, PInvoke.TBM_SETPOS, (WPARAM)(BOOL)true, (LPARAM)reflectedValue);
         }
     }
 
     /// <summary>
-    /// This checks all the use cases that we potentially might want to keep `TBS_AUTOTICKS`.
+    ///  This checks all the use cases that we potentially might want to keep `TBS_AUTOTICKS`.
     /// </summary>
     private bool ShouldAutoDrawTicks()
     {
@@ -1143,10 +1154,11 @@ public partial class TrackBar : Control, ISupportInitialize
     }
 
     /// <summary>
-    /// Determine if the decision of whether the ticks drawing,
-    /// is performed by the native control or the Windows Forms runtime
-    /// is still valid. If it's no longer valid, we'll need to recreate the native control.
-    /// If user opts out of TrackBarModernRendering then this will always return false.
+    ///  Determine if the previous decision of whether drawing ticks
+    ///  is performed by the native control or the Windows Forms runtime
+    ///  is still valid. If it's no longer valid, the native control needs to be recreated.
+    ///  If user opts out of <see cref="Primitives.LocalAppContextSwitches.TrackBarModernRendering"/>
+    ///  then this will always return false.
     /// </summary>
     private bool ShouldRecreateHandle() => IsHandleCreated && _autoDrawTicks != ShouldAutoDrawTicks();
 

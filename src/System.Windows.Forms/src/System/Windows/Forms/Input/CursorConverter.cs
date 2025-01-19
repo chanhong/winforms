@@ -10,7 +10,7 @@ namespace System.Windows.Forms;
 
 /// <summary>
 ///  CursorConverter is a class that can be used to convert
-///  colors from one data type to another.  Access this
+///  colors from one data type to another. Access this
 ///  class through the TypeDescriptor.
 /// </summary>
 public class CursorConverter : TypeConverter
@@ -66,7 +66,7 @@ public class CursorConverter : TypeConverter
 
         if (value is byte[] bytes)
         {
-            using MemoryStream ms = new MemoryStream(bytes);
+            using MemoryStream ms = new(bytes);
             return new Cursor(ms);
         }
 
@@ -74,10 +74,10 @@ public class CursorConverter : TypeConverter
     }
 
     /// <summary>
-    ///  Converts the given object to another type.  The most common types to convert
-    ///  are to and from a string object.  The default implementation will make a call
+    ///  Converts the given object to another type. The most common types to convert
+    ///  are to and from a string object. The default implementation will make a call
     ///  to ToString on the object if the object is valid and if the destination
-    ///  type is string.  If this cannot convert to the destination type, this will
+    ///  type is string. If this cannot convert to the destination type, this will
     ///  throw a NotSupportedException.
     /// </summary>
     public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
@@ -89,6 +89,25 @@ public class CursorConverter : TypeConverter
                 if (cursor.CursorsProperty is string propertyName)
                 {
                     return propertyName;
+                }
+                else if (cursor.Handle == Cursors.Arrow.Handle)
+                {
+                    // Arrow and Default cursors share the same HCURSOR.
+                    // Always return "Default" in this case.
+                    return nameof(Cursors.Default);
+                }
+
+                // We have a cursor that only has handle information. This can happen when the cursor was read via PInvoke.
+                // Try to find an exact instance match to a known cursor from Cursors properties using HCURSOR equality (==).
+                PropertyInfo[] props = GetProperties();
+                for (int i = 0; i < props.Length; i++)
+                {
+                    PropertyInfo prop = props[i];
+                    Cursor? knownCursor = (Cursor?)prop.GetValue(obj: null, index: null);
+                    if (knownCursor == cursor)
+                    {
+                        return prop.Name;
+                    }
                 }
 
                 // We throw here because we cannot meaningfully convert a custom
@@ -132,7 +151,7 @@ public class CursorConverter : TypeConverter
 
     /// <summary>
     ///  Retrieves a collection containing a set of standard values
-    ///  for the data type this validator is designed for.  This
+    ///  for the data type this validator is designed for. This
     ///  will return null if the data type does not support a
     ///  standard set of values.
     /// </summary>
@@ -140,7 +159,7 @@ public class CursorConverter : TypeConverter
     {
         if (_values is null)
         {
-            List<object> list = new();
+            List<object> list = [];
             PropertyInfo[] props = GetProperties();
             for (int i = 0; i < props.Length; i++)
             {

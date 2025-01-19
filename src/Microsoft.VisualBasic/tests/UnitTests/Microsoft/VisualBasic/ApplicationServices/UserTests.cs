@@ -8,13 +8,13 @@ public class UserTests
     [Fact]
     public void Properties()
     {
-        var user = new User();
-        Assert.Equal(System.Threading.Thread.CurrentPrincipal, user.CurrentPrincipal);
+        User user = new();
+        Assert.Equal(Thread.CurrentPrincipal, user.CurrentPrincipal);
         if (user.CurrentPrincipal is not null)
         {
-            Assert.Equal(System.Threading.Thread.CurrentPrincipal.Identity.Name, user.Name);
-            Assert.Equal(System.Threading.Thread.CurrentPrincipal.Identity.IsAuthenticated, user.IsAuthenticated);
-            Assert.Equal(System.Threading.Thread.CurrentPrincipal.IsInRole("Guest"), user.IsInRole("Guest"));
+            Assert.Equal(Thread.CurrentPrincipal.Identity.Name, user.Name);
+            Assert.Equal(Thread.CurrentPrincipal.Identity.IsAuthenticated, user.IsAuthenticated);
+            Assert.Equal(Thread.CurrentPrincipal.IsInRole("Guest"), user.IsInRole("Guest"));
         }
     }
 }

@@ -31,10 +31,10 @@ public class LabelAccessibleObjectTests
     [WinFormsFact]
     public void LabelAccessibleObject_IsPatternSupported_LegacyIAccessible_ReturnsTrue()
     {
-        using var label = new Label();
+        using Label label = new();
         label.Name = "Label1";
         label.Text = "Some test label text";
-        var labelAccessibleObject = new LabelAccessibleObject(label);
+        LabelAccessibleObject labelAccessibleObject = new(label);
 
         Assert.False(label.IsHandleCreated);
 
@@ -45,11 +45,11 @@ public class LabelAccessibleObjectTests
     [WinFormsFact]
     public void LabelAccessibleObject_LegacyIAccessible_Role_ReturnsExpected()
     {
-        using var label = new Label();
+        using Label label = new();
         label.Name = "Label1";
         label.Text = "Some test label text";
         label.AccessibleRole = AccessibleRole.Link;
-        var labelAccessibleObject = new LabelAccessibleObject(label);
+        LabelAccessibleObject labelAccessibleObject = new(label);
 
         Assert.False(label.IsHandleCreated);
         Assert.Equal(AccessibleRole.Link, labelAccessibleObject.Role);
@@ -58,7 +58,7 @@ public class LabelAccessibleObjectTests
     [WinFormsFact]
     public void LabelAccessibleObject_Role_IsStaticText_ByDefault()
     {
-        using Label label = new Label();
+        using Label label = new();
         // AccessibleRole is not set = Default
 
         AccessibleRole actual = label.AccessibilityObject.Role;
@@ -71,11 +71,11 @@ public class LabelAccessibleObjectTests
     public void LabelAccessibleObject_LegacyIAccessible_Description_ReturnsExpected()
     {
         string testAccDescription = "Test description";
-        using var label = new Label();
+        using Label label = new();
         label.Name = "Label1";
         label.Text = "Some test label text";
         label.AccessibleDescription = testAccDescription;
-        var labelAccessibleObject = new LabelAccessibleObject(label);
+        LabelAccessibleObject labelAccessibleObject = new(label);
 
         Assert.False(label.IsHandleCreated);
         Assert.Equal(testAccDescription, labelAccessibleObject.Description);
@@ -84,7 +84,7 @@ public class LabelAccessibleObjectTests
     [WinFormsFact]
     public void LabelAccessibleObject_ControlType_IsText_IfAccessibleRoleIsDefault()
     {
-        using Label label = new Label();
+        using Label label = new();
         // AccessibleRole is not set = Default
 
         VARIANT actual = label.AccessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ControlTypePropertyId);
@@ -112,7 +112,7 @@ public class LabelAccessibleObjectTests
     [MemberData(nameof(LabelAccessibleObject_GetPropertyValue_ControlType_IsExpected_ForCustomRole_TestData))]
     public void LabelAccessibleObject_GetPropertyValue_ControlType_IsExpected_ForCustomRole(AccessibleRole role)
     {
-        using Label label = new Label();
+        using Label label = new();
         label.AccessibleRole = role;
 
         VARIANT actual = label.AccessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ControlTypePropertyId);
@@ -126,7 +126,7 @@ public class LabelAccessibleObjectTests
     public void LabelAccessibleObject_TextChanged_AutomationPropertyChanged_Raised()
     {
         const string newText = "New text";
-        using var control = new LabelWithCustomAccessibleObject(
+        using LabelWithCustomAccessibleObject control = new(
             (propertyId, value) => propertyId == UIA_PROPERTY_ID.UIA_NamePropertyId && newText.Equals(value.ToObject()))
         {
             Text = "Text"
@@ -140,6 +140,44 @@ public class LabelAccessibleObjectTests
         control.Text = newText;
 
         Assert.Equal(1, accessibilityObject.RaiseAutomationNotificationCallCount);
+    }
+
+    [WinFormsTheory]
+    [InlineData("&File", false, "&File")]
+    [InlineData("&File", true, "File")]
+    public void LabelAccessibleObject_Name_ReturnsExpected_WithUseMnemonic(string text, bool useMnemonic, string expectedName)
+    {
+        using Label label = new() { Text = text, UseMnemonic = useMnemonic };
+        LabelAccessibleObject accessibleObject = (LabelAccessibleObject)label.AccessibilityObject;
+
+        string name = accessibleObject.Name;
+
+        name.Should().Be(expectedName);
+    }
+
+    [WinFormsFact]
+    public void LabelAccessibleObject_ThrowsArgumentNullException_WhenOwnerIsNull()
+    {
+        Action action = () => new LabelAccessibleObject(null);
+
+        action.Should().Throw<ArgumentNullException>();
+    }
+
+    [WinFormsTheory]
+    [InlineData("Test Accessible Name", "Test Accessible Name", false)]
+    [InlineData("Test Accessible Name", "Test Accessible Name", true)]
+    [InlineData("", null, false)]
+    [InlineData("", null, true)]
+    [InlineData(null, null, false)]
+    [InlineData(null, null, true)]
+    public void LabelAccessibleObject_Name_ReturnsExpected_WithVariousText(string labelText, string expectedName, bool useMnemonic)
+    {
+        using Label label = new() { Text = labelText, UseMnemonic = useMnemonic };
+        LabelAccessibleObject accessibleObject = (LabelAccessibleObject)label.AccessibilityObject;
+
+        string name = accessibleObject.Name;
+
+        name.Should().Be(expectedName);
     }
 
     private class LabelWithCustomAccessibleObject : Label

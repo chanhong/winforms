@@ -14,7 +14,7 @@ public class ListViewItem_ListViewItemWithImageAccessibleObjectTests
     {
         using ListView control = new();
         control.View = view;
-        control.Items.AddRange(new ListViewItem[] { new() });
+        control.Items.Add(new ListViewItem());
 
         AccessibleObject listViewItemAccessibleObject = control.Items[0].AccessibilityObject;
 
@@ -37,7 +37,7 @@ public class ListViewItem_ListViewItemWithImageAccessibleObjectTests
             SmallImageList = imageCollection,
             LargeImageList = imageCollection
         };
-        if(!control.IsHandleCreated)
+        if (!control.IsHandleCreated)
         {
             Assert.NotEqual(IntPtr.Zero, control.Handle);
         }
@@ -60,7 +60,7 @@ public class ListViewItem_ListViewItemWithImageAccessibleObjectTests
     {
         using ListView control = new();
         control.View = view;
-        control.Items.AddRange(new ListViewItem[] { new() });
+        control.Items.Add(new ListViewItem());
 
         AccessibleObject listViewItemAccessibleObject = control.Items[0].AccessibilityObject;
 
@@ -96,7 +96,7 @@ public class ListViewItem_ListViewItemWithImageAccessibleObjectTests
     {
         using ListView control = new();
         control.View = view;
-        control.Items.AddRange(new ListViewItem[] { new() });
+        control.Items.Add(new ListViewItem());
         control.CreateControl();
 
         AccessibleObject listViewItemAccessibleObject = control.Items[0].AccessibilityObject;
@@ -130,10 +130,10 @@ public class ListViewItem_ListViewItemWithImageAccessibleObjectTests
 
     public static TheoryData<View> GetViewTheoryData()
     {
-        return new TheoryData<View>
-        {
+        return
+        [
             View.LargeIcon,
             View.SmallIcon
-        };
+        ];
     }
 }

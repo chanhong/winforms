@@ -14,7 +14,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_Ctor_Default()
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         Assert.Null(control.AccessibleDefaultActionDescription);
         Assert.Null(control.AccessibleDescription);
         Assert.Null(control.AccessibleName);
@@ -133,7 +133,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_CreateParams_GetDefault_ReturnsExpected()
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         CreateParams createParams = control.CreateParams;
         Assert.Null(createParams.Caption);
         Assert.Equal("SysTreeView32", createParams.ClassName);
@@ -153,7 +153,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_CreateParams_GetDefaultWithHandle_ReturnsExpected()
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -187,7 +187,7 @@ public class TreeViewTests
     [InlineData(BorderStyle.FixedSingle, 0x56810007, 0)]
     public void TreeView_CreateParams_GetBorder_ReturnsExpected(BorderStyle borderStyle, int expectedStyle, int expectedExStyle)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             BorderStyle = borderStyle
         };
@@ -213,7 +213,7 @@ public class TreeViewTests
     [InlineData(false, 0x56012007)]
     public void TreeView_CreateParams_GetScrollable_ReturnsExpected(bool scrollable, int expectedStyle)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             Scrollable = scrollable
         };
@@ -239,7 +239,7 @@ public class TreeViewTests
     [InlineData(false, 0x56010027)]
     public void TreeView_CreateParams_GetHideSelection_ReturnsExpected(bool hideSelection, int expectedStyle)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             HideSelection = hideSelection
         };
@@ -265,7 +265,7 @@ public class TreeViewTests
     [InlineData(false, 0x56010007)]
     public void TreeView_CreateParams_GetLabelEdit_ReturnsExpected(bool labelEdit, int expectedStyle)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             LabelEdit = labelEdit
         };
@@ -291,7 +291,7 @@ public class TreeViewTests
     [InlineData(false, 0x56010005)]
     public void TreeView_CreateParams_GetShowLines_ReturnsExpected(bool showLines, int expectedStyle)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             ShowLines = showLines
         };
@@ -317,7 +317,7 @@ public class TreeViewTests
     [InlineData(false, 0x56010006)]
     public void TreeView_CreateParams_GetShowPlusMinus_ReturnsExpected(bool showPlusMinus, int expectedStyle)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             ShowPlusMinus = showPlusMinus
         };
@@ -343,7 +343,7 @@ public class TreeViewTests
     [InlineData(false, 0x56010003)]
     public void TreeView_CreateParams_GetShowRootLines_ReturnsExpected(bool showRootLines, int expectedStyle)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             ShowRootLines = showRootLines
         };
@@ -369,7 +369,7 @@ public class TreeViewTests
     [InlineData(false, 0x56010007)]
     public void TreeView_CreateParams_GetHotTracking_ReturnsExpected(bool hotTracking, int expectedStyle)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             HotTracking = hotTracking
         };
@@ -395,7 +395,7 @@ public class TreeViewTests
     [InlineData(false, 0x56010007)]
     public void TreeView_CreateParams_GetFullRowSelect_ReturnsExpected(bool fullRowSelect, int expectedStyle)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             FullRowSelect = fullRowSelect
         };
@@ -421,7 +421,7 @@ public class TreeViewTests
     [InlineData(2)]
     public void TreeView_CreateParams_GetItemHeight_ReturnsExpected(int value)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             ItemHeight = value
         };
@@ -447,7 +447,7 @@ public class TreeViewTests
     [InlineData(2)]
     public void TreeView_CreateParams_GetItemHeightWithHandle_ReturnsExpected(int itemHeight)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             ItemHeight = itemHeight
         };
@@ -483,7 +483,7 @@ public class TreeViewTests
     [InlineData(12, 0x56010007, 0)]
     public void TreeView_CreateParams_GetItemHeightInSetterWithHandle_ReturnsExpected(int itemHeight, int expectedStyle, int expectedCreatedCallCount)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -522,7 +522,7 @@ public class TreeViewTests
     [InlineData(false, false)]
     public void TreeView_CreateParams_GetShowNodeTooltips_ReturnsExpected(bool designMode, bool showNodeTooltips)
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
@@ -532,7 +532,7 @@ public class TreeViewTests
         mockSite
             .Setup(s => s.DesignMode)
             .Returns(designMode);
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             Site = mockSite.Object,
             ShowNodeToolTips = showNodeTooltips
@@ -561,7 +561,7 @@ public class TreeViewTests
     [InlineData(false, false, 0x56010007)]
     public void TreeView_CreateParams_GetShowNodeTooltipsWithHandle_ReturnsExpected(bool designMode, bool showNodeTooltips, int expectedStyle)
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
@@ -571,7 +571,7 @@ public class TreeViewTests
         mockSite
             .Setup(s => s.DesignMode)
             .Returns(designMode);
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             Site = mockSite.Object,
             ShowNodeToolTips = showNodeTooltips
@@ -607,7 +607,7 @@ public class TreeViewTests
     [BoolData]
     public void TreeView_CreateParams_GetCheckBoxes_ReturnsExpected(bool checkBoxes)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             CheckBoxes = checkBoxes
         };
@@ -633,7 +633,7 @@ public class TreeViewTests
     [InlineData(false, 0x56010007)]
     public void TreeView_CreateParams_GetCheckBoxesWithHandle_ReturnsExpected(bool checkBoxes, int expectedStyle)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             CheckBoxes = checkBoxes
         };
@@ -673,7 +673,7 @@ public class TreeViewTests
     [InlineData(RightToLeft.Yes, false, 0x56010047, 0x7200)]
     public void TreeView_CreateParams_GetRightToLeft_ReturnsExpected(RightToLeft rightToLeft, bool rightToLeftLayout, int expectedStyle, int expectedExStyle)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             RightToLeft = rightToLeft,
             RightToLeftLayout = rightToLeftLayout
@@ -703,7 +703,7 @@ public class TreeViewTests
     [MemberData(nameof(BackColor_Set_TestData))]
     public void TreeView_BackColor_Set_GetReturnsExpected(Color value, Color expected)
     {
-        using var control = new TreeView
+        using TreeView control = new()
         {
             BackColor = value
         };
@@ -726,7 +726,7 @@ public class TreeViewTests
     [MemberData(nameof(BackColor_SetWithHandle_TestData))]
     public void TreeView_BackColor_SetWithHandle_GetReturnsExpected(Color value, Color expected, int expectedInvalidatedCallCount)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -754,7 +754,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void BackColor_SetWithHandler_CallsBackColorChanged()
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -790,7 +790,7 @@ public class TreeViewTests
     [CommonMemberData(typeof(CommonTestHelperEx), nameof(CommonTestHelperEx.GetImageTheoryData))]
     public void TreeView_BackgroundImage_Set_GetReturnsExpected(Image value)
     {
-        using var control = new TreeView
+        using TreeView control = new()
         {
             BackgroundImage = value
         };
@@ -806,7 +806,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_BackgroundImage_SetWithHandler_CallsBackgroundImageChanged()
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -817,7 +817,7 @@ public class TreeViewTests
         control.BackgroundImageChanged += handler;
 
         // Set different.
-        using var image1 = new Bitmap(10, 10);
+        using Bitmap image1 = new(10, 10);
         control.BackgroundImage = image1;
         Assert.Same(image1, control.BackgroundImage);
         Assert.Equal(1, callCount);
@@ -828,7 +828,7 @@ public class TreeViewTests
         Assert.Equal(1, callCount);
 
         // Set different.
-        using var image2 = new Bitmap(10, 10);
+        using Bitmap image2 = new(10, 10);
         control.BackgroundImage = image2;
         Assert.Same(image2, control.BackgroundImage);
         Assert.Equal(2, callCount);
@@ -849,7 +849,7 @@ public class TreeViewTests
     [EnumData<ImageLayout>]
     public void TreeView_BackgroundImageLayout_Set_GetReturnsExpected(ImageLayout value)
     {
-        using var control = new TreeView
+        using TreeView control = new()
         {
             BackgroundImageLayout = value
         };
@@ -865,7 +865,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_BackgroundImageLayout_SetWithHandler_CallsBackgroundImageLayoutChanged()
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -901,7 +901,7 @@ public class TreeViewTests
     [InvalidEnumData<ImageLayout>]
     public void BackgroundImageLayout_SetInvalid_ThrowsInvalidEnumArgumentException(ImageLayout value)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => control.BackgroundImageLayout = value);
     }
 
@@ -909,7 +909,7 @@ public class TreeViewTests
     [EnumData<BorderStyle>]
     public void BorderStyle_Set_GetReturnsExpected(BorderStyle value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             BorderStyle = value
         };
@@ -923,7 +923,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void BorderStyle_SetWithUpdateStylesHandler_CallsStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             BorderStyle = BorderStyle.Fixed3D
         };
@@ -974,7 +974,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void BorderStyle_SetWithInvalidatedWithHandle_CallsStyleChangedCallsInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             BorderStyle = BorderStyle.Fixed3D
         };
@@ -1027,7 +1027,7 @@ public class TreeViewTests
     [InvalidEnumData<BorderStyle>]
     public void BorderStyle_SetInvalid_ThrowsInvalidEnumArgumentException(BorderStyle value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => treeView.BorderStyle = value);
     }
 
@@ -1035,7 +1035,7 @@ public class TreeViewTests
     [BoolData]
     public void CheckBoxes_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             CheckBoxes = value
         };
@@ -1054,7 +1054,7 @@ public class TreeViewTests
     [BoolData]
     public void CheckBoxes_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.CheckBoxes = value;
@@ -1072,7 +1072,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void CheckBoxes_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             CheckBoxes = false
         };
@@ -1123,7 +1123,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void CheckBoxes_SetWithUpdateStylesHandlerWithHandle_CallsStyleChangedCallsInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             CheckBoxes = false
         };
@@ -1176,7 +1176,7 @@ public class TreeViewTests
     [BoolData]
     public void DoubleBuffered_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new SubTreeView
+        using SubTreeView treeView = new()
         {
             DoubleBuffered = value
         };
@@ -1195,7 +1195,7 @@ public class TreeViewTests
     [BoolData]
     public void DoubleBuffered_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new SubTreeView();
+        using SubTreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.DoubleBuffered = value;
@@ -1213,7 +1213,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void DoubleBuffered_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new SubTreeView
+        using SubTreeView treeView = new()
         {
             DoubleBuffered = false
         };
@@ -1264,7 +1264,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void DoubleBuffered_SetWithUpdateStylesHandlerWithHandle_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new SubTreeView
+        using SubTreeView treeView = new()
         {
             DoubleBuffered = false
         };
@@ -1317,7 +1317,7 @@ public class TreeViewTests
     [EnumData<TreeViewDrawMode>]
     public void DrawMode_Set_GetReturnsExpected(TreeViewDrawMode value)
     {
-        using var control = new TreeView
+        using TreeView control = new()
         {
             DrawMode = value
         };
@@ -1332,7 +1332,7 @@ public class TreeViewTests
     [EnumData<TreeViewDrawMode>]
     public void DrawMode_SetWithHandle_GetReturnsExpected(TreeViewDrawMode value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.DrawMode = value;
@@ -1346,7 +1346,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void DrawMode_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new SubTreeView
+        using SubTreeView treeView = new()
         {
             DrawMode = TreeViewDrawMode.Normal
         };
@@ -1397,7 +1397,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void DrawMode_SetWithUpdateStylesHandlerWithHandle_DoesNotCallStyleChangedCallsInvalidated()
     {
-        using var treeView = new SubTreeView
+        using SubTreeView treeView = new()
         {
             DrawMode = TreeViewDrawMode.Normal
         };
@@ -1450,7 +1450,7 @@ public class TreeViewTests
     [InvalidEnumData<TreeViewDrawMode>]
     public void DrawMode_SetInvalid_ThrowsInvalidEnumArgumentException(TreeViewDrawMode value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => treeView.DrawMode = value);
     }
 
@@ -1467,7 +1467,7 @@ public class TreeViewTests
     [MemberData(nameof(ForeColor_Set_TestData))]
     public void ForeColor_Set_GetReturnsExpected(Color value, Color expected)
     {
-        using var control = new TreeView
+        using TreeView control = new()
         {
             ForeColor = value
         };
@@ -1482,7 +1482,7 @@ public class TreeViewTests
     [MemberData(nameof(ForeColor_Set_TestData))]
     public void ForeColor_SetWithHandle_GetReturnsExpected(Color value, Color expected)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
 
         control.ForeColor = value;
@@ -1496,7 +1496,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void ForeColor_SetWithHandler_CallsForeColorChanged()
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -1532,7 +1532,7 @@ public class TreeViewTests
     [BoolData]
     public void FullRowSelect_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             FullRowSelect = value
         };
@@ -1551,7 +1551,7 @@ public class TreeViewTests
     [BoolData]
     public void FullRowSelect_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.FullRowSelect = value;
@@ -1569,7 +1569,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void FullRowSelect_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             FullRowSelect = false
         };
@@ -1620,7 +1620,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void FullRowSelect_SetWithUpdateStylesHandlerWithHandle_CallsStyleChangedCallsInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             FullRowSelect = false
         };
@@ -1672,11 +1672,11 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_Handle_GetVersion_ReturnsExpected()
     {
-        using var control = new TreeView();
+        using TreeView control = new();
 
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int version = Application.UseVisualStyles ? 6 : 5;
-        Assert.Equal(version, (int)PInvoke.SendMessage(control, PInvoke.CCM_GETVERSION));
+        Assert.Equal(version, (int)PInvokeCore.SendMessage(control, PInvoke.CCM_GETVERSION));
     }
 
     public static IEnumerable<object[]> Handle_CustomGetVersion_TestData()
@@ -1691,7 +1691,7 @@ public class TreeViewTests
     [MemberData(nameof(Handle_CustomGetVersion_TestData))]
     public void TreeView_Handle_CustomGetVersion_Success(IntPtr getVersionResult, int expectedSetVersionCallCount)
     {
-        using var control = new CustomGetVersionTreeView
+        using CustomGetVersionTreeView control = new()
         {
             GetVersionResult = getVersionResult
         };
@@ -1715,7 +1715,7 @@ public class TreeViewTests
             }
             else if (m.Msg == (int)PInvoke.CCM_SETVERSION)
             {
-                Assert.Equal((IntPtr)5, m.WParam);
+                Assert.Equal(5, m.WParam);
                 Assert.Equal(IntPtr.Zero, m.LParam);
                 SetVersionCallCount++;
                 return;
@@ -1729,7 +1729,7 @@ public class TreeViewTests
     [BoolData]
     public void HideSelection_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             HideSelection = value
         };
@@ -1748,7 +1748,7 @@ public class TreeViewTests
     [BoolData]
     public void HideSelection_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.HideSelection = value;
@@ -1766,7 +1766,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void HideSelection_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             HideSelection = true
         };
@@ -1817,7 +1817,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void HideSelection_SetWithUpdateStylesHandlerWithHandle_CallsStyleChangedCallsInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             HideSelection = true
         };
@@ -1870,7 +1870,7 @@ public class TreeViewTests
     [BoolData]
     public void HotTracking_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             HotTracking = value
         };
@@ -1889,7 +1889,7 @@ public class TreeViewTests
     [BoolData]
     public void HotTracking_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.HotTracking = value;
@@ -1907,7 +1907,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void HotTracking_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             HotTracking = false
         };
@@ -1958,7 +1958,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void HotTracking_SetWithUpdateStylesHandlerWithHandle_CallsStyleChangedCallsInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             HotTracking = false
         };
@@ -2013,7 +2013,7 @@ public class TreeViewTests
     [InlineData(1)]
     public void ImageIndex_SetWithoutImageList_GetReturnsExpected(int value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageIndex = value
         };
@@ -2032,7 +2032,7 @@ public class TreeViewTests
     [InlineData(1)]
     public void ImageIndex_SetWithoutImageListWithImageKey_GetReturnsExpected(int value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageKey = "imageKey",
             ImageIndex = value
@@ -2053,8 +2053,8 @@ public class TreeViewTests
     [InlineData(2)]
     public void ImageIndex_SetWithEmptyImageList_GetReturnsExpected(int value)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList,
             ImageIndex = value
@@ -2075,8 +2075,8 @@ public class TreeViewTests
     [InlineData(2)]
     public void ImageIndex_SetWithEmptyImageListWithImageKey_GetReturnsExpected(int value)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageKey = "imageKey",
             ImageList = imageList,
@@ -2098,10 +2098,10 @@ public class TreeViewTests
     [InlineData(2, 1)]
     public void ImageIndex_SetWithImageList_GetReturnsExpected(int value, int expected)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add(new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageList = imageList,
             ImageIndex = value
@@ -2122,10 +2122,10 @@ public class TreeViewTests
     [InlineData(2, 1)]
     public void ImageIndex_SetWithImageListWithImageKey_GetReturnsExpected(int value, int expected)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add("imageKey", new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageKey = "imageKey",
             ImageList = imageList,
@@ -2146,7 +2146,7 @@ public class TreeViewTests
     [InlineData(1)]
     public void ImageIndex_SetWithoutImageListWithHandle_GetReturnsExpected(int value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.ImageIndex = value;
@@ -2166,8 +2166,8 @@ public class TreeViewTests
     [InlineData(2)]
     public void ImageIndex_SetWithEmptyImageListWithHandle_GetReturnsExpected(int value)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -2190,10 +2190,10 @@ public class TreeViewTests
     [InlineData(2, 1)]
     public void ImageIndex_SetWithImageListWithHandle_GetReturnsExpected(int value, int expected)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add(new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -2212,7 +2212,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void ImageIndex_SetInvalid_Throws()
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.Throws<ArgumentOutOfRangeException>("value", () => treeView.ImageIndex = -2);
     }
 
@@ -2221,7 +2221,7 @@ public class TreeViewTests
     [InlineData("(none)", "")]
     public void ImageKey_SetWithoutImageList_GetReturnsExpected(string value, string expected)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageKey = value
         };
@@ -2239,7 +2239,7 @@ public class TreeViewTests
     [InlineData("(none)", "")]
     public void ImageKey_SetWithoutImageListWithImageIndex_GetReturnsExpected(string value, string expected)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageIndex = 1,
             ImageKey = value
@@ -2267,8 +2267,8 @@ public class TreeViewTests
     [MemberData(nameof(ImageKey_Set_TestData))]
     public void ImageKey_SetWithEmptyImageList_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList,
             ImageKey = value
@@ -2286,8 +2286,8 @@ public class TreeViewTests
     [MemberData(nameof(ImageKey_Set_TestData))]
     public void ImageKey_SetWithEmptyImageListWithImageIndex_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageIndex = 1,
             ImageList = imageList,
@@ -2306,10 +2306,10 @@ public class TreeViewTests
     [MemberData(nameof(ImageKey_Set_TestData))]
     public void ImageKey_SetWithNonEmptyImageList_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add("imageKey", new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageList = imageList,
             ImageKey = value
@@ -2332,10 +2332,10 @@ public class TreeViewTests
     [InlineData("ImageKey", "ImageKey", -1)]
     public void ImageKey_SetWithNonEmptyImageListWithImageIndex_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add("imageKey", new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageIndex = 1,
             ImageList = imageList,
@@ -2355,7 +2355,7 @@ public class TreeViewTests
     [InlineData("(none)", "")]
     public void ImageKey_SetWithoutImageListWithHandle_GetReturnsExpected(string value, string expected)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.ImageKey = value;
@@ -2372,8 +2372,8 @@ public class TreeViewTests
     [MemberData(nameof(ImageKey_Set_TestData))]
     public void ImageKey_SetWithEmptyImageListWithHandle_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -2393,10 +2393,10 @@ public class TreeViewTests
     [MemberData(nameof(ImageKey_Set_TestData))]
     public void ImageKey_SetWithNonEmptyImageListWithHandle_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add("imageKey", new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -2417,7 +2417,7 @@ public class TreeViewTests
         yield return new object[] { null };
         yield return new object[] { new ImageList() };
 
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         yield return new object[] { imageList };
     }
@@ -2426,7 +2426,7 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void ImageList_Set_GetReturnsExpected(ImageList value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageList = value
         };
@@ -2441,7 +2441,7 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void ImageList_SetWithCheckboxes_GetReturnsExpected(ImageList value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             CheckBoxes = true,
             ImageList = value
@@ -2457,8 +2457,8 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void ImageList_SetWithNonNullOldValue_GetReturnsExpected(ImageList value)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -2475,7 +2475,7 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void ImageList_SetWithStateImageList_GetReturnsExpected(ImageList value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             StateImageList = value,
             ImageList = value
@@ -2491,7 +2491,7 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void ImageList_SetWithHandle_GetReturnsExpected(ImageList value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.ImageList = value;
@@ -2506,7 +2506,7 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void ImageList_SetWithHandleWithCheckBoxes_GetReturnsExpected(ImageList value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             CheckBoxes = true
         };
@@ -2524,8 +2524,8 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void ImageList_SetWithNonNullOldValueWithHandle_GetReturnsExpected(ImageList value)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -2543,7 +2543,7 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void ImageList_SetWithStateImageListWithHandle_GetReturnsExpected(ImageList value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             StateImageList = value
         };
@@ -2560,9 +2560,9 @@ public class TreeViewTests
     [WinFormsFact]
     public void ImageList_Dispose_DetachesFromTreeView()
     {
-        using var imageList1 = new ImageList();
-        using var imageList2 = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList1 = new();
+        using ImageList imageList2 = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList1
         };
@@ -2580,8 +2580,8 @@ public class TreeViewTests
     [WinFormsFact]
     public void ImageList_CreateHandle_DetachesFromTreeView()
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -2592,8 +2592,8 @@ public class TreeViewTests
     [WinFormsFact]
     public void ImageList_CreateHandleWithHandle_DetachesFromTreeView()
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -2605,8 +2605,8 @@ public class TreeViewTests
     [WinFormsFact]
     public void ImageList_RecreateHandle_DetachesFromTreeView()
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -2620,8 +2620,8 @@ public class TreeViewTests
     [WinFormsFact]
     public void ImageList_RecreateHandleWithHandle_DetachesFromTreeView()
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -2643,7 +2643,7 @@ public class TreeViewTests
     [InlineData(32000, 32000)]
     public void Indent_Set_GetReturnsExpected(int value, int expected)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             Indent = value
         };
@@ -2664,7 +2664,7 @@ public class TreeViewTests
     [InlineData(32000)]
     public void Indent_SetWithHandle_GetReturnsExpected(int value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.Indent = value;
@@ -2680,7 +2680,7 @@ public class TreeViewTests
     [InlineData(32001)]
     public void Indent_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.Throws<ArgumentOutOfRangeException>("value", () => treeView.Indent = value);
     }
 
@@ -2690,7 +2690,7 @@ public class TreeViewTests
     [InlineData(32001)]
     public void Indent_SetInvalidWithCustomValue_ThrowsArgumentOutOfRangeException(int indent)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             Indent = 1
         };
@@ -2699,7 +2699,7 @@ public class TreeViewTests
 
     public static IEnumerable<object[]> ItemHeight_Get_TestData()
     {
-        var font = new Font(FontFamily.GenericSansSerif, 100);
+        Font font = new(FontFamily.GenericSansSerif, 100);
         yield return new object[] { font, true, TreeViewDrawMode.Normal, font.Height + 3 };
         yield return new object[] { font, true, TreeViewDrawMode.OwnerDrawText, font.Height + 3 };
         yield return new object[] { font, true, TreeViewDrawMode.OwnerDrawAll, font.Height + 3 };
@@ -2707,7 +2707,7 @@ public class TreeViewTests
         yield return new object[] { font, false, TreeViewDrawMode.OwnerDrawText, font.Height + 3 };
         yield return new object[] { font, false, TreeViewDrawMode.OwnerDrawAll, font.Height + 3 };
 
-        Font smallFont = new Font(FontFamily.GenericSansSerif, 2);
+        Font smallFont = new(FontFamily.GenericSansSerif, 2);
         yield return new object[] { smallFont, true, TreeViewDrawMode.Normal, smallFont.Height + 3 };
         yield return new object[] { smallFont, true, TreeViewDrawMode.OwnerDrawText, smallFont.Height + 3 };
         yield return new object[] { smallFont, true, TreeViewDrawMode.OwnerDrawAll, 16 };
@@ -2720,7 +2720,7 @@ public class TreeViewTests
     [MemberData(nameof(ItemHeight_Get_TestData))]
     public void ItemHeight_Get_ReturnsExpected(Font font, bool checkBoxes, TreeViewDrawMode drawMode, int expectedHeight)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             Font = font,
             CheckBoxes = checkBoxes,
@@ -2741,7 +2741,7 @@ public class TreeViewTests
     [MemberData(nameof(ItemHeight_Set_TestData))]
     public void TreeView_ItemHeight_Set_GetReturnsExpected(int value, int expected)
     {
-        using var control = new TreeView
+        using TreeView control = new()
         {
             ItemHeight = value
         };
@@ -2761,7 +2761,7 @@ public class TreeViewTests
     [InlineData(32766, 0)]
     public void TreeView_ItemHeight_SetWithHandle_GetReturnsExpected(int value, int expectedCreatedCallCount)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -2792,7 +2792,7 @@ public class TreeViewTests
     [InlineData(32767)]
     public void TreeView_ItemHeight_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.Throws<ArgumentOutOfRangeException>("value", () => control.ItemHeight = value);
     }
 
@@ -2803,7 +2803,7 @@ public class TreeViewTests
     [InlineData(32767)]
     public void TreeView_ItemHeight_SetInvalidWithCustomValue_ThrowsArgumentOutOfRangeException(int indent)
     {
-        using var control = new TreeView
+        using TreeView control = new()
         {
             ItemHeight = 1
         };
@@ -2814,7 +2814,7 @@ public class TreeViewTests
     [BoolData]
     public void LabelEdit_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             LabelEdit = value
         };
@@ -2833,7 +2833,7 @@ public class TreeViewTests
     [BoolData]
     public void LabelEdit_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.LabelEdit = value;
@@ -2851,7 +2851,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void LabelEdit_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             LabelEdit = false
         };
@@ -2902,7 +2902,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void LabelEdit_SetWithUpdateStylesHandlerWithHandle_CallsStyleChangedCallsInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             LabelEdit = false
         };
@@ -2955,7 +2955,7 @@ public class TreeViewTests
     [CommonMemberData(typeof(CommonTestHelper), nameof(CommonTestHelper.GetColorWithEmptyTheoryData))]
     public void LineColor_Set_GetReturnsExpected(Color value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             LineColor = value
         };
@@ -2970,7 +2970,7 @@ public class TreeViewTests
     [StringWithNullData]
     public void PathSeparator_Set_GetReturnsExpected(string value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             PathSeparator = value
         };
@@ -2985,7 +2985,7 @@ public class TreeViewTests
     [CommonMemberData(typeof(CommonTestHelperEx), nameof(CommonTestHelperEx.GetPaddingNormalizedTheoryData))]
     public void TreeView_Padding_Set_GetReturnsExpected(Padding value, Padding expected)
     {
-        using var control = new TreeView
+        using TreeView control = new()
         {
             Padding = value
         };
@@ -3002,7 +3002,7 @@ public class TreeViewTests
     [CommonMemberData(typeof(CommonTestHelperEx), nameof(CommonTestHelperEx.GetPaddingNormalizedTheoryData))]
     public void TreeView_Padding_SetWithHandle_GetReturnsExpected(Padding value, Padding expected)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -3030,7 +3030,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_Padding_SetWithHandler_CallsPaddingChanged()
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -3041,7 +3041,7 @@ public class TreeViewTests
         control.PaddingChanged += handler;
 
         // Set different.
-        var padding1 = new Padding(1);
+        Padding padding1 = new(1);
         control.Padding = padding1;
         Assert.Equal(padding1, control.Padding);
         Assert.Equal(1, callCount);
@@ -3052,7 +3052,7 @@ public class TreeViewTests
         Assert.Equal(1, callCount);
 
         // Set different.
-        var padding2 = new Padding(2);
+        Padding padding2 = new(2);
         control.Padding = padding2;
         Assert.Equal(padding2, control.Padding);
         Assert.Equal(2, callCount);
@@ -3073,7 +3073,7 @@ public class TreeViewTests
     [InlineData(RightToLeft.Inherit, false, 0)]
     public void TrackBar_RightToLeftLayout_Set_GetReturnsExpected(RightToLeft rightToLeft, bool value, int expectedLayoutCallCount)
     {
-        using var control = new TreeView
+        using TreeView control = new()
         {
             RightToLeft = rightToLeft
         };
@@ -3113,7 +3113,7 @@ public class TreeViewTests
     [InlineData(RightToLeft.Inherit, false, 0, 0, 0)]
     public void TrackBar_RightToLeftLayout_SetWithHandle_GetReturnsExpected(RightToLeft rightToLeft, bool value, int expectedLayoutCallCount, int expectedCreatedCallCount1, int expectedCreatedCallCount2)
     {
-        using var control = new TrackBar
+        using TrackBar control = new()
         {
             RightToLeft = rightToLeft
         };
@@ -3163,7 +3163,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TrackBar_RightToLeftLayout_SetWithHandler_CallsRightToLeftLayoutChanged()
     {
-        using var control = new TrackBar
+        using TrackBar control = new()
         {
             RightToLeftLayout = true
         };
@@ -3201,7 +3201,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TrackBar_RightToLeftLayout_SetWithHandlerInDisposing_DoesNotRightToLeftLayoutChanged()
     {
-        using var control = new TrackBar
+        using TrackBar control = new()
         {
             RightToLeft = RightToLeft.Yes
         };
@@ -3230,7 +3230,7 @@ public class TreeViewTests
     [BoolData]
     public void Scrollable_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             Scrollable = value
         };
@@ -3249,7 +3249,7 @@ public class TreeViewTests
     [BoolData]
     public void Scrollable_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.Scrollable = value;
@@ -3267,7 +3267,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void Scrollable_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             Scrollable = true
         };
@@ -3318,7 +3318,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void Scrollable_SetWithUpdateStylesHandlerWithHandle_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             Scrollable = true
         };
@@ -3373,7 +3373,7 @@ public class TreeViewTests
     [InlineData(1)]
     public void SelectedImageIndex_SetWithoutImageList_GetReturnsExpected(int value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             SelectedImageIndex = value
         };
@@ -3392,7 +3392,7 @@ public class TreeViewTests
     [InlineData(1)]
     public void SelectedImageIndex_SetWithoutImageListWithImageKey_GetReturnsExpected(int value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageKey = "imageKey",
             SelectedImageIndex = value
@@ -3413,8 +3413,8 @@ public class TreeViewTests
     [InlineData(2)]
     public void SelectedImageIndex_SetWithEmptyImageList_GetReturnsExpected(int value)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList,
             SelectedImageIndex = value
@@ -3435,8 +3435,8 @@ public class TreeViewTests
     [InlineData(2)]
     public void SelectedImageIndex_SetWithEmptyImageListWithImageKey_GetReturnsExpected(int value)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageKey = "imageKey",
             ImageList = imageList,
@@ -3458,10 +3458,10 @@ public class TreeViewTests
     [InlineData(2, 1)]
     public void SelectedImageIndex_SetWithImageList_GetReturnsExpected(int value, int expected)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add(new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageList = imageList,
             SelectedImageIndex = value
@@ -3482,10 +3482,10 @@ public class TreeViewTests
     [InlineData(2, 1)]
     public void SelectedImageIndex_SetWithImageListWithImageKey_GetReturnsExpected(int value, int expected)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add("imageKey", new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageKey = "imageKey",
             ImageList = imageList,
@@ -3506,7 +3506,7 @@ public class TreeViewTests
     [InlineData(1)]
     public void SelectedImageIndex_SetWithoutImageListWithHandle_GetReturnsExpected(int value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.SelectedImageIndex = value;
@@ -3526,8 +3526,8 @@ public class TreeViewTests
     [InlineData(2)]
     public void SelectedImageIndex_SetWithEmptyImageListWithHandle_GetReturnsExpected(int value)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -3550,10 +3550,10 @@ public class TreeViewTests
     [InlineData(2, 1)]
     public void SelectedImageIndex_SetWithImageListWithHandle_GetReturnsExpected(int value, int expected)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add(new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -3572,7 +3572,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void SelectedImageIndex_SetInvalid_Throws()
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.Throws<ArgumentOutOfRangeException>("value", () => treeView.SelectedImageIndex = -2);
     }
 
@@ -3581,7 +3581,7 @@ public class TreeViewTests
     [InlineData("(none)", "")]
     public void SelectedImageKey_SetWithoutImageList_GetReturnsExpected(string value, string expected)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             SelectedImageKey = value
         };
@@ -3599,7 +3599,7 @@ public class TreeViewTests
     [InlineData("(none)", "")]
     public void SelectedImageKey_SetWithoutImageListWithImageIndex_GetReturnsExpected(string value, string expected)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             SelectedImageIndex = 1,
             SelectedImageKey = value
@@ -3617,8 +3617,8 @@ public class TreeViewTests
     [MemberData(nameof(ImageKey_Set_TestData))]
     public void SelectedImageKey_SetWithEmptyImageList_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList,
             SelectedImageKey = value
@@ -3636,8 +3636,8 @@ public class TreeViewTests
     [MemberData(nameof(ImageKey_Set_TestData))]
     public void SelectedImageKey_SetWithEmptyImageListWithImageIndex_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             SelectedImageIndex = 1,
             ImageList = imageList,
@@ -3656,10 +3656,10 @@ public class TreeViewTests
     [MemberData(nameof(ImageKey_Set_TestData))]
     public void SelectedImageKey_SetWithNonEmptyImageList_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add("imageKey", new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageList = imageList,
             SelectedImageKey = value
@@ -3682,10 +3682,10 @@ public class TreeViewTests
     [InlineData("ImageKey", "ImageKey", -1)]
     public void SelectedImageKey_SetWithNonEmptyImageListWithImageIndex_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add("imageKey", new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             SelectedImageIndex = 1,
             ImageList = imageList,
@@ -3705,7 +3705,7 @@ public class TreeViewTests
     [InlineData("(none)", "")]
     public void SelectedImageKey_SetWithoutImageListWithHandle_GetReturnsExpected(string value, string expected)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.SelectedImageKey = value;
@@ -3722,8 +3722,8 @@ public class TreeViewTests
     [MemberData(nameof(ImageKey_Set_TestData))]
     public void SelectedImageKey_SetWithEmptyImageListWithHandle_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -3743,10 +3743,10 @@ public class TreeViewTests
     [MemberData(nameof(ImageKey_Set_TestData))]
     public void SelectedImageKey_SetWithNonEmptyImageListWithHandle_GetReturnsExpected(string value, string expected, int expectedImageIndex)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         imageList.Images.Add(new Bitmap(10, 10));
         imageList.Images.Add("imageKey", new Bitmap(10, 10));
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ImageList = imageList
         };
@@ -3766,7 +3766,7 @@ public class TreeViewTests
     [BoolData]
     public void ShowLines_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowLines = value
         };
@@ -3785,7 +3785,7 @@ public class TreeViewTests
     [BoolData]
     public void ShowLines_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.ShowLines = value;
@@ -3803,7 +3803,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void ShowLines_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowLines = false
         };
@@ -3854,7 +3854,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void ShowLines_SetWithUpdateStylesHandlerWithHandle_CallsStyleChangedCallsInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowLines = true
         };
@@ -3907,7 +3907,7 @@ public class TreeViewTests
     [BoolData]
     public void ShowNodeToolTips_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowNodeToolTips = value
         };
@@ -3926,7 +3926,7 @@ public class TreeViewTests
     [BoolData]
     public void ShowNodeToolTips_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.ShowNodeToolTips = value;
@@ -3944,7 +3944,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void ShowNodeToolTips_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowNodeToolTips = false
         };
@@ -3995,7 +3995,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void ShowNodeToolTips_SetWithUpdateStylesHandlerWithHandle_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowNodeToolTips = true
         };
@@ -4048,7 +4048,7 @@ public class TreeViewTests
     [BoolData]
     public void ShowPlusMinus_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowPlusMinus = value
         };
@@ -4067,7 +4067,7 @@ public class TreeViewTests
     [BoolData]
     public void ShowPlusMinus_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.ShowPlusMinus = value;
@@ -4085,7 +4085,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void ShowPlusMinus_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowPlusMinus = true
         };
@@ -4136,7 +4136,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void ShowPlusMinus_SetWithUpdateStylesHandlerWithHandle_CallsStyleChangedCallsInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowPlusMinus = true
         };
@@ -4189,7 +4189,7 @@ public class TreeViewTests
     [BoolData]
     public void ShowRootLines_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowRootLines = value
         };
@@ -4208,7 +4208,7 @@ public class TreeViewTests
     [BoolData]
     public void ShowRootLines_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.ShowRootLines = value;
@@ -4226,7 +4226,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void ShowRootLines_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowRootLines = true
         };
@@ -4277,7 +4277,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void ShowRootLines_SetWithUpdateStylesHandlerWithHandle_CallsStyleChangedCallsInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             ShowRootLines = true
         };
@@ -4330,7 +4330,7 @@ public class TreeViewTests
     [BoolData]
     public void Sorted_Set_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             Sorted = value
         };
@@ -4349,7 +4349,7 @@ public class TreeViewTests
     [BoolData]
     public void Sorted_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.Sorted = value;
@@ -4367,7 +4367,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void Sorted_SetWithUpdateStylesHandler_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             Sorted = false
         };
@@ -4418,7 +4418,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void Sorted_SetWithUpdateStylesHandlerWithHandle_DoesNotCallStyleChangedDoesNotCallInvalidated()
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             Sorted = false
         };
@@ -4471,7 +4471,7 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void StateImageList_Set_GetReturnsExpected(ImageList value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             StateImageList = value
         };
@@ -4486,8 +4486,8 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void StateImageList_SetWithNonNullOldValue_GetReturnsExpected(ImageList value)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             StateImageList = imageList
         };
@@ -4504,7 +4504,7 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void StateImageList_SetWithHandle_GetReturnsExpected(ImageList value)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         Assert.NotEqual(IntPtr.Zero, treeView.Handle);
 
         treeView.StateImageList = value;
@@ -4519,8 +4519,8 @@ public class TreeViewTests
     [MemberData(nameof(ImageList_TestData))]
     public void StateImageList_SetWithNonNullOldValueWithHandle_GetReturnsExpected(ImageList value)
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             StateImageList = imageList
         };
@@ -4537,9 +4537,9 @@ public class TreeViewTests
     [WinFormsFact]
     public void StateImageList_Dispose_DetachesFromTreeView()
     {
-        using var imageList1 = new ImageList();
-        using var imageList2 = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList1 = new();
+        using ImageList imageList2 = new();
+        using TreeView treeView = new()
         {
             StateImageList = imageList1
         };
@@ -4557,8 +4557,8 @@ public class TreeViewTests
     [WinFormsFact]
     public void StateImageList_CreateHandle_DetachesFromTreeView()
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             StateImageList = imageList
         };
@@ -4569,8 +4569,8 @@ public class TreeViewTests
     [WinFormsFact]
     public void StateImageList_CreateHandleWithHandle_DetachesFromTreeView()
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             StateImageList = imageList
         };
@@ -4582,8 +4582,8 @@ public class TreeViewTests
     [WinFormsFact]
     public void StateImageList_RecreateHandle_DetachesFromTreeView()
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             StateImageList = imageList
         };
@@ -4597,8 +4597,8 @@ public class TreeViewTests
     [WinFormsFact]
     public void StateImageList_RecreateHandleWithHandle_DetachesFromTreeView()
     {
-        using var imageList = new ImageList();
-        using var treeView = new TreeView
+        using ImageList imageList = new();
+        using TreeView treeView = new()
         {
             StateImageList = imageList
         };
@@ -4614,7 +4614,7 @@ public class TreeViewTests
     [NormalizedStringData]
     public void Text_Set_GetReturnsExpected(string value, string expected)
     {
-        using var control = new TreeView
+        using TreeView control = new()
         {
             Text = value
         };
@@ -4631,7 +4631,7 @@ public class TreeViewTests
     [NormalizedStringData]
     public void TreeView_Text_SetWithHandle_GetReturnsExpected(string value, string expected)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -4659,7 +4659,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void Text_SetWithHandler_CallsTextChanged()
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -4711,7 +4711,7 @@ public class TreeViewTests
     [MemberData(nameof(TreeViewNodeSorter_TestData))]
     public void TreeViewNodeSorter_Set_GetReturnsExpected(IComparer value)
     {
-        using var treeView = new TreeView
+        using TreeView treeView = new()
         {
             TreeViewNodeSorter = value
         };
@@ -4723,10 +4723,23 @@ public class TreeViewTests
     }
 
     [WinFormsFact]
+    public void TreeViewNodeSorter_Set_SortedFalseIfNull()
+    {
+        using TreeView treeView = new()
+        {
+            TreeViewNodeSorter = StringComparer.CurrentCulture
+        };
+        Assert.True(treeView.Sorted);
+
+        treeView.TreeViewNodeSorter = null;
+        Assert.False(treeView.Sorted);
+    }
+
+    [WinFormsFact]
     public void AddExistingNodeAsChild_ThrowsArgumentException()
     {
-        using var treeView = new TreeView();
-        var node = new TreeNode();
+        using TreeView treeView = new();
+        TreeNode node = new();
         treeView.Nodes.Add(node);
 
         Assert.Throws<ArgumentException>(() => node.Nodes.Add(node));
@@ -4735,7 +4748,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_GetAutoSizeMode_Invoke_ReturnsExpected()
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         Assert.Equal(AutoSizeMode.GrowOnly, control.GetAutoSizeMode());
     }
 
@@ -4758,7 +4771,7 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_Empty_TestData))]
     public void TreeView_GetNodeAt_InvokePointEmpty_ReturnsNull(Point pt)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.Null(control.GetNodeAt(pt));
         Assert.True(control.IsHandleCreated);
 
@@ -4777,8 +4790,8 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_NotEmptyValid_TestData))]
     public void TreeView_GetNodeAt_InvokePointNotEmptyValid_Success(Point pt)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.Same(node1, control.GetNodeAt(pt));
         Assert.True(control.IsHandleCreated);
@@ -4803,8 +4816,8 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_NotEmptyInvalid_TestData))]
     public void TreeView_GetNodeAt_InvokePointNotEmptyInvalid_Success(Point pt)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.Null(control.GetNodeAt(pt));
         Assert.True(control.IsHandleCreated);
@@ -4818,7 +4831,7 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_Empty_TestData))]
     public void TreeView_GetNodeAt_InvokePointEmptyWithHandle_Success(Point pt)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -4845,8 +4858,8 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_NotEmptyValid_TestData))]
     public void TreeView_GetNodeAt_InvokePointNotEmptyValidWithHandle_Success(Point pt)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
@@ -4874,8 +4887,8 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_NotEmptyInvalid_TestData))]
     public void TreeView_GetNodeAt_InvokePointNotEmptyInvalidWithHandle_Success(Point pt)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
@@ -4903,7 +4916,7 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_Empty_TestData))]
     public void TreeView_GetNodeAt_InvokeIntIntEmpty_ReturnsNull(Point pt)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.Null(control.GetNodeAt(pt.X, pt.Y));
         Assert.True(control.IsHandleCreated);
 
@@ -4916,8 +4929,8 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_NotEmptyValid_TestData))]
     public void TreeView_GetNodeAt_InvokeIntIntNotEmptyValid_Success(Point pt)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.Same(node1, control.GetNodeAt(pt.X, pt.Y));
         Assert.True(control.IsHandleCreated);
@@ -4931,8 +4944,8 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_NotEmptyInvalid_TestData))]
     public void TreeView_GetNodeAt_InvokeIntIntNotEmptyInvalid_Success(Point pt)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.Null(control.GetNodeAt(pt.X, pt.Y));
         Assert.True(control.IsHandleCreated);
@@ -4946,7 +4959,7 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_Empty_TestData))]
     public void TreeView_GetNodeAt_InvokeIntIntEmptyWithHandle_Success(Point pt)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -4973,8 +4986,8 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_NotEmptyValid_TestData))]
     public void TreeView_GetNodeAt_InvokeIntIntNotEmptyValidWithHandle_Success(Point pt)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
@@ -5002,8 +5015,8 @@ public class TreeViewTests
     [MemberData(nameof(GetNodeAt_NotEmptyInvalid_TestData))]
     public void TreeView_GetNodeAt_InvokeIntIntNotEmptyInvalidWithHandle_Success(Point pt)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
@@ -5050,7 +5063,7 @@ public class TreeViewTests
     [InlineData((ControlStyles)(-1), false)]
     public void TreeView_GetStyle_Invoke_ReturnsExpected(ControlStyles flag, bool expected)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         Assert.Equal(expected, control.GetStyle(flag));
 
         // Call again to test caching.
@@ -5060,7 +5073,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_GetTopLevel_Invoke_ReturnsExpected()
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         Assert.False(control.GetTopLevel());
     }
 
@@ -5083,7 +5096,7 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_Empty_TestData))]
     public void TreeView_HitTest_InvokePointEmpty_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         TreeViewHitTestInfo result = control.HitTest(pt);
         Assert.Equal(expectedLocations, result.Location);
         Assert.Null(result.Node);
@@ -5105,8 +5118,8 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_NotEmptyValid_TestData))]
     public void TreeView_HitTest_InvokePointNotEmptyValid_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         TreeViewHitTestInfo result = control.HitTest(pt);
         Assert.Equal(expectedLocations, result.Location);
@@ -5135,8 +5148,8 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_NotEmptyInvalid_TestData))]
     public void TreeView_HitTest_InvokePointNotEmptyInvalid_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         TreeViewHitTestInfo result = control.HitTest(pt);
         Assert.Equal(expectedLocations, result.Location);
@@ -5154,7 +5167,7 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_Empty_TestData))]
     public void TreeView_HitTest_InvokePointEmptyWithHandle_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -5185,8 +5198,8 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_NotEmptyValid_TestData))]
     public void TreeView_HitTest_InvokePointNotEmptyValidWithHandle_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
@@ -5218,8 +5231,8 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_NotEmptyInvalid_TestData))]
     public void TreeView_HitTest_InvokePointNotEmptyInvalidWithHandle_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
@@ -5251,7 +5264,7 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_Empty_TestData))]
     public void TreeView_HitTest_InvokeIntIntEmpty_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         TreeViewHitTestInfo result = control.HitTest(pt.X, pt.Y);
         Assert.Equal(expectedLocations, result.Location);
         Assert.Null(result.Node);
@@ -5268,8 +5281,8 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_NotEmptyValid_TestData))]
     public void TreeView_HitTest_InvokeIntIntNotEmptyValid_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         TreeViewHitTestInfo result = control.HitTest(pt.X, pt.Y);
         Assert.Equal(expectedLocations, result.Location);
@@ -5287,8 +5300,8 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_NotEmptyInvalid_TestData))]
     public void TreeView_HitTest_InvokeIntIntNotEmptyInvalid_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         TreeViewHitTestInfo result = control.HitTest(pt.X, pt.Y);
         Assert.Equal(expectedLocations, result.Location);
@@ -5306,7 +5319,7 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_Empty_TestData))]
     public void TreeView_HitTest_InvokeIntIntEmptyWithHandle_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
+        using TreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -5337,8 +5350,8 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_NotEmptyValid_TestData))]
     public void TreeView_HitTest_InvokeIntIntNotEmptyValidWithHandle_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
@@ -5370,8 +5383,8 @@ public class TreeViewTests
     [MemberData(nameof(HitTest_NotEmptyInvalid_TestData))]
     public void TreeView_HitTest_InvokeIntIntNotEmptyInvalidWithHandle_Success(Point pt, TreeViewHitTestLocations expectedLocations)
     {
-        using var control = new TreeView();
-        var node1 = new TreeNode("Some Long Text");
+        using TreeView control = new();
+        TreeNode node1 = new("Some Long Text");
         control.Nodes.Add(node1);
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
@@ -5401,16 +5414,16 @@ public class TreeViewTests
 
     public static IEnumerable<object[]> TreeViewEventArgs_TestData()
     {
-        yield return new object[] { null };
         yield return new object[] { new TreeViewEventArgs(null) };
         yield return new object[] { new TreeViewEventArgs(new TreeNode()) };
+        yield return new object[] { new TreeViewEventArgs(new TreeNode(), TreeViewAction.ByMouse) };
     }
 
     [WinFormsTheory]
     [MemberData(nameof(TreeViewEventArgs_TestData))]
     public void TreeView_OnAfterCheck_Invoke_CallsAfterCheck(TreeViewEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         TreeViewEventHandler handler = (sender, e) =>
         {
@@ -5418,6 +5431,8 @@ public class TreeViewTests
             Assert.Same(eventArgs, e);
             callCount++;
         };
+
+        Assert.NotNull(control.AccessibilityObject);
 
         // Call with handler.
         control.AfterCheck += handler;
@@ -5434,7 +5449,7 @@ public class TreeViewTests
     [MemberData(nameof(TreeViewEventArgs_TestData))]
     public void TreeView_OnAfterCollapse_Invoke_CallsAfterCollapse(TreeViewEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         TreeViewEventHandler handler = (sender, e) =>
         {
@@ -5442,6 +5457,8 @@ public class TreeViewTests
             Assert.Same(eventArgs, e);
             callCount++;
         };
+
+        Assert.NotNull(control.AccessibilityObject);
 
         // Call with handler.
         control.AfterCollapse += handler;
@@ -5458,7 +5475,7 @@ public class TreeViewTests
     [MemberData(nameof(TreeViewEventArgs_TestData))]
     public void TreeView_OnAfterExpand_Invoke_CallsAfterExpand(TreeViewEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         TreeViewEventHandler handler = (sender, e) =>
         {
@@ -5466,6 +5483,8 @@ public class TreeViewTests
             Assert.Same(eventArgs, e);
             callCount++;
         };
+
+        Assert.NotNull(control.AccessibilityObject);
 
         // Call with handler.
         control.AfterExpand += handler;
@@ -5480,7 +5499,6 @@ public class TreeViewTests
 
     public static IEnumerable<object[]> NodeLabelEditEventArgs_TestData()
     {
-        yield return new object[] { null };
         yield return new object[] { new NodeLabelEditEventArgs(null) };
         yield return new object[] { new NodeLabelEditEventArgs(new TreeNode()) };
         yield return new object[] { new NodeLabelEditEventArgs(new TreeNode(), "label") };
@@ -5490,7 +5508,7 @@ public class TreeViewTests
     [MemberData(nameof(NodeLabelEditEventArgs_TestData))]
     public void TreeView_OnAfterLabelEdit_Invoke_CallsAfterLabelEdit(NodeLabelEditEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         NodeLabelEditEventHandler handler = (sender, e) =>
         {
@@ -5498,6 +5516,8 @@ public class TreeViewTests
             Assert.Same(eventArgs, e);
             callCount++;
         };
+
+        Assert.NotNull(control.AccessibilityObject);
 
         // Call with handler.
         control.AfterLabelEdit += handler;
@@ -5514,7 +5534,7 @@ public class TreeViewTests
     [MemberData(nameof(TreeViewEventArgs_TestData))]
     public void TreeView_OnAfterSelect_Invoke_CallsOnAfterSelect(TreeViewEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         TreeViewEventHandler handler = (sender, e) =>
         {
@@ -5522,6 +5542,8 @@ public class TreeViewTests
             Assert.Same(eventArgs, e);
             callCount++;
         };
+
+        Assert.NotNull(control.AccessibilityObject);
 
         // Call with handler.
         control.AfterSelect += handler;
@@ -5545,7 +5567,7 @@ public class TreeViewTests
     [MemberData(nameof(TreeViewCancelEventArgs_TestData))]
     public void TreeView_OnBeforeExpand_Invoke_CallsBeforeExpand(TreeViewCancelEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         TreeViewCancelEventHandler handler = (sender, e) =>
         {
@@ -5569,7 +5591,7 @@ public class TreeViewTests
     [MemberData(nameof(NodeLabelEditEventArgs_TestData))]
     public void TreeView_OnBeforeLabelEdit_Invoke_CallsBeforeLabelEdit(NodeLabelEditEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         NodeLabelEditEventHandler handler = (sender, e) =>
         {
@@ -5593,7 +5615,7 @@ public class TreeViewTests
     [MemberData(nameof(TreeViewCancelEventArgs_TestData))]
     public void TreeView_OnBeforeCollapse_Invoke_CallsBeforeCollapse(TreeViewCancelEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         TreeViewCancelEventHandler handler = (sender, e) =>
         {
@@ -5617,7 +5639,7 @@ public class TreeViewTests
     [MemberData(nameof(TreeViewCancelEventArgs_TestData))]
     public void TreeView_OnBeforeSelect_Invoke_CallsBeforeSelect(TreeViewCancelEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         TreeViewCancelEventHandler handler = (sender, e) =>
         {
@@ -5641,7 +5663,7 @@ public class TreeViewTests
     {
         yield return new object[] { null };
 
-        var image = new Bitmap(10, 10);
+        Bitmap image = new(10, 10);
         Graphics graphics = Graphics.FromImage(image);
         yield return new object[] { new DrawTreeNodeEventArgs(graphics, null, Rectangle.Empty, TreeNodeStates.Checked) };
 
@@ -5652,7 +5674,7 @@ public class TreeViewTests
     [MemberData(nameof(OnDrawNode_TestData))]
     public void TreeView_OnDrawNode_Invoke_CallsDrawNode(DrawTreeNodeEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         DrawTreeNodeEventHandler handler = (sender, e) =>
         {
@@ -5683,7 +5705,7 @@ public class TreeViewTests
     [MemberData(nameof(OnItemDrag_TestData))]
     public void TreeView_OnItemDrag_Invoke_CallsItemDrag(ItemDragEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         ItemDragEventHandler handler = (sender, e) =>
         {
@@ -5715,7 +5737,7 @@ public class TreeViewTests
     [MemberData(nameof(OnKeyDown_TestData))]
     public void TreeView_OnKeyDown_Invoke_CallsKeyDown(KeyEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         KeyEventHandler handler = (sender, e) =>
         {
@@ -5753,11 +5775,11 @@ public class TreeViewTests
     [MemberData(nameof(OnKeyDown_WithSelectedNode_TestData))]
     public void TreeView_OnKeyDown_InvokeWithSelectedNode_CallsKeyDown(bool handled, bool checkBoxes, bool cancel, KeyEventArgs eventArgs, int expectedBeforeCheckCallCount, int expectedAfterCheckCallCount, bool expectedHandled)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             CheckBoxes = checkBoxes
         };
-        var node = new TreeNode();
+        TreeNode node = new();
         control.Nodes.Add(node);
         control.SelectedNode = node;
 
@@ -5819,7 +5841,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_OnKeyDown_NullEventArgs_ThrowsNullReferenceException()
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         Assert.Throws<NullReferenceException>(() => control.OnKeyDown(null));
     }
 
@@ -5838,7 +5860,7 @@ public class TreeViewTests
     [MemberData(nameof(OnKeyPress_TestData))]
     public void TreeView_OnKeyPress_Invoke_CallsKeyPress(bool handled, KeyPressEventArgs eventArgs, bool expectedHandled)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         KeyPressEventHandler handler = (sender, e) =>
         {
@@ -5864,7 +5886,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_OnKeyPress_NullEventArgs_ThrowsNullReferenceException()
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         Assert.Throws<NullReferenceException>(() => control.OnKeyPress(null));
     }
 
@@ -5885,7 +5907,7 @@ public class TreeViewTests
     [MemberData(nameof(OnKeyUp_TestData))]
     public void TreeView_OnKeyUp_Invoke_CallsKeyUp(bool handled, KeyEventArgs eventArgs, bool expectedHandled)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         KeyEventHandler handler = (sender, e) =>
         {
@@ -5911,7 +5933,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_OnKeyUp_NullEventArgs_ThrowsNullReferenceException()
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         Assert.Throws<NullReferenceException>(() => control.OnKeyUp(null));
     }
 
@@ -5920,7 +5942,7 @@ public class TreeViewTests
     [NewAndDefaultData<EventArgs>]
     public void TreeView_OnHandleCreated_Invoke_CallsHandleCreated(EventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -5949,7 +5971,7 @@ public class TreeViewTests
     [NewAndDefaultData<EventArgs>]
     public void TreeView_OnHandleCreated_InvokeWithHandle_CallsHandleCreated(EventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         Assert.False(control.GetStyle(ControlStyles.UserPaint));
 
@@ -5988,10 +6010,10 @@ public class TreeViewTests
     [MemberData(nameof(OnHandleCreated_WithHandleWithProperties_TestData))]
     public void TreeView_OnHandleCreated_InvokeWithHandleWithProperties_CallsHandleCreated(Image[] images, EventArgs eventArgs, bool expectedStateImageListHandleCreated)
     {
-        using var imageList = new ImageList();
-        using var stateImageList = new ImageList();
+        using ImageList imageList = new();
+        using ImageList stateImageList = new();
         stateImageList.Images.AddRange(images);
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             CheckBoxes = true,
             ShowNodeToolTips = true,
@@ -6003,7 +6025,7 @@ public class TreeViewTests
             Indent = 10,
             ItemHeight = 11
         };
-        var node = new TreeNode();
+        TreeNode node = new();
         control.Nodes.Add(node);
         control.SelectedNode = node;
         Assert.NotEqual(IntPtr.Zero, control.Handle);
@@ -6058,10 +6080,10 @@ public class TreeViewTests
     [MemberData(nameof(OnHandleCreated_WithHandleWithProperties_TestData))]
     public void TreeView_OnHandleCreated_InvokeWithHandleWithPropertiesDesignMode_CallsHandleCreated(Image[] images, EventArgs eventArgs, bool expectedStateImageListHandleCreated)
     {
-        using var imageList = new ImageList();
-        using var stateImageList = new ImageList();
+        using ImageList imageList = new();
+        using ImageList stateImageList = new();
         stateImageList.Images.AddRange(images);
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
@@ -6071,7 +6093,7 @@ public class TreeViewTests
         mockSite
             .Setup(s => s.DesignMode)
             .Returns(true);
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             CheckBoxes = true,
             ShowNodeToolTips = true,
@@ -6084,7 +6106,7 @@ public class TreeViewTests
             ItemHeight = 11,
             Site = mockSite.Object
         };
-        var node = new TreeNode();
+        TreeNode node = new();
         control.Nodes.Add(node);
         control.SelectedNode = node;
         Assert.NotEqual(IntPtr.Zero, control.Handle);
@@ -6139,7 +6161,7 @@ public class TreeViewTests
     [NewAndDefaultData<EventArgs>]
     public void TreeView_OnHandleDestroyed_Invoke_CallsHandleDestroyed(EventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -6167,7 +6189,7 @@ public class TreeViewTests
     [NewAndDefaultData<EventArgs>]
     public void TreeView_OnHandleDestroyed_InvokeWithHandle_CallsHandleDestroyed(EventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
 
         int callCount = 0;
@@ -6197,8 +6219,8 @@ public class TreeViewTests
     [NewAndDefaultData<EventArgs>]
     public void TreeView_OnHandleDestroyed_InvokeWithHandleWithSelectedNode_CallsHandleDestroyed(EventArgs eventArgs)
     {
-        using var control = new SubTreeView();
-        var node = new TreeNode();
+        using SubTreeView control = new();
+        TreeNode node = new();
         control.Nodes.Add(node);
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         control.SelectedNode = node;
@@ -6232,10 +6254,10 @@ public class TreeViewTests
     [NewAndDefaultData<EventArgs>]
     public void TreeView_OnHandleDestroyed_InvokeWithHandleWithStateImageList_CallsHandleDestroyed(EventArgs eventArgs)
     {
-        using var imageList = new ImageList();
+        using ImageList imageList = new();
         Assert.NotEqual(IntPtr.Zero, imageList.Handle);
 
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             StateImageList = imageList
         };
@@ -6270,7 +6292,7 @@ public class TreeViewTests
     [NewAndDefaultData<EventArgs>]
     public void TreeView_OnMouseHover_Invoke_CallsMouseHover(EventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -6313,7 +6335,7 @@ public class TreeViewTests
     [NewAndDefaultData<EventArgs>]
     public void TreeView_OnMouseHover_InvokeWithHandle_CallsMouseHover(EventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -6369,7 +6391,7 @@ public class TreeViewTests
     [NewAndDefaultData<EventArgs>]
     public void TreeView_OnMouseLeave_Invoke_CallsMouseLeave(EventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -6400,7 +6422,7 @@ public class TreeViewTests
     [MemberData(nameof(TreeNodeMouseClickEventArgs_TestData))]
     public void TreeView_OnNodeMouseClick_Invoke_CallsNodeMouseClick(TreeNodeMouseClickEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         TreeNodeMouseClickEventHandler handler = (sender, e) =>
         {
@@ -6424,7 +6446,7 @@ public class TreeViewTests
     [MemberData(nameof(TreeNodeMouseClickEventArgs_TestData))]
     public void TreeView_OnNodeMouseDoubleClick_Invoke_CallsNodeMouseDoubleClick(TreeNodeMouseClickEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         TreeNodeMouseClickEventHandler handler = (sender, e) =>
         {
@@ -6455,7 +6477,7 @@ public class TreeViewTests
     [MemberData(nameof(OnNodeMouseHover_TestData))]
     public void TreeView_OnNodeMouseHover_Invoke_CallsNodeMouseHover(TreeNodeMouseHoverEventArgs eventArgs)
     {
-        using var control = new SubTreeView();
+        using SubTreeView control = new();
         int callCount = 0;
         TreeNodeMouseHoverEventHandler handler = (sender, e) =>
         {
@@ -6489,7 +6511,7 @@ public class TreeViewTests
     [MemberData(nameof(OnRightToLeftLayoutChanged_TestData))]
     public void TreeView_OnRightToLeftLayoutChanged_Invoke_CallsRightToLeftLayoutChanged(RightToLeft rightToLeft, EventArgs eventArgs)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             RightToLeft = rightToLeft
         };
@@ -6528,7 +6550,7 @@ public class TreeViewTests
     [MemberData(nameof(OnRightToLeftLayoutChanged_WithHandle_TestData))]
     public void TreeView_OnRightToLeftLayoutChanged_InvokeWithHandle_CallsRightToLeftLayoutChanged(RightToLeft rightToLeft, EventArgs eventArgs, int expectedCreatedCallCount)
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             RightToLeft = rightToLeft
         };
@@ -6569,7 +6591,7 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_OnRightToLeftLayoutChanged_InvokeInDisposing_DoesNotCallRightToLeftLayoutChanged()
     {
-        using var control = new SubTreeView
+        using SubTreeView control = new()
         {
             RightToLeft = RightToLeft.Yes
         };
@@ -6599,7 +6621,7 @@ public class TreeViewTests
     [InlineData(false, false)]
     public unsafe void TreeView_InvokeGetToolInfoWrapper_ReturnsExpected(bool showNodeToolTips, bool useKeyboardToolTip)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         treeView.ShowNodeToolTips = showNodeToolTips;
         ToolTip toolTip = useKeyboardToolTip ? treeView.KeyboardToolTip : new ToolTip();
         ToolInfoWrapper<Control> wrapper = treeView.GetToolInfoWrapper(TOOLTIP_FLAGS.TTF_ABSOLUTE, "Test caption", toolTip);
@@ -6612,9 +6634,9 @@ public class TreeViewTests
     [WinFormsFact]
     public unsafe void TreeView_ShowNodesEnabled_ExternalToolTip_InvokeGetToolInfoWrapper_ReturnsExpected()
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         treeView.ShowNodeToolTips = true;
-        ToolTip toolTip = new ToolTip();
+        ToolTip toolTip = new();
         ToolInfoWrapper<Control> wrapper = treeView.GetToolInfoWrapper(TOOLTIP_FLAGS.TTF_ABSOLUTE, "Test caption", toolTip);
         char* expected = (char*)(-1);
 
@@ -6628,9 +6650,9 @@ public class TreeViewTests
     [InlineData(false)]
     public void TreeView_InvokeAdd_AddNodeToTrackList(bool showNodeToolTips)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         treeView.ShowNodeToolTips = showNodeToolTips;
-        TreeNode treeNode = new TreeNode();
+        TreeNode treeNode = new();
         treeView.Nodes.Add(treeNode);
 
         Assert.True(KeyboardToolTipStateMachine.Instance.TestAccessor().IsToolTracked(treeNode));
@@ -6642,14 +6664,14 @@ public class TreeViewTests
     [InlineData(false)]
     public void TreeView_InvokeAddRange_AddNodesToTrackList(bool showNodeToolTips)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         treeView.ShowNodeToolTips = showNodeToolTips;
-        TreeNode treeNode1 = new TreeNode();
-        TreeNode treeNode2 = new TreeNode();
-        TreeNode treeNode3 = new TreeNode();
+        TreeNode treeNode1 = new();
+        TreeNode treeNode2 = new();
+        TreeNode treeNode3 = new();
         var accessor = KeyboardToolTipStateMachine.Instance.TestAccessor();
 
-        treeView.Nodes.AddRange(new TreeNode[] { treeNode1, treeNode2, treeNode3 });
+        treeView.Nodes.AddRange([treeNode1, treeNode2, treeNode3]);
 
         Assert.True(accessor.IsToolTracked(treeNode1));
         Assert.True(accessor.IsToolTracked(treeNode2));
@@ -6661,11 +6683,11 @@ public class TreeViewTests
     [InlineData(false)]
     public void TreeView_InvokeAdd_AddSubNodeToTrackList(bool showNodeToolTips)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         treeView.ShowNodeToolTips = showNodeToolTips;
-        TreeNode treeNode = new TreeNode();
-        TreeNode treeSubNodeLevel1 = new TreeNode();
-        TreeNode treeSubNodeLevel2 = new TreeNode();
+        TreeNode treeNode = new();
+        TreeNode treeSubNodeLevel1 = new();
+        TreeNode treeSubNodeLevel2 = new();
         var accessor = KeyboardToolTipStateMachine.Instance.TestAccessor();
         treeView.Nodes.Add(treeNode);
         treeNode.Nodes.Add(treeSubNodeLevel1);
@@ -6682,11 +6704,11 @@ public class TreeViewTests
     [InlineData(false)]
     public void TreeView_InvokeAdd_AddNodeAndSubNodeToTrackList(bool showNodeToolTips)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         treeView.ShowNodeToolTips = showNodeToolTips;
-        TreeNode treeNode = new TreeNode();
-        TreeNode treeSubNodeLevel1 = new TreeNode();
-        TreeNode treeSubNodeLevel2 = new TreeNode();
+        TreeNode treeNode = new();
+        TreeNode treeSubNodeLevel1 = new();
+        TreeNode treeSubNodeLevel2 = new();
         var accessor = KeyboardToolTipStateMachine.Instance.TestAccessor();
         treeNode.Nodes.Add(treeSubNodeLevel1);
         treeSubNodeLevel1.Nodes.Add(treeSubNodeLevel2);
@@ -6703,9 +6725,9 @@ public class TreeViewTests
     [InlineData(false)]
     public void TreeView_InvokeRemove_RemoveNodeFromTrackList(bool showNodeToolTips)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         treeView.ShowNodeToolTips = showNodeToolTips;
-        TreeNode treeNode = new TreeNode();
+        TreeNode treeNode = new();
         var accessor = KeyboardToolTipStateMachine.Instance.TestAccessor();
 
         treeView.Nodes.Add(treeNode);
@@ -6721,11 +6743,11 @@ public class TreeViewTests
     [InlineData(false)]
     public void TreeView_InvokeRemove_RemoveNodeAndSubNodesFromTrackList(bool showNodeToolTips)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         treeView.ShowNodeToolTips = showNodeToolTips;
-        TreeNode treeNode = new TreeNode();
-        TreeNode treeSubNodeLevel1 = new TreeNode();
-        TreeNode treeSubNodeLevel2 = new TreeNode();
+        TreeNode treeNode = new();
+        TreeNode treeSubNodeLevel1 = new();
+        TreeNode treeSubNodeLevel2 = new();
         var accessor = KeyboardToolTipStateMachine.Instance.TestAccessor();
         treeNode.Nodes.Add(treeSubNodeLevel1);
         treeSubNodeLevel1.Nodes.Add(treeSubNodeLevel2);
@@ -6747,9 +6769,9 @@ public class TreeViewTests
     [InlineData(false)]
     public void TreeView_InvokeInsert_AddNodeToTrackList(bool showNodeToolTips)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         treeView.ShowNodeToolTips = showNodeToolTips;
-        TreeNode treeNode = new TreeNode();
+        TreeNode treeNode = new();
 
         treeView.Nodes.Insert(0, treeNode);
 
@@ -6761,11 +6783,11 @@ public class TreeViewTests
     [InlineData(false)]
     public void TreeView_InvokeDispose_RemoveNodesFromTrackList(bool showNodeToolTips)
     {
-        using var treeView = new TreeView();
+        using TreeView treeView = new();
         treeView.ShowNodeToolTips = showNodeToolTips;
-        TreeNode treeNode = new TreeNode();
-        TreeNode treeSubNodeLevel1 = new TreeNode();
-        TreeNode treeSubNodeLevel2 = new TreeNode();
+        TreeNode treeNode = new();
+        TreeNode treeSubNodeLevel1 = new();
+        TreeNode treeSubNodeLevel2 = new();
         var accessor = KeyboardToolTipStateMachine.Instance.TestAccessor();
         treeNode.Nodes.Add(treeSubNodeLevel1);
         treeSubNodeLevel1.Nodes.Add(treeSubNodeLevel2);
@@ -6785,9 +6807,9 @@ public class TreeViewTests
     [WinFormsFact]
     public void TreeView_Invokes_SetToolTip_IfExternalToolTipIsSet()
     {
-        using TreeView treeView = new TreeView();
+        using TreeView treeView = new();
         treeView.ShowNodeToolTips = true;
-        using ToolTip toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         treeView.CreateControl();
 
         dynamic listViewDynamic = treeView.TestAccessor().Dynamic;
@@ -6808,7 +6830,7 @@ public class TreeViewTests
     {
         using TreeView treeView = new();
         treeView.CreateControl();
-        treeView.Nodes.AddRange(new TreeNode[] { new("Test 1"), new("Test 2"), new("Test 3") });
+        treeView.Nodes.AddRange([new("Test 1"), new("Test 2"), new("Test 3")]);
 
         treeView.SelectedNode = treeView.Nodes[0];
 
@@ -6825,7 +6847,7 @@ public class TreeViewTests
         treeView.Nodes.Remove(treeView.Nodes[1]);
 
         Assert.True(treeView.Nodes[0].IsSelected);
-        Assert.Equal(1, treeView.Nodes.Count);
+        Assert.Single(treeView.Nodes);
         Assert.Equal(treeView.Nodes[0], treeView.SelectedNode);
     }
 
@@ -6834,7 +6856,7 @@ public class TreeViewTests
     {
         using TreeView treeView = new();
         treeView.CreateControl();
-        treeView.Nodes.AddRange(new TreeNode[] { new("Test 1"), new("Test 2"), new("Test 3") });
+        treeView.Nodes.AddRange([new("Test 1"), new("Test 2"), new("Test 3")]);
 
         treeView.SelectedNode = treeView.Nodes[0];
 
@@ -6871,7 +6893,7 @@ public class TreeViewTests
 
         treeView.Nodes.Add("Test");
         TreeNode treeNode = treeView.Nodes[0];
-        treeNode.Nodes.AddRange(new TreeNode[] { new("Test 1"), new("Test 2"), new("Test 3") });
+        treeNode.Nodes.AddRange([new("Test 1"), new("Test 2"), new("Test 3")]);
 
         treeView.SelectedNode = treeNode.Nodes[0];
 
@@ -6888,7 +6910,7 @@ public class TreeViewTests
         treeNode.Nodes.Remove(treeNode.Nodes[1]);
 
         Assert.True(treeNode.Nodes[0].IsSelected);
-        Assert.Equal(1, treeNode.Nodes.Count);
+        Assert.Single(treeNode.Nodes);
         Assert.Equal(treeNode.Nodes[0], treeView.SelectedNode);
     }
 
@@ -6900,7 +6922,7 @@ public class TreeViewTests
 
         treeView.Nodes.Add("Test");
         TreeNode treeNode = treeView.Nodes[0];
-        treeNode.Nodes.AddRange(new TreeNode[] { new("Test 1"), new("Test 2"), new("Test 3") });
+        treeNode.Nodes.AddRange([new("Test 1"), new("Test 2"), new("Test 3")]);
 
         treeView.SelectedNode = treeNode.Nodes[0];
 
@@ -6943,14 +6965,14 @@ public class TreeViewTests
 
         Assert.True(treeNode.Nodes[0].IsSelected);
         Assert.Equal(treeNode.Nodes[0], treeView.SelectedNode);
-        Assert.Equal(1, treeNode.Nodes.Count);
-        Assert.Equal(1, treeView.Nodes.Count);
+        Assert.Single(treeNode.Nodes);
+        Assert.Single(treeView.Nodes);
 
         treeView.Nodes.Remove(treeNode);
 
         Assert.False(treeNode.Nodes[0].IsSelected);
         Assert.Null(treeView.SelectedNode);
-        Assert.Equal(0, treeView.Nodes.Count);
+        Assert.Empty(treeView.Nodes);
     }
 
     [WinFormsTheory]
@@ -6960,7 +6982,7 @@ public class TreeViewTests
     {
         using TreeView treeView = new() { CheckBoxes = checkBoxes };
         treeView.CreateControl();
-        treeView.Nodes.AddRange(new TreeNode[] { new("Test 1"), new("Test 2"), new("Test 3") });
+        treeView.Nodes.AddRange([new("Test 1"), new("Test 2"), new("Test 3")]);
 
         treeView.Nodes[0].Checked = true;
 
@@ -6975,7 +6997,7 @@ public class TreeViewTests
         treeView.Nodes.Remove(treeView.Nodes[1]);
 
         Assert.True(treeView.Nodes[0].Checked);
-        Assert.Equal(1, treeView.Nodes.Count);
+        Assert.Single(treeView.Nodes);
     }
 
     [WinFormsTheory]
@@ -6985,7 +7007,7 @@ public class TreeViewTests
     {
         using TreeView treeView = new() { CheckBoxes = checkBoxes };
         treeView.CreateControl();
-        treeView.Nodes.AddRange(new TreeNode[] { new("Test 1"), new("Test 2"), new("Test 3") });
+        treeView.Nodes.AddRange([new("Test 1"), new("Test 2"), new("Test 3")]);
 
         for (int count = treeView.Nodes.Count; count > 1; count -= 1)
         {
@@ -7013,7 +7035,7 @@ public class TreeViewTests
 
         treeView.Nodes.Add("Test");
         TreeNode treeNode = treeView.Nodes[0];
-        treeNode.Nodes.AddRange(new TreeNode[] { new("Test 1"), new("Test 2"), new("Test 3") });
+        treeNode.Nodes.AddRange([new("Test 1"), new("Test 2"), new("Test 3")]);
 
         treeNode.Nodes[0].Checked = true;
 
@@ -7028,7 +7050,7 @@ public class TreeViewTests
         treeNode.Nodes.Remove(treeNode.Nodes[1]);
 
         Assert.True(treeNode.Nodes[0].Checked);
-        Assert.Equal(1, treeNode.Nodes.Count);
+        Assert.Single(treeNode.Nodes);
     }
 
     [WinFormsTheory]
@@ -7041,7 +7063,7 @@ public class TreeViewTests
 
         treeView.Nodes.Add("Test");
         TreeNode treeNode = treeView.Nodes[0];
-        treeNode.Nodes.AddRange(new TreeNode[] { new("Test 1"), new("Test 2"), new("Test 3") });
+        treeNode.Nodes.AddRange([new("Test 1"), new("Test 2"), new("Test 3")]);
 
         for (int count = treeNode.Nodes.Count; count > 1; count -= 1)
         {
@@ -7076,15 +7098,15 @@ public class TreeViewTests
 
         Assert.True(treeNode.Checked);
         Assert.True(treeNode.Nodes[0].Checked);
-        Assert.Equal(1, treeNode.Nodes.Count);
-        Assert.Equal(1, treeView.Nodes.Count);
+        Assert.Single(treeNode.Nodes);
+        Assert.Single(treeView.Nodes);
 
         treeView.Nodes.Remove(treeNode);
 
         Assert.True(treeNode.Checked);
         Assert.True(treeNode.Nodes[0].Checked);
-        Assert.Equal(1, treeNode.Nodes.Count);
-        Assert.Equal(0, treeView.Nodes.Count);
+        Assert.Single(treeNode.Nodes);
+        Assert.Empty(treeView.Nodes);
     }
 
     [WinFormsFact]
@@ -7130,7 +7152,7 @@ public class TreeViewTests
 
         treeView.Sort();
 
-        Action action = () => parent.Nodes.Clear();
+        Action action = parent.Nodes.Clear;
 
         action.ExecutionTime().Should().BeLessThanOrEqualTo(TimeSpan.FromMilliseconds(500));
         action.Should().NotThrow();
@@ -7158,6 +7180,391 @@ public class TreeViewTests
         Action action = () => parent.Nodes.Remove(secondNode);
 
         action.Should().NotThrow();
+    }
+
+    [WinFormsFact]
+    public void Remove_MultipleLevelsNodes_AfterSort()
+    {
+        using TreeView treeView = new();
+        TreeNode parent = new("Parent");
+        treeView.Nodes.Add(parent);
+
+        TreeNode treeNode1 = new("Node1");
+        TreeNode treeNode2 = new("Node0");
+        TreeNode treeNode3 = new("Node2");
+        TreeNode treeNode4 = new("SubNode1-1-1-1", [treeNode1, treeNode2, treeNode3]);
+        TreeNode treeNode5 = new("SubNode1-1-1", [treeNode4]);
+        TreeNode treeNode6 = new("SubNode1-1", [treeNode5]);
+        TreeNode treeNode7 = new("SubNode1", [treeNode6]);
+        TreeNode treeNode8 = new("Parent", [treeNode7]);
+        parent.Nodes.AddRange([treeNode8]);
+
+        treeView.Sort();
+
+        Assert.Single(treeNode5.Nodes);
+
+        parent.Nodes.Remove(treeNode4);
+        Assert.Empty(treeNode5.Nodes);
+
+        Action action = () =>
+        {
+            parent.Nodes.Remove(treeNode5);
+            parent.Nodes.Remove(treeNode6);
+            parent.Nodes.Remove(treeNode7);
+            parent.Nodes.Remove(treeNode8);
+        };
+
+        action.Should().NotThrow();
+    }
+
+    [WinFormsFact]
+    public void Clear_MultipleLevelsNodes_AfterSort()
+    {
+        using TreeView treeView = new();
+        TreeNode parent = new("Parent");
+        treeView.Nodes.Add(parent);
+
+        TreeNode lastSubNode1 = new("Node1");
+        TreeNode lastSubNode2 = new("Node2");
+        TreeNode lastSubNode3 = new("Node3");
+        TreeNode fifthSubNode1 = new("SubNode1-1-1-1", [lastSubNode2, lastSubNode3, lastSubNode1]);
+        TreeNode fifthSubNode2 = new("SubNode1-1-1-2");
+        TreeNode fourthSubNode1 = new("SubNode1-1-1", [fifthSubNode1, fifthSubNode2]);
+        TreeNode fourthSubNode2 = new("SubNode1-1-2");
+        TreeNode thirdSubNode1 = new("SubNode1-1", [fourthSubNode2, fourthSubNode1]);
+        TreeNode thirdSubNode2 = new("SubNode1-2");
+        TreeNode secondSubNode1 = new("SubNode1", [thirdSubNode2, thirdSubNode1]);
+        TreeNode secondSubNode2 = new("SubNode2");
+        TreeNode firstSubNode = new("Parent", [secondSubNode1, secondSubNode2]);
+        parent.Nodes.AddRange([firstSubNode]);
+
+        // Make sure all nodes have been added as expected.
+        Assert.Equal(3, fifthSubNode1.Nodes.Count);
+        Assert.Equal(2, parent.Nodes[0].Nodes.Count);
+        Assert.Single(parent.Nodes);
+        Assert.Equal(fourthSubNode2, thirdSubNode1.Nodes[0]);
+        Assert.Equal(lastSubNode3, fifthSubNode1.Nodes[1]);
+
+        treeView.Sort();
+
+        // Verify that the sort is successful.
+        Assert.Equal(fourthSubNode2, thirdSubNode1.Nodes[1]);
+        Assert.Equal(lastSubNode3, fifthSubNode1.Nodes[2]);
+
+        // Clear the last non-leaf nodes.
+        fifthSubNode1.Nodes.Clear();
+        Assert.Empty(fifthSubNode1.Nodes);
+
+        // Clear the first-level child nodes.
+        firstSubNode.Nodes.Clear();
+        Assert.Empty(firstSubNode.Nodes);
+
+        // Clear top-level nodes.
+        Action action = parent.Nodes.Clear;
+        action.Should().NotThrow();
+        Assert.Empty(parent.Nodes);
+    }
+
+    [WinFormsFact]
+    public void Verify_NodeValue_AfterSortAndRemove()
+    {
+        using TreeView treeView = new();
+
+        TreeNode treeNode1 = new("Node1");
+        TreeNode treeNode2 = new("Node2");
+        TreeNode treeNode3 = new("Node3");
+        TreeNode treeNode4 = new("Node3");
+        TreeNode parent = new("Parent", [treeNode2, treeNode3, treeNode1, treeNode4]);
+        parent.Nodes.Add("Node1", "Node1");
+        treeView.Nodes.AddRange(parent);
+
+        treeView.Sort();
+
+        // Remove treeNode3, which has the same text as treeNode4.
+        Assert.Equal(treeNode3, parent.Nodes[3]);
+
+        parent.Nodes.Remove(treeNode3);
+        Assert.Equal(4, parent.Nodes.Count);
+        Assert.Equal(treeNode4, parent.Nodes[3]);
+
+        // Remove node "Node1" by key, which has the same text as treeNode1.
+        Assert.True(parent.Nodes.ContainsKey("Node1"));
+
+        parent.Nodes.RemoveByKey("Node1");
+        Assert.False(parent.Nodes.ContainsKey("Node1"));
+        Assert.Equal(treeNode1, parent.Nodes[0]);
+
+        // Remove the first child node.
+        parent.Nodes.Remove(parent.Nodes[0]);
+        Assert.Equal(2, parent.Nodes.Count);
+        Assert.Equal(treeNode2, parent.Nodes[0]);
+
+        // Remove the last child node.
+        parent.Nodes.Remove(parent.Nodes[1]);
+        Assert.Single(parent.Nodes);
+        Assert.Equal(treeNode2, parent.Nodes[0]);
+    }
+
+    // Regression test for https://github.com/dotnet/winforms/issues/11243
+    [WinFormsFact]
+    public void TreeView_TreeNodeAddRangeSequence()
+    {
+        using TreeView treeView = new();
+
+        TreeNode treeNode1 = new("a0");
+        TreeNode treeNode2 = new("b0");
+        TreeNode treeNode3 = new("c0");
+        TreeNode treeNode4 = new("a1");
+        TreeNode treeNode5 = new("b1");
+        TreeNode treeNode6 = new("c1");
+        TreeNode treeNode7 = new("a2");
+        TreeNode rootNode = new("Root", [new TreeNode("child")]);
+
+        treeView.Nodes.Add(rootNode);
+        treeView.CreateControl();
+
+        rootNode.Nodes.AddRange(treeNode1, treeNode2, treeNode3, treeNode4, treeNode5, treeNode6, treeNode7);
+        rootNode.ExpandAll();
+
+        rootNode.Should().Be(treeView.Nodes[0]);
+
+        TreeNode childNode1 = rootNode.Nodes[0];
+        TreeNode childNode2 = rootNode.Nodes[1];
+        TreeNode childNode3 = rootNode.Nodes[2];
+        TreeNode childNode4 = rootNode.Nodes[3];
+        TreeNode childNode5 = rootNode.Nodes[4];
+        TreeNode childNode6 = rootNode.Nodes[5];
+        TreeNode childNode7 = rootNode.Nodes[6];
+        TreeNode childNode8 = rootNode.Nodes[7];
+
+        childNode1.Text.Should().Be("child");
+
+        childNode1.NextVisibleNode.Should().NotBeNull();
+        childNode1.NextVisibleNode.Text.Should().Be("a0");
+
+        childNode2.NextVisibleNode.Should().NotBeNull();
+        childNode2.NextVisibleNode.Text.Should().Be("b0");
+
+        childNode3.NextVisibleNode.Should().NotBeNull();
+        childNode3.NextVisibleNode.Text.Should().Be("c0");
+
+        childNode4.NextVisibleNode.Should().NotBeNull();
+        childNode4.NextVisibleNode.Text.Should().Be("a1");
+
+        childNode5.NextVisibleNode.Should().NotBeNull();
+        childNode5.NextVisibleNode.Text.Should().Be("b1");
+
+        childNode6.NextVisibleNode.Should().NotBeNull();
+        childNode6.NextVisibleNode.Text.Should().Be("c1");
+
+        childNode7.NextVisibleNode.Should().NotBeNull();
+        childNode7.NextVisibleNode.Text.Should().Be("a2");
+
+        childNode8.NextVisibleNode.Should().BeNull();
+    }
+
+    [WinFormsTheory]
+    [InlineData(false, null)]
+    [InlineData(true, null)]
+    [InlineData(false, "node")]
+    [InlineData(true, "node")]
+    public void TreeView_TopNode_Test(bool createHandle, string nodeName)
+    {
+        using TreeView treeView = new();
+        TreeNode node = nodeName is null ? null : new TreeNode(nodeName);
+
+        if (node is not null)
+        {
+            treeView.Nodes.Add(node);
+        }
+
+        if (createHandle)
+        {
+            _ = treeView.Handle;
+        }
+
+        treeView.TopNode = node;
+
+        treeView.TopNode.Should().Be(node);
+        treeView.IsHandleCreated.Should().Be(createHandle);
+    }
+
+    [WinFormsFact]
+    public void TreeViewLabelEditNativeWindow_AccessibilityObject_ReturnsExpected()
+    {
+        using TreeView treeView = new();
+
+        TreeViewLabelEditNativeWindow nativeWindow = new(treeView);
+        var accessibilityObject = nativeWindow.AccessibilityObject;
+
+        accessibilityObject.Should().NotBeNull();
+        accessibilityObject.Should().BeOfType<TreeViewLabelEditAccessibleObject>();
+    }
+
+    private TreeView InitializeTreeViewWithNodes()
+    {
+        TreeView treeView = new();
+        AddNodes(treeView, "Root1", "Child1", "GrandChild1");
+        AddNodes(treeView, "Root2");
+
+        return treeView;
+    }
+
+    private void AddNodes(TreeView treeView, string root, string child = null, string grandChild = null)
+    {
+        TreeNode rootNode = new(root);
+        treeView.Nodes.Add(rootNode);
+
+        if (child is not null)
+        {
+            TreeNode childNode = new(child);
+            rootNode.Nodes.Add(childNode);
+
+            if (grandChild is not null)
+            {
+                TreeNode grandChildNode = new(grandChild);
+                childNode.Nodes.Add(grandChildNode);
+            }
+        }
+    }
+
+    [WinFormsFact]
+    public void TreeView_CollapseAll_Invoke_CollapsesAllNodes()
+    {
+        using TreeView treeView = InitializeTreeViewWithNodes();
+
+        treeView.CollapseAll();
+
+        treeView.Nodes[0].IsExpanded.Should().BeFalse();
+        treeView.Nodes[1].IsExpanded.Should().BeFalse();
+    }
+
+    [WinFormsFact]
+    public void TreeView_ExpandAll_Invoke_UpdatesAllNodes()
+    {
+        using TreeView treeView = InitializeTreeViewWithNodes();
+
+        treeView.ExpandAll();
+
+        treeView.Nodes[0].IsExpanded.Should().BeTrue();
+        treeView.Nodes[1].IsExpanded.Should().BeTrue();
+    }
+
+    [WinFormsFact]
+    public void TreeView_GetNodeCount_Invoke_ReturnsExpected()
+    {
+        using TreeView treeView = InitializeTreeViewWithNodes();
+
+        int countWithoutSubTrees = treeView.GetNodeCount(false);
+        countWithoutSubTrees.Should().Be(2);
+
+        int countWithSubTrees = treeView.GetNodeCount(true);
+        countWithSubTrees.Should().Be(4);
+    }
+
+    [WinFormsFact]
+    public void TreeView_ResetIndent_Invoke_Success()
+    {
+        using TreeView treeView = new();
+
+        treeView.Indent = 10;
+        var accessor = treeView.TestAccessor();
+        accessor.Dynamic.ResetIndent();
+
+        treeView.Indent.Should().Be(19);
+    }
+
+    [WinFormsFact]
+    public void TreeView_ResetItemHeight_Invoke_Success()
+    {
+        using TreeView treeView = new();
+
+        treeView.ItemHeight = 10;
+        var accessor = treeView.TestAccessor();
+        accessor.Dynamic.ResetItemHeight();
+
+        treeView.ItemHeight.Should().Be(19);
+    }
+
+    [WinFormsFact]
+    public void TreeView_ShouldSerializeIndent_Invoke_ReturnsExpected()
+    {
+        using TreeView treeView = new();
+
+        var accessor = treeView.TestAccessor();
+        bool result = accessor.Dynamic.ShouldSerializeIndent();
+
+        result.Should().BeFalse();
+
+        treeView.Indent = 10;
+        result = accessor.Dynamic.ShouldSerializeIndent();
+
+        result.Should().BeTrue();
+    }
+
+    [WinFormsFact]
+    public void TreeView_ShouldSerializeItemHeight_Invoke_ReturnsExpected()
+    {
+        using TreeView treeView = new();
+
+        var accessor = treeView.TestAccessor();
+        bool result = accessor.Dynamic.ShouldSerializeItemHeight();
+
+        result.Should().BeFalse();
+
+        treeView.ItemHeight = 10;
+        result = accessor.Dynamic.ShouldSerializeItemHeight();
+
+        result.Should().BeTrue();
+    }
+
+    [WinFormsFact]
+    public void TreeView_ToString_Invoke_ReturnsExpected()
+    {
+        using TreeView treeView = new();
+
+        treeView.ToString().Should().Be("System.Windows.Forms.TreeView, Nodes.Count: 0");
+
+        treeView.Nodes.Add(new TreeNode("Node1"));
+        treeView.Nodes.Add(new TreeNode("Node2"));
+
+        treeView.ToString().Should().Be($"System.Windows.Forms.TreeView, Nodes.Count: 2, Nodes[0]: {treeView.Nodes[0]}");
+    }
+
+    [WinFormsFact]
+    public void ArraySubsetEnumerator_Behavior_AfterMoveNextAndReset()
+    {
+        object[] array = ["a", "b", "c"];
+        ArraySubsetEnumerator enumerator = new(array, 2);
+
+        enumerator.MoveNext().Should().BeTrue();
+        enumerator.Current.Should().Be("a");
+
+        enumerator.MoveNext().Should().BeTrue();
+        enumerator.Current.Should().Be("b");
+
+        enumerator.Reset();
+        enumerator.Current.Should().BeNull();
+
+        enumerator.MoveNext().Should().BeTrue();
+        enumerator.Current.Should().Be("a");
+    }
+
+    [WinFormsTheory]
+    [InlineData(5)]
+    [InlineData(10)]
+    public void TreeView_VisibleCount_MultipleNodes_ReturnsExpected(int nodeCount)
+    {
+        using TreeView treeView = new();
+
+        for (int i = 0; i < nodeCount; i++)
+        {
+            treeView.Nodes.Add($"Node{i}");
+        }
+
+        treeView.CreateControl();
+        treeView.Height = 100;
+        treeView.VisibleCount.Should().Be(5);
     }
 
     private class SubTreeView : TreeView

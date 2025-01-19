@@ -41,18 +41,12 @@ public partial class MonthCalendar
             _calendarIndex = calendarIndex;
             _rowIndex = rowIndex;
             _columnIndex = columnIndex;
+
             // RuntimeId don't change if the calendar date range is not changed,
             // otherwise the calendar accessibility tree will be rebuilt.
             // So save this value one time to avoid recreating new structures and making extra calculations.
-            _initRuntimeId = new int[]
-            {
-                _calendarRowAccessibleObject.RuntimeId[0],
-                _calendarRowAccessibleObject.RuntimeId[1],
-                _calendarRowAccessibleObject.RuntimeId[2],
-                _calendarRowAccessibleObject.RuntimeId[3],
-                _calendarRowAccessibleObject.RuntimeId[4],
-                GetChildId()
-            };
+            int[] id = _calendarRowAccessibleObject.RuntimeId;
+            _initRuntimeId = [id[0], id[1], id[2], id[3], id[4], GetChildId()];
         }
 
         public override Rectangle Bounds
@@ -92,6 +86,8 @@ public partial class MonthCalendar
                     + $", {cellDate:dddd}";
             }
         }
+
+        internal override bool CanGetDescriptionInternal => false;
 
         internal override IRawElementProviderFragment.Interface? FragmentNavigate(NavigateDirection direction)
             => direction switch
@@ -178,6 +174,8 @@ public partial class MonthCalendar
                 };
             }
         }
+
+        internal override bool CanGetNameInternal => false;
 
         public override AccessibleObject Parent => _calendarRowAccessibleObject;
 

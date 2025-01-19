@@ -21,7 +21,7 @@ public class GridItemCollectionTests
     public void GridItemCollection_ICollection_GetProperties_ReturnsExpected()
     {
         ICollection collection = GridItemCollection.Empty;
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.False(collection.IsSynchronized);
         Assert.Same(collection, collection.SyncRoot);
     }
@@ -33,9 +33,9 @@ public class GridItemCollectionTests
     public void GridItemCollection_CopyTo_Empty_Nop(int index)
     {
         ICollection collection = GridItemCollection.Empty;
-        var array = new object[] { 1, 2, 3 };
+        object[] array = [1, 2, 3];
         collection.CopyTo(array, index);
-        Assert.Equal(new object[] { 1, 2, 3 }, array);
+        Assert.Equal([1, 2, 3], array);
     }
 
     [Fact]

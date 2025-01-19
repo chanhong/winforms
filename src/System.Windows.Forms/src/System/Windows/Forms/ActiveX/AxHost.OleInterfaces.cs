@@ -3,7 +3,6 @@
 
 using System.ComponentModel;
 using System.ComponentModel.Design;
-using System.Drawing;
 using System.Runtime.InteropServices;
 using Windows.Win32.System.Com;
 using Windows.Win32.System.Ole;
@@ -56,7 +55,7 @@ public abstract partial class AxHost
             }
 
             object? nativeObject = _host.GetOcx();
-            _connectionPoint = new ConnectionPointCookie(nativeObject, this, typeof(IPropertyNotifySink), throwException: false);
+            _connectionPoint = new ConnectionPointCookie(nativeObject, this, typeof(IPropertyNotifySink.Interface), throwException: false);
         }
 
         internal void StopEvents()
@@ -480,7 +479,7 @@ public abstract partial class AxHost
             {
                 AxPropertyDescriptor? prop = null;
 
-                if (dispid != PInvoke.DISPID_UNKNOWN)
+                if (dispid != PInvokeCore.DISPID_UNKNOWN)
                 {
                     prop = _host.GetPropertyDescriptorFromDispid(dispid);
                     if (prop is not null)

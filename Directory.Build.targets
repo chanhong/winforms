@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project>
-  <Import Project="$(RepositoryEngineeringDir)CodeStyle.targets" />
+
+  <Import Project="$(RepositoryEngineeringDir)Analyzer.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="$(RepositoryEngineeringDir)packageContent.targets" />
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
-  <Import Project="$(RepositoryEngineeringDir)ApiCompatibility\PublicApiAnalyzer.targets" />
+  <Import Project="$(RepositoryEngineeringDir)Test.targets" Condition="'$(IsTestProject)' == 'true' "/>
 
   <!-- CA1416 Validate platform compatibility. Do not apply to netstandard as it does not have the attribute. -->
   <ItemGroup>
@@ -16,7 +16,7 @@
   
   <!-- to prevent using MS.NC.Platforms from SDK, which is lagging behind the version that WinForms gets from the CoreFx packages -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsPackageVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NETCore.Platforms" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Set code coverage properties that reference properties not available in Directory.Build.props -->
@@ -43,13 +43,7 @@
 	<RedistTargetFrameworkName>$(NetCurrent)</RedistTargetFrameworkName>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(IsTestProject)' == 'true' ">
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
-    <Platform Condition="'$(Platform)' == 'AnyCPU' or '$(Platform)' == 'Any CPU'">$(TargetArchitecture)</Platform>
-    <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
-  </PropertyGroup>
-
-  <Target Name="InstrumentModulesNoBuild" BeforeTargets="RunTests" Condition="'$(IsUnitTestProject)' == 'true'">
+  <Target Name="InstrumentModulesNoBuild" BeforeTargets="RunTests" Condition="'$(IsTestProject)' == 'true'">
     <Coverlet.MSbuild.Tasks.InstrumentationTask
       Condition="'$(CollectCoverage)' == 'true'"
       Path="$(TargetPath)"
@@ -66,7 +60,7 @@
     </Coverlet.MSbuild.Tasks.InstrumentationTask>
   </Target>
 
-  <Target Name="GenerateCoverageResult" AfterTargets="RunTests" Condition="'$(IsUnitTestProject)' == 'true'">
+  <Target Name="GenerateCoverageResult" AfterTargets="RunTests" Condition="'$(IsTestProject)' == 'true'">
     <Coverlet.MSbuild.Tasks.CoverageResultTask
       Condition="'$(CollectCoverage)' == 'true'"
       Output="$(CoverletOutput)"
@@ -92,18 +86,6 @@
     <!-- If TargetFramework is not net8.x, then reset RuntimeFrameworkVersion -->
     <RuntimeFrameworkVersion Condition="!$(TargetFramework.StartsWith('$(RedistTargetFrameworkName)'))" />
   </PropertyGroup>
-
-  <Choose>
-    <When Condition="'$(IncludeInternalObsoleteAttribute)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-      <ItemGroup>
-        <Compile Include="$(RepoRoot)src\Common\src\ObsoleteAttribute.cs" />
-      </ItemGroup>
-      <PropertyGroup>
-        <!-- Suppress CS0436 to allow ObsoleteAttribute to be internally defined and used in .NET Standard. -->
-        <NoWarn>$(NoWarn);CS0436</NoWarn>
-      </PropertyGroup>
-    </When>
-  </Choose>
 
   <!-- If a tfm doesn't target .NETCoreApp but uses the platform support attributes, then we include the
        System.Runtime.Versioning*Platform* annotation attribute classes in the project as internal.

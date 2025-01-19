@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Formats.Nrbf;
+using System.Private.Windows.Core.BinaryFormat;
+using System.Windows.Forms.Nrbf;
 using Windows.Win32.System.Com;
 using Windows.Win32.System.Com.StructuredStorage;
 using Windows.Win32.System.Variant;
-using System.Windows.Forms.BinaryFormat;
 
 namespace System.Windows.Forms;
 
@@ -18,17 +20,17 @@ public partial class Control
         /// </summary>
         private class PropertyBagStream : IPropertyBag.Interface, IManagedWrapper<IPropertyBag>
         {
-            private Hashtable _bag = new();
+            private Hashtable _bag = [];
 
             internal void Read(IStream* istream)
             {
-                Stream stream = new DataStreamFromComStream(istream);
+                using DataStreamFromComStream stream = new(istream);
                 bool success = false;
 
                 try
                 {
-                    BinaryFormattedObject format = new(stream);
-                    success = format.TryGetPrimitiveHashtable(out _bag!);
+                    SerializationRecord rootRecord = stream.Decode();
+                    success = rootRecord.TryGetPrimitiveHashtable(out _bag!);
                 }
                 catch (Exception e) when (!e.IsCriticalException())
                 {
@@ -40,7 +42,7 @@ public partial class Control
                 if (!success)
                 {
                     // Error reading. Just init an empty hashtable.
-                    _bag = new();
+                    _bag = [];
                 }
             }
 

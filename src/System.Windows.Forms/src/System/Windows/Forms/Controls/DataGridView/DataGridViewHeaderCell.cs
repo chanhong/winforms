@@ -28,28 +28,8 @@ public partial class DataGridViewHeaderCell : DataGridViewCell
 
     protected ButtonState ButtonState
     {
-        get
-        {
-            int buttonState = Properties.GetInteger(s_propButtonState, out bool found);
-            if (found)
-            {
-                return (ButtonState)buttonState;
-            }
-
-            return ButtonState.Normal;
-        }
-    }
-
-    private ButtonState ButtonStatePrivate
-    {
-        set
-        {
-            Debug.Assert(Enum.IsDefined(value));
-            if (ButtonState != value)
-            {
-                Properties.SetInteger(s_propButtonState, (int)value);
-            }
-        }
+        get => Properties.GetValueOrDefault(s_propButtonState, ButtonState.Normal);
+        private set => Properties.AddOrRemoveValue(s_propButtonState, value, defaultValue: ButtonState.Normal);
     }
 
     protected override void Dispose(bool disposing)
@@ -59,8 +39,9 @@ public partial class DataGridViewHeaderCell : DataGridViewCell
             FlipXPThemesBitmap.Dispose();
         }
 
-        // If you are adding releasing unmanaged resources code here (disposing == false), you need to remove this class type
-        // (and all of its subclasses) from check in DataGridViewElement() constructor and DataGridViewElement_Subclasses_SuppressFinalizeCall test!
+        // If you are adding releasing unmanaged resources code here (disposing == false), you need to remove this
+        // class type(and all of its subclasses) from check in DataGridViewElement() constructor and
+        // DataGridViewElement_Subclasses_SuppressFinalizeCall test!
         // Also consider to modify ~DataGridViewCell() description.
 
         base.Dispose(disposing);
@@ -96,17 +77,8 @@ public partial class DataGridViewHeaderCell : DataGridViewCell
 
     internal Bitmap? FlipXPThemesBitmap
     {
-        get
-        {
-            return (Bitmap?)Properties.GetObject(s_propFlipXPThemesBitmap);
-        }
-        set
-        {
-            if (value is not null || Properties.ContainsObject(s_propFlipXPThemesBitmap))
-            {
-                Properties.SetObject(s_propFlipXPThemesBitmap, value);
-            }
-        }
+        get => Properties.GetValueOrDefault<Bitmap?>(s_propFlipXPThemesBitmap);
+        set => Properties.AddOrRemoveValue(s_propFlipXPThemesBitmap, value);
     }
 
     public override Type FormattedValueType => s_defaultFormattedValueType;
@@ -139,10 +111,7 @@ public partial class DataGridViewHeaderCell : DataGridViewCell
         }
     }
 
-    private protected override bool HasValueType
-    {
-        get => Properties.ContainsObjectThatIsNotNull(s_propValueType);
-    }
+    private protected override bool HasValueType => Properties.ContainsKey(s_propValueType);
 
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -185,23 +154,8 @@ public partial class DataGridViewHeaderCell : DataGridViewCell
 
     public override Type? ValueType
     {
-        get
-        {
-            Type? valueType = (Type?)Properties.GetObject(s_propValueType);
-            if (valueType is not null)
-            {
-                return valueType;
-            }
-
-            return s_defaultValueType;
-        }
-        set
-        {
-            if (value is not null || Properties.ContainsObject(s_propValueType))
-            {
-                Properties.SetObject(s_propValueType, value);
-            }
-        }
+        get => Properties.GetValueOrDefault<Type?>(s_propValueType, s_defaultValueType);
+        set => Properties.AddOrRemoveValue(s_propValueType, value);
     }
 
     [Browsable(false)]
@@ -246,7 +200,7 @@ public partial class DataGridViewHeaderCell : DataGridViewCell
             dataGridViewCell = (DataGridViewHeaderCell)Activator.CreateInstance(thisType)!;
         }
 
-        base.CloneInternal(dataGridViewCell);
+        CloneInternal(dataGridViewCell);
         dataGridViewCell.Value = Value;
         return dataGridViewCell;
     }
@@ -428,13 +382,14 @@ public partial class DataGridViewHeaderCell : DataGridViewCell
     {
         if (s_rectThemeMargins.X == -1)
         {
-            Rectangle rectCell = new Rectangle(0, 0, ThemeMargin, ThemeMargin);
+            Rectangle rectCell = new(0, 0, ThemeMargin, ThemeMargin);
             Rectangle rectContent = DataGridViewHeaderCellRenderer.VisualStyleRenderer.GetBackgroundContentRectangle(g, rectCell);
             s_rectThemeMargins.X = rectContent.X;
             s_rectThemeMargins.Y = rectContent.Y;
             s_rectThemeMargins.Width = ThemeMargin - rectContent.Right;
             s_rectThemeMargins.Height = ThemeMargin - rectContent.Bottom;
-            // On older platforms, the theming margins for a header are unexpectedly (3, 0, 0, 0) when you'd expect something like (0, 0, 2, 3)
+            // On older platforms, the theming margins for a header are unexpectedly (3, 0, 0, 0) when you'd
+            // expect something like (0, 0, 2, 3)
             if (s_rectThemeMargins.X == 3 &&
                 s_rectThemeMargins.Y + s_rectThemeMargins.Width + s_rectThemeMargins.Height == 0)
             {
@@ -442,12 +397,14 @@ public partial class DataGridViewHeaderCell : DataGridViewCell
             }
             else
             {
-                // On some platforms, the theming margins for a header are unexpectedly (0, 0, 0, 0) when you'd expect something like (2, 1, 0, 2)
-                // Padding themePadding = DataGridViewHeaderCellRenderer.VisualStyleRenderer.GetMargins(g, MarginProperty.ContentMargins); /* or MarginProperty.SizingMargins */
-                // does not work either at this time. It AVs -So we hard code the margins for now.
+                // On some platforms, the theming margins for a header are unexpectedly (0, 0, 0, 0) when you'd expect
+                // something like (2, 1, 0, 2) Padding
+                // themePadding = DataGridViewHeaderCellRenderer.VisualStyleRenderer.GetMargins(g, MarginProperty.ContentMargins);
+                // /* or MarginProperty.SizingMargins */ does not work either at this time. It AVs -So we hard code
+                // the margins for now.
                 try
                 {
-                    string themeFilename = System.IO.Path.GetFileName(System.Windows.Forms.VisualStyles.VisualStyleInformation.ThemeFilename);
+                    string themeFilename = Path.GetFileName(VisualStyles.VisualStyleInformation.ThemeFilename);
                     if (string.Equals(themeFilename, AeroThemeFileName, StringComparison.OrdinalIgnoreCase))
                     {
                         s_rectThemeMargins = new Rectangle(2, 1, 0, 2);
@@ -465,31 +422,23 @@ public partial class DataGridViewHeaderCell : DataGridViewCell
     protected override object? GetValue(int rowIndex)
     {
         ArgumentOutOfRangeException.ThrowIfNotEqual(rowIndex, -1);
-
-        return Properties.GetObject(s_propCellValue);
+        return Properties.GetValueOrDefault<object>(s_propCellValue);
     }
 
     protected override bool MouseDownUnsharesRow(DataGridViewCellMouseEventArgs e) =>
-        DataGridView is null
-            ? false
-            : e.Button == MouseButtons.Left && DataGridView.ApplyVisualStylesToHeaderCells;
+        DataGridView is not null && e.Button == MouseButtons.Left && DataGridView.ApplyVisualStylesToHeaderCells;
 
     protected override bool MouseEnterUnsharesRow(int rowIndex) =>
-        DataGridView is null
-            ? false
-            : ColumnIndex == DataGridView.MouseDownCellAddress.X &&
-               rowIndex == DataGridView.MouseDownCellAddress.Y &&
-               DataGridView.ApplyVisualStylesToHeaderCells;
+        DataGridView is not null
+            && ColumnIndex == DataGridView.MouseDownCellAddress.X
+            && rowIndex == DataGridView.MouseDownCellAddress.Y
+            && DataGridView.ApplyVisualStylesToHeaderCells;
 
     protected override bool MouseLeaveUnsharesRow(int rowIndex) =>
-        DataGridView is null
-            ? false
-            : ButtonState != ButtonState.Normal && DataGridView.ApplyVisualStylesToHeaderCells;
+        DataGridView is not null && ButtonState != ButtonState.Normal && DataGridView.ApplyVisualStylesToHeaderCells;
 
     protected override bool MouseUpUnsharesRow(DataGridViewCellMouseEventArgs e) =>
-        DataGridView is null
-            ? false
-            : e.Button == MouseButtons.Left && DataGridView.ApplyVisualStylesToHeaderCells;
+        DataGridView is not null && e.Button == MouseButtons.Left && DataGridView.ApplyVisualStylesToHeaderCells;
 
     protected override void OnMouseDown(DataGridViewCellMouseEventArgs e)
     {
@@ -612,7 +561,8 @@ public partial class DataGridViewHeaderCell : DataGridViewCell
     private void UpdateButtonState(ButtonState newButtonState, int rowIndex)
     {
         Debug.Assert(DataGridView is not null);
-        ButtonStatePrivate = newButtonState;
+        Debug.Assert(Enum.IsDefined(newButtonState));
+        ButtonState = newButtonState;
         DataGridView.InvalidateCell(ColumnIndex, rowIndex);
     }
 }

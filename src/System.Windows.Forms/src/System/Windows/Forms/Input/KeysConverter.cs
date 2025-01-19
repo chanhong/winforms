@@ -22,8 +22,8 @@ public class KeysConverter : TypeConverter, IComparer
     [MemberNotNull(nameof(_cultureToKeyName))]
     private void Initialize()
     {
-        _cultureToDisplayOrder = new();
-        _cultureToKeyName = new();
+        _cultureToDisplayOrder = [];
+        _cultureToKeyName = [];
         AddLocalizedKeyNames(CultureInfo.InvariantCulture);
     }
 
@@ -87,14 +87,14 @@ public class KeysConverter : TypeConverter, IComparer
 
         void AddLocalizedKey(string keyName, Keys value)
         {
-            var key = SR.ResourceManager.GetString(keyName, cultureInfo)
-                      ?? throw new InvalidOperationException(string.Format(SR.ResourceValueNotFound, keyName));
+            string key = SR.ResourceManager.GetString(keyName, cultureInfo) ??
+                throw new InvalidOperationException(string.Format(SR.ResourceValueNotFound, keyName));
             AddKey(key, value);
         }
     }
 
     /// <summary>
-    ///  Access to a lookup table of name/value pairs for keys.  These are localized
+    ///  Access to a lookup table of name/value pairs for keys. These are localized
     ///  names.
     /// </summary>
     private Dictionary<CultureInfo, Dictionary<string, Keys>> CultureToKeyName
@@ -157,7 +157,7 @@ public class KeysConverter : TypeConverter, IComparer
                 return null;
             }
 
-            IDictionary<string, Keys> keyNames = GetKeyNames(culture);
+            Dictionary<string, Keys> keyNames = GetKeyNames(culture);
 
             // Parse an array of key tokens.
             string[] tokens = text.Split('+', StringSplitOptions.TrimEntries);
@@ -170,14 +170,14 @@ public class KeysConverter : TypeConverter, IComparer
             {
                 if (!keyNames.TryGetValue(token, out Keys currentKey))
                 {
-                    // Key was not found in our dictionary.  See if it is a valid value in
+                    // Key was not found in our dictionary. See if it is a valid value in
                     // the Keys enum.
                     currentKey = (Keys)Enum.Parse(typeof(Keys), token);
                 }
 
                 if ((currentKey & Keys.KeyCode) != 0)
                 {
-                    // We found a match.  If we have previously found a
+                    // We found a match. If we have previously found a
                     // key code, then check to see that this guy
                     // isn't a key code (it is illegal to have, say,
                     // "A + B"
@@ -211,10 +211,10 @@ public class KeysConverter : TypeConverter, IComparer
     }
 
     /// <summary>
-    ///  Converts the given object to another type.  The most common types to convert
-    ///  are to and from a string object.  The default implementation will make a call
+    ///  Converts the given object to another type. The most common types to convert
+    ///  are to and from a string object. The default implementation will make a call
     ///  to ToString on the object if the object is valid and if the destination
-    ///  type is string.  If this cannot convert to the destination type, this will
+    ///  type is string. If this cannot convert to the destination type, this will
     ///  throw a NotSupportedException.
     /// </summary>
     public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
@@ -234,10 +234,10 @@ public class KeysConverter : TypeConverter, IComparer
 
         Enum[] GetTermKeys(Keys key)
         {
-            List<Enum> termKeys = new();
+            List<Enum> termKeys = [];
             Keys modifiers = key & Keys.Modifiers;
-            IDictionary<string, Keys> keyNames = GetKeyNames(culture);
-            IList<string> displayOrder = GetDisplayOrder(culture);
+            Dictionary<string, Keys> keyNames = GetKeyNames(culture);
+            List<string> displayOrder = GetDisplayOrder(culture);
 
             if (key != Keys.None)
             {
@@ -277,21 +277,21 @@ public class KeysConverter : TypeConverter, IComparer
                 termKeys.Add(keyOnly);
             }
 
-            return termKeys.ToArray();
+            return [.. termKeys];
         }
 
         string GetTermsString(Keys key)
         {
             StringBuilder termStrings = new(32);
             Keys modifiers = key & Keys.Modifiers;
-            IDictionary<string, Keys> keyNames = GetKeyNames(culture);
-            IList<string> displayOrder = GetDisplayOrder(culture);
+            Dictionary<string, Keys> keyNames = GetKeyNames(culture);
+            List<string> displayOrder = GetDisplayOrder(culture);
 
             if (key != Keys.None)
             {
                 // First, iterate through and do the modifiers. These are
                 // additive, so we support things like Ctrl + Alt
-                foreach (var keyString in displayOrder)
+                foreach (string keyString in displayOrder)
                 {
                     Keys keyValue = keyNames[keyString];
                     if (keyValue != Keys.None && modifiers.HasFlag(keyValue))
@@ -306,7 +306,7 @@ public class KeysConverter : TypeConverter, IComparer
             Keys keyOnly = key & Keys.KeyCode;
             bool foundKey = false;
 
-            foreach (var keyString in displayOrder)
+            foreach (string keyString in displayOrder)
             {
                 Keys keyValue = keyNames[keyString];
                 if (keyValue.Equals(keyOnly))
@@ -329,10 +329,11 @@ public class KeysConverter : TypeConverter, IComparer
         }
     }
 
-    private IList<string> GetDisplayOrder(CultureInfo? culture)
+    private List<string> GetDisplayOrder(CultureInfo? culture)
     {
-        // Use CurrentCulture as default to match other TypeConverters.
-        culture ??= CultureInfo.CurrentCulture;
+        // Use CurrentUICulture as default because we assume that this converter is primarily
+        // used in user-facing applications (I.e. what key to press on the keyboard).
+        culture ??= CultureInfo.CurrentUICulture;
         if (!CultureToDisplayOrder.ContainsKey(culture))
         {
             AddLocalizedKeyNames(culture);
@@ -341,10 +342,11 @@ public class KeysConverter : TypeConverter, IComparer
         return CultureToDisplayOrder[culture];
     }
 
-    private IDictionary<string, Keys> GetKeyNames(CultureInfo? culture)
+    private Dictionary<string, Keys> GetKeyNames(CultureInfo? culture)
     {
-        // Use CurrentCulture as default to match other TypeConverters.
-        culture ??= CultureInfo.CurrentCulture;
+        // Use CurrentUICulture as default because we assume that this converter is primarily
+        // used in user-facing applications (I.e. what key to press on the keyboard).
+        culture ??= CultureInfo.CurrentUICulture;
         if (!CultureToKeyName.ContainsKey(culture))
         {
             AddLocalizedKeyNames(culture);
@@ -355,7 +357,7 @@ public class KeysConverter : TypeConverter, IComparer
 
     /// <summary>
     ///  Retrieves a collection containing a set of standard values
-    ///  for the data type this validator is designed for.  This
+    ///  for the data type this validator is designed for. This
     ///  will return null if the data type does not support a
     ///  standard set of values.
     /// </summary>
@@ -363,9 +365,9 @@ public class KeysConverter : TypeConverter, IComparer
     {
         if (_values is null)
         {
-            Keys[] list = CultureToKeyName[CultureInfo.CurrentCulture].Values.ToArray();
-            Array.Sort(list, this);
-            _values = new StandardValuesCollection(list);
+            Keys[] values = [.. CultureToKeyName[CultureInfo.InvariantCulture].Values];
+            Array.Sort(values, this);
+            _values = new StandardValuesCollection(values);
         }
 
         return _values;
@@ -373,9 +375,9 @@ public class KeysConverter : TypeConverter, IComparer
 
     /// <summary>
     ///  Determines if the list of standard values returned from
-    ///  GetStandardValues is an exclusive list.  If the list
+    ///  GetStandardValues is an exclusive list. If the list
     ///  is exclusive, then no other values are valid, such as
-    ///  in an enum data type.  If the list is not exclusive,
+    ///  in an enum data type. If the list is not exclusive,
     ///  then there are other valid values besides the list of
     ///  standard values GetStandardValues provides.
     /// </summary>

@@ -19,11 +19,11 @@ public class ComponentDesignerTests
         Assert.Empty(designer.ActionLists);
         Assert.Same(designer.ActionLists, designer.ActionLists);
         Assert.Empty(designer.AssociatedComponents);
-        Assert.Null(designer.Component);
+        Assert.Throws<InvalidOperationException>(() => designer.Component);
         Assert.Same(InheritanceAttribute.Default, designer.InheritanceAttribute);
         Assert.Same(designer.InheritanceAttribute, designer.InheritanceAttribute);
         Assert.False(designer.Inherited);
-        Assert.Null(designer.ParentComponent);
+        Assert.Throws<InvalidOperationException>(() => designer.ParentComponent);
         Assert.NotNull(designer.ShadowProperties);
         Assert.Same(designer.ShadowProperties, designer.ShadowProperties);
         Assert.Empty(designer.Verbs);
@@ -76,7 +76,7 @@ public class ComponentDesignerTests
         using IPersistComponentSettingsComponent component = new();
         designer.Initialize(component);
         designer.PostFilterProperties(properties);
-        PropertyDescriptor result = (PropertyDescriptor)properties["SettingsKey"];
+        PropertyDescriptor result = properties["SettingsKey"];
         Assert.Same(descriptor, result);
 
         Mock<IDesignerHost> mockDesignerHost = new(MockBehavior.Strict);
@@ -88,7 +88,7 @@ public class ComponentDesignerTests
         designer.Initialize(component);
 
         designer.PostFilterProperties(properties);
-        result = (PropertyDescriptor)properties["SettingsKey"];
+        result = properties["SettingsKey"];
         Assert.NotSame(descriptor, result);
     }
 
@@ -196,7 +196,7 @@ public class ComponentDesignerTests
 
     public static IEnumerable<object[]> InheritanceAttribute_GetValidService_TestData()
     {
-        yield return new object[] { null, 3, 5 };
+        yield return new object[] { null, 2, 4 };
         yield return new object[] { new InheritanceAttribute(), 1, 1 };
     }
 
@@ -549,12 +549,12 @@ public class ComponentDesignerTests
         Assert.Same(mockComponent.Object, designer.Component);
 
         designer.Dispose();
-        Assert.Null(designer.Component);
+        Assert.Throws<InvalidOperationException>(() => designer.Component);
         mockComponent.Verify(c => c.Dispose(), Times.Never());
 
         // Dispose again.
         designer.Dispose();
-        Assert.Null(designer.Component);
+        Assert.Throws<InvalidOperationException>(() => designer.Component);
         mockComponent.Verify(c => c.Dispose(), Times.Never());
     }
 
@@ -606,23 +606,23 @@ public class ComponentDesignerTests
         Assert.Same(component, designer.Component);
 
         designer.Dispose();
-        Assert.Null(designer.Component);
+        Assert.Throws<InvalidOperationException>(() => designer.Component);
 
         // Dispose again.
         designer.Dispose();
-        Assert.Null(designer.Component);
+        Assert.Throws<InvalidOperationException>(() => designer.Component);
     }
 
     [Fact]
-    public void ComponentDesigner_Dispose_InvokeWithoutComponent_Success()
+    public void ComponentDesigner_Dispose_InvokeWithoutComponent_Throws()
     {
         using ComponentDesigner designer = new();
         designer.Dispose();
-        Assert.Null(designer.Component);
+        Assert.Throws<InvalidOperationException>(() => designer.Component);
 
         // Dispose again.
         designer.Dispose();
-        Assert.Null(designer.Component);
+        Assert.Throws<InvalidOperationException>(() => designer.Component);
     }
 
     [Theory]
@@ -641,12 +641,28 @@ public class ComponentDesignerTests
         Assert.Same(mockComponent.Object, designer.Component);
 
         designer.Dispose(disposing);
-        Assert.Same(disposing ? null : mockComponent.Object, designer.Component);
+        if (disposing)
+        {
+            Assert.Throws<InvalidOperationException>(() => designer.Component);
+        }
+        else
+        {
+            Assert.Same(mockComponent.Object, designer.Component);
+        }
+
         mockComponent.Verify(c => c.Dispose(), Times.Never());
 
         // Dispose again.
         designer.Dispose(disposing);
-        Assert.Same(disposing ? null : mockComponent.Object, designer.Component);
+        if (disposing)
+        {
+            Assert.Throws<InvalidOperationException>(() => designer.Component);
+        }
+        else
+        {
+            Assert.Same(mockComponent.Object, designer.Component);
+        }
+
         mockComponent.Verify(c => c.Dispose(), Times.Never());
     }
 
@@ -673,11 +689,25 @@ public class ComponentDesignerTests
         Assert.Same(component, designer.Component);
 
         designer.Dispose(disposing);
-        Assert.Same(disposing ? null : component, designer.Component);
+        if (disposing)
+        {
+            Assert.Throws<InvalidOperationException>(() => designer.Component);
+        }
+        else
+        {
+            Assert.Same(component, designer.Component);
+        }
 
         // Dispose again.
         designer.Dispose(disposing);
-        Assert.Same(disposing ? null : component, designer.Component);
+        if (disposing)
+        {
+            Assert.Throws<InvalidOperationException>(() => designer.Component);
+        }
+        else
+        {
+            Assert.Same(component, designer.Component);
+        }
     }
 
     [Theory]
@@ -686,11 +716,11 @@ public class ComponentDesignerTests
     {
         using SubComponentDesigner designer = new();
         designer.Dispose(disposing);
-        Assert.Null(designer.Component);
+        Assert.Throws<InvalidOperationException>(() => designer.Component);
 
         // Dispose again.
         designer.Dispose(disposing);
-        Assert.Null(designer.Component);
+        Assert.Throws<InvalidOperationException>(() => designer.Component);
     }
 
     [Fact]
@@ -1232,7 +1262,7 @@ public class ComponentDesignerTests
         designer.Initialize(rootComponent);
         component.StringPropertySetCount = 0;
 
-        Assert.Throws(exception.GetType(), () => designer.DoDefaultAction());
+        Assert.Throws(exception.GetType(), designer.DoDefaultAction);
         mockSite.Verify(s => s.GetService(typeof(IEventBindingService)), Times.Once());
         mockSite.Verify(s => s.GetService(typeof(ISelectionService)), Times.Once());
         mockSite.Verify(s => s.GetService(typeof(IDesignerHost)), Times.Exactly(2));
@@ -1243,7 +1273,7 @@ public class ComponentDesignerTests
         Assert.Equal(0, component.StringPropertySetCount);
 
         // Call again.
-        Assert.Throws(exception.GetType(), () => designer.DoDefaultAction());
+        Assert.Throws(exception.GetType(), designer.DoDefaultAction);
         mockSite.Verify(s => s.GetService(typeof(IEventBindingService)), Times.Exactly(2));
         mockSite.Verify(s => s.GetService(typeof(ISelectionService)), Times.Exactly(2));
         mockSite.Verify(s => s.GetService(typeof(IDesignerHost)), Times.Exactly(3));
@@ -1524,7 +1554,7 @@ public class ComponentDesignerTests
         designer.Initialize(rootComponent);
         component.StringPropertySetCount = 0;
 
-        Assert.Throws(exception.GetType(), () => designer.DoDefaultAction());
+        Assert.Throws(exception.GetType(), designer.DoDefaultAction);
         mockSite.Verify(s => s.GetService(typeof(IEventBindingService)), Times.Once());
         mockSite.Verify(s => s.GetService(typeof(ISelectionService)), Times.Once());
         mockSite.Verify(s => s.GetService(typeof(IDesignerHost)), Times.Exactly(2));
@@ -1537,7 +1567,7 @@ public class ComponentDesignerTests
         Assert.Equal(0, component.StringPropertySetCount);
 
         // Call again.
-        Assert.Throws(exception.GetType(), () => designer.DoDefaultAction());
+        Assert.Throws(exception.GetType(), designer.DoDefaultAction);
         mockSite.Verify(s => s.GetService(typeof(IEventBindingService)), Times.Exactly(2));
         mockSite.Verify(s => s.GetService(typeof(ISelectionService)), Times.Exactly(2));
         mockSite.Verify(s => s.GetService(typeof(IDesignerHost)), Times.Exactly(3));
@@ -1975,11 +2005,13 @@ public class ComponentDesignerTests
         designer.Initialize(component);
         Assert.Same(component, designer.Component);
         Assert.Empty(designer.AssociatedComponents);
+    }
 
-        // Override with null.
-        designer.Initialize(null);
-        Assert.Null(designer.Component);
-        Assert.Empty(designer.AssociatedComponents);
+    [Fact]
+    public void ComponentDesigner_Uninitialized_Component_Throws()
+    {
+        using ComponentDesigner designer = new();
+        Assert.Throws<InvalidOperationException>(() => designer.Component);
     }
 
     [Fact]
@@ -2279,7 +2311,7 @@ public class ComponentDesignerTests
         using IPersistComponentSettingsComponent component = new();
         designer.Initialize(component);
         designer.PreFilterProperties(properties);
-        PropertyDescriptor result = (PropertyDescriptor)properties["SettingsKey"];
+        PropertyDescriptor result = properties["SettingsKey"];
         Assert.NotSame(descriptor, result);
         Assert.Equal(typeof(ComponentDesigner), result.ComponentType);
         Assert.Equal(descriptor.Name, result.Name);
@@ -2299,7 +2331,7 @@ public class ComponentDesignerTests
         using IPersistComponentSettingsComponent component = new();
         designer.Initialize(component);
         designer.PreFilterProperties(properties);
-        PropertyDescriptor result = (PropertyDescriptor)properties["SettingsKey"];
+        PropertyDescriptor result = properties["SettingsKey"];
         Assert.NotSame(descriptor, result);
         Assert.Equal(typeof(ComponentDesigner), result.ComponentType);
         Assert.Equal(descriptor.Name, result.Name);
@@ -2337,10 +2369,10 @@ public class ComponentDesignerTests
 
     [Theory]
     [MemberData(nameof(IDictionary_TestData))]
-    public void ComponentDesigner_PreFilterProperties_WithoutComponent_Nop(IDictionary properties)
+    public void ComponentDesigner_PreFilterProperties_WithoutComponent_Throws(IDictionary properties)
     {
         using SubComponentDesigner designer = new();
-        designer.PreFilterProperties(properties);
+        Assert.Throws<InvalidOperationException>(() => designer.PreFilterProperties(properties));
     }
 
     public static IEnumerable<object[]> PostFilterAttributes_NoInheritanceAttribute_TestData()
@@ -2709,7 +2741,7 @@ public class ComponentDesignerTests
         using IPersistComponentSettingsComponent component = new();
         designer.Initialize(component);
         filter.PreFilterProperties(properties);
-        PropertyDescriptor result = (PropertyDescriptor)properties["SettingsKey"];
+        PropertyDescriptor result = properties["SettingsKey"];
         Assert.NotSame(descriptor, result);
         Assert.Equal(typeof(ComponentDesigner), result.ComponentType);
         Assert.Equal(descriptor.Name, result.Name);
@@ -2730,7 +2762,7 @@ public class ComponentDesignerTests
         using IPersistComponentSettingsComponent component = new();
         designer.Initialize(component);
         filter.PreFilterProperties(properties);
-        PropertyDescriptor result = (PropertyDescriptor)properties["SettingsKey"];
+        PropertyDescriptor result = properties["SettingsKey"];
         Assert.NotSame(descriptor, result);
         Assert.Equal(typeof(ComponentDesigner), result.ComponentType);
         Assert.Equal(descriptor.Name, result.Name);
@@ -2773,6 +2805,8 @@ public class ComponentDesignerTests
     public void ComponentDesigner_IDesignerFilterPreFilterProperties_WithoutComponent_Nop(IDictionary properties)
     {
         using ComponentDesigner designer = new();
+        using Button button = new();
+        designer.Initialize(button);
         IDesignerFilter filter = designer;
         filter.PreFilterProperties(properties);
     }
@@ -2941,16 +2975,18 @@ public class ComponentDesignerTests
 
     private class CustomInheritanceAttributeComponentDesigner : ComponentDesigner
     {
-        private InheritanceAttribute _inheritanceAttribute;
+        private readonly InheritanceAttribute _inheritanceAttribute;
 
         public CustomInheritanceAttributeComponentDesigner(InheritanceAttribute inheritanceAttribute) : base()
         {
             _inheritanceAttribute = inheritanceAttribute;
         }
 
-        protected override InheritanceAttribute InheritanceAttribute => _inheritanceAttribute;
+        protected override InheritanceAttribute InheritanceAttribute => InheritanceAttribute1;
 
         public new bool Inherited => base.Inherited;
+
+        public InheritanceAttribute InheritanceAttribute1 => _inheritanceAttribute;
 
         public new void PostFilterAttributes(IDictionary attributes) => base.PostFilterAttributes(attributes);
 
@@ -2984,19 +3020,19 @@ public class ComponentDesignerTests
         }
     }
 
-    [DefaultProperty(nameof(StringDefaultPropertyComponent.Value))]
+    [DefaultProperty(nameof(Value))]
     private class StringDefaultPropertyComponent : Component
     {
         public string Value { get; set; }
     }
 
-    [DefaultProperty(nameof(IntDefaultPropertyComponent.Value))]
+    [DefaultProperty(nameof(Value))]
     private class IntDefaultPropertyComponent : Component
     {
         public int Value { get; set; }
     }
 
-    [DefaultEvent(nameof(DefaultEventComponent.Event))]
+    [DefaultEvent(nameof(Event))]
     private class DefaultEventComponent : Component
     {
         private string _stringProperty;

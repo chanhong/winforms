@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Drawing;
-
 namespace System.Windows.Forms;
 
 public partial class DataGridViewTextBoxEditingControl : TextBox, IDataGridViewEditingControl
@@ -22,7 +20,11 @@ public partial class DataGridViewTextBoxEditingControl : TextBox, IDataGridViewE
     }
 
     protected override AccessibleObject CreateAccessibilityInstance()
-        => new DataGridViewTextBoxEditingControlAccessibleObject(this);
+    {
+        DataGridViewTextBoxEditingControlAccessibleObject controlAccessibleObject = new(this);
+        _dataGridView?.SetAccessibleObjectParent(controlAccessibleObject);
+        return controlAccessibleObject;
+    }
 
     public virtual DataGridView? EditingControlDataGridView
     {
@@ -151,7 +153,7 @@ public partial class DataGridViewTextBoxEditingControl : TextBox, IDataGridViewE
                 // If the end of the selection is on the last line of the text then
                 // send this character to the dataGridView, else process the key event
                 int end = SelectionStart + SelectionLength;
-                if (Text.IndexOf("\r\n", end) != -1)
+                if (Text.IndexOf("\r\n", end, StringComparison.Ordinal) != -1)
                 {
                     return true;
                 }
@@ -161,7 +163,8 @@ public partial class DataGridViewTextBoxEditingControl : TextBox, IDataGridViewE
             case Keys.Up:
                 // If the end of the selection is on the first line of the text then
                 // send this character to the dataGridView, else process the key event
-                if (!(Text.IndexOf("\r\n") < 0 || SelectionStart + SelectionLength < Text.IndexOf("\r\n")))
+                if (!(Text.IndexOf("\r\n", StringComparison.Ordinal) < 0
+                    || SelectionStart + SelectionLength < Text.IndexOf("\r\n", StringComparison.Ordinal)))
                 {
                     return true;
                 }
@@ -251,7 +254,7 @@ public partial class DataGridViewTextBoxEditingControl : TextBox, IDataGridViewE
         switch ((Keys)(nint)m.WParamInternal)
         {
             case Keys.Enter:
-                if (m.MsgInternal == PInvoke.WM_CHAR
+                if (m.MsgInternal == PInvokeCore.WM_CHAR
                     && !(ModifierKeys == Keys.Shift && Multiline && AcceptsReturn))
                 {
                     // Ignore the Enter key and don't add it to the textbox content. This happens when failing
@@ -263,7 +266,7 @@ public partial class DataGridViewTextBoxEditingControl : TextBox, IDataGridViewE
                 break;
 
             case Keys.LineFeed:
-                if (m.MsgInternal == PInvoke.WM_CHAR && ModifierKeys == Keys.Control && Multiline && AcceptsReturn)
+                if (m.MsgInternal == PInvokeCore.WM_CHAR && ModifierKeys == Keys.Control && Multiline && AcceptsReturn)
                 {
                     // Ignore linefeed character when user hits Ctrl-Enter to commit the cell.
                     return true;
@@ -272,7 +275,7 @@ public partial class DataGridViewTextBoxEditingControl : TextBox, IDataGridViewE
                 break;
 
             case Keys.A:
-                if (m.MsgInternal == PInvoke.WM_KEYDOWN && ModifierKeys == Keys.Control)
+                if (m.MsgInternal == PInvokeCore.WM_KEYDOWN && ModifierKeys == Keys.Control)
                 {
                     SelectAll();
                     return true;
@@ -307,17 +310,6 @@ public partial class DataGridViewTextBoxEditingControl : TextBox, IDataGridViewE
         else
         {
             return HorizontalAlignment.Left;
-        }
-    }
-
-    protected override void OnHandleCreated(EventArgs e)
-    {
-        base.OnHandleCreated(e);
-
-        // The null-check was added as a fix for a https://github.com/dotnet/winforms/issues/2138
-        if (IsHandleCreated && _dataGridView?.IsAccessibilityObjectCreated == true)
-        {
-            _dataGridView.SetAccessibleObjectParent(AccessibilityObject);
         }
     }
 }

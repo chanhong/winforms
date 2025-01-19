@@ -1,8 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Drawing;
+using Windows.Win32.Graphics.GdiPlus;
 
 namespace System.Windows.Forms;
 
@@ -18,9 +18,8 @@ public partial class ErrorProvider
     /// </summary>
     internal partial class ErrorWindow : NativeWindow
     {
-        private static readonly int s_accessibilityProperty = PropertyStore.CreateKey();
-
-        private readonly List<ControlItem> _items = new();
+        private AccessibleObject? _accessibleObject;
+        private readonly List<ControlItem> _items = [];
         private readonly Control _parent;
         private readonly ErrorProvider _provider;
         private Rectangle _windowBounds;
@@ -34,27 +33,12 @@ public partial class ErrorProvider
         {
             _provider = provider;
             _parent = parent;
-            Properties = new PropertyStore();
         }
 
         /// <summary>
         ///  The Accessibility Object for this ErrorProvider
         /// </summary>
-        internal AccessibleObject AccessibilityObject
-        {
-            get
-            {
-                AccessibleObject? accessibleObject = (AccessibleObject?)Properties.GetObject(s_accessibilityProperty);
-
-                if (accessibleObject is null)
-                {
-                    accessibleObject = CreateAccessibilityInstance();
-                    Properties.SetObject(s_accessibilityProperty, accessibleObject);
-                }
-
-                return accessibleObject;
-            }
-        }
+        internal AccessibleObject AccessibilityObject => _accessibleObject ??= CreateAccessibilityInstance();
 
         /// <summary>
         ///  This is called when a control would like to show an error icon.
@@ -82,10 +66,7 @@ public partial class ErrorProvider
         ///  Constructs the new instance of the accessibility object for this ErrorProvider. Subclasses
         ///  should not call base.CreateAccessibilityObject.
         /// </summary>
-        private AccessibleObject CreateAccessibilityInstance()
-        {
-            return new ErrorWindowAccessibleObject(this);
-        }
+        private ErrorWindowAccessibleObject CreateAccessibilityInstance() => new(this);
 
         /// <summary>
         ///  Called to get rid of any resources the Object may have.
@@ -137,7 +118,7 @@ public partial class ErrorProvider
             _tipWindow = new NativeWindow();
             _tipWindow.CreateHandle(cparams);
 
-            PInvoke.SendMessage(
+            PInvokeCore.SendMessage(
                 _tipWindow,
                 PInvoke.TTM_SETMAXTIPWIDTH,
                 (WPARAM)0,
@@ -147,7 +128,7 @@ public partial class ErrorProvider
                 HWND.HWND_TOP,
                 0, 0, 0, 0,
                 SET_WINDOW_POS_FLAGS.SWP_NOSIZE | SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE);
-            PInvoke.SendMessage(_tipWindow, PInvoke.TTM_SETDELAYTIME, (WPARAM)PInvoke.TTDT_INITIAL);
+            PInvokeCore.SendMessage(_tipWindow, PInvoke.TTM_SETDELAYTIME, (WPARAM)PInvoke.TTDT_INITIAL);
 
             return true;
         }
@@ -188,12 +169,12 @@ public partial class ErrorProvider
             if (_parent.IsMirrored)
             {
                 // Mirror the DC
-                PInvoke.SetMapMode(hdc, HDC_MAP_MODE.MM_ANISOTROPIC);
+                PInvokeCore.SetMapMode(hdc, HDC_MAP_MODE.MM_ANISOTROPIC);
                 SIZE originalExtents = default;
                 PInvoke.GetViewportExtEx(hdc, &originalExtents);
                 PInvoke.SetViewportExtEx(hdc, -originalExtents.Width, originalExtents.Height, lpsz: null);
                 Point originalOrigin = default;
-                PInvoke.GetViewportOrgEx(hdc, &originalOrigin);
+                PInvokeCore.GetViewportOrgEx(hdc, &originalOrigin);
                 PInvoke.SetViewportOrgEx(hdc, originalOrigin.X + _windowBounds.Width - 1, originalOrigin.Y, lppt: null);
             }
         }
@@ -203,8 +184,8 @@ public partial class ErrorProvider
         /// </summary>
         private unsafe void OnPaint()
         {
-            using PInvoke.BeginPaintScope hdc = new((HWND)Handle);
-            using PInvoke.SaveDcScope save = new(hdc);
+            using BeginPaintScope hdc = new(HWND);
+            using SaveDcScope save = new(hdc);
 
             MirrorDcIfNeeded(hdc);
 
@@ -212,7 +193,7 @@ public partial class ErrorProvider
             {
                 ControlItem item = _items[i];
                 Rectangle bounds = item.GetIconBounds(_provider.Region.Size);
-                PInvoke.DrawIconEx(
+                PInvokeCore.DrawIconEx(
                     hdc,
                     bounds.X - _windowBounds.X,
                     bounds.Y - _windowBounds.Y,
@@ -270,13 +251,6 @@ public partial class ErrorProvider
         }
 
         /// <summary>
-        ///  Retrieves our internal property storage object. If you have a property
-        ///  whose value is not always set, you should store it in here to save
-        ///  space.
-        /// </summary>
-        internal PropertyStore Properties { get; }
-
-        /// <summary>
         ///  This is called when a control no longer needs to display an error icon.
         /// </summary>
         public void Remove(ControlItem item)
@@ -308,7 +282,7 @@ public partial class ErrorProvider
             if (_timer is null)
             {
                 _timer = new Timer();
-                _timer.Tick += new EventHandler(OnTimer);
+                _timer.Tick += OnTimer;
             }
 
             _timer.Interval = _provider.BlinkRate;
@@ -360,7 +334,7 @@ public partial class ErrorProvider
                             showIcon = (item.BlinkPhase == 0) || (item.BlinkPhase > 0 && (item.BlinkPhase & 1) == (i & 1));
                             break;
                         case ErrorBlinkStyle.AlwaysBlink:
-                            showIcon = ((i & 1) == 0) == _provider._showIcon;
+                            showIcon = ((i & 1) == 0) == _provider.ShowIcon;
                             break;
                     }
                 }
@@ -392,15 +366,15 @@ public partial class ErrorProvider
 
             if (timerCaused)
             {
-                _provider._showIcon = !_provider._showIcon;
+                _provider.ShowIcon = !_provider.ShowIcon;
             }
 
             using GetDcScope hdc = new(HWND);
-            using PInvoke.SaveDcScope save = new(hdc);
+            using SaveDcScope save = new(hdc);
             MirrorDcIfNeeded(hdc);
 
             using Graphics g = hdc.CreateGraphics();
-            using PInvoke.RegionScope windowRegionHandle = new(windowRegion, g);
+            using RegionScope windowRegionHandle = windowRegion.GetRegionScope(g);
             if (PInvoke.SetWindowRgn(this, windowRegionHandle, fRedraw: true) != 0)
             {
                 // The HWnd owns the region.
@@ -424,9 +398,7 @@ public partial class ErrorProvider
         /// </summary>
         private void WmGetObject(ref Message m)
         {
-            Debug.WriteLineIf(CompModSwitches.MSAA.TraceInfo, $"In WmGetObject, this = {GetType().FullName}, lParam = {m.LParamInternal}");
-
-            if (m.Msg == (int)PInvoke.WM_GETOBJECT && m.LParamInternal == PInvoke.UiaRootObjectId)
+            if (m.Msg == (int)PInvokeCore.WM_GETOBJECT && m.LParamInternal == PInvoke.UiaRootObjectId)
             {
                 // If the requested object identifier is UiaRootObjectId,
                 // we should return an UI Automation provider using the UiaReturnRawElementProvider function.
@@ -450,10 +422,10 @@ public partial class ErrorProvider
         {
             switch (m.MsgInternal)
             {
-                case PInvoke.WM_GETOBJECT:
+                case PInvokeCore.WM_GETOBJECT:
                     WmGetObject(ref m);
                     break;
-                case PInvoke.WM_NOTIFY:
+                case PInvokeCore.WM_NOTIFY:
                     NMHDR* nmhdr = (NMHDR*)(nint)m.LParamInternal;
                     if (nmhdr->code is PInvoke.TTN_SHOW or PInvoke.TTN_POP)
                     {
@@ -461,9 +433,9 @@ public partial class ErrorProvider
                     }
 
                     break;
-                case PInvoke.WM_ERASEBKGND:
+                case PInvokeCore.WM_ERASEBKGND:
                     break;
-                case PInvoke.WM_PAINT:
+                case PInvokeCore.WM_PAINT:
                     OnPaint();
                     break;
                 default:

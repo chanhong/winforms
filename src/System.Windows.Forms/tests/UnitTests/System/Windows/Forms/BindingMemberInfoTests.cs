@@ -9,7 +9,7 @@ public class BindingMemberInfoTests
     [Fact]
     public void Ctor_Default()
     {
-        var info = new BindingMemberInfo();
+        BindingMemberInfo info = default;
         Assert.Empty(info.BindingPath);
         Assert.Empty(info.BindingField);
         Assert.Empty(info.BindingMember);
@@ -26,7 +26,7 @@ public class BindingMemberInfoTests
     [InlineData(".", "", "", "")]
     public void Ctor_String(string dataMember, string expectedPath, string expectedField, string expectedMember)
     {
-        var info = new BindingMemberInfo(dataMember);
+        BindingMemberInfo info = new(dataMember);
         Assert.Equal(expectedPath, info.BindingPath);
         Assert.Equal(expectedField, info.BindingField);
         Assert.Equal(expectedMember, info.BindingMember);
@@ -39,18 +39,18 @@ public class BindingMemberInfoTests
         yield return new object[] { new BindingMemberInfo("Some.Other"), new BindingMemberInfo("Some2.Other"), false };
         yield return new object[] { new BindingMemberInfo("Some.Other"), new BindingMemberInfo("Some.Other2"), false };
         yield return new object[] { new BindingMemberInfo("Some.Other"), new BindingMemberInfo("Some"), false };
-        yield return new object[] { new BindingMemberInfo("Some.Other"), new BindingMemberInfo(), false };
+        yield return new object[] { new BindingMemberInfo("Some.Other"), default(BindingMemberInfo), false };
 
         yield return new object[] { new BindingMemberInfo("Some"), new BindingMemberInfo("Some"), true };
         yield return new object[] { new BindingMemberInfo("Some"), new BindingMemberInfo("Some2"), false };
         yield return new object[] { new BindingMemberInfo("Some"), new BindingMemberInfo("Some.Other"), false };
-        yield return new object[] { new BindingMemberInfo("Some.Other"), new BindingMemberInfo(), false };
+        yield return new object[] { new BindingMemberInfo("Some.Other"), default(BindingMemberInfo), false };
 
-        yield return new object[] { new BindingMemberInfo(), new BindingMemberInfo(), true };
-        yield return new object[] { new BindingMemberInfo(), new BindingMemberInfo(""), true };
-        yield return new object[] { new BindingMemberInfo(), new BindingMemberInfo("Some.Other"), false };
+        yield return new object[] { default(BindingMemberInfo), default(BindingMemberInfo), true };
+        yield return new object[] { default(BindingMemberInfo), new BindingMemberInfo(""), true };
+        yield return new object[] { default(BindingMemberInfo), new BindingMemberInfo("Some.Other"), false };
 
-        yield return new object[] { new BindingMemberInfo("Some.Other"), new object(), false };
+        yield return new object[] { new BindingMemberInfo("Some.Other"), new(), false };
         yield return new object[] { new BindingMemberInfo("Some.Other"), null, false };
     }
 
@@ -69,7 +69,7 @@ public class BindingMemberInfoTests
 
     public static IEnumerable<object[]> GetHashCode_TestData()
     {
-        yield return new object[] { new BindingMemberInfo() };
+        yield return new object[] { default(BindingMemberInfo) };
         yield return new object[] { new BindingMemberInfo("Some") };
         yield return new object[] { new BindingMemberInfo("Some.Other") };
     }

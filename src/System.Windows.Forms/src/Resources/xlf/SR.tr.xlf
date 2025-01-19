@@ -287,6 +287,21 @@
         <target state="translated">Karmaşık DataBinding, veri kaynağı olarak ya IList ya da IListSource kabul eder.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BinaryFormatterNotSupported">
+        <source>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</source>
+        <target state="translated">BinaryFormatter serileştirme ve seri durumdan çıkarma işlemleri bu uygulamada devre dışı. Daha fazla bilgi için https://aka.ms/binaryformatter sayfasına bakın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BinaryFormatter_NotSupported_InClipboardOrDragDrop">
+        <source>BinaryFormatter is not supported in clipboard or drag-and-drop operations.</source>
+        <target state="translated">BinaryFormatter panoda veya sürükle ve bırak işlemlerinde desteklenmiyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BinaryFormatter_NotSupported_InClipboardOrDragDrop_UseTypedAPI">
+        <source>BinaryFormatter is not supported in clipboard or drag-and-drop operations. Please enable it and use 'TryGetData&lt;T&gt;' APIs with a 'resolver' function that defines a set of allowed types to deserialize '{0}'.</source>
+        <target state="translated">BinaryFormatter panoda veya sürükle ve bırak işlemlerinde desteklenmiyor. Lütfen etkinleştirin ve 'TryGetData&lt;T&gt;' API'lerini, seri durumdan çıkarma için izin verilen türler kümesi tanımlayan bir 'çözümleyici' işleviyle '{0}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="BindableComponentBindingContextChangedDescr">
         <source>Occurs when the binding context has changed.</source>
         <target state="translated">Bağlama bağlamı değiştiğinde gerçekleşir.</target>
@@ -410,6 +425,11 @@
       <trans-unit id="BindingNavigatorToolStripName">
         <source>Binding Navigator</source>
         <target state="translated">Bağlama Gezgini</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BindingNotSupported">
+        <source>Binding operations are not supported when application trimming is enabled.</source>
+        <target state="translated">Uygulama kırpma etkinleştirildiğinde bağlama işlemleri desteklenmez.</target>
         <note />
       </trans-unit>
       <trans-unit id="BindingSourceAddingNewEventHandlerDescr">
@@ -945,6 +965,36 @@
       <trans-unit id="ClipboardOperationFailed">
         <source>Requested Clipboard operation did not succeed.</source>
         <target state="translated">İstenen Pano işlemi başarılı olmadı.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_CannotJsonSerializeDataObject">
+        <source>An object of type 'DataObject' will serialize as empty. Use 'DataObject.SetDataAsJson' APIs on your object to JSON-serialize the data within your object, then use the '{0}' API with your object.</source>
+        <target state="translated">'DataObject' türündeki bir nesne boş olarak seri hale getirilebilir. Nesnenizin içindeki verileri JSON ile serileştirmek için nesneniz üzerinde 'DataObject.SetDataAsJson' API'lerini kullanın ve ardından nesneniz '{0}' API'sini kullanın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_InvalidFormatTypeCombination">
+        <source>The specified type '{0}' is not compatible with the specified format '{1}'.</source>
+        <target state="translated">Belirtilen tür '{0}' belirtilen biçim türüyle uyumlu '{1}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_InvalidType">
+        <source>'{0}' is not a concrete type, and could result in an unbounded deserialization attempt. Please use a concrete type or alternatively define a 'resolver' function that supports types that you are expecting to retrieve from the clipboard or use in drag-and-drop operations.</source>
+        <target state="translated">'{0}' somut bir tür değil ve bir unbounded deserialization girişimine neden olabilir. Lütfen somut bir tür kullanın veya alternatif olarak panodan almayı bekleyen türleri destekleyen bir 'çözümleyici' işlevi ya da sürükle ve bırak işlemleri içinde kullanın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_JsonDeserializationFailed">
+        <source>Failed to deserialize JSON data.</source>
+        <target state="translated">JSON verileri seri durumdan çıkarılamadı.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_TypedAPI_InvalidResolver">
+        <source>Type {0} is not found. If this type is allowed, please ensure that the 'resolver' function provided in 'TryGetData&lt;T&gt;' APIs supports it.</source>
+        <target state="translated">Tür {0} bulunamadı. Bu türe izin verilirse lütfen 'TryGetData&lt;T&gt;' API'lerinde sağlanan 'resolver' işlevinin bunu desteklediğinden emin olun.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_UseTypedAPI">
+        <source>Please use 'TryGetData&lt;T&gt;' APIs with a 'resolver' function that defines a set of allowed types to deserialize '{0}'.</source>
+        <target state="translated">Lütfen 'TryGetData&lt;T&gt;' API'lerini, seri durumdan çıkarma için izin verilen türler kümesi tanımlayan bir 'çözümleyici' işleviyle '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="ClipboardSecurityException">
@@ -1517,6 +1567,11 @@
         <target state="translated">İşaretçi denetimin üzerine geldiğinde görünen imleç.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ControlDarkModeDescr">
+        <source>Determines the dark mode setting for the control. This ambient property inherits its value from its parent control or from the Application class.</source>
+        <target state="translated">Denetim için karanlık mod ayarını belirler. Bu ortam özelliği değerini üst denetiminden veya Uygulama sınıfından devralır.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ControlDataContextChangedDescr">
         <source>Occurs when the value of the DataContext property changes.</source>
         <target state="translated">DataContext özelliğinin değeri değiştiğinde gerçekleşir.</target>
@@ -1650,6 +1705,11 @@
       <trans-unit id="ControlNotChild">
         <source>'child' is not a child control of this parent.</source>
         <target state="translated">'alt' bu üstün alt denetimi değil.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ControlNotSupportedInTrimming">
+        <source>'{0}' is not supported in trimmed applications.</source>
+        <target state="translated">'{0}', kırpılmış uygulamalarda desteklenmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="ControlOnAutoSizeChangedDescr">
@@ -2165,6 +2225,11 @@
       <trans-unit id="CursorNonSerializableHandle">
         <source>Stock cursors cannot be serialized.</source>
         <target state="translated">Hazır imleçler seri hale getirilemez.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DarkModeNotSupported">
+        <source>Dark mode cannot be activated, either because of an activated High-Contrast mode or because the underlying OS does not support it.</source>
+        <target state="translated">Yüksek Karşıtlık modunun etkin olması veya temel işletim sisteminin desteklememesi nedeniyle karanlık mod etkinleştirilemiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="DataBindingAddNewNotSupportedOnPropertyManager">
@@ -4135,8 +4200,8 @@ Bu varsayılan iletişim kutusunu değiştirmek için, lütfen DataError olayın
         <note />
       </trans-unit>
       <trans-unit id="DataGridView_SortedDescr">
-        <source>Occurs when the DataGridView compares two cell values to perform a sort operation.</source>
-        <target state="translated">DataGridView sıralama işlemi gerçekleştirmek için iki hücre değerini karşılaştırdığında gerçekleşir.</target>
+        <source>Occurs when the DataGridView control completes a sorting operation.</source>
+        <target state="translated">DataGridView denetimi bir sıralama işlemini tamamladığında gerçekleşir.</target>
         <note />
       </trans-unit>
       <trans-unit id="DataGridView_StandardTabDescr">
@@ -4627,6 +4692,11 @@ Bu varsayılan iletişim kutusunu değiştirmek için, lütfen DataError olayın
       <trans-unit id="DescriptionWebBrowser">
         <source>Enables the user to browse Web pages inside your form.</source>
         <target state="translated">Kullanıcıların formunuzdaki Web sayfalarına gitmesine olanak tanır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DesignTimeFeaturesNotSupported">
+        <source>Design time features are not supported.</source>
+        <target state="translated">Tasarım zamanı özellikleri desteklenmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="DispInvokeFailed">
@@ -5205,6 +5275,11 @@ Bunu değiştirmek istiyor musunuz?</target>
         <target state="translated">İletişim kutusundaki ağaç görünümü denetiminin üstünde görüntülenen dize. Bu dize kullanıcıya yönergeleri bildirmek için kullanılabilir.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FolderBrowserDialogMultiSelectDescr">
+        <source>Controls whether multiple folders can be selected in the dialog.</source>
+        <target state="translated">İletişim kutusunda birden fazla klasörün seçilip seçilemeyeceğini kontrol eder.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FolderBrowserDialogOkRequiresInteraction">
         <source>Controls whether the OK button of the dialog box is disabled until the user navigates the view or edits the filename (if applicable). Note: Disabling of the OK button does not prevent the dialog from being submitted by the Enter key.</source>
         <target state="translated">Kullanıcı görünümde gezinene veya dosya adını düzenleyene (yapabiliyorsa) kadar iletişim kutusunun Tamam düğmesinin devre dışı bırakılıp bırakılmadığını kontrol eder. Not: Tamam düğmesinin devre dışı bırakılması, iletişim kutusunun Enter tuşuyla gönderilmesini engellemez.</target>
@@ -5218,6 +5293,11 @@ Bunu değiştirmek istiyor musunuz?</target>
       <trans-unit id="FolderBrowserDialogSelectedPath">
         <source>The path of the folder first selected in the dialog or the last one selected by the user.</source>
         <target state="translated">İletişim kutusunda ilk seçili olan klasörün veya kullanıcı tarafından son seçilen klasörün yolu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FolderBrowserDialogSelectedPathsDescr">
+        <source>Retrieves the paths of all selected folders in the dialog box.</source>
+        <target state="translated">İletişim kutusunda seçilen tüm klasörlerin yollarını alır.</target>
         <note />
       </trans-unit>
       <trans-unit id="FolderBrowserDialogShowHiddenFiles">
@@ -5275,6 +5355,16 @@ Bunu değiştirmek istiyor musunuz?</target>
         <target state="translated">Otomatik kayan kaydırma çubuğunun geçerli konumu.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FormBorderColorChangedDescr">
+        <source>Occurs whenever the FormBorderColor property is changed.</source>
+        <target state="translated">FormBorderColor özelliği her değiştiğinde gerçekleşir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormBorderColorDescr">
+        <source>The color of the Form's border.</source>
+        <target state="translated">Form kenarlığının rengi.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormBorderStyleDescr">
         <source>Indicates the appearance and behavior of the border and title bar of the form.</source>
         <target state="translated">Formun kenarlığının ve başlık çubuğunun görünümünü ve davranışını gösterir.</target>
@@ -5285,9 +5375,39 @@ Bunu değiştirmek istiyor musunuz?</target>
         <target state="translated">Formun iptal düğmesi. Bu özellik ayarlıysa, kullanıcı 'ESC' tuşuna her bastığında düğme 'tıklatılır'.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FormCaptionBackColorChangedDescr">
+        <source>Occurs whenever the FormCaptionBackColor property is changed.</source>
+        <target state="translated">FormCaptionBackColor özelliği her değiştiğinde gerçekleşir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionBackColorDescr">
+        <source>The back color of the Form's caption (title bar).</source>
+        <target state="translated">Form başlığının arka plan rengi (başlık çubuğu).</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionTextColorChangedDescr">
+        <source>Occurs whenever the FormCaptionTextColor property is changed.</source>
+        <target state="translated">FormCaptionTextColor özelliği her değiştiğinde gerçekleşir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionTextColorDescr">
+        <source>The color of the Form's text caption (title bar text).</source>
+        <target state="translated">Form metin başlığının arka plan rengi (başlık çubuğu metni).</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormControlBoxDescr">
         <source>Determines whether a form has a Control/System menu box.</source>
         <target state="translated">Formun Denetim/Sistem menüsü kutusu olup olmadığını belirler.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCornerPreferenceChangedDescr">
+        <source>Occurs whenever the FormCornerPreference property is changed.</source>
+        <target state="translated">FormCornerPreference özelliği her değiştiğinde gerçekleşir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCornerPreferenceDescr">
+        <source>The rounding style of the Form's border.</source>
+        <target state="translated">Form kenarlığının yuvarlama stili.</target>
         <note />
       </trans-unit>
       <trans-unit id="FormDesktopBoundsDescr">
@@ -5490,6 +5610,11 @@ Bunu değiştirmek istiyor musunuz?</target>
         <target state="translated">Formun donukluk yüzdesi. </target>
         <note />
       </trans-unit>
+      <trans-unit id="FormOrTaskDialog_NoSyncContextForShowAsync">
+        <source>Failed to retrieve the Synchronization Context for showing the Form asynchronously.</source>
+        <target state="translated">Formun zaman uyumsuz olarak gösterilmesi için Eşitleme Bağlamı yanıtlanamadı.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormOwnedFormsDescr">
         <source>Array of forms owned by this form.</source>
         <target state="translated">Bu formun sahibi olduğu formlar dizisi.</target>
@@ -5533,6 +5658,11 @@ Bunu değiştirmek istiyor musunuz?</target>
       <trans-unit id="FormWindowStateDescr">
         <source>Determines the initial visual state of the form.</source>
         <target state="translated">Formun başlangıçtaki görsel durumunu belirler.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Form_HasAlreadyBeenShownAsync">
+        <source>The form has already been shown asynchronously.</source>
+        <target state="translated">Form zaten zaman uyumsuz olarak gösterildi.</target>
         <note />
       </trans-unit>
       <trans-unit id="FormatControlFormatDescr">
@@ -5683,6 +5813,11 @@ Bunu değiştirmek istiyor musunuz?</target>
       <trans-unit id="ISupportInitializeDescr">
         <source>Specifies support for transacted initialization. </source>
         <target state="translated">İşlenen başlatma için desteği belirtir. </target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ITypeDataObject_Not_Implemented">
+        <source>Data object '{0}' doesn't implement the 'ITypedDataObject' interface and can't be read using 'TryGetData&lt;T&gt;(string, out T)' methods.</source>
+        <target state="translated">Veri nesnesi '{0}' 'ITypedDataObject' arabirimini uygulamıyor ve 'TryGetData&lt;T&gt;(string, out T)' yöntemleri kullanılarak okunamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="IllegalCrossThreadCall">
@@ -5849,11 +5984,6 @@ Geçersiz işlemin gerçekleştiği yığın izi:
         <target state="translated">Bu denetim üzerinde gerçekleştirilen eylem yanlış iş parçacığı tarafından çağrılıyor. Bu eylemi gerçekleştirmek için Control.Invoke veya Control.BeginInvoke kullanarak doğru iş parçacığına göre sıralayın.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidExBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than {2} and less than {3}.</source>
-        <target state="translated">'{1}' değeri '{0}' için geçerli değil. '{0}' değeri {2} değerinden büyük ve {3} değerinden küçük olmalıdır.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidFileFormat">
         <source>File format is not valid.</source>
         <target state="translated">Dosya biçimi geçerli değil.</target>
@@ -5872,26 +6002,6 @@ Geçersiz işlemin gerçekleştiği yığın izi:
       <trans-unit id="InvalidHdcType">
         <source>Invalid HDC type: {0}</source>
         <target state="translated">Geçersiz HDC türü: {0}</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidHighBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be less than {2}.</source>
-        <target state="translated">'{1}' değeri '{0}' için geçerli değil. '{0}' değerinin {2} değerinden küçük olması gerekir.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidHighBoundArgumentEx">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be less than or equal to {2}.</source>
-        <target state="translated">'{1}' değeri '{0}' için geçerli değil. '{0}' değerinin {2} değerinden küçük veya eşit olması gerekir.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLowBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be greater than {2}.</source>
-        <target state="translated">'{1}' değeri '{0}' için geçerli değil. '{0}', {2} değerinden büyük olmalıdır.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLowBoundArgumentEx">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be greater than or equal to {2}.</source>
-        <target state="translated">'{1}' değeri '{0}' için geçerli değil. '{0}' değerinin {2} değerinden büyük veya eşit olması gerekir.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidNullArgument">
@@ -6850,8 +6960,8 @@ Geçersiz işlemin gerçekleştiği yığın izi:
         <note />
       </trans-unit>
       <trans-unit id="ListViewVirtualListSizeDescr">
-        <source>Sets the count of the item collection when the ListView is in virtual mode.</source>
-        <target state="translated">ListView sanal moddayken öğe koleksiyonu sayısını ayarlar.</target>
+        <source>Sets the count of the item collection when the ListView is in virtual mode. If VirtualMode is set to true, and the VirtualListSize property is greater than 0, you must handle the RetrieveVirtualItem event providing valid items.</source>
+        <target state="translated">ListView sanal moddayken öğe koleksiyonu sayısını ayarlar. VirtualMode true olarak ayarlanmışsa ve VirtualListSize özelliği 0'dan büyükse, RetrieveVirtualItem olayını geçerli öğeler sağlayarak işlemeniz gerekir.</target>
         <note />
       </trans-unit>
       <trans-unit id="ListViewVirtualListSizeInvalidArgument">
@@ -7312,6 +7422,11 @@ Geçersiz işlemin gerçekleştiği yığın izi:
       <trans-unit id="NotSupported">
         <source>The type {0} on line {1}, position {2} threw the following exception while being converted: {3}</source>
         <target state="translated">{1} numaralı satırda {2} numaralı konumdaki {0} türü dönüştürülürken aşağıdaki özel durumu döndürdü: {3}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotSupportedExceptionOnClipboard">
+        <source>Clipboard contains a 'NotSupportedException' that indicates that write operation failed. '{0}'.</source>
+        <target state="new">Clipboard contains a 'NotSupportedException' that indicates that write operation failed. '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotifyIconBalloonTipIconDescr">
@@ -8599,11 +8714,6 @@ Geçersiz işlemin gerçekleştiği yığın izi:
         <target state="translated">Koleksiyon salt okunur.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegisterCFFailed">
-        <source>Clipboard format registration did not succeed.</source>
-        <target state="translated">Pano biçimi kaydı yapılamadı.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="RelatedListManagerChild">
         <source>Child list for field {0} cannot be created.</source>
         <target state="translated">{0} alanı için al liste oluşturulamıyor.</target>
@@ -9699,6 +9809,11 @@ Geçersiz işlemin gerçekleştiği yığın izi:
         <target state="translated">Çok fazla sayıda ResumeUpdateMenuHandles çağrısı.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ToolStripAllowClickThrough">
+        <source>Allows the control to be interacted when window does not have focus.</source>
+        <target state="translated">Pencerenin odağı olmadığında kontrolün etkileşime girmesine izin verir.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ToolStripAllowItemReorderAndAllowDropCannotBeSetToTrue">
         <source>AllowItemReorder and AllowDrop cannot both be true.</source>
         <target state="translated">Hem AllowItemReorder hem de AllowDrop True olamaz.</target>
@@ -10227,6 +10342,11 @@ Geçersiz işlemin gerçekleştiği yığın izi:
       <trans-unit id="ToolStripItemRightToLeftDescr">
         <source>Indicates whether the item should draw right-to-left for RTL languages.</source>
         <target state="translated">Sağdan-sola (RTL) yazılan diller için öğenin sağdan sola doğru çizilmesi gerekip gerekmediğini gösterir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToolStripItemSelectedChangedDescr">
+        <source>Occurs when the Selected property value changes.</source>
+        <target state="translated">Seçilen özellik değeri değiştiğinde gerçekleşir.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToolStripItemSize">

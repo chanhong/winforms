@@ -18,7 +18,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_Ctor_Default()
     {
-        using var control = new SubComboBox();
+        using SubComboBox control = new();
         Assert.Null(control.AccessibleDefaultActionDescription);
         Assert.Null(control.AccessibleDescription);
         Assert.Null(control.AccessibleName);
@@ -135,7 +135,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_CreateParams_GetDefault_ReturnsExpected()
     {
-        using var control = new SubComboBox();
+        using SubComboBox control = new();
         CreateParams createParams = control.CreateParams;
         Assert.Null(createParams.Caption);
         Assert.Equal("ComboBox", createParams.ClassName);
@@ -156,7 +156,7 @@ public class ComboBoxTests
     [InvalidEnumData<AutoCompleteMode>]
     public void ComboBox_AutoCompleteMode_SetInvalidValue_ThrowsInvalidEnumArgumentException(AutoCompleteMode value)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => control.AutoCompleteMode = value);
     }
 
@@ -170,7 +170,7 @@ public class ComboBoxTests
     [MemberData(nameof(BackColor_Set_TestData))]
     public void ComboBox_BackColor_Set_GetReturnsExpected(Color value, Color expected)
     {
-        using var control = new ComboBox
+        using ComboBox control = new()
         {
             BackColor = value
         };
@@ -193,7 +193,7 @@ public class ComboBoxTests
     [MemberData(nameof(BackColor_SetWithHandle_TestData))]
     public void ComboBox_BackColor_SetWithHandle_GetReturnsExpected(Color value, Color expected, int expectedInvalidatedCallCount)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -218,10 +218,30 @@ public class ComboBoxTests
         Assert.Equal(0, createdCallCount);
     }
 
+    [WinFormsTheory]
+    [InlineData(0, 0)]
+    [InlineData(5, 5)]
+    [InlineData(-1, 0)]
+    [InlineData(int.MaxValue, int.MaxValue)]
+    public void ComboBox_MaxLength_Set_GetReturnsExpected(int value, int expected)
+    {
+        using ComboBox control = new();
+        control.MaxLength = value;
+        control.MaxLength.Should().Be(expected);
+        control.IsHandleCreated.Should().BeFalse();
+
+        if (control.Handle != IntPtr.Zero)
+        {
+            control.MaxLength = value;
+            control.MaxLength.Should().Be(expected);
+            control.IsHandleCreated.Should().BeTrue();
+        }
+    }
+
     [WinFormsFact]
     public void ComboBox_BackColor_SetWithHandler_CallsBackColorChanged()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -257,7 +277,7 @@ public class ComboBoxTests
     public void ComboBox_BackColor_ResetValue_Success()
     {
         PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(ComboBox))[nameof(ComboBox.BackColor)];
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.False(property.CanResetValue(control));
 
         control.BackColor = Color.Red;
@@ -273,7 +293,7 @@ public class ComboBoxTests
     public void ComboBox_BackColor_ShouldSerializeValue_Success()
     {
         PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(ComboBox))[nameof(ComboBox.BackColor)];
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.False(property.ShouldSerializeValue(control));
 
         control.BackColor = Color.Red;
@@ -285,11 +305,200 @@ public class ComboBoxTests
         Assert.False(property.ShouldSerializeValue(control));
     }
 
+    [WinFormsFact]
+    public void ComboBox_MeasureItem_AddHandler()
+    {
+        using ComboBox control = new();
+        int initialItemHeight = control.ItemHeight;
+
+        MeasureItemEventHandler handler = (sender, e) => { };
+        control.MeasureItem += handler;
+
+        control.ItemHeight.Should().NotBe(initialItemHeight);
+    }
+
+    private class TestComboBox : ComboBox
+    {
+        public void TriggerMeasureItem(MeasureItemEventArgs e) =>
+            base.OnMeasureItem(e);
+    }
+
+    [WinFormsFact]
+    public void ComboBox_MeasureItem_RemoveHandler()
+    {
+        using TestComboBox control = new();
+        int handlerCallCount = 0;
+        MeasureItemEventHandler handler = (sender, e) => { handlerCallCount++; };
+
+        control.MeasureItem += handler;
+
+        // Simulate the MeasureItem event
+        control.TriggerMeasureItem(new MeasureItemEventArgs(Graphics.FromHwnd(IntPtr.Zero), 0, 0));
+
+        control.MeasureItem -= handler;
+
+        // Simulate the MeasureItem event again to ensure the handler was removed
+        control.TriggerMeasureItem(new MeasureItemEventArgs(Graphics.FromHwnd(IntPtr.Zero), 0, 0));
+
+        handlerCallCount.Should().Be(1, "The MeasureItem event handler was not removed as expected.");
+    }
+
+    private class TestableComboBox : ComboBox
+    {
+        public void InvokeOnPaint(PaintEventArgs e) => base.OnPaint(e);
+    }
+
+    [WinFormsFact]
+    public void ComboBox_Paint_AddHandler_ShouldSubscribeEvent()
+    {
+        using TestableComboBox comboBox = new();
+        int callCount = 0;
+
+        PaintEventHandler handler = (sender, e) => callCount++;
+
+        comboBox.Paint += handler;
+        comboBox.TestAccessor().Dynamic.OnPaint(new PaintEventArgs(Graphics.FromHwnd(comboBox.Handle), default));
+
+        callCount.Should().Be(1);
+    }
+
+    [WinFormsFact]
+    public void ComboBox_Paint_RemoveHandler_ShouldUnsubscribeEvent()
+    {
+        using TestableComboBox comboBox = new();
+        int callCount = 0;
+
+        PaintEventHandler handler = (sender, e) => callCount++;
+        comboBox.Paint += handler;
+        comboBox.InvokeOnPaint(new PaintEventArgs(Graphics.FromHwnd(comboBox.Handle), default));
+        callCount.Should().Be(1);
+
+        comboBox.Paint -= handler;
+        comboBox.InvokeOnPaint(new PaintEventArgs(Graphics.FromHwnd(comboBox.Handle), default));
+        callCount.Should().Be(1);
+    }
+
+    [WinFormsFact]
+    public void ComboBox_Paint_EventHandlerCalledOnPaint()
+    {
+        using TestableComboBox comboBox = new();
+        using Bitmap bitmap = new(100, 100);
+        Graphics graphics = Graphics.FromImage(bitmap);
+        bool handlerCalled = false;
+
+        comboBox.Paint += (sender, e) => handlerCalled = true;
+        comboBox.InvokeOnPaint(new PaintEventArgs(graphics, new Rectangle(0, 0, 100, 100)));
+
+        handlerCalled.Should().BeTrue();
+    }
+
+    [WinFormsFact]
+    public void VerifyAutoCompleteEntries()
+    {
+        static void AssertAutoCompleteCustomSource(string[] items, bool isHandleCreated)
+        {
+            using ComboBox control = new();
+
+            if (items is not null)
+            {
+                AutoCompleteStringCollection autoCompleteCustomSource = [.. items];
+                control.AutoCompleteCustomSource = autoCompleteCustomSource;
+                control.AutoCompleteCustomSource.Should().BeEquivalentTo(autoCompleteCustomSource);
+            }
+            else
+            {
+                control.AutoCompleteCustomSource = null;
+                control.AutoCompleteCustomSource.Should().NotBeNull();
+                control.AutoCompleteCustomSource.Count.Should().Be(0);
+            }
+
+            control.IsHandleCreated.Should().Be(isHandleCreated);
+        }
+
+        AssertAutoCompleteCustomSource(["item1", "item2"], false);
+        AssertAutoCompleteCustomSource(null, false);
+        AssertAutoCompleteCustomSource(["item3", "item4"], false);
+    }
+
+    [WinFormsFact]
+    public void ComboBox_BeginEndUpdate()
+    {
+        using ComboBox control1 = new();
+        control1.BeginUpdate();
+        control1.EndUpdate();
+
+        using ComboBox control2 = new() { AutoCompleteSource = AutoCompleteSource.ListItems };
+        control2.BeginUpdate();
+        control2.EndUpdate();
+        control2.AutoCompleteMode.Should().Be(AutoCompleteMode.None);
+
+        using ComboBox control3 = new();
+        control3.BeginUpdate();
+        control3.CreateControl();
+        control3.EndUpdate();
+        control3.IsHandleCreated.Should().BeTrue();
+
+        using ComboBox control4 = new();
+        Exception exception = Record.Exception(control4.EndUpdate);
+        exception.Should().BeNull();
+    }
+
+    [WinFormsFact]
+    public void ComboBox_SelectedTextTests()
+    {
+        using ComboBox control = new();
+
+        control.IsHandleCreated.Should().BeFalse();
+        {
+            control.SelectedText.Should().BeEmpty();
+        }
+
+        control.CreateControl();
+        control.IsHandleCreated.Should().BeTrue();
+        {
+            control.SelectedText.Should().BeEmpty();
+        }
+
+        control.DropDownStyle = ComboBoxStyle.DropDownList;
+        control.CreateControl();
+        if (control.DropDownStyle == ComboBoxStyle.DropDownList)
+        {
+            control.SelectedText.Should().BeEmpty();
+        }
+
+        // Test SetWithoutHandle
+        control.CreateControl();
+        {
+            control.SelectedText = "Test";
+            control.SelectedText.Should().BeEmpty();
+        }
+
+        // Test SetWithHandle
+        control.DropDownStyle = ComboBoxStyle.DropDown;
+        control.Text = "Initial";
+        control.SelectionStart = 0;
+        control.SelectionLength = 7;
+        control.CreateControl();
+        {
+            control.SelectedText = "Test";
+            control.Text.Should().Be("Test");
+        }
+
+        // Test SetWithDropDownListStyle
+        control.DropDownStyle = ComboBoxStyle.DropDownList;
+        control.CreateControl();
+        if (control.DropDownStyle == ComboBoxStyle.DropDownList)
+        {
+            control.SelectedText = "Test";
+            control.SelectedText.Should().BeEmpty();
+        }
+    }
+
     [WinFormsTheory]
     [CommonMemberData(typeof(CommonTestHelperEx), nameof(CommonTestHelperEx.GetImageTheoryData))]
     public void ComboBox_BackgroundImage_Set_GetReturnsExpected(Image value)
     {
-        using var control = new ComboBox
+        using ComboBox control = new()
         {
             BackgroundImage = value
         };
@@ -305,7 +514,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_BackgroundImage_SetWithHandler_CallsBackgroundImageChanged()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -316,7 +525,7 @@ public class ComboBoxTests
         control.BackgroundImageChanged += handler;
 
         // Set different.
-        using var image1 = new Bitmap(10, 10);
+        using Bitmap image1 = new(10, 10);
         control.BackgroundImage = image1;
         Assert.Same(image1, control.BackgroundImage);
         Assert.Equal(1, callCount);
@@ -327,7 +536,7 @@ public class ComboBoxTests
         Assert.Equal(1, callCount);
 
         // Set different.
-        using var image2 = new Bitmap(10, 10);
+        using Bitmap image2 = new(10, 10);
         control.BackgroundImage = image2;
         Assert.Same(image2, control.BackgroundImage);
         Assert.Equal(2, callCount);
@@ -348,7 +557,7 @@ public class ComboBoxTests
     [EnumData<ImageLayout>]
     public void ComboBox_BackgroundImageLayout_Set_GetReturnsExpected(ImageLayout value)
     {
-        using var control = new ComboBox
+        using ComboBox control = new()
         {
             BackgroundImageLayout = value
         };
@@ -364,7 +573,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_BackgroundImageLayout_SetWithHandler_CallsBackgroundImageLayoutChanged()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -400,7 +609,7 @@ public class ComboBoxTests
     [InvalidEnumData<ImageLayout>]
     public void ComboBox_BackgroundImageLayout_SetInvalid_ThrowsInvalidEnumArgumentException(ImageLayout value)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => control.BackgroundImageLayout = value);
     }
 
@@ -410,7 +619,7 @@ public class ComboBoxTests
         yield return new object[] { new List<int>() };
         yield return new object[] { Array.Empty<int>() };
 
-        var mockSource = new Mock<IListSource>(MockBehavior.Strict);
+        Mock<IListSource> mockSource = new(MockBehavior.Strict);
         mockSource
             .Setup(s => s.GetList())
             .Returns(new int[] { 1 });
@@ -421,7 +630,7 @@ public class ComboBoxTests
     [MemberData(nameof(DataSource_Set_TestData))]
     public void ComboBox_DataSource_Set_GetReturnsExpected(object value)
     {
-        using var control = new SubComboBox
+        using SubComboBox control = new()
         {
             DataSource = value
         };
@@ -441,7 +650,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_DataSource_SetWithHandler_CallsDataSourceChanged()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         int dataSourceCallCount = 0;
         int displayMemberCallCount = 0;
         EventHandler dataSourceHandler = (sender, e) =>
@@ -460,7 +669,7 @@ public class ComboBoxTests
         control.DisplayMemberChanged += displayMemberHandler;
 
         // Set different.
-        var dataSource1 = new List<int>();
+        List<int> dataSource1 = [];
         control.DataSource = dataSource1;
         Assert.Same(dataSource1, control.DataSource);
         Assert.Equal(0, dataSourceCallCount);
@@ -473,7 +682,7 @@ public class ComboBoxTests
         Assert.Equal(0, displayMemberCallCount);
 
         // Set different.
-        var dataSource2 = new List<int>();
+        List<int> dataSource2 = [];
         control.DataSource = dataSource2;
         Assert.Same(dataSource2, control.DataSource);
         Assert.Equal(0, dataSourceCallCount);
@@ -494,11 +703,125 @@ public class ComboBoxTests
         Assert.Equal(0, displayMemberCallCount);
     }
 
+    public class CustomComboBox : ComboBox
+    {
+        // Make methods private to improve encapsulation
+        private void RaiseOnDrawItem(DrawItemEventArgs e) => base.OnDrawItem(e);
+
+        private void TriggerDoubleClick() => base.OnDoubleClick(EventArgs.Empty);
+
+        // Public methods to trigger the private methods for testing purposes
+        public void TestRaiseOnDrawItem(DrawItemEventArgs e) => RaiseOnDrawItem(e);
+
+        public void TestTriggerDoubleClick() => TriggerDoubleClick();
+    }
+
+    [WinFormsFact]
+    public void ComboBox_DrawItem_AddHandler_ShouldCallHandler()
+    {
+        using CustomComboBox control = new();
+        using Bitmap bitmap = new(1, 1);
+        Graphics graphics = Graphics.FromImage(bitmap);
+        int callCount = 0;
+
+        DrawItemEventHandler handler = (sender, e) => callCount++;
+
+        control.DrawItem += handler;
+        control.TestRaiseOnDrawItem(new DrawItemEventArgs(graphics, control.Font, default, 0, DrawItemState.Default));
+
+        callCount.Should().Be(1);
+        control.DrawItem -= handler;
+    }
+
+    [WinFormsFact]
+    public void ComboBox_DrawItem_RemoveHandler_ShouldNotCallHandler()
+    {
+        using CustomComboBox control = new();
+        int callCount = 0;
+
+        DrawItemEventHandler handler = (sender, e) => callCount++;
+
+        control.DrawItem += handler;
+        control.DrawItem -= handler;
+        using Bitmap bitmap = new(1, 1);
+        control.TestRaiseOnDrawItem(new DrawItemEventArgs(Graphics.FromImage(bitmap), control.Font, default, 0, DrawItemState.Default));
+
+        callCount.Should().Be(0);
+    }
+
+    [WinFormsFact]
+    public void ComboBox_DrawItem_AddNullHandler_ShouldNotThrow()
+    {
+        using CustomComboBox control = new();
+
+        // No exception means the test passed.
+        control.DrawItem += null;
+        control.DrawItem -= null;
+    }
+
+    [WinFormsFact]
+    public void ComboBox_DrawItem_AddRemoveMultipleHandlers_ShouldCallHandlers()
+    {
+        using CustomComboBox control = new();
+        using Bitmap bitmap = new(1, 1);
+        Graphics graphics = Graphics.FromImage(bitmap);
+        int callCount1 = 0;
+        int callCount2 = 0;
+
+        DrawItemEventHandler handler1 = (sender, e) => callCount1++;
+        DrawItemEventHandler handler2 = (sender, e) => callCount2++;
+
+        control.DrawItem += handler1;
+        control.DrawItem += handler2;
+        control.TestRaiseOnDrawItem(new DrawItemEventArgs(graphics, control.Font, default, 0, DrawItemState.Default));
+
+        callCount1.Should().Be(1);
+        callCount2.Should().Be(1);
+
+        control.DrawItem -= handler1;
+        control.TestRaiseOnDrawItem(new DrawItemEventArgs(graphics, control.Font, default, 0, DrawItemState.Default));
+
+        callCount1.Should().Be(1); // Should not increase
+        callCount2.Should().Be(2); // Should increase
+    }
+
+    [WinFormsFact]
+    public void ComboBox_DrawItem_RemoveNonExistentHandler_ShouldNotThrow()
+    {
+        using CustomComboBox control = new();
+        DrawItemEventHandler handler = (sender, e) => { };
+
+        // No exception means the test passed.
+        control.DrawItem -= handler;
+    }
+
+    [WinFormsTheory]
+    [InlineData(1)]
+    [InlineData(0)]
+    public void ComboBox_DoubleClick_AddRemoveEvent_Success(int expectedCallCount)
+    {
+        using CustomComboBox control = new();
+        int callCount = 0;
+        EventHandler handler = (sender, e) => callCount++;
+
+        if (expectedCallCount == 1)
+        {
+            control.DoubleClick += handler;
+        }
+
+        control.TestTriggerDoubleClick();
+        callCount.Should().Be(expectedCallCount);
+
+        control.DoubleClick -= handler;
+        control.TestTriggerDoubleClick();
+        callCount.Should().Be(expectedCallCount);
+    }
+
     [WinFormsTheory]
     [EnumData<ComboBoxStyle>]
     public void ComboBox_DropDownStyle_Set_GetReturnsExpected(ComboBoxStyle value)
     {
-        using var control = new ComboBox
+        using ComboBox control = new()
         {
             DropDownStyle = value
         };
@@ -528,7 +851,7 @@ public class ComboBoxTests
     [MemberData(nameof(DropDownStyle_Set_TestData))]
     public void ComboBox_DropDownStyle_SetWithSourceAndMode_GetReturnsExpected(AutoCompleteSource source, AutoCompleteMode mode, ComboBoxStyle value, AutoCompleteMode expectedMode)
     {
-        using var control = new ComboBox
+        using ComboBox control = new()
         {
             AutoCompleteSource = source,
             AutoCompleteMode = mode,
@@ -551,7 +874,7 @@ public class ComboBoxTests
     [EnumData<AutoCompleteSource>]
     public void ComboBox_AutoCompleteSource_Set_GetReturnsExpected(AutoCompleteSource value)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         control.AutoCompleteSource = value;
         Assert.Equal(value, control.AutoCompleteSource);
     }
@@ -560,14 +883,14 @@ public class ComboBoxTests
     [InvalidEnumData<AutoCompleteSource>]
     public void ComboBox_AutoCompleteSource_InvalidAutoCompleteSource_ThrowsInvalidEnumArgumentException(AutoCompleteSource source)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => control.AutoCompleteSource = source);
     }
 
     [WinFormsFact]
     public void ComboBox_DropDownStyle_SetWithPreferredHeight_ResetsPreferredHeight()
     {
-        using var control = new ComboBox
+        using ComboBox control = new()
         {
             FormattingEnabled = true
         };
@@ -590,7 +913,7 @@ public class ComboBoxTests
     [InlineData(ComboBoxStyle.DropDownList, 1)]
     public void ComboBox_DropDownStyle_SetWithHandle_GetReturnsExpected(ComboBoxStyle value, int expectedCreatedCallCount)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -618,7 +941,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_DropDownStyle_SetWithHandler_CallsDropDownStyleChanged()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -654,7 +977,7 @@ public class ComboBoxTests
     [InvalidEnumData<ComboBoxStyle>]
     public void ComboBox_DropDownStyle_SetInvalidValue_ThrowsInvalidEnumArgumentException(ComboBoxStyle value)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => control.DropDownStyle = value);
     }
 
@@ -662,7 +985,7 @@ public class ComboBoxTests
     [CommonMemberData(typeof(CommonTestHelperEx), nameof(CommonTestHelperEx.GetFontTheoryData))]
     public void ComboBox_Font_Set_GetReturnsExpected(Font value)
     {
-        using var control = new SubComboBox
+        using SubComboBox control = new()
         {
             Font = value
         };
@@ -680,7 +1003,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_Font_SetWithHandler_CallsFontChanged()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -691,7 +1014,7 @@ public class ComboBoxTests
         control.FontChanged += handler;
 
         // Set different.
-        using var font1 = new Font("Arial", 8.25f);
+        using Font font1 = new("Arial", 8.25f);
         control.Font = font1;
         Assert.Same(font1, control.Font);
         Assert.Equal(1, callCount);
@@ -732,7 +1055,7 @@ public class ComboBoxTests
     [MemberData(nameof(ForeColor_Set_TestData))]
     public void ComboBox_ForeColor_Set_GetReturnsExpected(Color value, Color expected)
     {
-        using var control = new ComboBox
+        using ComboBox control = new()
         {
             ForeColor = value
         };
@@ -758,7 +1081,7 @@ public class ComboBoxTests
     [MemberData(nameof(ForeColor_SetWithHandle_TestData))]
     public void ComboBox_ForeColor_SetWithHandle_GetReturnsExpected(Color value, Color expected, int expectedInvalidatedCallCount)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -786,7 +1109,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_ForeColor_SetWithHandler_CallsForeColorChanged()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -822,7 +1145,7 @@ public class ComboBoxTests
     public void ComboBox_ForeColor_ResetValue_Success()
     {
         PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(ComboBox))[nameof(ComboBox.ForeColor)];
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.False(property.CanResetValue(control));
 
         control.ForeColor = Color.Red;
@@ -838,7 +1161,7 @@ public class ComboBoxTests
     public void ComboBox_ForeColor_ShouldSerializeValue_Success()
     {
         PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(ComboBox))[nameof(ComboBox.ForeColor)];
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.False(property.ShouldSerializeValue(control));
 
         control.ForeColor = Color.Red;
@@ -854,7 +1177,7 @@ public class ComboBoxTests
     [CommonMemberData(typeof(CommonTestHelperEx), nameof(CommonTestHelperEx.GetPaddingNormalizedTheoryData))]
     public void ComboBox_Padding_Set_GetReturnsExpected(Padding value, Padding expected)
     {
-        using var control = new ComboBox
+        using ComboBox control = new()
         {
             Padding = value
         };
@@ -871,7 +1194,7 @@ public class ComboBoxTests
     [CommonMemberData(typeof(CommonTestHelperEx), nameof(CommonTestHelperEx.GetPaddingNormalizedTheoryData))]
     public void ComboBox_Padding_SetWithHandle_GetReturnsExpected(Padding value, Padding expected)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -899,7 +1222,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_Padding_SetWithHandler_CallsPaddingChanged()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -910,7 +1233,7 @@ public class ComboBoxTests
         control.PaddingChanged += handler;
 
         // Set different.
-        var padding1 = new Padding(1);
+        Padding padding1 = new(1);
         control.Padding = padding1;
         Assert.Equal(padding1, control.Padding);
         Assert.Equal(1, callCount);
@@ -921,7 +1244,7 @@ public class ComboBoxTests
         Assert.Equal(1, callCount);
 
         // Set different.
-        var padding2 = new Padding(2);
+        Padding padding2 = new(2);
         control.Padding = padding2;
         Assert.Equal(padding2, control.Padding);
         Assert.Equal(2, callCount);
@@ -937,7 +1260,7 @@ public class ComboBoxTests
     [CommonMemberData(typeof(CommonTestHelperEx), nameof(CommonTestHelperEx.GetRightToLeftTheoryData))]
     public void ComboBox_RightToLeft_Set_GetReturnsExpected(RightToLeft value, RightToLeft expected)
     {
-        using var control = new ComboBox
+        using ComboBox control = new()
         {
             RightToLeft = value
         };
@@ -953,7 +1276,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_RightToLeft_SetWithHandler_CallsRightToLeftChanged()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -989,7 +1312,7 @@ public class ComboBoxTests
     [InvalidEnumData<RightToLeft>]
     public void ComboBox_RightToLeft_SetInvalid_ThrowsInvalidEnumArgumentException(RightToLeft value)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => control.RightToLeft = value);
     }
 
@@ -999,7 +1322,7 @@ public class ComboBoxTests
     [InlineData(1, "System.Windows.Forms.Tests.ComboBoxTests+DataClass")]
     public void ComboBox_SelectedIndex_SetWithoutDisplayMember_GetReturnsExpected(int value, string expectedText)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         control.Items.Add(new DataClass { Value = "Value1" });
         control.Items.Add(new DataClass { Value = "Value2" });
 
@@ -1021,7 +1344,7 @@ public class ComboBoxTests
     [InlineData(1, "Value2")]
     public void ComboBox_SelectedIndex_SetWithDisplayMember_GetReturnsExpected(int value, string expectedText)
     {
-        using var control = new ComboBox
+        using ComboBox control = new()
         {
             DisplayMember = "Value"
         };
@@ -1043,7 +1366,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_SelectedText_GetWithoutHandle_ReturnsExpected()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.Empty(control.SelectedText);
         Assert.True(control.IsHandleCreated);
 
@@ -1055,7 +1378,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_SelectedText_GetWithHandle_ReturnsExpected()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
 
         Assert.Empty(control.SelectedText);
@@ -1069,7 +1392,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_SelectionLength_GetWithoutHandle_ReturnsExpected()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.Equal(0, control.SelectionLength);
         Assert.True(control.IsHandleCreated);
 
@@ -1081,7 +1404,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_SelectionLength_GetWithHandle_ReturnsExpected()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
 
         Assert.Equal(0, control.SelectionLength);
@@ -1095,7 +1418,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_SelectionStart_GetWithoutHandle_ReturnsExpected()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.False(control.IsHandleCreated);
         Assert.Equal(0, control.SelectionStart);
         Assert.True(control.IsHandleCreated); // SelectionStart forces Handle creating
@@ -1108,7 +1431,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_SelectionStart_GetWithHandle_ReturnsExpected()
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
 
         Assert.Equal(0, control.SelectionStart);
@@ -1122,7 +1445,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_GetAutoSizeMode_Invoke_ReturnsExpected()
     {
-        using var control = new SubComboBox();
+        using SubComboBox control = new();
         Assert.Equal(AutoSizeMode.GrowOnly, control.GetAutoSizeMode());
     }
 
@@ -1149,7 +1472,7 @@ public class ComboBoxTests
     [InlineData((ControlStyles)(-1), false)]
     public void ComboBox_GetStyle_Invoke_ReturnsExpected(ControlStyles flag, bool expected)
     {
-        using var control = new SubComboBox();
+        using SubComboBox control = new();
         Assert.Equal(expected, control.GetStyle(flag));
 
         // Call again to test caching.
@@ -1159,7 +1482,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void ComboBox_GetTopLevel_Invoke_ReturnsExpected()
     {
-        using var control = new SubComboBox();
+        using SubComboBox control = new();
         Assert.False(control.GetTopLevel());
     }
 
@@ -1171,14 +1494,14 @@ public class ComboBoxTests
             yield return new object[] { new ComboBox(), string.Empty, startIndex, -1 };
             yield return new object[] { new ComboBox(), "s", startIndex, -1 };
 
-            using var controlWithNoItems = new ComboBox();
+            using ComboBox controlWithNoItems = new();
             Assert.Empty(controlWithNoItems.Items);
             yield return new object[] { new ComboBox(), null, startIndex, -1 };
             yield return new object[] { new ComboBox(), string.Empty, startIndex, -1 };
             yield return new object[] { new ComboBox(), "s", startIndex, -1 };
         }
 
-        using var controlWithItems = new ComboBox
+        using ComboBox controlWithItems = new()
         {
             DisplayMember = "Value"
         };
@@ -1262,7 +1585,7 @@ public class ComboBoxTests
     [InlineData(2)]
     public void ComboBox_FindString_InvalidStartIndex_ThrowsArgumentOutOfRangeException(int startIndex)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         control.Items.Add("item");
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => control.FindString("s", startIndex));
     }
@@ -1277,7 +1600,7 @@ public class ComboBoxTests
                 yield return new object[] { new ComboBox(), string.Empty, startIndex, ignoreCase, -1 };
                 yield return new object[] { new ComboBox(), "s", startIndex, ignoreCase, -1 };
 
-                using var controlWithNoItems = new ComboBox();
+                using ComboBox controlWithNoItems = new();
                 Assert.Empty(controlWithNoItems.Items);
                 yield return new object[] { new ComboBox(), null, startIndex, ignoreCase, -1 };
                 yield return new object[] { new ComboBox(), string.Empty, startIndex, ignoreCase, -1 };
@@ -1285,7 +1608,7 @@ public class ComboBoxTests
             }
         }
 
-        using var controlWithItems = new ComboBox
+        using ComboBox controlWithItems = new()
         {
             DisplayMember = "Value"
         };
@@ -1386,7 +1709,7 @@ public class ComboBoxTests
     [InlineData(2)]
     public void ComboBox_FindStringExact_InvalidStartIndex_ThrowsArgumentOutOfRangeException(int startIndex)
     {
-        using var control = new ComboBox();
+        using ComboBox control = new();
         control.Items.Add("item");
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => control.FindStringExact("s", startIndex));
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => control.FindStringExact("s", startIndex, ignoreCase: true));
@@ -1395,14 +1718,14 @@ public class ComboBoxTests
 
     private void SendCtrlBackspace(SubComboBox tb)
     {
-        var message = new Message();
+        Message message = default;
         tb.ProcessCmdKey(ref message, Keys.Control | Keys.Back);
     }
 
     [WinFormsFact]
     public void CtrlBackspaceTextRemainsEmpty()
     {
-        using SubComboBox control = new SubComboBox();
+        using SubComboBox control = new();
         control.ConfigureForCtrlBackspace();
         SendCtrlBackspace(control);
         Assert.Equal("", control.Text);
@@ -1412,7 +1735,7 @@ public class ComboBoxTests
     [CommonMemberData(typeof(CommonTestHelper), nameof(CommonTestHelper.GetCtrlBackspaceData))]
     public void CtrlBackspaceTextChanged(string value, string expected, int cursorRelativeToEnd)
     {
-        using SubComboBox control = new SubComboBox(value);
+        using SubComboBox control = new(value);
         control.ConfigureForCtrlBackspace(cursorRelativeToEnd);
         SendCtrlBackspace(control);
         Assert.Equal(expected, control.Text);
@@ -1422,7 +1745,7 @@ public class ComboBoxTests
     [CommonMemberData(typeof(CommonTestHelper), nameof(CommonTestHelper.GetCtrlBackspaceRepeatedData))]
     public void CtrlBackspaceRepeatedTextChanged(string value, string expected, int repeats)
     {
-        using SubComboBox control = new SubComboBox(value);
+        using SubComboBox control = new(value);
         control.ConfigureForCtrlBackspace();
         for (int i = 0; i < repeats; i++)
         {
@@ -1435,7 +1758,7 @@ public class ComboBoxTests
     [WinFormsFact]
     public void CtrlBackspaceDeletesSelection()
     {
-        using SubComboBox control = new SubComboBox("123-5-7-9");
+        using SubComboBox control = new("123-5-7-9");
         control.ConfigureForCtrlBackspace();
         control.SelectionStart = 2;
         control.SelectionLength = 5;
@@ -1473,7 +1796,7 @@ public class ComboBoxTests
     {
         using (new NoAssertContext())
         {
-            using var control = new SubComboBox
+            using SubComboBox control = new()
             {
                 FlatStyle = flatStyle
             };
@@ -1483,9 +1806,9 @@ public class ComboBoxTests
             int paintCallCount = 0;
             control.Paint += (sender, e) => paintCallCount++;
 
-            var m = new Message
+            Message m = new()
             {
-                Msg = (int)PInvoke.WM_PAINT
+                Msg = (int)PInvokeCore.WM_PAINT
             };
             control.WndProc(ref m);
             Assert.Equal(expectedIsHandleCreated, control.IsHandleCreated);
@@ -1499,7 +1822,7 @@ public class ComboBoxTests
     {
         using (new NoAssertContext())
         {
-            using var control = new SubComboBox
+            using SubComboBox control = new()
             {
                 FlatStyle = flatStyle,
                 Bounds = new Rectangle(1, 2, 30, 40)
@@ -1510,9 +1833,9 @@ public class ComboBoxTests
             int paintCallCount = 0;
             control.Paint += (sender, e) => paintCallCount++;
 
-            var m = new Message
+            Message m = new()
             {
-                Msg = (int)PInvoke.WM_PAINT
+                Msg = (int)PInvokeCore.WM_PAINT
             };
             control.WndProc(ref m);
             Assert.Equal(expectedIsHandleCreated, control.IsHandleCreated);
@@ -1548,7 +1871,7 @@ public class ComboBoxTests
     [MemberData(nameof(WndProc_PaintWithoutWParamWithHandle_TestData))]
     public void ComboBox_WndProc_InvokePaintWithoutWParamWithHandle_Success(FlatStyle flatStyle, bool userPaint, bool doubleBuffered, bool allPaintingInWmPaint, int expectedPaintCallCount)
     {
-        using var control = new SubComboBox
+        using SubComboBox control = new()
         {
             FlatStyle = flatStyle
         };
@@ -1565,9 +1888,9 @@ public class ComboBoxTests
         int paintCallCount = 0;
         control.Paint += (sender, e) => paintCallCount++;
 
-        var m = new Message
+        Message m = new()
         {
-            Msg = (int)PInvoke.WM_PAINT
+            Msg = (int)PInvokeCore.WM_PAINT
         };
         control.WndProc(ref m);
         Assert.True(control.IsHandleCreated);
@@ -1581,7 +1904,7 @@ public class ComboBoxTests
     [MemberData(nameof(WndProc_PaintWithoutWParamWithHandle_TestData))]
     public void ComboBox_WndProc_InvokePaintWithoutWParamWithBoundsWithHandle_Success(FlatStyle flatStyle, bool userPaint, bool doubleBuffered, bool allPaintingInWmPaint, int expectedPaintCallCount)
     {
-        using var control = new SubComboBox
+        using SubComboBox control = new()
         {
             FlatStyle = flatStyle,
             Bounds = new Rectangle(1, 2, 30, 40)
@@ -1599,9 +1922,9 @@ public class ComboBoxTests
         int paintCallCount = 0;
         control.Paint += (sender, e) => paintCallCount++;
 
-        var m = new Message
+        Message m = new()
         {
-            Msg = (int)PInvoke.WM_PAINT
+            Msg = (int)PInvokeCore.WM_PAINT
         };
         control.WndProc(ref m);
         Assert.True(control.IsHandleCreated);
@@ -1641,12 +1964,12 @@ public class ComboBoxTests
     {
         using (new NoAssertContext())
         {
-            using var image = new Bitmap(10, 10);
+            using Bitmap image = new(10, 10);
             using Graphics graphics = Graphics.FromImage(image);
             IntPtr hdc = graphics.GetHdc();
             try
             {
-                using var control = new SubComboBox
+                using SubComboBox control = new()
                 {
                     FlatStyle = flatStyle
                 };
@@ -1656,9 +1979,9 @@ public class ComboBoxTests
                 int paintCallCount = 0;
                 control.Paint += (sender, e) => paintCallCount++;
 
-                var m = new Message
+                Message m = new()
                 {
-                    Msg = (int)PInvoke.WM_PAINT,
+                    Msg = (int)PInvokeCore.WM_PAINT,
                     WParam = hdc
                 };
                 control.WndProc(ref m);
@@ -1678,12 +2001,12 @@ public class ComboBoxTests
     {
         using (new NoAssertContext())
         {
-            using var image = new Bitmap(10, 10);
+            using Bitmap image = new(10, 10);
             using Graphics graphics = Graphics.FromImage(image);
             IntPtr hdc = graphics.GetHdc();
             try
             {
-                using var control = new SubComboBox
+                using SubComboBox control = new()
                 {
                     FlatStyle = flatStyle,
                     Bounds = new Rectangle(1, 2, 30, 40)
@@ -1694,9 +2017,9 @@ public class ComboBoxTests
                 int paintCallCount = 0;
                 control.Paint += (sender, e) => paintCallCount++;
 
-                var m = new Message
+                Message m = new()
                 {
-                    Msg = (int)PInvoke.WM_PAINT,
+                    Msg = (int)PInvokeCore.WM_PAINT,
                     WParam = hdc
                 };
                 control.WndProc(ref m);
@@ -1738,12 +2061,12 @@ public class ComboBoxTests
     [MemberData(nameof(WndProc_PaintWithWParamWithHandle_TestData))]
     public void ComboBox_WndProc_InvokePaintWithWParamWithHandle_Success(FlatStyle flatStyle, bool userPaint, bool doubleBuffered, bool allPaintingInWmPaint, int expectedPaintCallCount)
     {
-        using var image = new Bitmap(10, 10);
+        using Bitmap image = new(10, 10);
         using Graphics graphics = Graphics.FromImage(image);
         IntPtr hdc = graphics.GetHdc();
         try
         {
-            using var control = new SubComboBox
+            using SubComboBox control = new()
             {
                 FlatStyle = flatStyle
             };
@@ -1760,9 +2083,9 @@ public class ComboBoxTests
             int paintCallCount = 0;
             control.Paint += (sender, e) => paintCallCount++;
 
-            var m = new Message
+            Message m = new()
             {
-                Msg = (int)PInvoke.WM_PAINT,
+                Msg = (int)PInvokeCore.WM_PAINT,
                 WParam = hdc
             };
             control.WndProc(ref m);
@@ -1782,12 +2105,12 @@ public class ComboBoxTests
     [MemberData(nameof(WndProc_PaintWithWParamWithHandle_TestData))]
     public void ComboBox_WndProc_InvokePaintWithWParamWithBoundsWithHandle_Success(FlatStyle flatStyle, bool userPaint, bool doubleBuffered, bool allPaintingInWmPaint, int expectedPaintCallCount)
     {
-        using var image = new Bitmap(10, 10);
+        using Bitmap image = new(10, 10);
         using Graphics graphics = Graphics.FromImage(image);
         IntPtr hdc = graphics.GetHdc();
         try
         {
-            using var control = new SubComboBox
+            using SubComboBox control = new()
             {
                 FlatStyle = flatStyle,
                 Bounds = new Rectangle(1, 2, 30, 40)
@@ -1805,9 +2128,9 @@ public class ComboBoxTests
             int paintCallCount = 0;
             control.Paint += (sender, e) => paintCallCount++;
 
-            var m = new Message
+            Message m = new()
             {
-                Msg = (int)PInvoke.WM_PAINT,
+                Msg = (int)PInvokeCore.WM_PAINT,
                 WParam = hdc
             };
             control.WndProc(ref m);
@@ -1829,12 +2152,12 @@ public class ComboBoxTests
     [InlineData(ComboBoxStyle.Simple)]
     public void Combobox_SetCustomSize_DoesNotCreateHandle(ComboBoxStyle dropDownStyle)
     {
-        using ComboBox comboBox = new ComboBox() { DropDownStyle = dropDownStyle, Size = new Size(100, 50) };
+        using ComboBox comboBox = new() { DropDownStyle = dropDownStyle, Size = new(100, 50) };
         Assert.False(comboBox.IsHandleCreated);
     }
 
     [WinFormsFact]
-    public void ComboBox_CustomAccessibleObject_DoesntCrashControl_WhenAddingItems()
+    public void ComboBox_CustomAccessibleObject_DoesNotCrashControl_WhenAddingItems()
     {
         using AutomationEventCountingComboBox control = new();
         control.Items.Add("item1");
@@ -1860,7 +2183,7 @@ public class ComboBoxTests
         Assert.True(comboBox.IsHandleCreated);
 
         // The "RaiseAutomationCallCount" method is called from "OnTextChanged" method
-        Assert.Equal(0, comboBoxChildEditUiaProvider.RaiseAutomationCallCount);
+        Assert.Equal(0, comboBoxChildEditUiaProvider._raiseAutomationCallCount);
     }
 
     [WinFormsFact]
@@ -1882,7 +2205,7 @@ public class ComboBoxTests
         Assert.True(comboBox.IsHandleCreated);
 
         // The "RaiseAutomationCallCount" method is called from "OnTextChanged" method
-        Assert.Equal(1, comboBoxChildEditUiaProvider.RaiseAutomationCallCount);
+        Assert.Equal(1, comboBoxChildEditUiaProvider._raiseAutomationCallCount);
     }
 
     [WinFormsFact]
@@ -1902,7 +2225,7 @@ public class ComboBoxTests
         Assert.True(comboBox.IsHandleCreated);
 
         // The "RaiseAutomationCallCount" method is called from "OnTextChanged" method
-        Assert.Equal(0, comboBoxChildEditUiaProvider.RaiseAutomationCallCount);
+        Assert.Equal(0, comboBoxChildEditUiaProvider._raiseAutomationCallCount);
     }
 
     [WinFormsFact]
@@ -1924,7 +2247,7 @@ public class ComboBoxTests
         Assert.True(comboBox.IsHandleCreated);
 
         // The "RaiseAutomationCallCount" method is called from "OnTextChanged" method
-        Assert.Equal(1, comboBoxChildEditUiaProvider.RaiseAutomationCallCount);
+        Assert.Equal(1, comboBoxChildEditUiaProvider._raiseAutomationCallCount);
     }
 
     [WinFormsTheory]
@@ -1965,7 +2288,7 @@ public class ComboBoxTests
 
         Assert.False(comboBox.IsAccessibilityObjectCreated);
         Assert.True(comboBox.IsHandleCreated);
-        Assert.Equal(0, comboBoxChildEditUiaProvider.RaiseAutomationCallCount);
+        Assert.Equal(0, comboBoxChildEditUiaProvider._raiseAutomationCallCount);
     }
 
     [WinFormsFact]
@@ -1987,7 +2310,7 @@ public class ComboBoxTests
         Assert.True(comboBox.IsHandleCreated);
 
         // The "RaiseAutomationEvent" method is called from "OnTextChanged" and "OnSelectedIndexChanged" methods
-        Assert.Equal(2, comboBoxChildEditUiaProvider.RaiseAutomationCallCount);
+        Assert.Equal(2, comboBoxChildEditUiaProvider._raiseAutomationCallCount);
     }
 
     [WinFormsFact]
@@ -2005,7 +2328,7 @@ public class ComboBoxTests
 
         Assert.False(comboBox.IsAccessibilityObjectCreated);
         Assert.True(comboBox.IsHandleCreated);
-        Assert.Equal(0, comboBoxChildEditUiaProvider.RaiseAutomationCallCount);
+        Assert.Equal(0, comboBoxChildEditUiaProvider._raiseAutomationCallCount);
     }
 
     [WinFormsFact]
@@ -2027,7 +2350,7 @@ public class ComboBoxTests
         Assert.True(comboBox.IsHandleCreated);
 
         // The "RaiseAutomationEvent" method is called from "OnTextChanged" method
-        Assert.Equal(1, comboBoxChildEditUiaProvider.RaiseAutomationCallCount);
+        Assert.Equal(1, comboBoxChildEditUiaProvider._raiseAutomationCallCount);
     }
 
     [WinFormsFact]
@@ -2041,7 +2364,7 @@ public class ComboBoxTests
 
         Assert.False(comboBox.IsAccessibilityObjectCreated);
         Assert.True(comboBox.IsHandleCreated);
-        Assert.Equal(0, ((AutomationEventCountingComboBoxAccessibleObject)comboBox.AccessibilityObject).RaiseAutomationCallCount);
+        Assert.Equal(0, ((AutomationEventCountingComboBoxAccessibleObject)comboBox.AccessibilityObject)._raiseAutomationCallCount);
     }
 
     [WinFormsFact]
@@ -2056,7 +2379,7 @@ public class ComboBoxTests
 
         Assert.False(comboBox.IsAccessibilityObjectCreated);
         Assert.True(comboBox.IsHandleCreated);
-        Assert.Equal(0, ((AutomationEventCountingComboBoxAccessibleObject)comboBox.AccessibilityObject).RaiseAutomationCallCount);
+        Assert.Equal(0, ((AutomationEventCountingComboBoxAccessibleObject)comboBox.AccessibilityObject)._raiseAutomationCallCount);
     }
 
     [WinFormsFact]
@@ -2074,7 +2397,7 @@ public class ComboBoxTests
         Assert.True(comboBox.IsHandleCreated);
 
         // The "RaiseAutomationPropertyChangedEvent" method is called from "OnDropDown" method
-        Assert.Equal(1, ((AutomationEventCountingComboBoxAccessibleObject)comboBox.AccessibilityObject).RaiseAutomationCallCount);
+        Assert.Equal(1, ((AutomationEventCountingComboBoxAccessibleObject)comboBox.AccessibilityObject)._raiseAutomationCallCount);
     }
 
     [WinFormsFact]
@@ -2093,7 +2416,7 @@ public class ComboBoxTests
         Assert.True(comboBox.IsHandleCreated);
 
         // The "RaiseAutomationPropertyChangedEvent" method is called from "OnDropDown" and "OnDropDownClosed" method
-        Assert.Equal(2, ((AutomationEventCountingComboBoxAccessibleObject)comboBox.AccessibilityObject).RaiseAutomationCallCount);
+        Assert.Equal(2, ((AutomationEventCountingComboBoxAccessibleObject)comboBox.AccessibilityObject)._raiseAutomationCallCount);
     }
 
     [WinFormsFact]
@@ -2162,7 +2485,7 @@ public class ComboBoxTests
         // All the items are between a - z
         for (int j = 0; j < numItems; j++)
         {
-            string item = (random.Next() % 26 + (char)'a').ToString();
+            string item = (random.Next() % 26 + 'a').ToString();
             items[j] = item;
             comboBox.Items.Add(item);
         }
@@ -2250,12 +2573,12 @@ public class ComboBoxTests
     {
         using OwnerDrawComboBox ownerDrawComboBox = new();
         ownerDrawComboBox.CreateControl();
-        ownerDrawComboBox.Items.AddRange(new object[]
-        {
+        ownerDrawComboBox.Items.AddRange(
+        [
             "One",
             "Two",
             "Three"
-        });
+        ]);
         ownerDrawComboBox.Location = new Point(0, 50);
         Assert.Equal(3, ownerDrawComboBox.MeasureItemEventArgs.Count);
 
@@ -2275,7 +2598,7 @@ public class ComboBoxTests
     public void ComboBox_Select_Item_By_Key(Keys key, int expectedKeyPressesCount, int selectedIndex)
     {
         using ComboBoxWithSelectCounter comboBox = new();
-        comboBox.AddItems(expectedKeyPressesCount+1);
+        comboBox.AddItems(expectedKeyPressesCount + 1);
         comboBox.CreateControl();
         comboBox.SelectedIndex = selectedIndex;
         comboBox.ResetEventsCount();
@@ -2286,6 +2609,135 @@ public class ComboBoxTests
         }
 
         Assert.Equal(expectedKeyPressesCount, comboBox.EventsCount);
+    }
+
+    [WinFormsTheory]
+    [InlineData(DrawMode.Normal)]
+    [InlineData(DrawMode.OwnerDrawFixed)]
+    [InlineData(DrawMode.OwnerDrawVariable)]
+    public void ComboBox_GetItemHeight_Invoke_ReturnsExpected(DrawMode drawMode)
+    {
+        int index = 0;
+        int expected = 15;
+        using ComboBox control = CreateComboBox(drawMode, expected);
+        control.GetItemHeight(index).Should().Be(expected);
+    }
+
+    private ComboBox CreateComboBox(DrawMode drawMode, int itemHeight = 15)
+    {
+        ComboBox control = new()
+        {
+            DrawMode = drawMode,
+            ItemHeight = itemHeight
+        };
+
+        control.Items.Add("Item1");
+        control.Items.Add("Item2");
+        control.Items.Add("Item3");
+        control.CreateControl();
+
+        return control;
+    }
+
+    [WinFormsTheory]
+    [InlineData(-1)]
+    [InlineData(0)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void ComboBox_GetItemHeight_Index_ThrowsArgumentOutOfRangeException(int index)
+    {
+        using ComboBox control = CreateComboBox(DrawMode.OwnerDrawVariable);
+        control.CreateControl(); // Ensure the handle is created
+
+        if (index < 0 || index >= control.Items.Count)
+        {
+            control.Invoking(y => y.GetItemHeight(index))
+                   .Should().Throw<ArgumentOutOfRangeException>()
+                   .WithMessage("*index*")
+                   .Where(ex => ex.ParamName == "index");
+        }
+        else
+        {
+            // Test valid index
+            int itemHeight = control.GetItemHeight(index);
+            itemHeight.Should().BeGreaterThan(0, "Item height should be greater than 0.");
+        }
+    }
+
+    [WinFormsFact]
+    public void ComboBox_GetItemHeight_NoItems_ThrowsArgumentOutOfRangeException()
+    {
+        using ComboBox control = new();
+        control.DrawMode = DrawMode.OwnerDrawVariable;
+        control.CreateControl();
+        control.Invoking(c => c.GetItemHeight(0))
+               .Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [WinFormsTheory]
+    [BoolData]
+    public void ComboBox_ResetText_Invoke_Success(bool withHandle)
+    {
+        using ComboBox control = new();
+        if (withHandle)
+        {
+            Assert.NotEqual(IntPtr.Zero, control.Handle);
+        }
+
+        control.Text = "Some text";
+        control.ResetText();
+        Assert.Equal(string.Empty, control.Text);
+    }
+
+    [WinFormsFact]
+    public void ComboBox_SelectAll_InvokeWithoutHandle_Success()
+    {
+        using ComboBox control = new();
+        control.Items.AddRange(new string[] { "Item1", "Item2", "Item3" });
+        control.Handle.Should().NotBe(IntPtr.Zero);
+        control.SelectAll();
+
+        control.SelectionStart.Should().Be(0);
+        control.SelectionLength.Should().Be(control.Text.Length);
+    }
+
+    [WinFormsFact]
+    public void ComboBox_SelectAll_InvokeWithoutItems_Success()
+    {
+        using ComboBox control = new();
+        control.Handle.Should().NotBe(IntPtr.Zero);
+        control.SelectAll();
+
+        control.SelectionStart.Should().Be(0);
+        control.SelectionLength.Should().Be(control.Text.Length);
+    }
+
+    // Unit test for https://github.com/microsoft/winforms-designer/issues/2707
+    [WinFormsFact]
+    public void ComboBox_CorrectHeightAfterSetDropDownStyleSimple()
+    {
+        using ComboBox comboBox = new();
+
+        int handleCreatedInvoked = 0;
+        comboBox.HandleCreated += (s, e) =>
+        {
+            handleCreatedInvoked++;
+        };
+
+        comboBox.Height.Should().Be(23);
+
+        comboBox.CreateControl();
+
+        comboBox.Height.Should().Be(23);
+        comboBox.DropDownStyle.Should().Be(ComboBoxStyle.DropDown);
+
+        comboBox.DropDownStyle = ComboBoxStyle.Simple;
+
+        // DefaultSimpleStyleHeight is 150 in ComboBox class
+        comboBox.Height.Should().Be(150);
+        comboBox.DropDownStyle.Should().Be(ComboBoxStyle.Simple);
+        handleCreatedInvoked.Should().Be(2);
     }
 
     private void InitializeItems(ComboBox comboBox, int numItems)
@@ -2306,7 +2758,7 @@ public class ComboBoxTests
             FormattingEnabled = true;
         }
 
-        public List<MeasureItemEventArgs> MeasureItemEventArgs { get; } = new List<MeasureItemEventArgs>();
+        public List<MeasureItemEventArgs> MeasureItemEventArgs { get; } = [];
 
         protected override void OnMeasureItem(MeasureItemEventArgs e)
         {
@@ -2329,11 +2781,11 @@ public class ComboBoxTests
         public AutomationEventCountingComboBoxAccessibleObject(ComboBox owner) : base(owner)
         { }
 
-        internal int RaiseAutomationCallCount;
+        internal int _raiseAutomationCallCount;
 
         internal override bool RaiseAutomationPropertyChangedEvent(UIA_PROPERTY_ID propertyId, VARIANT oldValue, VARIANT newValue)
         {
-            RaiseAutomationCallCount++;
+            _raiseAutomationCallCount++;
             return base.RaiseAutomationPropertyChangedEvent(propertyId, oldValue, newValue);
         }
     }
@@ -2342,14 +2794,14 @@ public class ComboBoxTests
     {
         public AutomationEventCountingComboBoxChildEditUiaProvider(ComboBox owner, HWND childEditControlhandle) : base(owner, childEditControlhandle)
         {
-            RaiseAutomationCallCount = 0;
+            _raiseAutomationCallCount = 0;
         }
 
-        internal int RaiseAutomationCallCount;
+        internal int _raiseAutomationCallCount;
 
         internal override bool RaiseAutomationEvent(UIA_EVENT_ID eventId)
         {
-            RaiseAutomationCallCount++;
+            _raiseAutomationCallCount++;
             return base.RaiseAutomationEvent(eventId);
         }
     }
@@ -2431,7 +2883,7 @@ public class ComboBoxTests
         public void ConfigureForCtrlBackspace(int cursorRelativeToEnd = 0)
         {
             Focus();
-            SelectionStart = this.Text.Length + cursorRelativeToEnd;
+            SelectionStart = Text.Length + cursorRelativeToEnd;
             SelectionLength = 0;
         }
 

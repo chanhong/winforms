@@ -9,14 +9,13 @@ using Windows.Win32.System.Ole;
 using Windows.Win32.System.Variant;
 using static Windows.Win32.System.Com.ADVANCED_FEATURE_FLAGS;
 using static Windows.Win32.System.Variant.VARENUM;
-using static Interop;
 
 namespace System.Windows.Forms.Tests.Interop.Oleaut32;
 
 public unsafe class VARIANTTests
 {
     private static VARIANT Create(VARENUM type)
-        => new () { vt = type };
+        => new() { vt = type };
 
     private static VARIANT Create(VARENUM type, void* value)
         => new()
@@ -248,7 +247,7 @@ public unsafe class VARIANTTests
             yield return new object[] { VT_I4, unchecked((nint)long.MaxValue), -1 };
         }
 
-        yield return new object[] { VT_UI4, (nint)(-10), (uint)4294967286 };
+        yield return new object[] { VT_UI4, (nint)(-10), 4294967286 };
         yield return new object[] { VT_UI4, (nint)0, (uint)0 };
         yield return new object[] { VT_UI4, (nint)10, (uint)10 };
         yield return new object[] { VT_UI4, (nint)byte.MaxValue, (uint)byte.MaxValue };
@@ -279,7 +278,7 @@ public unsafe class VARIANTTests
             yield return new object[] { VT_INT, unchecked((nint)long.MaxValue), -1 };
         }
 
-        yield return new object[] { VT_UINT, (nint)(-10), (uint)4294967286 };
+        yield return new object[] { VT_UINT, (nint)(-10), 4294967286 };
         yield return new object[] { VT_UINT, (nint)0, (uint)0 };
         yield return new object[] { VT_UINT, (nint)10, (uint)10 };
         yield return new object[] { VT_UINT, (nint)byte.MaxValue, (uint)byte.MaxValue };
@@ -443,7 +442,7 @@ public unsafe class VARIANTTests
     {
         if (nint.Size == 8)
         {
-            yield return new object[] { (nint)(-10), (ulong)18446744073709551606 };
+            yield return new object[] { (nint)(-10), 18446744073709551606 };
         }
 
         yield return new object[] { (nint)0, (ulong)0 };
@@ -717,9 +716,9 @@ public unsafe class VARIANTTests
     [StaFact]
     public void VARIANT_ToObject_FILETIME_Success()
     {
-        using VARIANT variant = new();
-        var dt = new DateTime(2020, 05, 13, 13, 3, 12);
-        var ft = new PInvoke.FILETIME(dt);
+        using VARIANT variant = default;
+        DateTime dt = new(2020, 05, 13, 13, 3, 12);
+        var ft = new FILETIME(dt);
         HRESULT hr = InitPropVariantFromFileTime(&ft, &variant);
         Assert.Equal(HRESULT.S_OK, hr);
         Assert.Equal(VT_FILETIME, variant.vt);
@@ -743,15 +742,15 @@ public unsafe class VARIANTTests
             }
         };
 
-        Assert.Throws<ArgumentOutOfRangeException>("fileTime", () => variant.ToObject());
+        Assert.Throws<ArgumentOutOfRangeException>("fileTime", variant.ToObject);
     }
 
     [StaFact]
     public void VARIANT_ToObject_DateFromFILETIME_Success()
     {
-        using VARIANT variant = new();
-        var dt = new DateTime(2020, 05, 13, 13, 3, 12, DateTimeKind.Utc).ToLocalTime();
-        var ft = new PInvoke.FILETIME(dt);
+        using VARIANT variant = default;
+        DateTime dt = new DateTime(2020, 05, 13, 13, 3, 12, DateTimeKind.Utc).ToLocalTime();
+        var ft = new FILETIME(dt);
         HRESULT hr = InitVariantFromFileTime(&ft, &variant);
         Assert.Equal(HRESULT.S_OK, hr);
         Assert.Equal(VT_DATE, variant.vt);
@@ -762,7 +761,7 @@ public unsafe class VARIANTTests
     [StaFact]
     public void VARIANT_ToObject_Date_Success()
     {
-        var dt = new DateTime(2020, 05, 13, 13, 3, 12);
+        DateTime dt = new(2020, 05, 13, 13, 3, 12);
         double date = dt.ToOADate();
         using VARIANT variant = new()
         {
@@ -789,7 +788,7 @@ public unsafe class VARIANTTests
     [StaFact]
     public void VARIANT_ToObject_DateBYREF_Success()
     {
-        var dt = new DateTime(2020, 05, 13, 13, 3, 12);
+        DateTime dt = new(2020, 05, 13, 13, 3, 12);
         double date = dt.ToOADate();
         using VARIANT variant = new()
         {
@@ -953,7 +952,6 @@ public unsafe class VARIANTTests
     public void VARIANT_ToObject_UNKNOWN_ReturnsExpected()
     {
         object o = new();
-        nint pUnk = Marshal.GetIUnknownForObject(o);
         using VARIANT variant = Create(VT_UNKNOWN, (void*)Marshal.GetIUnknownForObject(o));
         AssertToObjectEqual(o, variant);
     }
@@ -1087,14 +1085,14 @@ public unsafe class VARIANTTests
 
     public static IEnumerable<object[]> Decimal_TestData()
     {
-        yield return new object[] { new DECIMAL(), 0.0m };
+        yield return new object[] { default(DECIMAL), 0.0m };
     }
 
     [StaTheory]
     [MemberData(nameof(Decimal_TestData))]
     public void VARIANT_ToObject_Decimal_ReturnsExpected(object d, decimal expected)
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         *(DECIMAL*)(&variant) = (DECIMAL)d;
         variant.Anonymous.Anonymous.vt = VT_DECIMAL;
         AssertToObjectEqual(expected, variant);
@@ -1113,7 +1111,7 @@ public unsafe class VARIANTTests
     public void VARIANT_ToObject_CLSID_ReturnsExpected()
     {
         var guid = Guid.NewGuid();
-        using VARIANT variant = new();
+        using VARIANT variant = default;
         HRESULT hr = InitPropVariantFromCLSID(&guid, &variant);
         Assert.Equal(HRESULT.S_OK, hr);
         Assert.Equal(VT_CLSID, variant.vt);
@@ -1206,7 +1204,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorI1_TestData))]
     public void VARIANT_ToObject_VECTORI1_ReturnsExpected(sbyte[] result)
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         try
         {
             fixed (sbyte* pResult = result)
@@ -1243,7 +1241,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorUI1_TestData))]
     public void VARIANT_ToObject_VECTORUI1_ReturnsExpected(byte[] result)
     {
-        using VARIANT variant = new();
+        using VARIANT variant = default;
         fixed (byte* pResult = result)
         {
             HRESULT hr = InitPropVariantFromBuffer(pResult, (uint)result.Length, &variant);
@@ -1271,7 +1269,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorI2_TestData))]
     public void VARIANT_ToObject_VECTORI2_ReturnsExpected(short[] result)
     {
-        using VARIANT variant = new();
+        using VARIANT variant = default;
         fixed (short* pResult = result)
         {
             HRESULT hr = InitPropVariantFromInt16Vector(pResult, (uint)result.Length, &variant);
@@ -1299,7 +1297,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorUI2_TestData))]
     public void VARIANT_ToObject_VECTORUI2_ReturnsExpected(ushort[] result)
     {
-        using VARIANT variant = new();
+        using VARIANT variant = default;
         fixed (ushort* pResult = result)
         {
             HRESULT hr = InitPropVariantFromUInt16Vector(pResult, (uint)result.Length, &variant);
@@ -1327,7 +1325,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorBOOL_TestData))]
     public void VARIANT_ToObject_VECTORBOOL_ReturnsExpected(object result, bool[] expected)
     {
-        using VARIANT variant = new();
+        using VARIANT variant = default;
         BOOL[] boolResult = (BOOL[])result;
         fixed (BOOL* pResult = boolResult)
         {
@@ -1356,7 +1354,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorI4_TestData))]
     public void VARIANT_ToObject_VECTORI4_ReturnsExpected(int[] result)
     {
-        using VARIANT variant = new();
+        using VARIANT variant = default;
         fixed (int* pResult = result)
         {
             HRESULT hr = InitPropVariantFromInt32Vector(pResult, (uint)result.Length, &variant);
@@ -1384,7 +1382,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorUI4_TestData))]
     public void VARIANT_ToObject_VECTORUI4_ReturnsExpected(uint[] result)
     {
-        using VARIANT variant = new();
+        using VARIANT variant = default;
         fixed (uint* pResult = result)
         {
             HRESULT hr = InitPropVariantFromUInt32Vector(pResult, (uint)result.Length, &variant);
@@ -1412,7 +1410,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorINT_TestData))]
     public void VARIANT_ToObject_VECTORINT_ReturnsExpected(int[] result)
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         try
         {
             fixed (int* pResult = result)
@@ -1449,7 +1447,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorUINT_TestData))]
     public void VARIANT_ToObject_VECTORUINT_ReturnsExpected(uint[] result)
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         try
         {
             fixed (uint* pResult = result)
@@ -1486,7 +1484,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorI8_TestData))]
     public void VARIANT_ToObject_VECTORI8_ReturnsExpected(long[] result)
     {
-        using VARIANT variant = new();
+        using VARIANT variant = default;
         fixed (long* pResult = result)
         {
             HRESULT hr = InitPropVariantFromInt64Vector(pResult, (uint)result.Length, &variant);
@@ -1514,7 +1512,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorUI8_TestData))]
     public void VARIANT_ToObject_VECTORUI8_ReturnsExpected(ulong[] result)
     {
-        using VARIANT variant = new();
+        using VARIANT variant = default;
         fixed (ulong* pResult = result)
         {
             HRESULT hr = InitPropVariantFromUInt64Vector(pResult, (uint)result.Length, &variant);
@@ -1542,7 +1540,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorR4_TestData))]
     public void VARIANT_ToObject_VECTORR4_ReturnsExpected(float[] result)
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         try
         {
             fixed (float* pResult = result)
@@ -1579,7 +1577,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorR8_TestData))]
     public void VARIANT_ToObject_VECTORR8_ReturnsExpected(double[] result)
     {
-        using VARIANT variant = new();
+        using VARIANT variant = default;
         fixed (double* pResult = result)
         {
             HRESULT hr = InitPropVariantFromDoubleVector(pResult, (uint)result.Length, &variant);
@@ -1607,7 +1605,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorERROR_TestData))]
     public void VARIANT_ToObject_VECTORERROR_ReturnsExpected(uint[] result)
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         try
         {
             fixed (uint* pResult = result)
@@ -1644,7 +1642,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorCY_TestData))]
     public void VARIANT_ToObject_VECTORCY_ReturnsExpected(long[] result, decimal[] expected)
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         try
         {
             fixed (long* pResult = result)
@@ -1675,9 +1673,9 @@ public unsafe class VARIANTTests
     {
         yield return new object[] { Array.Empty<double>(), Array.Empty<DateTime>() };
 
-        var d1 = new DateTime(2020, 05, 13, 13, 3, 12);
-        var d2 = new DateTime(2020, 05, 13, 13, 3, 11);
-        var d3 = new DateTime(2020, 3, 13, 13, 3, 12);
+        DateTime d1 = new(2020, 05, 13, 13, 3, 12);
+        DateTime d2 = new(2020, 05, 13, 13, 3, 11);
+        DateTime d3 = new(2020, 3, 13, 13, 3, 12);
         yield return new object[] { new double[] { d1.ToOADate(), d2.ToOADate(), d3.ToOADate() }, new DateTime[] { d1, d2, d3 } };
     }
 
@@ -1685,7 +1683,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorDATE_TestData))]
     public void VARIANT_ToObject_VECTORDATE_ReturnsExpected(double[] result, DateTime[] expected)
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         try
         {
             fixed (double* pResult = result)
@@ -1714,21 +1712,21 @@ public unsafe class VARIANTTests
 
     public static IEnumerable<object[]> VectorFILETIME_TestData()
     {
-        yield return new object[] { Array.Empty<PInvoke.FILETIME>(), Array.Empty<DateTime>() };
+        yield return new object[] { Array.Empty<FILETIME>(), Array.Empty<DateTime>() };
 
-        var d1 = new DateTime(2020, 05, 13, 13, 3, 12);
-        var d2 = new DateTime(2020, 05, 13, 13, 3, 11);
-        var d3 = new DateTime(2020, 3, 13, 13, 3, 12);
-        yield return new object[] { new PInvoke.FILETIME[] { new(d1), new(d2), new(d3) }, new DateTime[] { d1, d2, d3 } };
+        DateTime d1 = new(2020, 05, 13, 13, 3, 12);
+        DateTime d2 = new(2020, 05, 13, 13, 3, 11);
+        DateTime d3 = new(2020, 3, 13, 13, 3, 12);
+        yield return new object[] { new FILETIME[] { new(d1), new(d2), new(d3) }, new DateTime[] { d1, d2, d3 } };
     }
 
     [StaTheory]
     [MemberData(nameof(VectorFILETIME_TestData))]
     public void VARIANT_ToObject_VECTORFILETIME_ReturnsExpected(object result, DateTime[] expected)
     {
-        using VARIANT variant = new();
-        PInvoke.FILETIME[] fileTimeResult = (PInvoke.FILETIME[])result;
-        fixed (PInvoke.FILETIME* pResult = fileTimeResult)
+        using VARIANT variant = default;
+        FILETIME[] fileTimeResult = (FILETIME[])result;
+        fixed (FILETIME* pResult = fileTimeResult)
         {
             HRESULT hr = InitPropVariantFromFileTimeVector(pResult, (uint)fileTimeResult.Length, &variant);
             Assert.Equal(HRESULT.S_OK, hr);
@@ -1755,7 +1753,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(VectorCLSID_TestData))]
     public void VARIANT_ToObject_VECTORCLSID_ReturnsExpected(Guid[] result)
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         try
         {
             fixed (Guid* pResult = result)
@@ -1785,13 +1783,13 @@ public unsafe class VARIANTTests
     [StaFact]
     public void VARIANT_ToObject_VECTORBSTR_ReturnsExpected()
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         BSTR ptr1 = new("text");
         BSTR ptr2 = new("");
 
         try
         {
-            var result = new nint[] { 0, ptr1, ptr2 };
+            nint[] result = [0, ptr1, ptr2];
             fixed (nint* pResult = result)
             {
                 if (nint.Size == 4)
@@ -1828,12 +1826,12 @@ public unsafe class VARIANTTests
     [StaFact]
     public void VARIANT_ToObject_VECTORLPWSTR_ReturnsExpected()
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         nint ptr1 = Marshal.StringToCoTaskMemUni("text");
         nint ptr2 = Marshal.StringToCoTaskMemUni("");
         try
         {
-            var result = new nint[] { 0, ptr1, ptr2 };
+            nint[] result = [0, ptr1, ptr2];
             fixed (nint* pResult = result)
             {
                 if (nint.Size == 4)
@@ -1870,12 +1868,12 @@ public unsafe class VARIANTTests
     [StaFact]
     public void VARIANT_ToObject_VECTORLPSTR_ReturnsExpected()
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         nint ptr1 = Marshal.StringToCoTaskMemAnsi("text");
         nint ptr2 = Marshal.StringToCoTaskMemAnsi("");
         try
         {
-            var result = new nint[] { 0, ptr1, ptr2 };
+            nint[] result = [0, ptr1, ptr2];
             fixed (nint* pResult = result)
             {
                 if (nint.Size == 4)
@@ -1912,7 +1910,7 @@ public unsafe class VARIANTTests
     [StaFact]
     public void VARIANT_ToObject_VECTORVARIANT_ReturnsExpected()
     {
-        VARIANT variant = new();
+        VARIANT variant = default;
         try
         {
             VARIANT variant1 = Create(VT_I4);
@@ -1975,7 +1973,7 @@ public unsafe class VARIANTTests
         {
             vt = VT_VECTOR | (VARENUM)vt
         };
-        Assert.Throws<ArgumentException>(() => variant.ToObject());
+        Assert.Throws<ArgumentException>(variant.ToObject);
     }
 
     [StaTheory]
@@ -4299,12 +4297,12 @@ public unsafe class VARIANTTests
     {
         yield return new object[] { new double[0, 0], new DateTime[0, 0] };
 
-        var d1 = new DateTime(2020, 05, 13, 13, 3, 12);
-        var d2 = new DateTime(2020, 05, 13, 13, 3, 11);
-        var d3 = new DateTime(2020, 3, 13, 13, 3, 12);
-        var d4 = new DateTime(1892, 1, 2, 3, 4, 5, 6);
-        var d5 = new DateTime(2010, 2, 3, 4, 5, 6);
-        var d6 = new DateTime(8000, 10, 11, 12, 13, 14);
+        DateTime d1 = new(2020, 05, 13, 13, 3, 12);
+        DateTime d2 = new(2020, 05, 13, 13, 3, 11);
+        DateTime d3 = new(2020, 3, 13, 13, 3, 12);
+        DateTime d4 = new(1892, 1, 2, 3, 4, 5, 6);
+        DateTime d5 = new(2010, 2, 3, 4, 5, 6);
+        DateTime d6 = new(8000, 10, 11, 12, 13, 14);
         yield return new object[]
         {
             new double[2, 3]
@@ -4379,7 +4377,7 @@ public unsafe class VARIANTTests
         using BSTR ptr1 = new("text");
         using BSTR ptr2 = new("");
 
-        var result = new nint[] { 0, ptr1, ptr2 };
+        nint[] result = [0, ptr1, ptr2];
         SAFEARRAY* psa = CreateSafeArray(VT_BSTR, result);
         using VARIANT variant = new()
         {
@@ -5275,7 +5273,6 @@ public unsafe class VARIANTTests
     [InlineData((ushort)VT_BLOB_OBJECT)]
     public void VARIANT_ToObject_ARRAYNoData_ReturnsExpected(ushort vt)
     {
-        SAFEARRAY* psa = CreateSafeArray(VT_I1, Array.Empty<byte>());
         using VARIANT variant = new()
         {
             vt = VT_ARRAY | (VARENUM)vt
@@ -5290,7 +5287,6 @@ public unsafe class VARIANTTests
     [InlineData((ushort)VT_BSTR_BLOB)]
     public void VARIANT_ToObject_ARRAYInvalidTypeNoData_ThrowsInvalidOleVariantTypeException(ushort vt)
     {
-        SAFEARRAY* psa = CreateSafeArray(VT_I1, Array.Empty<byte>());
         using VARIANT variant = new()
         {
             vt = VT_ARRAY | (VARENUM)vt
@@ -5302,12 +5298,12 @@ public unsafe class VARIANTTests
     [StaFact]
     public void VARIANT_ToObject_ARRAYVECTOR_ThrowsInvalidOleVariantTypeException()
     {
-        SAFEARRAY* psa = CreateSafeArray(VT_I1, Array.Empty<byte>());
         using VARIANT variant = new()
         {
             vt = VT_ARRAY | VT_VECTOR | VT_I4
         };
-        Assert.Throws<ArgumentException>(() => variant.ToObject());
+
+        Assert.Throws<ArgumentException>(variant.ToObject);
     }
 
     [StaFact]
@@ -5400,7 +5396,7 @@ public unsafe class VARIANTTests
             };
         }
 
-        SAFEARRAY* psa = PInvoke.SafeArrayCreate(VT_I4, (uint)rank, saBounds);
+        SAFEARRAY* psa = PInvokeCore.SafeArrayCreate(VT_I4, (uint)rank, saBounds);
         using VARIANT variant = new()
         {
             vt = VT_ARRAY | VT_I4,
@@ -5415,16 +5411,17 @@ public unsafe class VARIANTTests
 
     private static unsafe SAFEARRAY* CreateSafeArray<T>(VARENUM vt, T[] result, int lbound = 0) where T : unmanaged
     {
-        var saBound = new SAFEARRAYBOUND
+        SAFEARRAYBOUND saBound = new()
         {
             cElements = (uint)result.Length,
             lLbound = lbound
         };
-        SAFEARRAY* psa = PInvoke.SafeArrayCreate(vt, 1, &saBound);
-        Assert.True(psa != null);
+
+        SAFEARRAY* psa = PInvokeCore.SafeArrayCreate(vt, 1, &saBound);
+        NativeAssert.NotNull(psa);
 
         VARENUM arrayVt = VT_EMPTY;
-        HRESULT hr = PInvoke.SafeArrayGetVartype(psa, &arrayVt);
+        HRESULT hr = PInvokeCore.SafeArrayGetVartype(psa, &arrayVt);
         Assert.Equal(HRESULT.S_OK, hr);
         Assert.Equal(vt, arrayVt);
 
@@ -5432,15 +5429,11 @@ public unsafe class VARIANTTests
         {
             T value = result[i];
             int index = i + lbound;
+
             // Insert pointers directly.
-            if (value is nint valuePtr)
-            {
-                hr = PInvoke.SafeArrayPutElement(psa, &index, (void*)valuePtr);
-            }
-            else
-            {
-                hr = PInvoke.SafeArrayPutElement(psa, &index, &value);
-            }
+            hr = value is nint valuePtr
+                ? PInvokeCore.SafeArrayPutElement(psa, &index, (void*)valuePtr)
+                : PInvokeCore.SafeArrayPutElement(psa, &index, &value);
 
             Assert.Equal(HRESULT.S_OK, hr);
         }
@@ -5463,11 +5456,11 @@ public unsafe class VARIANTTests
             lLbound = lbound2
         };
 
-        SAFEARRAY* psa = PInvoke.SafeArrayCreate(vt, 2, saBounds);
-        Assert.True(psa != null);
+        SAFEARRAY* psa = PInvokeCore.SafeArrayCreate(vt, 2, saBounds);
+        NativeAssert.NotNull(psa);
 
         VARENUM arrayVt = VT_EMPTY;
-        HRESULT hr = PInvoke.SafeArrayGetVartype(psa, &arrayVt);
+        HRESULT hr = PInvokeCore.SafeArrayGetVartype(psa, &arrayVt);
         Assert.Equal(HRESULT.S_OK, hr);
         Assert.Equal(vt, arrayVt);
 
@@ -5475,17 +5468,15 @@ public unsafe class VARIANTTests
         {
             for (int j = 0; j < multiDimArray.GetLength(1); j++)
             {
+#pragma warning disable CA2014 // Do not use stackalloc in loops
                 int* indices = stackalloc int[] { i + lbound1, j + lbound2 };
+#pragma warning restore CA2014
                 T value = multiDimArray[i, j];
+
                 // Insert pointers directly.
-                if (value is nint valuePtr)
-                {
-                    hr = PInvoke.SafeArrayPutElement(psa, indices, (void*)valuePtr);
-                }
-                else
-                {
-                    hr = PInvoke.SafeArrayPutElement(psa, indices, &value);
-                }
+                hr = value is nint valuePtr
+                    ? PInvokeCore.SafeArrayPutElement(psa, indices, (void*)valuePtr)
+                    : PInvokeCore.SafeArrayPutElement(psa, indices, &value);
 
                 Assert.Equal(HRESULT.S_OK, hr);
             }
@@ -5616,7 +5607,7 @@ public unsafe class VARIANTTests
     [StaFact]
     public void ToObject_RECORDARRAYValid_ReturnsExpected()
     {
-        var result = new int[] { 1, 2 };
+        int[] result = [1, 2];
         CustomRecordInfo recordInfo = new()
         {
             GetGuidAction = () => (typeof(int).GUID, HRESULT.S_OK)
@@ -5635,7 +5626,7 @@ public unsafe class VARIANTTests
     [StaFact]
     public void ToObject_RECORDARRAYInvalidFFeatures_ThrowsArgumentException()
     {
-        var result = new int[] { 1, 2 };
+        int[] result = [1, 2];
         CustomRecordInfo recordInfo = new();
         using ComScope<IRecordInfo> pRecordInfo = new(recordInfo.GetComInterface());
         SAFEARRAY* psa = CreateRecordSafeArray(result, pRecordInfo);
@@ -5656,7 +5647,7 @@ public unsafe class VARIANTTests
     [StaFact]
     public void ToObject_RECORDARRAYInvalidGetGuidHR_ThrowsArgumentException()
     {
-        var result = new int[] { 1, 2 };
+        int[] result = [1, 2];
         CustomRecordInfo record = new()
         {
             GetGuidAction = () => (Guid.Empty, HRESULT.DISP_E_DIVBYZERO)
@@ -5669,7 +5660,7 @@ public unsafe class VARIANTTests
         VARIANT copy = variant;
         nint pv = (nint)(&copy);
         Assert.Throws<ArgumentException>(() => Marshal.GetObjectForNativeVariant(pv));
-        Assert.Throws<ArgumentException>(() => variant.ToObject());
+        Assert.Throws<ArgumentException>(variant.ToObject);
     }
 
     public static IEnumerable<object[]> RECORDARRAY_InvalidGuid_TestData()
@@ -5682,7 +5673,7 @@ public unsafe class VARIANTTests
     [MemberData(nameof(RECORDARRAY_InvalidGuid_TestData))]
     public void ToObject_RECORDARRAY_InvokeInvalidGuid_ThrowsArgumentException(Guid guid)
     {
-        var result = new int[] { 1, 2 };
+        int[] result = [1, 2];
         CustomRecordInfo record = new()
         {
             GetGuidAction = () => (guid, HRESULT.S_OK)
@@ -5698,11 +5689,11 @@ public unsafe class VARIANTTests
     {
         public IRecordInfo* GetComInterface() => (IRecordInfo*)Marshal.GetComInterfaceForObject<CustomRecordInfo, IRecordInfo.Interface>(this);
 
-        public HRESULT RecordInit(void* pvNew) => throw new NotImplementedException();
+        public HRESULT RecordInit(void* pvNew) => HRESULT.E_NOTIMPL;
 
-        public HRESULT RecordClear(void* pvExisting) => throw new NotImplementedException();
+        public HRESULT RecordClear(void* pvExisting) => HRESULT.E_NOTIMPL;
 
-        public HRESULT RecordCopy(void* pvExisting, void* pvNew) => throw new NotImplementedException();
+        public HRESULT RecordCopy(void* pvExisting, void* pvNew) => HRESULT.E_NOTIMPL;
 
         public Func<(Guid, HRESULT)> GetGuidAction { get; set; }
 
@@ -5713,47 +5704,48 @@ public unsafe class VARIANTTests
             return hr;
         }
 
-        public HRESULT GetName(BSTR* pbstrName) => throw new NotImplementedException();
+        public HRESULT GetName(BSTR* pbstrName) => HRESULT.E_NOTIMPL;
 
         public HRESULT GetSize(uint* pcbSize)
         {
-            *pcbSize = (uint)sizeof(int);
+            *pcbSize = sizeof(int);
             return HRESULT.S_OK;
         }
 
-        public HRESULT GetTypeInfo(ITypeInfo** ppTypeInfo) => throw new NotImplementedException();
+        public HRESULT GetTypeInfo(ITypeInfo** ppTypeInfo) => HRESULT.E_NOTIMPL;
 
-        public HRESULT GetField(void* pvData, PCWSTR szFieldName, VARIANT* pvarField) => throw new NotImplementedException();
+        public HRESULT GetField(void* pvData, PCWSTR szFieldName, VARIANT* pvarField) => HRESULT.E_NOTIMPL;
 
-        public HRESULT GetFieldNoCopy(void* pvData, PCWSTR szFieldName, VARIANT* pvarField, void** ppvDataCArray) => throw new NotImplementedException();
+        public HRESULT GetFieldNoCopy(void* pvData, PCWSTR szFieldName, VARIANT* pvarField, void** ppvDataCArray) => HRESULT.E_NOTIMPL;
 
-        public HRESULT PutField(uint wFlags, void* pvData, PCWSTR szFieldName, VARIANT* pvarField) => throw new NotImplementedException();
+        public HRESULT PutField(uint wFlags, void* pvData, PCWSTR szFieldName, VARIANT* pvarField) => HRESULT.E_NOTIMPL;
 
-        public HRESULT PutFieldNoCopy(uint wFlags, void* pvData, PCWSTR szFieldName, VARIANT* pvarField) => throw new NotImplementedException();
+        public HRESULT PutFieldNoCopy(uint wFlags, void* pvData, PCWSTR szFieldName, VARIANT* pvarField) => HRESULT.E_NOTIMPL;
 
-        public HRESULT GetFieldNames(uint* pcNames, BSTR* rgBstrNames) => throw new NotImplementedException();
+        public HRESULT GetFieldNames(uint* pcNames, BSTR* rgBstrNames) => HRESULT.E_NOTIMPL;
 
         public BOOL IsMatchingType(IRecordInfo* pRecordInfoInfo) => throw new NotImplementedException();
 
         public void* RecordCreate() => throw new NotImplementedException();
 
-        public HRESULT RecordCreateCopy(void* pvSource, void** ppvDest) => throw new NotImplementedException();
+        public HRESULT RecordCreateCopy(void* pvSource, void** ppvDest) => HRESULT.E_NOTIMPL;
 
-        public HRESULT RecordDestroy(void* pvRecord) => throw new NotImplementedException();
+        public HRESULT RecordDestroy(void* pvRecord) => HRESULT.E_NOTIMPL;
     }
 
     private static SAFEARRAY* CreateRecordSafeArray<T>(T[] result, IRecordInfo* recordInfo, int lbound = 0)
     {
-        var saBound = new SAFEARRAYBOUND
+        SAFEARRAYBOUND saBound = new()
         {
             cElements = (uint)result.Length,
             lLbound = lbound
         };
-        SAFEARRAY* psa = PInvoke.SafeArrayCreateEx(VT_RECORD, 1, &saBound, recordInfo);
-        Assert.True(psa != null);
+
+        SAFEARRAY* psa = PInvokeCore.SafeArrayCreateEx(VT_RECORD, 1, &saBound, recordInfo);
+        NativeAssert.NotNull(psa);
 
         VARENUM arrayVt = VT_EMPTY;
-        HRESULT hr = PInvoke.SafeArrayGetVartype(psa, &arrayVt);
+        HRESULT hr = PInvokeCore.SafeArrayGetVartype(psa, &arrayVt);
         Assert.Equal(HRESULT.S_OK, hr);
         Assert.Equal(VT_RECORD, arrayVt);
 
@@ -5766,7 +5758,7 @@ public unsafe class VARIANTTests
         nint pv = (nint)(&copy);
         Assert.Throws<T>(() => Marshal.GetObjectForNativeVariant(pv));
 
-        Assert.Throws<T>(() => variant.ToObject());
+        Assert.Throws<T>(variant.ToObject);
     }
 
     private static void AssertToObjectEqual(object expected, VARIANT variant)
@@ -5798,14 +5790,14 @@ public unsafe class VARIANTTests
     {
         // These are the common TypeConverter types we're using.
 
-        using (VARIANT variant = new())
+        using (VARIANT variant = default)
         {
-            byte[] bytes = { 1, 2, 3 };
+            byte[] bytes = [1, 2, 3];
             Marshal.GetNativeVariantForObject(bytes, (nint)(void*)&variant);
             Assert.Equal(VT_UI1 | VT_ARRAY, variant.vt);
         }
 
-        using (VARIANT variant = new())
+        using (VARIANT variant = default)
         {
             string value = "Testing";
             Marshal.GetNativeVariantForObject(value, (nint)(void*)&variant);
@@ -5817,7 +5809,7 @@ public unsafe class VARIANTTests
     public void MarshallingFromIntAndUint()
     {
         // Interop marshals as VT_I4/VT_UI4 and not VT_INT/VT_UINT
-        VARIANT variant = new();
+        VARIANT variant = default;
         int intValue = 42;
         Marshal.GetNativeVariantForObject(intValue, (nint)(void*)&variant);
         variant.vt.Should().Be(VT_I4);
@@ -5830,10 +5822,10 @@ public unsafe class VARIANTTests
     private static extern unsafe HRESULT InitPropVariantFromCLSID(Guid* clsid, VARIANT* ppropvar);
 
     [DllImport(Libraries.Propsys, ExactSpelling = true)]
-    private static extern unsafe HRESULT InitPropVariantFromFileTime(PInvoke.FILETIME* pftIn, VARIANT* ppropvar);
+    private static extern unsafe HRESULT InitPropVariantFromFileTime(FILETIME* pftIn, VARIANT* ppropvar);
 
     [DllImport(Libraries.Propsys, ExactSpelling = true)]
-    private static extern unsafe HRESULT InitVariantFromFileTime(PInvoke.FILETIME* pftIn, VARIANT* ppropvar);
+    private static extern unsafe HRESULT InitVariantFromFileTime(FILETIME* pftIn, VARIANT* ppropvar);
 
     [DllImport(Libraries.Propsys, ExactSpelling = true)]
     private static extern unsafe HRESULT InitPropVariantFromBuffer(void* pv, uint cb, VARIANT* ppropvar);

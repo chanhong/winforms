@@ -44,19 +44,21 @@ public sealed class ObjectStatementCollection : IEnumerable
     }
 
     /// <summary>
-    ///  Adds an owner to the table. Statements can be null, in which case it will be demand created when fished out of the table.  This will throw if there is already a valid collection for the owner.
+    ///  Adds an owner to the table. Statements can be null, in which
+    ///  case it will be demand created when fished out of the table.
+    ///  This will throw if there is already a valid collection for the owner.
     /// </summary>
     private void AddOwner(object statementOwner, CodeStatementCollection? statements)
     {
         if (_table is null)
         {
-            _table = new List<TableEntry>();
+            _table = [];
         }
         else
         {
             for (int idx = 0; idx < _table.Count; idx++)
             {
-                if (object.ReferenceEquals(_table[idx].Owner, statementOwner))
+                if (ReferenceEquals(_table[idx].Owner, statementOwner))
                 {
                     if (_table[idx].Statements is not null)
                     {
@@ -80,7 +82,7 @@ public sealed class ObjectStatementCollection : IEnumerable
     }
 
     /// <summary>
-    ///  Indexer.  This will return the statement collection for the given owner.
+    ///  Indexer. This will return the statement collection for the given owner.
     ///  It will return null only if the owner is not in the table.
     /// </summary>
     public CodeStatementCollection? this[object statementOwner]
@@ -93,11 +95,11 @@ public sealed class ObjectStatementCollection : IEnumerable
             {
                 for (int idx = 0; idx < _table.Count; idx++)
                 {
-                    if (object.ReferenceEquals(_table[idx].Owner, statementOwner))
+                    if (ReferenceEquals(_table[idx].Owner, statementOwner))
                     {
                         if (_table[idx].Statements is null)
                         {
-                            _table[idx] = new TableEntry(statementOwner, new CodeStatementCollection());
+                            _table[idx] = new TableEntry(statementOwner, []);
                         }
 
                         return _table[idx].Statements;
@@ -106,7 +108,7 @@ public sealed class ObjectStatementCollection : IEnumerable
 
                 foreach (TableEntry e in _table)
                 {
-                    if (object.ReferenceEquals(e.Owner, statementOwner))
+                    if (ReferenceEquals(e.Owner, statementOwner))
                     {
                         return e.Statements;
                     }
@@ -133,7 +135,8 @@ public sealed class ObjectStatementCollection : IEnumerable
     }
 
     /// <summary>
-    ///  Returns an enumerator for this table.  The keys of the enumerator are statement owner objects and the values are instances of CodeStatementCollection.
+    ///  Returns an enumerator for this table.
+    ///  The keys of the enumerator are statement owner objects and the values are instances of CodeStatementCollection.
     /// </summary>
     public IDictionaryEnumerator GetEnumerator()
     {
@@ -141,7 +144,9 @@ public sealed class ObjectStatementCollection : IEnumerable
     }
 
     /// <summary>
-    ///  This method populates the statement table with a collection of statement owners. The creator of the statement context should do this if it wishes statement tables to be used to store values for certain objects.
+    ///  This method populates the statement table with a collection of statement owners.
+    ///  The creator of the statement context should do this if it wishes statement tables
+    ///  to be used to store values for certain objects.
     /// </summary>
     public void Populate(ICollection statementOwners)
     {
@@ -154,7 +159,9 @@ public sealed class ObjectStatementCollection : IEnumerable
     }
 
     /// <summary>
-    ///  This method populates the statement table with a collection of statement owners. The creator of the statement context should do this if it wishes statement tables to be used to store values for certain objects.
+    ///  This method populates the statement table with a collection of statement owners.
+    ///  The creator of the statement context should do this if it wishes statement tables to be used to
+    ///  store values for certain objects.
     /// </summary>
     public void Populate(object owner)
     {
@@ -164,7 +171,8 @@ public sealed class ObjectStatementCollection : IEnumerable
     }
 
     /// <summary>
-    ///  Returns an enumerator for this table.  The value is a DictionaryEntry containing the statement owner and the statement collection.
+    ///  Returns an enumerator for this table.
+    ///  The value is a DictionaryEntry containing the statement owner and the statement collection.
     /// </summary>
     IEnumerator IEnumerable.GetEnumerator()
     {
@@ -195,9 +203,9 @@ public sealed class ObjectStatementCollection : IEnumerable
             _position = -1;
         }
 
-        public object Current => Entry;
+        public readonly object Current => Entry;
 
-        public DictionaryEntry Entry
+        public readonly DictionaryEntry Entry
         {
             get
             {
@@ -213,7 +221,7 @@ public sealed class ObjectStatementCollection : IEnumerable
 
                 if (_table._table[_position].Statements is null)
                 {
-                    _table._table[_position] = new TableEntry(_table._table[_position].Owner, new CodeStatementCollection());
+                    _table._table[_position] = new TableEntry(_table._table[_position].Owner, []);
                 }
 
                 TableEntry entry = _table._table[_position];
@@ -221,9 +229,9 @@ public sealed class ObjectStatementCollection : IEnumerable
             }
         }
 
-        public object Key => Entry.Key;
+        public readonly object Key => Entry.Key;
 
-        public object? Value => Entry.Value;
+        public readonly object? Value => Entry.Value;
 
         public bool MoveNext()
         {

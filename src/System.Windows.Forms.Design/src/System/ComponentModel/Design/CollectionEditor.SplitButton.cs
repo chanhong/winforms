@@ -25,12 +25,8 @@ public partial class CollectionEditor
         {
             if (!s_isScalingInitialized)
             {
-                if (DpiHelper.IsScalingRequired)
-                {
-                    s_offset2X = DpiHelper.LogicalToDeviceUnitsX(Offset2Pixels);
-                    s_offset2Y = DpiHelper.LogicalToDeviceUnitsY(Offset2Pixels);
-                }
-
+                s_offset2X = ScaleHelper.ScaleToInitialSystemDpi(Offset2Pixels);
+                s_offset2Y = ScaleHelper.ScaleToInitialSystemDpi(Offset2Pixels);
                 s_isScalingInitialized = true;
             }
         }
@@ -177,7 +173,7 @@ public partial class CollectionEditor
                 return;
             }
 
-            if (ContextMenuStrip is not {Visible: true})
+            if (ContextMenuStrip is not { Visible: true })
             {
                 SetButtonDrawState();
                 if (Parent is not null && Bounds.Contains(Parent.PointToClient(Cursor.Position)) && !_dropDownRectangle.Contains(mevent.Location))
@@ -197,7 +193,7 @@ public partial class CollectionEditor
             }
 
             Graphics g = pevent.Graphics;
-            Rectangle bounds = new Rectangle(0, 0, Width, Height);
+            Rectangle bounds = new(0, 0, Width, Height);
             TextFormatFlags formatFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter;
 
             ButtonRenderer.DrawButton(g, bounds, State);
@@ -245,7 +241,7 @@ public partial class CollectionEditor
 
         private static void PaintArrow(IDeviceContext deviceContext, Rectangle dropDownRect)
         {
-            Point middle = new Point(
+            Point middle = new(
                 Convert.ToInt32(dropDownRect.Left + dropDownRect.Width / 2),
                 Convert.ToInt32(dropDownRect.Top + dropDownRect.Height / 2));
 
@@ -266,7 +262,7 @@ public partial class CollectionEditor
             State = PushButtonState.Pressed;
             if (ContextMenuStrip is not null)
             {
-                ContextMenuStrip.Closed += new ToolStripDropDownClosedEventHandler(ContextMenuStrip_Closed);
+                ContextMenuStrip.Closed += ContextMenuStrip_Closed;
                 ContextMenuStrip.Show(this, 0, Height);
             }
         }
@@ -275,7 +271,7 @@ public partial class CollectionEditor
         {
             if (sender is ContextMenuStrip cms)
             {
-                cms.Closed -= new ToolStripDropDownClosedEventHandler(ContextMenuStrip_Closed);
+                cms.Closed -= ContextMenuStrip_Closed;
             }
 
             SetButtonDrawState();

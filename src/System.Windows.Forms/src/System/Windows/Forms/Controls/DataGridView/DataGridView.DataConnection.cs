@@ -51,9 +51,11 @@ public partial class DataGridView
         // 1. DGV deletes the row from Master
         // 2. The Child currency manager finds out that there are no rows in the Master table
         // 3. The Child currency manager adds a row in the Master table - which tracks removal of this feature was POSTPONED.
-        // 4. The DGV bound to the Master table receives the ItemAdded event. At this point, no rows have been deleted from the DGV.
-        // 5. The DGV bound to the Master table should not add a new DataGridViewRow to its Rows collection because it will be deleted later on.
-        //    So the DGV marks _itemAddedInDeleteOperation to TRUE to know that the next event it expects is an ItemDeleted
+        // 4. The DGV bound to the Master table receives the ItemAdded event. At this point, no rows have been deleted
+        //    from the DGV.
+        // 5. The DGV bound to the Master table should not add a new DataGridViewRow to its Rows collection because
+        //    it will be deleted later on. So the DGV marks _itemAddedInDeleteOperation to TRUE to know that the next
+        //    event it expects is an ItemDeleted
         // 6. The DGV bound to the Master table receives the ItemDeleted event.
         //    It goes ahead and deletes the item and resets _itemAddedInDeleteOperation
         //
@@ -87,9 +89,7 @@ public partial class DataGridView
             }
         }
 
-        public bool AllowEdit => CurrencyManager is not null
-            ? CurrencyManager.AllowEdit
-            : false;
+        public bool AllowEdit => CurrencyManager is not null && CurrencyManager.AllowEdit;
 
         public bool AllowRemove
         {
@@ -128,7 +128,8 @@ public partial class DataGridView
             {
                 // DATACONNECTIONSTATE_doNotChangePositionInTheDataGridViewControl means that the data grid view control
                 // manages the position change
-                // so if DATACONNECTIONSTATE_doNotChangePositionInTheDataGridViewControl is true then the data grid view knows about the position change
+                // so if DATACONNECTIONSTATE_doNotChangePositionInTheDataGridViewControl is true then the
+                // data grid view knows about the position change
                 return !_dataConnectionState[DATACONNECTIONSTATE_doNotChangePositionInTheDataGridViewControl]
                     && _dataConnectionState[DATACONNECTIONSTATE_positionChangingInCurrencyManager];
             }
@@ -367,9 +368,9 @@ public partial class DataGridView
 
         private void ProcessListChanged(ListChangedEventArgs e)
         {
-            if (e.ListChangedType == ListChangedType.PropertyDescriptorAdded ||
-                e.ListChangedType == ListChangedType.PropertyDescriptorDeleted ||
-                e.ListChangedType == ListChangedType.PropertyDescriptorChanged)
+            if (e.ListChangedType is ListChangedType.PropertyDescriptorAdded
+                or ListChangedType.PropertyDescriptorDeleted
+                or ListChangedType.PropertyDescriptorChanged)
             {
                 _dataConnectionState[DATACONNECTIONSTATE_processingMetaDataChanges] = true;
                 try
@@ -623,7 +624,7 @@ public partial class DataGridView
                         string? dataPropertyName = null;
                         if (e.PropertyDescriptor is not null)
                         {
-                            dataPropertyName = ((MemberDescriptor)(e.PropertyDescriptor)).Name;
+                            dataPropertyName = e.PropertyDescriptor.Name;
                         }
 
                         for (int columnIndex = 0; columnIndex < _owner.Columns.Count; columnIndex++)
@@ -786,7 +787,7 @@ public partial class DataGridView
             // Unhook the Initialized event.
             if (DataSource is ISupportInitializeNotification dsInit)
             {
-                dsInit.Initialized -= new EventHandler(DataSource_Initialized);
+                dsInit.Initialized -= DataSource_Initialized;
             }
 
             // The wait is over: DataSource is initialized.
@@ -1042,7 +1043,7 @@ public partial class DataGridView
                 // If we previously hooked the data source's ISupportInitializeNotification
                 // Initialized event, then unhook it now (we don't always hook this event,
                 // only if we needed to because the data source was previously uninitialized)
-                dsInit.Initialized -= new EventHandler(DataSource_Initialized);
+                dsInit.Initialized -= DataSource_Initialized;
                 _dataConnectionState[DATACONNECTIONSTATE_dataSourceInitializedHookedUp] = false;
             }
 
@@ -1067,7 +1068,7 @@ public partial class DataGridView
                     {
                         if (!_dataConnectionState[DATACONNECTIONSTATE_dataSourceInitializedHookedUp])
                         {
-                            dsInit.Initialized += new EventHandler(DataSource_Initialized);
+                            dsInit.Initialized += DataSource_Initialized;
                             _dataConnectionState[DATACONNECTIONSTATE_dataSourceInitializedHookedUp] = true;
                         }
 
@@ -1297,7 +1298,8 @@ public partial class DataGridView
                 // CurrencyManager no longer starts a new transaction automatically
                 // when we call CurrencyManager::CancelCurrentEdit.
                 // So, if the current item inside the currency manager did not change, we have to start a new transaction.
-                // (If the current item inside the currency manager changed, then the currency manager would have already started a new transaction).
+                // (If the current item inside the currency manager changed, then the currency manager would have
+                // already started a new transaction).
                 IEditableObject? editableObject = null;
                 if (CurrencyManager.Position >= 0 && CurrencyManager.Position < CurrencyManager.List!.Count)
                 {
@@ -1361,7 +1363,7 @@ public partial class DataGridView
                     }
                     catch (Exception exception) when (!exception.IsCriticalException())
                     {
-                        DataGridViewCellCancelEventArgs dgvce = new DataGridViewCellCancelEventArgs(e.ColumnIndex, e.RowIndex);
+                        DataGridViewCellCancelEventArgs dgvce = new(e.ColumnIndex, e.RowIndex);
                         ProcessException(exception, dgvce, beginEdit: false);
                     }
 
@@ -1489,7 +1491,7 @@ public partial class DataGridView
             }
             catch (Exception exception) when (!exception.IsCriticalException())
             {
-                DataGridViewCellCancelEventArgs e = new DataGridViewCellCancelEventArgs(columnIndex, rowIndex);
+                DataGridViewCellCancelEventArgs e = new(columnIndex, rowIndex);
                 ProcessException(exception, e, false);
                 return !e.Cancel;
             }
@@ -1518,7 +1520,7 @@ public partial class DataGridView
                 return true;
             }
 
-            if (!(_owner.BindingContext[newDataSource] is CurrencyManager cm))
+            if (_owner.BindingContext[newDataSource] is not CurrencyManager cm)
             {
                 // if we don't have a currency manager then the data member can be valid
                 return false;
@@ -1545,8 +1547,8 @@ public partial class DataGridView
         {
             if (CurrencyManager is not null)
             {
-                CurrencyManager.PositionChanged -= new EventHandler(currencyManager_PositionChanged);
-                CurrencyManager.ListChanged -= new ListChangedEventHandler(currencyManager_ListChanged);
+                CurrencyManager.PositionChanged -= currencyManager_PositionChanged;
+                CurrencyManager.ListChanged -= currencyManager_ListChanged;
                 _dataConnectionState[DATACONNECTIONSTATE_interestedInRowEvents] = false;
             }
         }
@@ -1555,8 +1557,8 @@ public partial class DataGridView
         {
             if (CurrencyManager is not null)
             {
-                CurrencyManager.PositionChanged += new EventHandler(currencyManager_PositionChanged);
-                CurrencyManager.ListChanged += new ListChangedEventHandler(currencyManager_ListChanged);
+                CurrencyManager.PositionChanged += currencyManager_PositionChanged;
+                CurrencyManager.ListChanged += currencyManager_ListChanged;
                 _dataConnectionState[DATACONNECTIONSTATE_interestedInRowEvents] = true;
             }
         }

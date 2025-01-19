@@ -49,8 +49,7 @@ public class TabControlTests : ControlTestBase
         });
     }
 
-    [ActiveIssue("https://github.com/dotnet/winforms/issues/6654")]
-    [WinFormsFact(Skip = "Flaky tests, see: https://github.com/dotnet/winforms/issues/6654")]
+    [WinFormsFact]
     public async Task TabControl_TabPage_IsHoveredWithMouse_IsFalse_WhenMouseIs_OutsideMainScreenAsync()
     {
         await RunTestAsync(async (form, tabControl) =>
@@ -107,7 +106,7 @@ public class TabControlTests : ControlTestBase
                 tabControl.SelectedIndex--;
                 await Task.Yield();
 
-                // The changes we made to SelectedIndex will result in a WM_WINDOWPOSCHANGED message which will 
+                // The changes we made to SelectedIndex will result in a WM_WINDOWPOSCHANGED message which will
                 // fire TabPage.WmWindowPosChanged, which will call TabControl.UpdateChildControlIndex.
 
                 // This test ensures that the latter method short-circuits and does not call Controls.SetChildIndex
@@ -152,5 +151,5 @@ public class TabControlTests : ControlTestBase
     }
 
     // Bug https://github.com/dotnet/winforms/issues/7837 occured only when TabControl was subclassed.
-    class SubclassedTabControl : TabControl { }
+    private class SubclassedTabControl : TabControl { }
 }

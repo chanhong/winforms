@@ -15,7 +15,7 @@ namespace System.Windows.Forms.Design;
 public class ImageListImageEditor : ImageEditor
 {
     // Metafile types are not supported in the ImageListImageEditor and should not be displayed as an option.
-    internal static Type[] s_imageExtenders = new Type[] { typeof(BitmapEditor) };
+    internal static Type[] s_imageExtenders = [typeof(BitmapEditor)];
     private OpenFileDialog? _fileDialog;
 
     // Derived classes can implement a different list of supported image types.
@@ -28,8 +28,8 @@ public class ImageListImageEditor : ImageEditor
             return value;
         }
 
-        var images = new ArrayList();
-        if (!provider.TryGetService(out IWindowsFormsEditorService? editorService))
+        ArrayList images = [];
+        if (!provider.TryGetService(out IWindowsFormsEditorService? _))
         {
             return images;
         }
@@ -71,8 +71,8 @@ public class ImageListImageEditor : ImageEditor
             {
                 foreach (string name in _fileDialog.FileNames)
                 {
-                    using FileStream file = new FileStream(name, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    ImageListImage image = LoadImageFromStream(file, name.EndsWith(".ico"));
+                    using FileStream file = new(name, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    ImageListImage image = LoadImageFromStream(file, name.EndsWith(".ico", StringComparison.Ordinal));
                     image.Name = Path.GetFileName(name);
                     images.Add(image);
                 }
@@ -100,10 +100,10 @@ public class ImageListImageEditor : ImageEditor
     {
         // Copy the original stream to a buffer, then wrap a memory stream around it to avoid locking the file.
         byte[] buffer = new byte[stream.Length];
-        stream.Read(buffer, 0, (int)stream.Length);
+        stream.ReadExactly(buffer, 0, (int)stream.Length);
 
         // The created image will take over ownership of the stream.
-        MemoryStream ms = new MemoryStream(buffer);
+        MemoryStream ms = new(buffer);
         return ImageListImage.ImageListImageFromStream(ms, imageIsIcon);
     }
 

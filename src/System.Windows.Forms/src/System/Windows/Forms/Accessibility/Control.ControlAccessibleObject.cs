@@ -1,12 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Globalization;
 using System.Windows.Forms.Automation;
+using System.Windows.Forms.Primitives;
+
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
-using static Interop;
 
 namespace System.Windows.Forms;
 
@@ -199,16 +199,26 @@ public partial class Control
 
         public override string? DefaultAction => Owner?.AccessibleDefaultActionDescription ?? base.DefaultAction;
 
-        // This is used only if control supports IAccessibleEx. We need to provide a unique ID. Others are implementing this in the same manner.
-        // First item is static - 0x2a (RuntimeIDFirstItem). Second item can be anything, but it's good to supply HWND.
-        internal override int[] RuntimeId => new int[]
-        {
+        internal override bool CanGetDefaultActionInternal => IsInternal && Owner?.AccessibleDefaultActionDescription is null;
+
+        /// <remarks>
+        ///  <para>
+        ///    This is used only if control supports <see cref="IAccessibleEx" />. We need to provide a unique ID.
+        ///    Others are implementing this in the same manner. First item is static - <see cref="AccessibleObject.RuntimeIDFirstItem"/>).
+        ///    Second item can be anything unique, Win32 uses <see cref="HWND"/>, we copied that.
+        ///  </para>
+        /// </remarks>
+        /// <inheritdoc cref="AccessibleObject.RuntimeId" />
+        internal override int[] RuntimeId =>
+        [
             RuntimeIDFirstItem,
-            PARAM.ToInt(HandleInternal),
+            (int)HandleInternal,
             GetHashCode()
-        };
+        ];
 
         public override string? Description => Owner?.AccessibleDescription ?? base.Description;
+
+        internal override bool CanGetDescriptionInternal => IsInternal && Owner?.AccessibleDescription is null;
 
         /// <summary>
         ///  Gets or sets the handle of the accessible object's associated <see cref="Owner"/> control.
@@ -274,6 +284,11 @@ public partial class Control
             }
         }
 
+        internal override bool CanGetHelpInternal =>
+            IsInternal
+            && (!this.TryGetOwnerAs(out Control? owner)
+                || owner.Events[s_queryAccessibilityHelpEvent] is not QueryAccessibilityHelpEventHandler);
+
         public override string? KeyboardShortcut
         {
             get
@@ -284,6 +299,8 @@ public partial class Control
                 return (mnemonic == (char)0) ? null : $"Alt+{mnemonic}";
             }
         }
+
+        internal override bool CanGetKeyboardShortcutInternal => false;
 
         public override string? Name
         {
@@ -311,6 +328,10 @@ public partial class Control
                 }
             }
         }
+
+        internal override bool CanGetNameInternal => false;
+
+        internal override bool CanSetNameInternal => false;
 
         public override AccessibleObject? Parent => base.Parent;
 
@@ -414,8 +435,6 @@ public partial class Control
 
         public override int GetHelpTopic(out string? fileName)
         {
-            int topic = 0;
-
             if (!this.TryGetOwnerAs(out Control? owner)
                 || owner.Events[s_queryAccessibilityHelpEvent] is not QueryAccessibilityHelpEventHandler handler)
             {
@@ -426,10 +445,15 @@ public partial class Control
             handler(owner, args);
             fileName = args.HelpNamespace;
 
-            int.TryParse(args.HelpKeyword, NumberStyles.Integer, CultureInfo.InvariantCulture, out topic);
+            int.TryParse(args.HelpKeyword, NumberStyles.Integer, CultureInfo.InvariantCulture, out int topic);
 
             return topic;
         }
+
+        internal override bool CanGetHelpTopicInternal =>
+            IsInternal
+            && (!this.TryGetOwnerAs(out Control? owner)
+                || owner.Events[s_queryAccessibilityHelpEvent] is not QueryAccessibilityHelpEventHandler);
 
         public void NotifyClients(AccessibleEvents accEvent)
             => NotifyClients(accEvent, (int)OBJECT_IDENTIFIER.OBJID_CLIENT, 0);
@@ -439,13 +463,10 @@ public partial class Control
 
         public void NotifyClients(AccessibleEvents accEvent, int objectID, int childID)
         {
-            if (HandleInternal.IsNull || !CanNotifyClients)
+            if (HandleInternal.IsNull || LocalAppContextSwitches.NoClientNotifications)
             {
                 return;
             }
-
-            Debug.WriteLineIf(CompModSwitches.MSAA.TraceInfo,
-                $"Control.NotifyClients: this = {ToString()}, accEvent = {accEvent}, childID = {childID}");
 
             PInvoke.NotifyWinEvent(
                 (uint)accEvent,
@@ -478,12 +499,11 @@ public partial class Control
         }
 
         internal override bool IsPatternSupported(UIA_PATTERN_ID patternId)
-            => this.TryGetOwnerAs(out Control? owner) && owner.SupportsUiaProviders && patternId == UIA_PATTERN_ID.UIA_LegacyIAccessiblePatternId
-                ? true
-                : base.IsPatternSupported(patternId);
+            => (this.TryGetOwnerAs(out Control? owner) && owner.SupportsUiaProviders && patternId == UIA_PATTERN_ID.UIA_LegacyIAccessiblePatternId)
+                || base.IsPatternSupported(patternId);
 
         internal override bool IsIAccessibleExSupported()
-            => Owner is IAutomationLiveRegion ? true : base.IsIAccessibleExSupported();
+            => Owner is IAutomationLiveRegion || base.IsIAccessibleExSupported();
 
         internal override VARIANT GetPropertyValue(UIA_PROPERTY_ID propertyID) =>
             propertyID switch

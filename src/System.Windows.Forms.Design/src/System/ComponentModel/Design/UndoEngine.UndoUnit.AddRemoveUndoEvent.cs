@@ -18,7 +18,10 @@ public abstract partial class UndoEngine
             private readonly string? _componentName;
 
             /// <summary>
-            ///  Creates a new object that contains the state of the event.  The last parameter, add, determines the initial mode of this event.  If true, it means this event is being created in response to a component add.  If false, it is being created in response to   a component remove.
+            ///  Creates a new object that contains the state of the event.
+            ///  The last parameter, add, determines the initial mode of this event.
+            ///  If true, it means this event is being created in response to a component add.
+            ///  If false, it is being created in response to a component remove.
             /// </summary>
             public AddRemoveUndoEvent(UndoEngine engine, IComponent component, bool add)
             {
@@ -26,7 +29,6 @@ public abstract partial class UndoEngine
                 NextUndoAdds = !add;
                 OpenComponent = component;
 
-                Debug.WriteLineIf(s_traceUndo.TraceVerbose, $"UndoEngine: ---> Creating {(add ? "Add" : "Remove")} undo event for '{_componentName}'");
                 using (_serializedData = engine._serializationService.CreateStore())
                 {
                     engine._serializationService.Serialize(_serializedData, component);
@@ -54,11 +56,10 @@ public abstract partial class UndoEngine
             /// <summary>
             ///  Commits this event.
             /// </summary>
-            internal void Commit(UndoEngine engine)
+            internal void Commit()
             {
                 if (!Committed)
                 {
-                    Debug.WriteLineIf(s_traceUndo.TraceVerbose, $"UndoEngine: ---> Committing remove of '{_componentName}'");
                     Committed = true;
                 }
             }
@@ -70,21 +71,22 @@ public abstract partial class UndoEngine
             {
                 if (NextUndoAdds)
                 {
-                    Debug.WriteLineIf(s_traceUndo.TraceVerbose, $"UndoEngine: ---> Adding '{_componentName}'");
-                    // We need to add this component.  To add it, we deserialize it and then we add it to the designer host's container.
+                    // We need to add this component. To add it, we deserialize it and then we add it to
+                    // the designer host's container.
                     IDesignerHost host = engine.GetRequiredService<IDesignerHost>();
 
                     engine._serializationService.DeserializeTo(_serializedData, host.Container);
                 }
                 else
                 {
-                    Debug.WriteLineIf(s_traceUndo.TraceVerbose, $"UndoEngine: ---> Removing '{_componentName}'");
-                    // We need to remove this component.  Take the name and match it to an object, and then ask that object to delete itself.
+                    // We need to remove this component. Take the name and match it to an object,
+                    // and then ask that object to delete itself.
                     IDesignerHost host = engine.GetRequiredService<IDesignerHost>();
 
                     IComponent? component = host.Container.Components[_componentName];
 
-                    // Note: It's ok for the component to be null here.  This could happen if the parent to this control is disposed first. Ex:SplitContainer
+                    // Note: It's ok for the component to be null here.
+                    // This could happen if the parent to this control is disposed first. Ex:SplitContainer
                     if (component is not null)
                     {
                         host.DestroyComponent(component);

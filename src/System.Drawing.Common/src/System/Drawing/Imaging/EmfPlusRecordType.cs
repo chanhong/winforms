@@ -1,10 +1,10 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Drawing.Imaging;
 
 /// <summary>
-/// Specifies the methods available in a metafile to read and write graphic commands.
+///  Specifies the methods available in a metafile to read and write graphic commands.
 /// </summary>
 public enum EmfPlusRecordType
 {
@@ -210,7 +210,7 @@ public enum EmfPlusRecordType
 
     // That is the END of the GDI EMF records.
 
-    // Now we start the list of EMF+ records.  We leave quite
+    // Now we start the list of EMF+ records. We leave quite
     // a bit of room here for the addition of any new GDI
     // records that may be added later.
 

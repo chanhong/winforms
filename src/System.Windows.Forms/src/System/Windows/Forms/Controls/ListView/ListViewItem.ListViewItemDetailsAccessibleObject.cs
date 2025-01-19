@@ -8,14 +8,14 @@ namespace System.Windows.Forms;
 
 public partial class ListViewItem
 {
-    internal class ListViewItemDetailsAccessibleObject : ListViewItemBaseAccessibleObject
+    internal sealed class ListViewItemDetailsAccessibleObject : ListViewItemBaseAccessibleObject
     {
         private const int ImageAccessibleObjectIndex = 0;
         private readonly Dictionary<int, AccessibleObject> _listViewSubItemAccessibleObjects;
 
         public ListViewItemDetailsAccessibleObject(ListViewItem owningItem) : base(owningItem)
         {
-            _listViewSubItemAccessibleObjects = new Dictionary<int, AccessibleObject>();
+            _listViewSubItemAccessibleObjects = [];
         }
 
         internal override int FirstSubItemIndex => HasImage ? 1 : 0;
@@ -157,8 +157,10 @@ public partial class ListViewItem
             return fakeAccessibleObject;
         }
 
-        // This method is required to get the accessibleChildIndex of the fake accessibility object. Since the fake accessibility object
-        // has no ListViewSubItem from which we could get an accessibleChildIndex, we have to get its accessibleChildIndex from the dictionary
+        // This method is required to get the accessibleChildIndex of the fake accessibility object.
+        // Since the fake accessibility object
+        // has no ListViewSubItem from which we could get an accessibleChildIndex,
+        // we have to get its accessibleChildIndex from the dictionary
         private int GetFakeSubItemIndex(ListViewSubItem.ListViewSubItemAccessibleObject fakeAccessibleObject)
         {
             foreach (KeyValuePair<int, AccessibleObject> keyValuePair in _listViewSubItemAccessibleObjects)

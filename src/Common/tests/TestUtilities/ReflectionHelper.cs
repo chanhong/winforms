@@ -9,13 +9,13 @@ public static class ReflectionHelper
 {
     public static IEnumerable<Type> GetPublicNotAbstractClasses<T>()
     {
-        var types = typeof(T).Assembly.GetTypes().Where(type => IsPublicNonAbstract<T>(type));
+        var types = typeof(T).Assembly.GetTypes().Where(IsPublicNonAbstract<T>);
         foreach (var type in types)
         {
             if (type.GetConstructor(
                 bindingAttr: BindingFlags.Public | BindingFlags.Instance,
                 binder: null,
-                types: Array.Empty<Type>(),
+                types: [],
                 modifiers: null) is null)
             {
                 continue;
@@ -30,7 +30,7 @@ public static class ReflectionHelper
         var ctor = type.GetConstructor(
             bindingAttr: BindingFlags.Public | BindingFlags.Instance,
             binder: null,
-            types: Array.Empty<Type>(),
+            types: [],
             modifiers: null);
 
         if (ctor is null)
@@ -38,7 +38,7 @@ public static class ReflectionHelper
             return default;
         }
 
-        T obj = (T)ctor.Invoke(Array.Empty<object>());
+        T obj = (T)ctor.Invoke([]);
         Assert.NotNull(obj);
         return obj;
     }

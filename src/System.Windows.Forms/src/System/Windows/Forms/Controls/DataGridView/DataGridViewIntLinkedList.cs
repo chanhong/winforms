@@ -71,7 +71,7 @@ internal class DataGridViewIntLinkedList : IEnumerable
             Debug.Assert(index >= 0);
             if (index != _lastAccessedIndex)
             {
-                int currentInt = this[index];
+                _ = this[index];
                 Debug.Assert(index == _lastAccessedIndex);
             }
 
@@ -92,7 +92,7 @@ internal class DataGridViewIntLinkedList : IEnumerable
 
     public void Add(int integer)
     {
-        DataGridViewIntLinkedListElement newHead = new DataGridViewIntLinkedListElement(integer);
+        DataGridViewIntLinkedListElement newHead = new(integer);
         if (_headElement is not null)
         {
             newHead.Next = _headElement;

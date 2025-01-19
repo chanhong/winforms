@@ -3,7 +3,6 @@
 
 using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Windows.Forms.TestUtilities;
 
 namespace System.Windows.Forms.Tests;
 
@@ -12,7 +11,7 @@ public partial class ControlTests
     [WinFormsFact]
     public void Control_GetHandleInternalShouldBeZero()
     {
-        using var control = new Control();
+        using Control control = new();
 
         IntPtr intptr = control.HandleInternal;
 
@@ -24,7 +23,7 @@ public partial class ControlTests
     [BoolData]
     public void Control_IsTopMdiWindowClosingGetSet(bool expected)
     {
-        using var control = new Control
+        using Control control = new()
         {
             IsTopMdiWindowClosing = expected
         };
@@ -36,7 +35,7 @@ public partial class ControlTests
     [EnumData<BoundsSpecified>]
     public void Control_RequiredScaling_Set_GetReturnsExpected(BoundsSpecified value)
     {
-        using var control = new Control
+        using Control control = new()
         {
             RequiredScaling = value
         };
@@ -51,7 +50,7 @@ public partial class ControlTests
     [BoolData]
     public void Control_RequiredScalingEnabled_Get_ReturnsExpected(bool value)
     {
-        using var control = new Control
+        using Control control = new()
         {
             RequiredScalingEnabled = value
         };
@@ -70,7 +69,7 @@ public partial class ControlTests
     [BoolData]
     public void Control_TabStopInternal_Set_GetReturnsExpected(bool value)
     {
-        using var control = new Control
+        using Control control = new()
         {
             TabStopInternal = value
         };
@@ -89,7 +88,7 @@ public partial class ControlTests
     [BoolData]
     public void Control_TabStopInternal_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var control = new Control();
+        using Control control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
 
         control.TabStopInternal = value;
@@ -107,7 +106,7 @@ public partial class ControlTests
     [WinFormsFact]
     public void Control_TabStopInternal_SetWithHandler_DoesNotCallTabStopChanged()
     {
-        using var control = new Control
+        using Control control = new()
         {
             TabStop = true
         };
@@ -148,19 +147,19 @@ public partial class ControlTests
     // SupportsUseCompatibleTextRendering is always false
     public void Control_UseCompatibleTextRenderingIntGetSet(bool given, bool expected)
     {
-        using var control = new Control
+        using Control control = new()
         {
-            UseCompatibleTextRenderingInt = given
+            UseCompatibleTextRenderingInternal = given
         };
 
-        Assert.Equal(expected, control.UseCompatibleTextRenderingInt);
+        Assert.Equal(expected, control.UseCompatibleTextRenderingInternal);
     }
 
     [WinFormsTheory]
     [BoolData]
     public void Control_ValidationCancelledGetSet(bool expected)
     {
-        using var control = new Control
+        using Control control = new()
         {
             ValidationCancelled = expected
         };
@@ -172,8 +171,8 @@ public partial class ControlTests
     [IntegerData<int>]
     public void Control_ApplyBoundsConstraints(int expected)
     {
-        using var control = new Control();
-        var expectedBounds = new Rectangle(expected, expected, expected, expected);
+        using Control control = new();
+        Rectangle expectedBounds = new(expected, expected, expected, expected);
 
         Rectangle actualBounds = control.ApplyBoundsConstraints(expected, expected, expected, expected);
 
@@ -184,8 +183,8 @@ public partial class ControlTests
     [IntegerData<int>]
     public void Control_ApplySizeConstraints(int expected)
     {
-        using var control = new Control();
-        var expectedSize = new Size(expected, expected);
+        using Control control = new();
+        Size expectedSize = new(expected, expected);
 
         Size actualSize = control.ApplySizeConstraints(expected, expected);
 
@@ -196,7 +195,7 @@ public partial class ControlTests
     [CommonMemberData(typeof(CommonTestHelper), nameof(CommonTestHelper.GetSizeTheoryData))]
     public void Control_ApplySizeConstraintsSize_Invoke_ReturnsExpected(Size expectedSize)
     {
-        using var control = new Control();
+        using Control control = new();
         Size actualSize = control.ApplySizeConstraints(expectedSize);
         Assert.Equal(expectedSize, actualSize);
     }
@@ -204,8 +203,8 @@ public partial class ControlTests
     [WinFormsFact]
     public void Control_AssignParent()
     {
-        using var control = new Control();
-        var parent = new Control();
+        using Control control = new();
+        Control parent = new();
 
         control.AssignParent(parent);
 
@@ -216,9 +215,9 @@ public partial class ControlTests
     public void Control_ParentChangedFromAssign()
     {
         bool wasChanged = false;
-        using var control = new Control();
+        using Control control = new();
         control.ParentChanged += (sender, args) => wasChanged = true;
-        var parent = new Control();
+        Control parent = new();
 
         control.AssignParent(parent);
 
@@ -228,7 +227,7 @@ public partial class ControlTests
     [WinFormsFact]
     public void Control_CanProcessMnemonic()
     {
-        using var control = new Control();
+        using Control control = new();
 
         // act and assert
         Assert.True(control.CanProcessMnemonic());
@@ -237,7 +236,7 @@ public partial class ControlTests
     [WinFormsFact]
     public void Control_CanProcessMnemonicNotEnabled()
     {
-        using var control = new Control
+        using Control control = new()
         {
             Enabled = false
         };
@@ -249,7 +248,7 @@ public partial class ControlTests
     [WinFormsFact]
     public void Control_CanProcessMnemonicNotVisible()
     {
-        using var control = new Control
+        using Control control = new()
         {
             Visible = false
         };
@@ -261,8 +260,8 @@ public partial class ControlTests
     [WinFormsFact]
     public void Control_CanProcessMnemonicParent()
     {
-        using var control = new Control();
-        var parent = new Control();
+        using Control control = new();
+        Control parent = new();
         control.AssignParent(parent);
 
         // act and assert
@@ -273,7 +272,7 @@ public partial class ControlTests
     [BoolData]
     public void Control_CreateControlInternal(bool fIgnoreVisible)
     {
-        using var control = new Control();
+        using Control control = new();
 
         control.CreateControl(fIgnoreVisible);
 
@@ -283,16 +282,16 @@ public partial class ControlTests
     [WinFormsFact]
     public void Control_GetChildControlsInTabOrder()
     {
-        using var control = new Control();
-        var first = new Control
+        using Control control = new();
+        Control first = new()
         {
             TabIndex = 0
         };
-        var second = new Control
+        Control second = new()
         {
             TabIndex = 1
         };
-        var third = new Control
+        Control third = new()
         {
             TabIndex = 2
         };
@@ -318,16 +317,16 @@ public partial class ControlTests
     [WinFormsFact]
     public void Control_GetChildControlsInTabOrderHandlesOnly()
     {
-        using var control = new Control();
-        var first = new Control
+        using Control control = new();
+        Control first = new()
         {
             TabIndex = 0
         };
-        var second = new Control
+        Control second = new()
         {
             TabIndex = 1
         };
-        var third = new Control
+        Control third = new()
         {
             TabIndex = 2
         };
@@ -347,16 +346,16 @@ public partial class ControlTests
     [WinFormsFact]
     public void Control_GetFirstChildControlInTabOrder()
     {
-        using var control = new Control();
-        var first = new Control
+        using Control control = new();
+        Control first = new()
         {
             TabIndex = 0
         };
-        var second = new Control
+        Control second = new()
         {
             TabIndex = 1
         };
-        var third = new Control
+        Control third = new()
         {
             TabIndex = 2
         };
@@ -375,16 +374,16 @@ public partial class ControlTests
     [WinFormsFact]
     public void Control_GetFirstChildControlInTabOrderReverse()
     {
-        using var control = new Control();
-        var first = new Control
+        using Control control = new();
+        Control first = new()
         {
             TabIndex = 0
         };
-        var second = new Control
+        Control second = new()
         {
             TabIndex = 1
         };
-        var third = new Control
+        Control third = new()
         {
             TabIndex = 2
         };
@@ -398,30 +397,6 @@ public partial class ControlTests
 
         // act and assert
         Assert.Equal(third, control.GetFirstChildControlInTabOrder(false));
-    }
-
-    [WinFormsFact]
-    public void Control_NotifyEnter()
-    {
-        bool wasChanged = false;
-        using var control = new Control();
-        control.Enter += (sender, args) => wasChanged = true;
-
-        control.NotifyEnter();
-
-        Assert.True(wasChanged);
-    }
-
-    [WinFormsFact]
-    public void Control_NotifyLeave()
-    {
-        bool wasChanged = false;
-        using var control = new Control();
-        control.Leave += (sender, args) => wasChanged = true;
-
-        control.NotifyLeave();
-
-        Assert.True(wasChanged);
     }
 
     [WinFormsFact]

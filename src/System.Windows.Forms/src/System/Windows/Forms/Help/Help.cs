@@ -4,6 +4,7 @@
 using System.Drawing;
 using System.Globalization;
 using Windows.Win32.Data.HtmlHelp;
+using static Windows.Win32.Data.HtmlHelp.HTML_HELP_COMMAND;
 
 namespace System.Windows.Forms;
 
@@ -12,18 +13,11 @@ namespace System.Windows.Forms;
 /// </summary>
 public static class Help
 {
-#if DEBUG
-    internal static readonly TraceSwitch s_windowsFormsHelpTrace = new("WindowsFormsHelpTrace", "Debug help system");
-#else
-    internal static readonly TraceSwitch? s_windowsFormsHelpTrace;
-#endif
-
     private const int HTML10HELP = 2;
     private const int HTMLFILE = 3;
 
     /// <summary>
-    ///  Displays
-    ///  the contents of the Help file at located at a specified Url.
+    ///  Displays the contents of the Help file at located at a specified Url.
     /// </summary>
     public static void ShowHelp(Control? parent, string? url)
     {
@@ -31,9 +25,7 @@ public static class Help
     }
 
     /// <summary>
-    ///  Displays the contents of
-    ///  the Help
-    ///  file for a specific topic found at the specified Url.
+    ///  Displays the contents of the Help file for a specific topic found at the specified Url.
     /// </summary>
     public static void ShowHelp(Control? parent, string? url, HelpNavigator navigator)
     {
@@ -41,9 +33,7 @@ public static class Help
     }
 
     /// <summary>
-    ///  Displays the contents of
-    ///  the Help
-    ///  file for a specific topic found at the specified Url.
+    ///  Displays the contents of the Help file for a specific topic found at the specified Url.
     /// </summary>
     public static void ShowHelp(Control? parent, string? url, string? keyword)
     {
@@ -58,15 +48,10 @@ public static class Help
     }
 
     /// <summary>
-    ///  Displays the contents of the Help file located at
-    ///  the Url
-    ///  supplied by the
-    ///  user.
+    ///  Displays the contents of the Help file located at the Url supplied by the user.
     /// </summary>
     public static void ShowHelp(Control? parent, string? url, HelpNavigator command, object? parameter)
     {
-        s_windowsFormsHelpTrace.TraceVerbose("Help:: ShowHelp");
-
         switch (GetHelpFileType(url))
         {
             case HTML10HELP:
@@ -83,8 +68,6 @@ public static class Help
     /// </summary>
     public static void ShowHelpIndex(Control? parent, string? url)
     {
-        s_windowsFormsHelpTrace.TraceVerbose("Help:: ShowHelpIndex");
-
         ShowHelp(parent, url, HelpNavigator.Index, null);
     }
 
@@ -93,8 +76,6 @@ public static class Help
     /// </summary>
     public static unsafe void ShowPopup(Control? parent, string caption, Point location)
     {
-        s_windowsFormsHelpTrace.TraceVerbose("Help:: ShowPopup");
-
         HH_POPUP pop = new()
         {
             cbStruct = sizeof(HH_POPUP),
@@ -116,12 +97,10 @@ public static class Help
     }
 
     /// <summary>
-    ///  Displays HTML 1.0 Help with the specified parameters
+    ///  Displays HTML 1.0 Help with the specified parameters.
     /// </summary>
     private static unsafe void ShowHTML10Help(Control? parent, string? url, HelpNavigator command, object? param)
     {
-        s_windowsFormsHelpTrace.TraceVerbose($"Help:: ShowHTML10Help:: {url}, {command:G}, {param}");
-
         // See if we can get a full path and file name and if that will
         // resolve the out of memory condition with file names that include spaces.
         // If we can't, though, we can't assume that the path's no good: it might be in
@@ -171,24 +150,22 @@ public static class Help
             }
             else if (htmlParam is HH_FTS_QUERY query)
             {
-                HH_FTS_QUERY* dwData = &query;
                 fixed (char* pszSearchQuery = stringParam)
                 {
                     query.pszSearchQuery = (sbyte*)pszSearchQuery;
-                    PInvoke.HtmlHelp(handle, pathAndFileName, htmlCommand, (nuint)dwData);
+                    PInvoke.HtmlHelp(handle, pathAndFileName, htmlCommand, in query);
                 }
             }
             else if (htmlParam is HH_AKLINK aLink)
             {
                 // According to MSDN documentation, we have to ensure that the help window is up
                 // before we call ALINK lookup.
-                PInvoke.HtmlHelp(HWND.Null, pathAndFileName, HTML_HELP_COMMAND.HH_DISPLAY_TOPIC, nuint.Zero);
+                PInvoke.HtmlHelp(HWND.Null, pathAndFileName, HH_DISPLAY_TOPIC, null);
 
-                HH_AKLINK* dwData = &aLink;
                 fixed (char* pszKeywords = stringParam)
                 {
                     aLink.pszKeywords = (sbyte*)pszKeywords;
-                    PInvoke.HtmlHelp(handle, pathAndFileName, htmlCommand, (nuint)dwData);
+                    PInvoke.HtmlHelp(handle, pathAndFileName, htmlCommand, in aLink);
                 }
             }
             else
@@ -199,12 +176,11 @@ public static class Help
         }
         else if (param is null)
         {
-            PInvoke.HtmlHelp(handle, pathAndFileName, MapCommandToHTMLCommand(command, null, out htmlParam), nuint.Zero);
+            PInvoke.HtmlHelp(handle, pathAndFileName, MapCommandToHTMLCommand(command, null, out htmlParam), null);
         }
         else if (param is HH_POPUP popup)
         {
-            HH_POPUP* dwData = &popup;
-            PInvoke.HtmlHelp(handle, pathAndFileName, HTML_HELP_COMMAND.HH_DISPLAY_TEXT_POPUP, (nuint)dwData);
+            PInvoke.HtmlHelp(handle, pathAndFileName, HH_DISPLAY_TEXT_POPUP, ref popup);
         }
         else if (param.GetType() == typeof(int))
         {
@@ -217,8 +193,6 @@ public static class Help
     /// </summary>
     private static void ShowHTMLFile(Control? parent, string? url, HelpNavigator command, object? param)
     {
-        s_windowsFormsHelpTrace.TraceVerbose($"Help:: ShowHTMLHelp:: {url}, {command:G}, {param}");
-
         Uri? file = Resolve(url) ?? throw new ArgumentException(string.Format(SR.HelpInvalidURL, url), nameof(url));
 
         switch (command)
@@ -226,8 +200,7 @@ public static class Help
             case HelpNavigator.TableOfContents:
             case HelpNavigator.Find:
             case HelpNavigator.Index:
-                // nothing needed...
-                //
+                // Nothing needed.
                 break;
             case HelpNavigator.Topic:
                 if (param is string stringParam)
@@ -239,7 +212,6 @@ public static class Help
         }
 
         HandleRef<HWND> handle = parent is not null ? new(parent) : Control.GetHandleRef(PInvoke.GetActiveWindow());
-        s_windowsFormsHelpTrace.TraceVerbose($"\tExecuting '{file}'");
         string fileName = file.ToString();
         string? executable = file.IsFile ? FindExecutableInternal(file.LocalPath.ToString()) : null;
         PInvoke.ShellExecute(handle.Handle, lpOperation: null, executable ?? fileName, executable is not null ? fileName : null, lpDirectory: null, SHOW_WINDOW_CMD.SW_NORMAL);
@@ -249,7 +221,7 @@ public static class Help
     private static unsafe string? FindExecutableInternal(string uri)
     {
         HINSTANCE result;
-        Span<char> buffer = stackalloc char[PInvoke.MAX_PATH + 1];
+        Span<char> buffer = stackalloc char[(int)PInvokeCore.MAX_PATH + 1];
         fixed (char* lpFileLocal = uri)
         {
             fixed (char* b = buffer)
@@ -263,9 +235,6 @@ public static class Help
 
     private static Uri? Resolve(string? partialUri)
     {
-        s_windowsFormsHelpTrace.TraceVerbose($"Help:: Resolve {partialUri}");
-        Debug.Indent();
-
         Uri? file = null;
 
         if (!string.IsNullOrEmpty(partialUri))
@@ -283,21 +252,19 @@ public static class Help
         if (file is not null && file.Scheme == "file")
         {
             string localPath = file.LocalPath + file.Fragment;
-            s_windowsFormsHelpTrace.TraceVerbose("file, check for existence");
 
             if (!File.Exists(localPath))
             {
-                // clear, and try relative to AppBase...
+                // Clear, and try relative to AppBase.
                 file = null;
             }
         }
 
         if (file is null)
         {
-            s_windowsFormsHelpTrace.TraceVerbose("try AppBase relative");
             try
             {
-                // try relative to AppBase...
+                // Try relative to AppBase.
                 file = new Uri(new Uri(AppContext.BaseDirectory),
                                partialUri);
             }
@@ -309,26 +276,21 @@ public static class Help
             if (file is not null && file.Scheme == "file")
             {
                 string localPath = file.LocalPath + file.Fragment;
-                s_windowsFormsHelpTrace.TraceVerbose("file, check for existence");
                 if (!File.Exists(localPath))
                 {
-                    // clear - file isn't there...
+                    // Clear - file isn't there.
                     file = null;
                 }
             }
         }
 
-        Debug.Unindent();
         return file;
     }
 
     private static int GetHelpFileType(string? url)
     {
-        s_windowsFormsHelpTrace.TraceVerbose("Help:: GetHelpFileType {url}");
-
         if (url is null)
         {
-            s_windowsFormsHelpTrace.TraceVerbose("\tnull, must be Html File");
             return HTMLFILE;
         }
 
@@ -336,17 +298,13 @@ public static class Help
 
         if (file is null || file.Scheme == "file")
         {
-            s_windowsFormsHelpTrace.TraceVerbose("\tfile");
-
             string ext = Path.GetExtension(file is null ? url : file.LocalPath + file.Fragment).ToLower(CultureInfo.InvariantCulture);
             if (ext is ".chm" or ".col")
             {
-                s_windowsFormsHelpTrace.TraceVerbose("\tchm or col, HtmlHelp 1.0 file");
                 return HTML10HELP;
             }
         }
 
-        s_windowsFormsHelpTrace.TraceVerbose("\tnot file, or odd extension, but be HTML");
         return HTMLFILE;
     }
 
@@ -359,31 +317,32 @@ public static class Help
 
         if (string.IsNullOrEmpty(param) && (command == HelpNavigator.AssociateIndex || command == HelpNavigator.KeywordIndex))
         {
-            return HTML_HELP_COMMAND.HH_DISPLAY_INDEX;
+            return HH_DISPLAY_INDEX;
         }
 
         switch (command)
         {
             case HelpNavigator.Topic:
-                return HTML_HELP_COMMAND.HH_DISPLAY_TOPIC;
+                return HH_DISPLAY_TOPIC;
 
             case HelpNavigator.TableOfContents:
-                return HTML_HELP_COMMAND.HH_DISPLAY_TOC;
+                return HH_DISPLAY_TOC;
 
             case HelpNavigator.Index:
-                return HTML_HELP_COMMAND.HH_DISPLAY_INDEX;
+                return HH_DISPLAY_INDEX;
 
             case HelpNavigator.Find:
                 {
                     HH_FTS_QUERY ftsQuery = new()
                     {
                         cbStruct = sizeof(HH_FTS_QUERY),
-                        iProximity = (int)HTML_HELP_COMMAND.HH_FTS_DEFAULT_PROXIMITY,
+                        iProximity = (int)HH_FTS_DEFAULT_PROXIMITY,
                         fExecute = true,
                         fUniCodeStrings = true
                     };
+
                     htmlParam = ftsQuery;
-                    return HTML_HELP_COMMAND.HH_DISPLAY_SEARCH;
+                    return HH_DISPLAY_SEARCH;
                 }
 
             case HelpNavigator.TopicId:
@@ -391,11 +350,11 @@ public static class Help
                     if (int.TryParse(param, out int htmlParamAsInt))
                     {
                         htmlParam = htmlParamAsInt;
-                        return HTML_HELP_COMMAND.HH_HELP_CONTEXT;
+                        return HH_HELP_CONTEXT;
                     }
 
                     // default to just showing the index
-                    return HTML_HELP_COMMAND.HH_DISPLAY_INDEX;
+                    return HH_DISPLAY_INDEX;
                 }
 
             case HelpNavigator.KeywordIndex:
@@ -408,7 +367,7 @@ public static class Help
                         fReserved = false
                     };
                     htmlParam = alink;
-                    return command == HelpNavigator.KeywordIndex ? HTML_HELP_COMMAND.HH_KEYWORD_LOOKUP : HTML_HELP_COMMAND.HH_ALINK_LOOKUP;
+                    return command == HelpNavigator.KeywordIndex ? HH_KEYWORD_LOOKUP : HH_ALINK_LOOKUP;
                 }
 
             default:

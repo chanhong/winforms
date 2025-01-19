@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Globalization;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
+using PInvoke = Windows.Win32.PInvoke;
 
 namespace System.Windows.Forms;
 
@@ -40,19 +41,12 @@ public abstract partial class ToolStripItem
             }
         }
 
-        public override string? Description
-        {
-            get
-            {
-                string? description = _ownerItem.AccessibleDescription;
-                if (description is not null)
-                {
-                    return description;
-                }
+        internal override bool CanGetDefaultActionInternal => false;
 
-                return base.Description;
-            }
-        }
+        public override string? Description =>
+            _ownerItem.AccessibleDescription is { } description ? description : base.Description;
+
+        internal override bool CanGetDescriptionInternal => IsInternal && _ownerItem.AccessibleDescription is null;
 
         public override string? Help
         {
@@ -61,7 +55,7 @@ public abstract partial class ToolStripItem
                 QueryAccessibilityHelpEventHandler? handler = (QueryAccessibilityHelpEventHandler?)Owner.Events[s_queryAccessibilityHelpEvent];
                 if (handler is not null)
                 {
-                    QueryAccessibilityHelpEventArgs args = new QueryAccessibilityHelpEventArgs();
+                    QueryAccessibilityHelpEventArgs args = new();
                     handler(Owner, args);
                     return args.HelpString;
                 }
@@ -70,11 +64,14 @@ public abstract partial class ToolStripItem
             }
         }
 
+        internal override bool CanGetHelpInternal
+            => IsInternal && (QueryAccessibilityHelpEventHandler?)Owner.Events[s_queryAccessibilityHelpEvent] is null;
+
         public override string KeyboardShortcut
         {
             get
             {
-                // This really is the Mnemonic - NOT the shortcut.  E.g. in notepad Edit->Replace is Control+H
+                // This really is the Mnemonic - NOT the shortcut. E.g. in notepad Edit->Replace is Control+H
                 // but the KeyboardShortcut comes up as the mnemonic 'r'.
                 char mnemonic = WindowsFormsUtils.GetMnemonic(_ownerItem.Text, false);
                 if (_ownerItem.IsOnDropDown)
@@ -87,15 +84,22 @@ public abstract partial class ToolStripItem
             }
         }
 
-        // We need to provide a unique ID. Others are implementing this in the same manner. First item should be UiaAppendRuntimeId
-        // since this is not a top-level element of the fragment. Second item can be anything, but here it is a hash.
-        // For toolstrip hash is unique even with child controls. Hwnd  is not.
-        internal override int[] RuntimeId
-            => _runtimeId ??= new int[]
-            {
-                (int)PInvoke.UiaAppendRuntimeId,
-                _ownerItem.GetHashCode()
-            };
+        internal override bool CanGetKeyboardShortcutInternal => false;
+
+        /// <remarks>
+        ///  <para>
+        ///    First item should be <see cref="PInvoke.UiaAppendRuntimeId" /> since this is not a top-level
+        ///    element of the fragment. Second item can be anything, but here it is the owner hash code.
+        ///    For <see cref="ToolStrip" /> hash code is unique even with child controls.
+        ///    <see cref="Control.Handle" /> is not.
+        ///  </para>
+        /// </remarks>
+        /// <inheritdoc cref="AccessibleObject.RuntimeId" />
+        internal override int[] RuntimeId => _runtimeId ??=
+        [
+            (int)PInvoke.UiaAppendRuntimeId,
+            _ownerItem.GetHashCode()
+        ];
 
         internal override VARIANT GetPropertyValue(UIA_PROPERTY_ID propertyID) =>
             propertyID switch
@@ -132,6 +136,10 @@ public abstract partial class ToolStripItem
             }
             set => _ownerItem.AccessibleName = value;
         }
+
+        internal override bool CanGetNameInternal => false;
+
+        internal override bool CanSetNameInternal => false;
 
         internal ToolStripItem Owner => _ownerItem;
 
@@ -203,7 +211,7 @@ public abstract partial class ToolStripItem
 
             if (handler is not null)
             {
-                QueryAccessibilityHelpEventArgs args = new QueryAccessibilityHelpEventArgs();
+                QueryAccessibilityHelpEventArgs args = new();
                 handler(Owner, args);
 
                 fileName = args.HelpNamespace;
@@ -215,6 +223,8 @@ public abstract partial class ToolStripItem
 
             return base.GetHelpTopic(out fileName);
         }
+
+        internal override bool CanGetHelpTopicInternal => IsInternal && Owner.Events[s_queryAccessibilityHelpEvent] is null;
 
         public override AccessibleObject? Navigate(AccessibleNavigation navigationDirection)
         {

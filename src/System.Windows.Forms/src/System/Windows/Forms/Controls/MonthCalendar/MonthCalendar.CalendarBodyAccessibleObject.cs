@@ -12,7 +12,7 @@ public partial class MonthCalendar
     /// <summary>
     ///  Represents an accessible object for a calendar body in <see cref="MonthCalendar"/> control.
     /// </summary>
-    internal class CalendarBodyAccessibleObject : MonthCalendarChildAccessibleObject
+    internal sealed class CalendarBodyAccessibleObject : MonthCalendarChildAccessibleObject
     {
         // A calendar body is the second in the calendar accessibility tree.
         // Indices start at 1.
@@ -22,7 +22,7 @@ public partial class MonthCalendar
         private readonly MonthCalendarAccessibleObject _monthCalendarAccessibleObject;
         private readonly int _calendarIndex;
         private readonly string _initName;
-        private readonly int[] _initRuntimeId;
+        private readonly int[] _runtimeId;
         private LinkedList<CalendarRowAccessibleObject>? _rowsAccessibleObjects;
 
         public CalendarBodyAccessibleObject(CalendarAccessibleObject calendarAccessibleObject,
@@ -37,13 +37,9 @@ public partial class MonthCalendar
             // So save these values one time to avoid sending messages to Windows every time
             // or recreating new structures and making extra calculations.
             _initName = _monthCalendarAccessibleObject.GetCalendarPartText(MCGRIDINFO_PART.MCGIP_CALENDARHEADER, _calendarIndex);
-            _initRuntimeId = new int[]
-            {
-                _calendarAccessibleObject.RuntimeId[0],
-                _calendarAccessibleObject.RuntimeId[1],
-                _calendarAccessibleObject.RuntimeId[2],
-                GetChildId()
-            };
+
+            int[] id = _calendarAccessibleObject.RuntimeId;
+            _runtimeId = [id[0], id[1], id[2], GetChildId()];
         }
 
         public override Rectangle Bounds
@@ -162,7 +158,7 @@ public partial class MonthCalendar
                 return null;
             }
 
-            List<CalendarCellAccessibleObject> headers = new();
+            List<CalendarCellAccessibleObject> headers = [];
 
             foreach (CalendarRowAccessibleObject row in RowsAccessibleObjects)
             {
@@ -197,7 +193,11 @@ public partial class MonthCalendar
 
         public override string Name => _initName;
 
+        internal override bool CanGetNameInternal => false;
+
         public override AccessibleObject Parent => _calendarAccessibleObject;
+
+        private protected override bool IsInternal => true;
 
         public override AccessibleRole Role => AccessibleRole.Table;
 
@@ -244,7 +244,7 @@ public partial class MonthCalendar
             }
         }
 
-        internal override int[] RuntimeId => _initRuntimeId;
+        internal override int[] RuntimeId => _runtimeId;
 
         internal override void SetFocus()
         {

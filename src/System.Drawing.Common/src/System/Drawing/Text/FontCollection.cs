@@ -1,61 +1,65 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
-using System.Runtime.InteropServices;
-using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Text;
 
 /// <summary>
-/// When inherited, enumerates the FontFamily objects in a collection of fonts.
+///  When inherited, enumerates the FontFamily objects in a collection of fonts.
 /// </summary>
-public abstract class FontCollection : IDisposable
+public abstract unsafe class FontCollection : IDisposable, IPointer<GpFontCollection>
 {
-    internal IntPtr _nativeFontCollection;
+    private GpFontCollection* _nativeFontCollection;
+    nint IPointer<GpFontCollection>.Pointer => (nint)_nativeFontCollection;
 
-    internal FontCollection() => _nativeFontCollection = IntPtr.Zero;
+    private protected FontCollection(GpFontCollection* nativeFontCollection) => _nativeFontCollection = nativeFontCollection;
 
     /// <summary>
-    /// Disposes of this <see cref='System.Drawing.Text.FontCollection'/>
+    ///  Disposes of this <see cref='FontCollection'/>
     /// </summary>
     public void Dispose()
     {
-        Dispose(true);
+        Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing) { }
+    protected virtual void Dispose(bool disposing) => _nativeFontCollection = null;
 
     /// <summary>
-    /// Gets the array of <see cref='System.Drawing.FontFamily'/> objects associated
-    /// with this <see cref='System.Drawing.Text.FontCollection'/>.
+    ///  Gets the array of <see cref='FontFamily'/> objects associated with this <see cref='FontCollection'/>.
     /// </summary>
     public FontFamily[] Families
     {
         get
         {
-            int numSought;
-            int status = Gdip.GdipGetFontCollectionFamilyCount(new HandleRef(this, _nativeFontCollection), out numSought);
-            Gdip.CheckStatus(status);
-
-            var gpfamilies = new IntPtr[numSought];
             int numFound;
-            status = Gdip.GdipGetFontCollectionFamilyList(new HandleRef(this, _nativeFontCollection), numSought, gpfamilies,
-                                                         out numFound);
-            Gdip.CheckStatus(status);
+            PInvokeGdiPlus.GdipGetFontCollectionFamilyCount(_nativeFontCollection, &numFound).ThrowIfFailed();
 
-            Debug.Assert(numSought == numFound, "GDI+ can't give a straight answer about how many fonts there are");
-            var families = new FontFamily[numFound];
-            for (int f = 0; f < numFound; f++)
+            if (numFound == 0)
             {
-                IntPtr native;
-                Gdip.GdipCloneFontFamily(gpfamilies[f], out native);
-                families[f] = new FontFamily(native);
+                return [];
             }
 
+            bool installedFontCollection = GetType() == typeof(InstalledFontCollection);
+
+            GpFontFamily*[] gpFamilies = new GpFontFamily*[numFound];
+            fixed (GpFontFamily** f = gpFamilies)
+            {
+                PInvokeGdiPlus.GdipGetFontCollectionFamilyList(_nativeFontCollection, numFound, f, &numFound).ThrowIfFailed();
+            }
+
+            Debug.Assert(gpFamilies.Length == numFound, "GDI+ can't give a straight answer about how many fonts there are");
+            FontFamily[] families = new FontFamily[numFound];
+            for (int f = 0; f < numFound; f++)
+            {
+                // GetFontCollectionFamilyList doesn't ref count the returned families. The internal constructor
+                // here will add a ref if the font collection is not the installed font collection.
+                families[f] = new FontFamily(gpFamilies[f], installedFontCollection);
+            }
+
+            GC.KeepAlive(this);
             return families;
         }
     }
 
-    ~FontCollection() => Dispose(false);
+    ~FontCollection() => Dispose(disposing: false);
 }

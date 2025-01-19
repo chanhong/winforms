@@ -49,14 +49,16 @@ public sealed partial class CodeDomComponentSerializationService
             }
 
             /// <summary>
-            ///  If true, the object should be serialized such that during deserialization to an existing object the object is reconstructed entirely. If false, serialize normally
+            ///  If <see langword="true"/>, the object should be serialized such that during deserialization
+            ///  to an existing object the object is reconstructed entirely.
+            ///  If <see langword="false"/>, serialize normally
             /// </summary>
             internal bool Absolute { get; set; }
 
             /// <summary>
             ///  A list of MemberData objects representing specific members that should be serialized.
             /// </summary>
-            internal IList<MemberData> Members => _members ??= new List<MemberData>();
+            internal IList<MemberData> Members => _members ??= [];
         }
 
         /// <summary>

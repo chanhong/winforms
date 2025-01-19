@@ -8,7 +8,12 @@ using System.Drawing;
 namespace System.Windows.Forms.Design.Behavior;
 
 /// <summary>
-///  This is the Behavior that represents DesignerActions for a particular control.  The DesignerActionBehavior is responsible for responding to the MouseDown message and either 1) selecting the control and changing the  DesignerActionGlyph's image or 2) building up a chrome menu  and requesting it to be shown. Also, this Behavior acts as a proxy between "clicked" context menu items and the actual DesignerActions that they represent.
+///  This is the Behavior that represents DesignerActions for a particular control.
+///  The DesignerActionBehavior is responsible for responding to the MouseDown message and either
+///  1) Selecting the control and changing the DesignerActionGlyph's image or
+///  2) Building up a chrome menu and requesting it to be shown.
+///  Also, this Behavior acts as a proxy between "clicked" context menu items and the actual
+///  DesignerActions that they represent.
 /// </summary>
 internal sealed class DesignerActionBehavior : Behavior
 {
@@ -27,7 +32,8 @@ internal sealed class DesignerActionBehavior : Behavior
     }
 
     /// <summary>
-    ///  Returns the collection of DesignerActionLists this Behavior is managing. These will be dynamically updated (some can be removed, new ones can be added, etc...).
+    ///  Returns the collection of DesignerActionLists this Behavior is managing.
+    ///  These will be dynamically updated (some can be removed, new ones can be added, etc...).
     /// </summary>
     internal DesignerActionListCollection ActionLists { get; set; }
 
@@ -52,10 +58,10 @@ internal sealed class DesignerActionBehavior : Behavior
     internal DesignerActionPanel CreateDesignerActionPanel(IComponent relatedComponent)
     {
         // BUILD AND SHOW THE CHROME UI
-        DesignerActionListCollection lists = new DesignerActionListCollection();
+        DesignerActionListCollection lists = new();
         lists.AddRange(ActionLists);
-        DesignerActionPanel dap = new DesignerActionPanel(_serviceProvider);
-        dap.UpdateTasks(lists, new DesignerActionListCollection(), string.Format(SR.DesignerActionPanel_DefaultPanelTitle, relatedComponent.GetType().Name), null);
+        DesignerActionPanel dap = new(_serviceProvider);
+        dap.UpdateTasks(lists, [], string.Format(SR.DesignerActionPanel_DefaultPanelTitle, relatedComponent.GetType().Name), null);
         return dap;
     }
 
@@ -95,7 +101,9 @@ internal sealed class DesignerActionBehavior : Behavior
     }
 
     /// <summary>
-    ///  In response to a MouseUp, we will either 1) select the Glyph and control if not selected, or 2) Build up our context menu representing our DesignerActions and show it.
+    ///  In response to a MouseUp, we will either
+    ///  1) select the Glyph and control if not selected, or
+    ///  2) Build up our context menu representing our DesignerActions and show it.
     /// </summary>
     public override bool OnMouseUp(Glyph? g, MouseButtons button)
     {

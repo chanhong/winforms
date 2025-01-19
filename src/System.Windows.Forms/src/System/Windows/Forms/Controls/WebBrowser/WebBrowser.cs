@@ -44,10 +44,10 @@ public unsafe partial class WebBrowser : WebBrowserBase
     private const int WEBBROWSERSTATE_allowNavigation = 0x00000040;
 
     // PERF: take all the bools and put them into a state variable
-    private Collections.Specialized.BitVector32 _webBrowserState;          // see TREEVIEWSTATE_ consts above
+    private Collections.Specialized.BitVector32 _webBrowserState;          // see TREEVIEWSTATE_ constants above
 
     //
-    // 8856f961-340a-11d0-a96b-00c04fd705a2 is the clsid for the native webbrowser control
+    // 8856f961-340a-11d0-a96b-00c04fd705a2 is the clsid for the native WebBrowser control
     //
     /// <summary>
     ///  Creates an instance of the <see cref="WebBrowser"/> control.
@@ -65,7 +65,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
 
     /// <summary>
     ///  Specifies whether the WebBrowser control may navigate to another page once
-    ///  it has been loaded.  NOTE: it will always be able to navigate before being loaded.
+    ///  it has been loaded. NOTE: it will always be able to navigate before being loaded.
     ///  "Loaded" here means setting Url, DocumentText, or DocumentStream.
     /// </summary>
     [SRDescription(nameof(SR.WebBrowserAllowNavigationDescr))]
@@ -88,7 +88,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     ///  Specifies whether the WebBrowser control will receive drop notifications.
     ///  Maps to IWebBrowser2:RegisterAsDropTarget.
     ///  Note that this does not mean that the WebBrowser control integrates with
-    ///  Windows Forms drag/drop i.e. the DragDrop event does not fire.  It does
+    ///  Windows Forms drag/drop i.e. the DragDrop event does not fire. It does
     ///  control whether you can drag new documents into the browser control.
     /// </summary>
     [SRDescription(nameof(SR.WebBrowserAllowWebBrowserDropDescr))]
@@ -159,7 +159,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
 
     /// <summary>
     ///  If true, there is navigation history such that calling GoBack() will succeed.
-    ///  Defaults to false.  After that it's value is kept up to date by hooking the
+    ///  Defaults to false. After that it's value is kept up to date by hooking the
     ///  DWebBrowserEvents2:CommandStateChange.
     /// </summary>
     [Browsable(false)]
@@ -185,7 +185,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
 
     /// <summary>
     ///  If true, there is navigation history such that calling GoForward() will succeed.
-    ///  Defaults to false.  After that it's value is kept up to date by hooking the
+    ///  Defaults to false. After that it's value is kept up to date by hooking the
     ///  DWebBrowserEvents2:CommandStateChange.
     /// </summary>
     [Browsable(false)]
@@ -210,7 +210,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     }
 
     /// <summary>
-    ///  The HtmlDocument for page hosted in the html page.  If no page is loaded, it returns null.
+    ///  The HtmlDocument for page hosted in the html page. If no page is loaded, it returns null.
     ///  Maps to IWebBrowser2:Document.
     /// </summary>
     [Browsable(false)]
@@ -275,8 +275,8 @@ public unsafe partial class WebBrowser : WebBrowserBase
                 }
                 else
                 {
-                    MemoryStream memoryStream = new MemoryStream();
-                    using var pStream = ComHelpers.GetComScope<IStream>(new Ole32.GPStream(memoryStream));
+                    MemoryStream memoryStream = new();
+                    using var pStream = memoryStream.ToIStream();
                     psi.Save(pStream, fClearDirty: false);
                     return new MemoryStream(memoryStream.GetBuffer(), 0, (int)memoryStream.Length, false);
                 }
@@ -324,8 +324,8 @@ public unsafe partial class WebBrowser : WebBrowserBase
 
             // string length is a good initial guess for capacity --
             // if it needs more room, it'll take it.
-            MemoryStream ms = new MemoryStream(value.Length);
-            StreamWriter sw = new StreamWriter(ms, Encoding.UTF8);
+            MemoryStream ms = new(value.Length);
+            StreamWriter sw = new(ms, Encoding.UTF8);
             sw.Write(value);
             sw.Flush();
             ms.Position = 0;
@@ -368,7 +368,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
 
     /// <summary>
     ///  A string containing the MIME type of the document hosted in the browser control.
-    ///  If none are loaded, returns empty string.  Maps to IHTMLDocument2:mimeType.
+    ///  If none are loaded, returns empty string. Maps to IHTMLDocument2:mimeType.
     /// </summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -411,7 +411,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     }
 
     /// <summary>
-    ///  True if the browser is engaged in navigation or download.  Maps to IWebBrowser2:Busy.
+    ///  True if the browser is engaged in navigation or download. Maps to IWebBrowser2:Busy.
     /// </summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -452,7 +452,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     ///  Indicates whether to use the WebBrowser context menu.
     ///  It's technically possible to have both the WebBrowser &amp; Windows Forms context
     ///  menu enabled, but making this property effect the behavior of the Windows Form
-    ///  context menu does not lead to a clean OM.  Maps to sinking the
+    ///  context menu does not lead to a clean OM. Maps to sinking the
     ///  IDocHostUIHandler:ShowContextMenu
     /// </summary>
     [SRDescription(nameof(SR.WebBrowserIsWebBrowserContextMenuEnabledDescr))]
@@ -466,7 +466,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
 
     /// <summary>
     ///  Allows the host application to provide an object that the contained html
-    ///  pages can access programmatically in script.  The object specified here
+    ///  pages can access programmatically in script. The object specified here
     ///  will be accessible in script as the "window.external" object via IDispatch
     ///  COM interop. Maps to an implementation of the IDocUIHandler.GetExternal event.
     /// </summary>
@@ -534,7 +534,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     /// <summary>
     ///  The text that would be displayed in the IE status bar.
     ///  There is no direct WebBrowser property that maps to this. This property is
-    ///  initially an empty string.  After that the value is kept up to date via the
+    ///  initially an empty string. After that the value is kept up to date via the
     ///  DWebBrowserEvents2:StatusTextChange event.
     /// </summary>
     [Browsable(false)]
@@ -554,7 +554,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
 
     /// <summary>
     ///  The url of the HtmlDocument for page hosted in the html page.
-    ///  Get Maps to IWebBrowser2:LocationUrl.  Set is the equivalent of calling Navigate(Url).
+    ///  Get Maps to IWebBrowser2:LocationUrl. Set is the equivalent of calling Navigate(Url).
     ///  Note this means that setting the Url property &amp; then reading it immediately may not
     ///  return the result that you just set (since the get always returns the url you are currently at).
     /// </summary>
@@ -625,7 +625,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     /// <summary>
     ///  Navigates the browser to the previous page in the navigation history list.
     ///  Maps to IWebBrowser2:GoBack.
-    ///  Returns true if the operation succeeds, else returns false.  It will return
+    ///  Returns true if the operation succeeds, else returns false. It will return
     ///  false if there is no page in the navigation history to go back to.
     /// </summary>
     public bool GoBack()
@@ -647,7 +647,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     /// <summary>
     ///  Navigates the browser to the next page in the navigation history list.
     ///  Maps to IWebBrowser2:GoForward.
-    ///  Returns true if the operation succeeds, else returns false.  It will return
+    ///  Returns true if the operation succeeds, else returns false. It will return
     ///  false if there is no page in the navigation history to go forward to.
     /// </summary>
     public bool GoForward()
@@ -667,7 +667,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     }
 
     /// <summary>
-    ///  Navigates the browser to user's homepage.  Maps to IWebBrowser2:GoHome.
+    ///  Navigates the browser to user's homepage. Maps to IWebBrowser2:GoHome.
     /// </summary>
     public void GoHome()
     {
@@ -676,7 +676,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     }
 
     /// <summary>
-    ///  Navigates the browser to user's default search page.  Maps to IWebBrowser2:GoSearch.
+    ///  Navigates the browser to user's default search page. Maps to IWebBrowser2:GoSearch.
     /// </summary>
     public void GoSearch()
     {
@@ -695,7 +695,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     /// <summary>
     ///  String overload for Navigate(Uri)
     /// </summary>
-    ///  Note: We intentionally have a string overload (apparently Mort wants one).  We don't have
+    ///  Note: We intentionally have a string overload (apparently Mort wants one). We don't have
     ///  string overloads call Uri overloads because that breaks Uris that aren't fully qualified
     ///  (things like "www.microsoft.com") that the underlying objects support and we don't want to
     ///  break.
@@ -727,7 +727,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     /// <summary>
     ///  String overload for Navigate(Uri, string)
     /// </summary>
-    ///  Note: We intentionally have a string overload (apparently Mort wants one).  We don't have
+    ///  Note: We intentionally have a string overload (apparently Mort wants one). We don't have
     ///  string overloads call Uri overloads because that breaks Uris that aren't fully qualified
     ///  (things like "www.microsoft.com") that the underlying objects support and we don't want to
     ///  break.
@@ -757,7 +757,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     /// <summary>
     ///  String overload for Navigate(Uri, bool)
     /// </summary>
-    ///  Note: We intentionally have a string overload (apparently Mort wants one).  We don't have
+    ///  Note: We intentionally have a string overload (apparently Mort wants one). We don't have
     ///  string overloads call Uri overloads because that breaks Uris that aren't fully qualified
     ///  (things like "www.microsoft.com") that the underlying objects support and we don't want to
     ///  break.
@@ -787,7 +787,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     /// <summary>
     ///  String overload for Navigate(Uri, string, byte[], string)
     /// </summary>
-    ///  Note: We intentionally have a string overload (apparently Mort wants one).  We don't have
+    ///  Note: We intentionally have a string overload (apparently Mort wants one). We don't have
     ///  string overloads call Uri overloads because that breaks Uris that aren't fully qualified
     ///  (things like "www.microsoft.com") that the underlying objects support and we don't want to
     ///  break.
@@ -814,7 +814,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
         try
         {
             using var webBrowser2 = AxIWebBrowser2.GetInterface();
-            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_PRINT, OLECMDEXECOPT.OLECMDEXECOPT_DONTPROMPTUSER, (VARIANT*)default, (VARIANT*)default).ThrowOnFailure();
+            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_PRINT, OLECMDEXECOPT.OLECMDEXECOPT_DONTPROMPTUSER, (VARIANT*)default, default).ThrowOnFailure();
         }
         catch (Exception ex) when (!ex.IsCriticalException())
         {
@@ -822,7 +822,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     }
 
     /// <summary>
-    ///  Refreshes the current page.  Maps to IWebBrowser2:Refresh.
+    ///  Refreshes the current page. Maps to IWebBrowser2:Refresh.
     /// </summary>
     public override void Refresh()
     {
@@ -903,7 +903,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
         try
         {
             using var webBrowser2 = AxIWebBrowser2.GetInterface();
-            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_PAGESETUP, OLECMDEXECOPT.OLECMDEXECOPT_PROMPTUSER, (VARIANT*)default, (VARIANT*)default).ThrowOnFailure();
+            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_PAGESETUP, OLECMDEXECOPT.OLECMDEXECOPT_PROMPTUSER, (VARIANT*)default, default).ThrowOnFailure();
         }
         catch (Exception ex) when (!ex.IsCriticalException())
         {
@@ -919,7 +919,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
         try
         {
             using var webBrowser2 = AxIWebBrowser2.GetInterface();
-            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_PRINT, OLECMDEXECOPT.OLECMDEXECOPT_PROMPTUSER, (VARIANT*)default, (VARIANT*)default).ThrowOnFailure();
+            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_PRINT, OLECMDEXECOPT.OLECMDEXECOPT_PROMPTUSER, (VARIANT*)default, default).ThrowOnFailure();
         }
         catch (Exception ex) when (!ex.IsCriticalException())
         {
@@ -927,14 +927,14 @@ public unsafe partial class WebBrowser : WebBrowserBase
     }
 
     /// <summary>
-    ///  Opens the IE print preview dialog.  Maps to IWebBrowser2:ExecWebBrowser w/ IDM_PRINTPREVIEW flag.
+    ///  Opens the IE print preview dialog. Maps to IWebBrowser2:ExecWebBrowser w/ IDM_PRINTPREVIEW flag.
     /// </summary>
     public void ShowPrintPreviewDialog()
     {
         try
         {
             using var webBrowser2 = AxIWebBrowser2.GetInterface();
-            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_PRINTPREVIEW, OLECMDEXECOPT.OLECMDEXECOPT_PROMPTUSER, (VARIANT*)default, (VARIANT*)default).ThrowOnFailure();
+            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_PRINTPREVIEW, OLECMDEXECOPT.OLECMDEXECOPT_PROMPTUSER, (VARIANT*)default, default).ThrowOnFailure();
         }
         catch (Exception ex) when (!ex.IsCriticalException())
         {
@@ -950,7 +950,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
         try
         {
             using var webBrowser2 = AxIWebBrowser2.GetInterface();
-            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_PROPERTIES, OLECMDEXECOPT.OLECMDEXECOPT_PROMPTUSER, (VARIANT*)default, (VARIANT*)default).ThrowOnFailure();
+            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_PROPERTIES, OLECMDEXECOPT.OLECMDEXECOPT_PROMPTUSER, (VARIANT*)default, default).ThrowOnFailure();
         }
         catch (Exception ex) when (!ex.IsCriticalException())
         {
@@ -966,7 +966,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
         try
         {
             using var webBrowser2 = AxIWebBrowser2.GetInterface();
-            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_SAVEAS, OLECMDEXECOPT.OLECMDEXECOPT_DODEFAULT, (VARIANT*)default, (VARIANT*)default).ThrowOnFailure();
+            webBrowser2.Value->ExecWB(OLECMDID.OLECMDID_SAVEAS, OLECMDEXECOPT.OLECMDEXECOPT_DODEFAULT, (VARIANT*)default, default).ThrowOnFailure();
         }
         catch (Exception ex) when (!ex.IsCriticalException())
         {
@@ -974,7 +974,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     }
 
     /// <summary>
-    ///  Stops the current navigation.  Maps to IWebBrowser2:Stop.
+    ///  Stops the current navigation. Maps to IWebBrowser2:Stop.
     /// </summary>
     public void Stop()
     {
@@ -1008,9 +1008,9 @@ public unsafe partial class WebBrowser : WebBrowserBase
 
     /// <summary>
     ///  Occurs when the document hosted in the web browser control is fully loaded.
-    ///  This is conceptually similar to Form.Load().  You need to wait until this event fires
+    ///  This is conceptually similar to Form.Load(). You need to wait until this event fires
     ///  before doing anything that manipulates the html page, ex. reading the Document
-    ///  property of the webbrowser control. Maps to DWebBrowserEvents2:DocumentComplete.
+    ///  property of the WebBrowser control. Maps to DWebBrowserEvents2:DocumentComplete.
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
     [SRDescription(nameof(SR.WebBrowserDocumentCompletedDescr))]
@@ -1019,7 +1019,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     /// <summary>
     ///  Occurs whenever the title text changes. The Title is the html page title
     ///  or the file path/url if not title is available. This is the text you see as
-    ///  the title of the IE window preceeding "Microsoft Internet Explorer".
+    ///  the title of the IE window proceeding "Microsoft Internet Explorer".
     ///  Maps to DWebBrowserEvents2:TitleChange.
     /// </summary>
     [Browsable(false)]
@@ -1111,7 +1111,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     {
         if (disposing)
         {
-            htmlShimManager?.Dispose();
+            _htmlShimManager?.Dispose();
 
             DetachSink();
             ActiveXSite.Dispose();
@@ -1185,19 +1185,16 @@ public unsafe partial class WebBrowser : WebBrowserBase
     /// <summary>
     ///  Raises the <see cref="CanGoBackChanged"/> event.
     /// </summary>
-    //
     protected virtual void OnCanGoBackChanged(EventArgs e) => CanGoBackChanged?.Invoke(this, e);
 
     /// <summary>
     ///  Raises the <see cref="CanGoForwardChanged"/> event.
     /// </summary>
-    //
     protected virtual void OnCanGoForwardChanged(EventArgs e) => CanGoForwardChanged?.Invoke(this, e);
 
     /// <summary>
     ///  Raises the <see cref="DocumentCompleted"/> event.
     /// </summary>
-    //
     protected virtual void OnDocumentCompleted(WebBrowserDocumentCompletedEventArgs e)
     {
         using var webBrowser2 = AxIWebBrowser2.GetInterface();
@@ -1208,49 +1205,41 @@ public unsafe partial class WebBrowser : WebBrowserBase
     /// <summary>
     ///  Raises the <see cref="DocumentTitleChanged"/> event.
     /// </summary>
-    //
     protected virtual void OnDocumentTitleChanged(EventArgs e) => DocumentTitleChanged?.Invoke(this, e);
 
     /// <summary>
     ///  Raises the <see cref="EncryptionLevelChanged"/> event.
     /// </summary>
-    //
     protected virtual void OnEncryptionLevelChanged(EventArgs e) => EncryptionLevelChanged?.Invoke(this, e);
 
     /// <summary>
     ///  Raises the <see cref="FileDownload"/> event.
     /// </summary>
-    //
     protected virtual void OnFileDownload(EventArgs e) => FileDownload?.Invoke(this, e);
 
     /// <summary>
     ///  Raises the <see cref="Navigated"/> event.
     /// </summary>
-    //
     protected virtual void OnNavigated(WebBrowserNavigatedEventArgs e) => Navigated?.Invoke(this, e);
 
     /// <summary>
     ///  Raises the <see cref="Navigating"/> event.
     /// </summary>
-    //
     protected virtual void OnNavigating(WebBrowserNavigatingEventArgs e) => Navigating?.Invoke(this, e);
 
     /// <summary>
     ///  Raises the <see cref="NewWindow"/> event.
     /// </summary>
-    //
     protected virtual void OnNewWindow(CancelEventArgs e) => NewWindow?.Invoke(this, e);
 
     /// <summary>
     ///  Raises the <see cref="ProgressChanged"/> event.
     /// </summary>
-    //
     protected virtual void OnProgressChanged(WebBrowserProgressChangedEventArgs e) => ProgressChanged?.Invoke(this, e);
 
     /// <summary>
     ///  Raises the <see cref="StatusTextChanged"/> event.
     /// </summary>
-    //
     protected virtual void OnStatusTextChanged(EventArgs e)
     {
         StatusTextChanged?.Invoke(this, e);
@@ -1258,15 +1247,15 @@ public unsafe partial class WebBrowser : WebBrowserBase
 
     #region ShimSupport
 
-    private HtmlShimManager? htmlShimManager;
+    private HtmlShimManager? _htmlShimManager;
 
     internal HtmlShimManager ShimManager
     {
         get
         {
-            htmlShimManager ??= new HtmlShimManager();
+            _htmlShimManager ??= new HtmlShimManager();
 
-            return htmlShimManager;
+            return _htmlShimManager;
         }
     }
     #endregion
@@ -1331,7 +1320,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
         }
         catch (COMException ce)
         {
-            if ((uint)unchecked(ce.ErrorCode) != (uint)unchecked(0x800704c7))
+            if ((uint)unchecked(ce.ErrorCode) != unchecked(0x800704c7))
             {
                 // "the operation was canceled by the user" - navigation failed
                 // ignore this error, IE has already alerted the user.
@@ -1352,33 +1341,29 @@ public unsafe partial class WebBrowser : WebBrowserBase
     private bool ShowContextMenu(Point location)
     {
         ContextMenuStrip? contextMenuStrip = ContextMenuStrip;
-        if (contextMenuStrip is not null)
+        if (contextMenuStrip is null)
         {
-            Point client;
+            return false;
+        }
 
-            bool keyboardActivated = false;
+        Point client;
+        bool keyboardActivated = false;
 
-            // X will be -1 when the user invokes the context menu from the keyboard
-            if (location.X == -1)
-            {
-                keyboardActivated = true;
-                client = new Point(Width / 2, Height / 2);
-            }
-            else
-            {
-                client = PointToClient(location);
-            }
+        // X will be -1 when the user invokes the context menu from the keyboard
+        if (location.X == -1)
+        {
+            keyboardActivated = true;
+            client = new Point(Width / 2, Height / 2);
+        }
+        else
+        {
+            client = PointToClient(location);
+        }
 
-            if (ClientRectangle.Contains(client))
-            {
-                contextMenuStrip?.ShowInternal(this, client, keyboardActivated);
-
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+        if (ClientRectangle.Contains(client))
+        {
+            contextMenuStrip.ShowInternal(this, client, keyboardActivated);
+            return true;
         }
         else
         {
@@ -1390,7 +1375,7 @@ public unsafe partial class WebBrowser : WebBrowserBase
     {
         switch (m.MsgInternal)
         {
-            case PInvoke.WM_CONTEXTMENU:
+            case PInvokeCore.WM_CONTEXTMENU:
                 if (!ShowContextMenu(PARAM.ToPoint(m.LParamInternal)))
                 {
                     DefWndProc(ref m);

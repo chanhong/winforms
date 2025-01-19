@@ -18,10 +18,10 @@ public class InvalidEnumDataAttribute<TEnum> : CommonMemberDataAttribute where T
     private static unsafe ReadOnlyTheoryData InitializeData()
     {
         ulong maxValue = ulong.MaxValue >>> ((sizeof(ulong) - sizeof(TEnum)) * 8);
-        TEnum currentValue = default;
+        TEnum currentValue;
         bool defined;
 
-        List<TEnum> data = new();
+        List<TEnum> data = [];
 
         if (typeof(TEnum).GetCustomAttribute<FlagsAttribute>() is not null)
         {

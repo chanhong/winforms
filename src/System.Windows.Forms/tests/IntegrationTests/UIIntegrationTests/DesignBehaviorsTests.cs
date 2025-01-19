@@ -28,7 +28,7 @@ public class DesignBehaviorsTests : ControlTestBase
         Application.ThreadException += (s, e) =>
         {
             // This will preserve the full stack, which otherwise gets replaced
-            throw new Exception(e.Exception.Message, e.Exception);
+            throw new InvalidOperationException(e.Exception.Message, e.Exception);
         };
 
         await RunSingleControlTestAsync<TreeView>(async (form, treeView) =>
@@ -183,7 +183,9 @@ public class DesignBehaviorsTests : ControlTestBase
 
         public ToolboxItem DeserializeToolboxItem(object serializedObject, IDesignerHost? host)
         {
+#pragma warning disable WFDEV005 // Type or member is obsolete
             ToolboxItem? item = ((DataObject)serializedObject)?.GetData(typeof(ToolboxItem)) as ToolboxItem;
+#pragma warning restore WFDEV005
             return item!;
         }
 
@@ -303,7 +305,7 @@ public class DesignBehaviorsTests : ControlTestBase
             if (LoaderHost is null)
                 return;
 
-            ArrayList errors = new();
+            ArrayList errors = [];
 
             LoaderHost.CreateComponent(typeof(Form));
 
@@ -326,5 +328,5 @@ public class DesignBehaviorsTests : ControlTestBase
         }
     }
 }
-#pragma warning restore CS8603 // Possible null reference return.
+#pragma warning restore CS8603
 

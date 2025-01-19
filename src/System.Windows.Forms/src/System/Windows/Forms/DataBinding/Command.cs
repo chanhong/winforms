@@ -7,7 +7,7 @@ internal class Command : WeakReference
 {
     private static Command?[]? s_cmds;
     private static int s_icmdTry;
-    private static readonly object s_internalSyncObject = new();
+    private static readonly Lock s_internalSyncObject = new();
     private const int IdMin = 0x00100;
     private const int IdLim = 0x10000;
 
@@ -19,13 +19,7 @@ internal class Command : WeakReference
         AssignID(this);
     }
 
-    public virtual int ID
-    {
-        get
-        {
-            return _id;
-        }
-    }
+    public virtual int ID => _id;
 
     protected static void AssignID(Command cmd)
     {
@@ -106,7 +100,7 @@ internal class Command : WeakReference
         FindSlotComplete:
 
             cmd._id = icmd + IdMin;
-            Debug.Assert(cmd._id >= IdMin && cmd._id < IdLim, "generated command id out of range");
+            Debug.Assert(cmd._id is >= IdMin and < IdLim, "generated command id out of range");
 
             s_cmds[icmd] = cmd;
             s_icmdTry = icmd + 1;

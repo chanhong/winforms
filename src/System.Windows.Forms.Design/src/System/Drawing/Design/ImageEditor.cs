@@ -15,7 +15,7 @@ namespace System.Drawing.Design;
 [CLSCompliant(false)]
 public class ImageEditor : UITypeEditor
 {
-    private static readonly Type[] s_imageExtenders = new Type[] { typeof(BitmapEditor), typeof(MetafileEditor) };
+    private static readonly Type[] s_imageExtenders = [typeof(BitmapEditor), typeof(MetafileEditor)];
     private FileDialog? _fileDialog;
 
     // Accessor needed into the static field so that derived classes
@@ -29,7 +29,7 @@ public class ImageEditor : UITypeEditor
             return null;
         }
 
-        var text = new StringBuilder();
+        StringBuilder text = new();
         for (int i = 0; i < extensions.Length; i++)
         {
             // Skip empty extensions.
@@ -62,7 +62,7 @@ public class ImageEditor : UITypeEditor
 
     public override object? EditValue(ITypeDescriptorContext? context, IServiceProvider provider, object? value)
     {
-        if (!provider.TryGetService(out IWindowsFormsEditorService? editorService))
+        if (!provider.TryGetService(out IWindowsFormsEditorService? _))
         {
             return value;
         }
@@ -86,6 +86,7 @@ public class ImageEditor : UITypeEditor
                     binder: null,
                     args: null,
                     culture: null);
+
                 if (editor is not null
                     && editor.GetType() is Type editorClass
                     && !myClass.Equals(editorClass)
@@ -118,14 +119,13 @@ public class ImageEditor : UITypeEditor
         return value;
     }
 
-    /// <inheritdoc />
     public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext? context) => UITypeEditorEditStyle.Modal;
 
     protected virtual string GetFileDialogDescription() => SR.imageFileDescription;
 
     protected virtual string[] GetExtensions()
     {
-        List<string> list = new();
+        List<string> list = [];
         foreach (Type extender in GetImageExtenders())
         {
             // Skip invalid extenders.
@@ -151,7 +151,7 @@ public class ImageEditor : UITypeEditor
             }
         }
 
-        return list.ToArray();
+        return [.. list];
     }
 
     /// <inheritdoc />
@@ -163,7 +163,7 @@ public class ImageEditor : UITypeEditor
 
         // Copy the original stream to a new memory stream to avoid locking the file.
         // The created image will take over ownership of the stream.
-        var memoryStream = new MemoryStream();
+        MemoryStream memoryStream = new();
         stream.CopyTo(memoryStream);
         return Image.FromStream(memoryStream);
     }

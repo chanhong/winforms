@@ -12,7 +12,7 @@ internal partial class ToolStripScrollButton : ToolStripControlHost
 {
     private readonly bool _up = true;
 
-    private static readonly Size defaultBitmapSize = new(16, 16);
+    private static readonly Size s_defaultBitmapSize = new(16, 16);
 
     [ThreadStatic]
     private static Bitmap? t_upScrollImage;
@@ -20,7 +20,7 @@ internal partial class ToolStripScrollButton : ToolStripControlHost
     [ThreadStatic]
     private static Bitmap? t_downScrollImage;
     private const int AUTOSCROLL_UPDATE = 50;
-    private static readonly int AUTOSCROLL_PAUSE = SystemInformation.DoubleClickTime;
+    private static readonly int s_autoScrollPause = SystemInformation.DoubleClickTime;
 
     private Timer? _mouseDownTimer;
 
@@ -35,68 +35,31 @@ internal partial class ToolStripScrollButton : ToolStripControlHost
         _up = up;
     }
 
-    protected override AccessibleObject CreateAccessibilityInstance()
-       => Control.AccessibilityObject;
+    protected override AccessibleObject CreateAccessibilityInstance() => Control.AccessibilityObject;
 
-    private static Control CreateControlInstance(bool up)
-        => new StickyLabel(up)
-        {
-            ImageAlign = ContentAlignment.MiddleCenter,
-            Image = (up) ? UpImage : DownImage
-        };
-
-    /// <summary>
-    ///  Deriving classes can override this to configure a default size for their control.
-    ///  This is more efficient than setting the size in the control's constructor.
-    /// </summary>
-    protected internal override Padding DefaultMargin
+    private static StickyLabel CreateControlInstance(bool up) => new(up)
     {
-        get
-        {
-            return Padding.Empty;
-        }
-    }
+        ImageAlign = ContentAlignment.MiddleCenter,
+        Image = (up) ? UpImage : DownImage
+    };
 
-    protected override Padding DefaultPadding
-    {
-        get
-        {
-            return Padding.Empty;
-        }
-    }
+    protected internal override Padding DefaultMargin => Padding.Empty;
 
-    private static Image DownImage
-    {
-        get
-        {
-            t_downScrollImage ??= DpiHelper.GetScaledBitmapFromIcon(typeof(ToolStripScrollButton), "ScrollButtonDown", defaultBitmapSize);
+    protected override Padding DefaultPadding => Padding.Empty;
 
-            return t_downScrollImage;
-        }
-    }
+    private static Image DownImage => t_downScrollImage ??= ScaleHelper.GetIconResourceAsBestMatchBitmap(
+        typeof(ToolStripScrollButton),
+        "ScrollButtonDown",
+        ScaleHelper.ScaleToDpi(s_defaultBitmapSize, ScaleHelper.InitialSystemDpi));
 
-    internal StickyLabel Label
-        => (StickyLabel)Control;
+    internal StickyLabel Label => (StickyLabel)Control;
 
-    private static Image UpImage
-    {
-        get
-        {
-            t_upScrollImage ??= DpiHelper.GetScaledBitmapFromIcon(typeof(ToolStripScrollButton), "ScrollButtonUp", defaultBitmapSize);
+    private static Image UpImage => t_upScrollImage ??= ScaleHelper.GetIconResourceAsBestMatchBitmap(
+        typeof(ToolStripScrollButton),
+        "ScrollButtonUp",
+        ScaleHelper.ScaleToDpi(s_defaultBitmapSize, ScaleHelper.InitialSystemDpi));
 
-            return t_upScrollImage;
-        }
-    }
-
-    private Timer MouseDownTimer
-    {
-        get
-        {
-            _mouseDownTimer ??= new Timer();
-
-            return _mouseDownTimer;
-        }
-    }
+    private Timer MouseDownTimer => _mouseDownTimer ??= new Timer();
 
     protected override void Dispose(bool disposing)
     {
@@ -120,8 +83,8 @@ internal partial class ToolStripScrollButton : ToolStripControlHost
         base.OnMouseDown(e);
         Scroll();
 
-        MouseDownTimer.Interval = AUTOSCROLL_PAUSE;
-        MouseDownTimer.Tick += new EventHandler(OnInitialAutoScrollMouseDown);
+        MouseDownTimer.Interval = s_autoScrollPause;
+        MouseDownTimer.Tick += OnInitialAutoScrollMouseDown;
         MouseDownTimer.Enabled = true;
     }
 
@@ -139,8 +102,8 @@ internal partial class ToolStripScrollButton : ToolStripControlHost
     private void UnsubscribeAll()
     {
         MouseDownTimer.Enabled = false;
-        MouseDownTimer.Tick -= new EventHandler(OnInitialAutoScrollMouseDown);
-        MouseDownTimer.Tick -= new EventHandler(OnAutoScrollAccelerate);
+        MouseDownTimer.Tick -= OnInitialAutoScrollMouseDown;
+        MouseDownTimer.Tick -= OnAutoScrollAccelerate;
     }
 
     private void OnAutoScrollAccelerate(object? sender, EventArgs e)
@@ -150,11 +113,11 @@ internal partial class ToolStripScrollButton : ToolStripControlHost
 
     private void OnInitialAutoScrollMouseDown(object? sender, EventArgs e)
     {
-        MouseDownTimer.Tick -= new EventHandler(OnInitialAutoScrollMouseDown);
+        MouseDownTimer.Tick -= OnInitialAutoScrollMouseDown;
 
         Scroll();
         MouseDownTimer.Interval = AUTOSCROLL_UPDATE;
-        MouseDownTimer.Tick += new EventHandler(OnAutoScrollAccelerate);
+        MouseDownTimer.Tick += OnAutoScrollAccelerate;
     }
 
     public override Size GetPreferredSize(Size constrainingSize)

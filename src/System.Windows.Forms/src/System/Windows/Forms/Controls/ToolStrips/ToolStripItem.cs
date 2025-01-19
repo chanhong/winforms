@@ -8,7 +8,7 @@ using System.Drawing.Design;
 using System.Drawing.Imaging;
 using System.Windows.Forms.Layout;
 using Windows.Win32.System.Ole;
-using static Interop;
+using Com = Windows.Win32.System.Com;
 using IComDataObject = System.Runtime.InteropServices.ComTypes.IDataObject;
 
 namespace System.Windows.Forms;
@@ -18,19 +18,14 @@ namespace System.Windows.Forms;
 [DefaultEvent(nameof(Click))]
 [ToolboxItem(false)]
 [DefaultProperty(nameof(Text))]
-public abstract partial class ToolStripItem : BindableComponent,
-                          ICommandBindingTargetProvider,
-                          IDropTarget,
-                          ISupportOleDropSource,
-                          IArrangedElement,
-                          IKeyboardToolTip
+public abstract partial class ToolStripItem :
+    BindableComponent,
+    ICommandBindingTargetProvider,
+    IDropTarget,
+    ISupportOleDropSource,
+    IArrangedElement,
+    IKeyboardToolTip
 {
-#if DEBUG
-    internal static readonly TraceSwitch s_mouseDebugging = new("MouseDebugging", "Debug ToolStripItem mouse debugging code");
-#else
-    internal static readonly TraceSwitch? s_mouseDebugging;
-#endif
-
     private Rectangle _bounds = Rectangle.Empty;
     private PropertyStore? _propertyStore;
     private ToolStripItemAlignment _alignment = ToolStripItemAlignment.Left;
@@ -49,10 +44,8 @@ public abstract partial class ToolStripItem : BindableComponent,
     private ToolStripItemImageScaling _imageScaling = ToolStripItemImageScaling.SizeToFit;
     private Size _cachedTextSize;
 
-    private static readonly Padding s_defaultMargin = new(0, 1, 0, 2);
-    private static readonly Padding s_defaultStatusStripMargin = new(0, 2, 0, 0);
-    private Padding _scaledDefaultMargin = s_defaultMargin;
-    private Padding _scaledDefaultStatusStripMargin = s_defaultStatusStripMargin;
+    private Padding _defaultMargin;
+    private Padding _defaultStatusStripMargin;
 
     private ToolStripItemDisplayStyle _displayStyle = ToolStripItemDisplayStyle.ImageAndText;
 
@@ -90,6 +83,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     internal static readonly object s_ownerChangedEvent = new();
     internal static readonly object s_paintEvent = new();
     internal static readonly object s_textChangedEvent = new();
+    internal static readonly object s_selectedChangedEvent = new();
 
     internal static readonly object s_commandChangedEvent = new();
     internal static readonly object s_commandParameterChangedEvent = new();
@@ -147,16 +141,12 @@ public abstract partial class ToolStripItem : BindableComponent,
     private static readonly int s_stateDisposing = BitVector32.CreateMask(s_stateUseAmbientMargin);
 
     private long _lastClickTime;
-    private int _deviceDpi = DpiHelper.DeviceDpi;
+    private int _deviceDpi = ScaleHelper.InitialSystemDpi;
     internal Font _defaultFont = ToolStripManager.DefaultFont;
 
     protected ToolStripItem()
     {
-        if (DpiHelper.IsScalingRequirementMet)
-        {
-            _scaledDefaultMargin = DpiHelper.LogicalToDeviceUnits(s_defaultMargin);
-            _scaledDefaultStatusStripMargin = DpiHelper.LogicalToDeviceUnits(s_defaultStatusStripMargin);
-        }
+        ScaleConstants(ScaleHelper.InitialSystemDpi);
 
         _state[s_stateEnabled | s_stateAutoSize | s_stateVisible | s_stateConstructing | s_stateSupportsItemClick | s_stateInvalidMirroredImage | s_stateMouseDownAndUpMustBeInSameItem | s_stateUseAmbientMargin] = true;
         _state[s_stateAllowDrop | s_stateMouseDownAndNoDrag | s_stateSupportsRightClick | s_statePressed | s_stateSelected | s_stateDisposed | s_stateDoubleClickEnabled | s_stateRightToLeftAutoMirrorImage | s_stateSupportsSpaceKey] = false;
@@ -189,7 +179,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     /// <summary>
     ///  Indicates whether or not this control has an accessible object associated with it.
     /// </summary>
-    internal bool IsAccessibilityObjectCreated => Properties.GetObject(s_accessibilityProperty) is AccessibleObject;
+    internal bool IsAccessibilityObjectCreated => Properties.ContainsKey(s_accessibilityProperty);
 
     /// <summary>
     ///  The Accessibility Object for this Control
@@ -202,11 +192,9 @@ public abstract partial class ToolStripItem : BindableComponent,
     {
         get
         {
-            AccessibleObject? accessibleObject = (AccessibleObject?)Properties.GetObject(s_accessibilityProperty);
-            if (accessibleObject is null)
+            if (!Properties.TryGetValue(s_accessibilityProperty, out AccessibleObject? accessibleObject))
             {
-                accessibleObject = CreateAccessibilityInstance();
-                Properties.SetObject(s_accessibilityProperty, accessibleObject);
+                accessibleObject = Properties.AddValue(s_accessibilityProperty, CreateAccessibilityInstance());
             }
 
             return accessibleObject;
@@ -223,10 +211,10 @@ public abstract partial class ToolStripItem : BindableComponent,
     [SRDescription(nameof(SR.ToolStripItemAccessibleDefaultActionDescr))]
     public string? AccessibleDefaultActionDescription
     {
-        get => (string?)Properties.GetObject(s_accessibleDefaultActionDescriptionProperty);
+        get => Properties.GetValueOrDefault<string>(s_accessibleDefaultActionDescriptionProperty);
         set
         {
-            Properties.SetObject(s_accessibleDefaultActionDescriptionProperty, value);
+            Properties.AddOrRemoveValue(s_accessibleDefaultActionDescriptionProperty, value);
             OnAccessibleDefaultActionDescriptionChanged(EventArgs.Empty);
         }
     }
@@ -240,10 +228,10 @@ public abstract partial class ToolStripItem : BindableComponent,
     [SRDescription(nameof(SR.ToolStripItemAccessibleDescriptionDescr))]
     public string? AccessibleDescription
     {
-        get => (string?)Properties.GetObject(s_accessibleDescriptionProperty);
+        get => Properties.GetValueOrDefault<string>(s_accessibleDescriptionProperty);
         set
         {
-            Properties.SetObject(s_accessibleDescriptionProperty, value);
+            Properties.AddOrRemoveValue(s_accessibleDescriptionProperty, value);
             OnAccessibleDescriptionChanged(EventArgs.Empty);
         }
     }
@@ -257,10 +245,10 @@ public abstract partial class ToolStripItem : BindableComponent,
     [SRDescription(nameof(SR.ToolStripItemAccessibleNameDescr))]
     public string? AccessibleName
     {
-        get => (string?)Properties.GetObject(s_accessibleNameProperty);
+        get => Properties.GetValueOrDefault<string>(s_accessibleNameProperty);
         set
         {
-            Properties.SetObject(s_accessibleNameProperty, value);
+            Properties.AddOrRemoveValue(s_accessibleNameProperty, value);
             OnAccessibleNameChanged(EventArgs.Empty);
         }
     }
@@ -273,20 +261,11 @@ public abstract partial class ToolStripItem : BindableComponent,
     [SRDescription(nameof(SR.ToolStripItemAccessibleRoleDescr))]
     public AccessibleRole AccessibleRole
     {
-        get
-        {
-            int role = Properties.GetInteger(s_accessibleRoleProperty, out bool found);
-            if (found)
-            {
-                return (AccessibleRole)role;
-            }
-
-            return AccessibleRole.Default;
-        }
+        get => Properties.GetValueOrDefault(s_accessibleRoleProperty, AccessibleRole.Default);
         set
         {
             SourceGenerated.EnumValidator.Validate(value);
-            Properties.SetInteger(s_accessibleRoleProperty, (int)value);
+            Properties.AddOrRemoveValue(s_accessibleRoleProperty, value, defaultValue: AccessibleRole.Default);
             OnAccessibleRoleChanged(EventArgs.Empty);
         }
     }
@@ -319,7 +298,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     /// <summary>
     ///  Determines if this item can be dragged.
     ///  This is EXACTLY like Control.AllowDrop - setting this to true WILL call
-    ///  the droptarget handlers. The ToolStripDropTargetManager is the one that
+    ///  the dropTarget handlers. The ToolStripDropTargetManager is the one that
     ///  handles the routing of DropTarget events to the ToolStripItem's IDropTarget
     ///  methods.
     /// </summary>
@@ -408,19 +387,18 @@ public abstract partial class ToolStripItem : BindableComponent,
     [DefaultValue(null)]
     public virtual Image? BackgroundImage
     {
-        get => Properties.GetObject(s_backgroundImageProperty) as Image;
+        get => Properties.GetValueOrDefault<Image>(s_backgroundImageProperty);
         set
         {
-            if (BackgroundImage != value)
+            if (Properties.AddOrRemoveValue(s_backgroundImageProperty, value) != value)
             {
-                Properties.SetObject(s_backgroundImageProperty, value);
                 Invalidate();
             }
         }
     }
 
     /// <summary>
-    ///  Gets or sets the <see cref="System.Windows.Input.ICommand"/> whose <see cref="System.Windows.Input.ICommand.Execute(object?)"/>
+    ///  Gets or sets the <see cref="Input.ICommand"/> whose <see cref="Input.ICommand.Execute(object?)"/>
     ///  method will be called when the ToolStripItem's <see cref="Click"/> event gets invoked.
     /// </summary>
     [Bindable(true)]
@@ -435,8 +413,8 @@ public abstract partial class ToolStripItem : BindableComponent,
     }
 
     /// <summary>
-    ///  Occurs when the <see cref="System.Windows.Input.ICommand.CanExecute(object?)"/> status of the
-    ///  <see cref="System.Windows.Input.ICommand"/> which is assigned to the <see cref="Command"/> property has changed.
+    ///  Occurs when the <see cref="Input.ICommand.CanExecute(object?)"/> status of the
+    ///  <see cref="Input.ICommand"/> which is assigned to the <see cref="Command"/> property has changed.
     /// </summary>
     [SRCategory(nameof(SR.CatData))]
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -448,7 +426,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     }
 
     /// <summary>
-    ///  Occurs when the assigned <see cref="System.Windows.Input.ICommand"/> of the <see cref="Command"/> property has changed.
+    ///  Occurs when the assigned <see cref="Input.ICommand"/> of the <see cref="Command"/> property has changed.
     /// </summary>
     [SRCategory(nameof(SR.CatData))]
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -460,7 +438,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     }
 
     /// <summary>
-    ///  Gets or sets the parameter that is passed to the <see cref="System.Windows.Input.ICommand"/>
+    ///  Gets or sets the parameter that is passed to the <see cref="Input.ICommand"/>
     ///  which is assigned to the <see cref="Command"/> property.
     /// </summary>
     [Bindable(true)]
@@ -508,16 +486,12 @@ public abstract partial class ToolStripItem : BindableComponent,
     [SRDescription(nameof(SR.ControlBackgroundImageLayoutDescr))]
     public virtual ImageLayout BackgroundImageLayout
     {
-        get => Properties.TryGetObject(s_backgroundImageLayoutProperty, out ImageLayout imageLayout)
-            ? imageLayout
-            : ImageLayout.Tile;
+        get => Properties.GetValueOrDefault(s_backgroundImageLayoutProperty, ImageLayout.Tile);
         set
         {
-            if (BackgroundImageLayout != value)
+            SourceGenerated.EnumValidator.Validate(value);
+            if (Properties.AddOrRemoveValue(s_backgroundImageLayoutProperty, value, defaultValue: ImageLayout.Tile) != value)
             {
-                SourceGenerated.EnumValidator.Validate(value);
-
-                Properties.SetObject(s_backgroundImageLayoutProperty, value);
                 Invalidate();
             }
         }
@@ -548,13 +522,9 @@ public abstract partial class ToolStripItem : BindableComponent,
         }
         set
         {
-            Color c = BackColor;
-            if (!value.IsEmpty || Properties.ContainsObject(s_backColorProperty))
-            {
-                Properties.SetColor(s_backColorProperty, value);
-            }
-
-            if (!c.Equals(BackColor))
+            Color previous = BackColor;
+            Properties.AddOrRemoveValue(s_backColorProperty, value, defaultValue: Color.Empty);
+            if (!previous.Equals(BackColor))
             {
                 OnBackColorChanged(EventArgs.Empty);
             }
@@ -576,7 +546,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     public virtual Rectangle Bounds => _bounds;
 
     /// <summary>
-    /// Zero-based rectangle, same concept as ClientRect
+    ///  Zero-based rectangle, same concept as ClientRect
     /// </summary>
     internal Rectangle ClientBounds
     {
@@ -606,7 +576,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     public virtual bool CanSelect => Enabled;
 
     /// <remarks>
-    ///  Usually the same as can select, but things like the control box in an MDI window are exceptions
+    ///  <para>Usually the same as can select, but things like the control box in an MDI window are exceptions</para>
     /// </remarks>
     internal virtual bool CanKeyboardSelect => CanSelect;
 
@@ -686,12 +656,12 @@ public abstract partial class ToolStripItem : BindableComponent,
     {
         get
         {
-            if (Owner is not null && Owner is StatusStrip)
+            if (Owner is not null and StatusStrip)
             {
-                return _scaledDefaultStatusStripMargin;
+                return _defaultStatusStripMargin;
             }
 
-            return _scaledDefaultMargin;
+            return _defaultMargin;
         }
     }
 
@@ -707,8 +677,8 @@ public abstract partial class ToolStripItem : BindableComponent,
     /// </summary>
     protected virtual Size DefaultSize
     {
-        get => DpiHelper.IsPerMonitorV2Awareness ?
-                DpiHelper.LogicalToDeviceUnits(new Size(23, 23), DeviceDpi) :
+        get => ScaleHelper.IsThreadPerMonitorV2Aware ?
+                ScaleHelper.ScaleToDpi(new Size(23, 23), DeviceDpi) :
                 new Size(23, 23);
     }
 
@@ -850,6 +820,7 @@ public abstract partial class ToolStripItem : BindableComponent,
                     if (wasSelected)
                     {
                         KeyboardToolTipStateMachine.Instance.NotifyAboutLostFocus(this);
+                        OnSelectedChanged(EventArgs.Empty);
                     }
                 }
 
@@ -889,7 +860,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     {
         get
         {
-            Color foreColor = Properties.GetColor(s_foreColorProperty);
+            Color foreColor = Properties.GetValueOrDefault<Color>(s_foreColorProperty);
             if (!foreColor.IsEmpty)
             {
                 return foreColor;
@@ -905,13 +876,9 @@ public abstract partial class ToolStripItem : BindableComponent,
         }
         set
         {
-            Color c = ForeColor;
-            if (!value.IsEmpty || Properties.ContainsObject(s_foreColorProperty))
-            {
-                Properties.SetColor(s_foreColorProperty, value);
-            }
-
-            if (!c.Equals(ForeColor))
+            Color previous = ForeColor;
+            Properties.AddOrRemoveValue(s_foreColorProperty, value);
+            if (!previous.Equals(ForeColor))
             {
                 OnForeColorChanged(EventArgs.Empty);
             }
@@ -949,14 +916,12 @@ public abstract partial class ToolStripItem : BindableComponent,
                 return font;
             }
 
-            return DpiHelper.IsPerMonitorV2Awareness ? _defaultFont : ToolStripManager.DefaultFont;
+            return ScaleHelper.IsThreadPerMonitorV2Aware ? _defaultFont : ToolStripManager.DefaultFont;
         }
         set
         {
-            var local = (Font?)Properties.GetObject(s_fontProperty);
-            if (local != value)
+            if (Properties.AddOrRemoveValue(s_fontProperty, value) != value)
             {
-                Properties.SetObject(s_fontProperty, value);
                 OnFontChanged(EventArgs.Empty);
             }
         }
@@ -973,7 +938,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     }
 
     /// <summary>
-    ///  The height of this control
+    ///  The height of this control.
     /// </summary>
     [SRCategory(nameof(SR.CatLayout))]
     [Browsable(false)]
@@ -1057,7 +1022,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     {
         get
         {
-            Image? image = (Image?)Properties.GetObject(s_imageProperty);
+            Image? image = Properties.GetValueOrDefault<Image>(s_imageProperty);
             if (image is null && Owner?.ImageList is not null && ImageIndexer.ActualIndex >= 0)
             {
                 bool disposing = _state[s_stateDisposing];
@@ -1066,7 +1031,7 @@ public abstract partial class ToolStripItem : BindableComponent,
                     // CACHE (by design). If we fetched out of the image list every time it would dramatically hit perf.
                     image = Owner.ImageList.Images[ImageIndexer.ActualIndex];
                     _state[s_stateInvalidMirroredImage] = true;
-                    Properties.SetObject(s_imageProperty, image);
+                    Properties.AddValue(s_imageProperty, image);
                     return image;
                 }
 
@@ -1099,7 +1064,7 @@ public abstract partial class ToolStripItem : BindableComponent,
                 ImageIndex = ImageList.Indexer.DefaultIndex;
             }
 
-            Properties.SetObject(s_imageProperty, value);
+            Properties.AddOrRemoveValue(s_imageProperty, value);
             _state[s_stateInvalidMirroredImage] = true;
 
             Animate();
@@ -1115,19 +1080,21 @@ public abstract partial class ToolStripItem : BindableComponent,
         get => _imageTransparentColor;
         set
         {
-            if (_imageTransparentColor != value)
+            if (_imageTransparentColor == value)
             {
-                _imageTransparentColor = value;
-                if (Image is Bitmap currentImage && value != Color.Empty)
-                {
-                    if (currentImage.RawFormat.Guid != ImageFormat.Icon.Guid && !ImageAnimator.CanAnimate(currentImage))
-                    {
-                        currentImage.MakeTransparent(_imageTransparentColor);
-                    }
-                }
-
-                Invalidate();
+                return;
             }
+
+            _imageTransparentColor = value;
+            if (Image is Bitmap currentImage && value != Color.Empty)
+            {
+                if (currentImage.RawFormat.Guid != ImageFormat.Icon.Guid && !ImageAnimator.CanAnimate(currentImage))
+                {
+                    currentImage.MakeTransparent(_imageTransparentColor);
+                }
+            }
+
+            Invalidate();
         }
     }
 
@@ -1157,18 +1124,13 @@ public abstract partial class ToolStripItem : BindableComponent,
         }
         set
         {
-            if (value < ImageList.Indexer.DefaultIndex)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    string.Format(SR.InvalidLowBoundArgumentEx, nameof(ImageIndex), value, ImageList.Indexer.DefaultIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, ImageList.Indexer.DefaultIndex);
 
             ImageIndexer.Index = value;
             _state[s_stateInvalidMirroredImage] = true;
 
             // Set the Image Property to null
-            Properties.SetObject(s_imageProperty, null);
+            Properties.RemoveValue(s_imageProperty);
 
             InvalidateItemLayout(PropertyNames.ImageIndex);
         }
@@ -1197,8 +1159,7 @@ public abstract partial class ToolStripItem : BindableComponent,
         {
             ImageIndexer.Key = value;
             _state[s_stateInvalidMirroredImage] = true;
-            Properties.SetObject(s_imageProperty, null);
-
+            Properties.RemoveValue(s_imageProperty);
             InvalidateItemLayout(PropertyNames.ImageKey);
         }
     }
@@ -1232,13 +1193,13 @@ public abstract partial class ToolStripItem : BindableComponent,
     {
         get
         {
-            Color color = Properties.GetColor(s_foreColorProperty);
+            Color color = Properties.GetValueOrDefault<Color>(s_foreColorProperty);
             if (!color.IsEmpty)
             {
                 return true;
             }
 
-            Control? parent = ParentInternal;
+            ToolStrip? parent = ParentInternal;
             if (parent is not null)
             {
                 return parent.ShouldSerializeForeColor();
@@ -1320,21 +1281,11 @@ public abstract partial class ToolStripItem : BindableComponent,
     [SRCategory(nameof(SR.CatLayout))]
     public MergeAction MergeAction
     {
-        get
-        {
-            int action = Properties.GetInteger(s_mergeActionProperty, out bool found);
-            if (found)
-            {
-                return (MergeAction)action;
-            }
-
-            return MergeAction.Append;
-        }
+        get => Properties.GetValueOrDefault(s_mergeActionProperty, MergeAction.Append);
         set
         {
             SourceGenerated.EnumValidator.Validate(value);
-
-            Properties.SetInteger(s_mergeActionProperty, (int)value);
+            Properties.AddOrRemoveValue(s_mergeActionProperty, value, defaultValue: MergeAction.Append);
         }
     }
 
@@ -1346,17 +1297,8 @@ public abstract partial class ToolStripItem : BindableComponent,
     [SRCategory(nameof(SR.CatLayout))]
     public int MergeIndex
     {
-        get
-        {
-            int index = Properties.GetInteger(s_mergeIndexProperty, out bool found);
-            if (found)
-            {
-                return index;
-            }
-
-            return -1;
-        }
-        set => Properties.SetInteger(s_mergeIndexProperty, value);
+        get => Properties.GetValueOrDefault(s_mergeIndexProperty, -1);
+        set => Properties.AddOrRemoveValue(s_mergeIndexProperty, value, -1);
     }
 
     internal bool MouseDownAndUpMustBeInSameItem
@@ -1434,14 +1376,14 @@ public abstract partial class ToolStripItem : BindableComponent,
 
     /// <summary>
     ///  Name of this control. The designer will set this to the same
-    ///  as the programatic Id "(name)" of the control. The name can be
+    ///  as the programmatic Id "(name)" of the control. The name can be
     ///  used as a key into the ControlCollection.
     /// </summary>
     [Browsable(false)]
     [DefaultValue(null)]
     public string? Name
     {
-        get => WindowsFormsUtils.GetComponentName(this, (string?)Properties.GetObject(ToolStripItem.s_nameProperty));
+        get => WindowsFormsUtils.GetComponentName(this, Properties.GetValueOrDefault<string>(s_nameProperty));
         set
         {
             if (DesignMode)
@@ -1449,12 +1391,12 @@ public abstract partial class ToolStripItem : BindableComponent,
                 return;
             }
 
-            Properties.SetObject(ToolStripItem.s_nameProperty, value);
+            Properties.AddOrRemoveValue(s_nameProperty, value);
         }
     }
 
     /// <summary>
-    ///  The owner of this ToolStripItem. The owner is essentially a backpointer to
+    ///  The owner of this ToolStripItem. The owner is essentially a backPointer to
     ///  the ToolStrip who contains this item in it's item collection. Handy for getting
     ///  to things such as the ImageList, which would be defined on the ToolStrip.
     /// </summary>
@@ -1475,7 +1417,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     }
 
     /// <summary>
-    ///  Returns the "parent" item on the preceeding menu which has spawned this item.
+    ///  Returns the "parent" item on the preceding menu which has spawned this item.
     ///  e.g. File->Open  the OwnerItem of Open is File.
     /// </summary>
     [Browsable(false)]
@@ -1611,7 +1553,7 @@ public abstract partial class ToolStripItem : BindableComponent,
                 return Size.Empty;
             }
 
-            Image? image = (Image?)Properties.GetObject(s_imageProperty);
+            Image? image = Properties.GetValueOrDefault<Image>(s_imageProperty);
             bool usingImageList = ((Owner is not null) && (Owner.ImageList is not null) && (ImageIndexer.ActualIndex >= 0));
 
             if (ImageScaling == ToolStripItemImageScaling.SizeToFit)
@@ -1623,17 +1565,9 @@ public abstract partial class ToolStripItem : BindableComponent,
                 }
             }
 
-            Size imageSize = Size.Empty;
-            if (usingImageList)
-            {
-                imageSize = Owner?.ImageList?.ImageSize ?? Size.Empty;
-            }
-            else
-            {
-                imageSize = (image is null) ? Size.Empty : image.Size;
-            }
-
-            return imageSize;
+            return usingImageList
+                ? Owner?.ImageList?.ImageSize ?? Size.Empty
+                : (image is null) ? Size.Empty : image.Size;
         }
     }
 
@@ -1672,9 +1606,12 @@ public abstract partial class ToolStripItem : BindableComponent,
     /// <summary>
     ///  Returns the value of the backColor field -- no asking the parent with its color is, etc.
     /// </summary>
-    internal Color RawBackColor => Properties.GetColor(s_backColorProperty);
+    internal Color RawBackColor => Properties.GetValueOrDefault(s_backColorProperty, Color.Empty);
 
-    internal ToolStripRenderer? Renderer
+    /// <summary>
+    ///  Returns the parent <see cref="ToolStrip"/>'s renderer
+    /// </summary>
+    protected internal virtual ToolStripRenderer? Renderer
     {
         get
         {
@@ -1699,30 +1636,29 @@ public abstract partial class ToolStripItem : BindableComponent,
     {
         get
         {
-            int rightToLeft = Properties.GetInteger(s_rightToLeftProperty, out bool found);
-            if (!found)
+            if (!Properties.TryGetValue(s_rightToLeftProperty, out RightToLeft rightToLeft))
             {
-                rightToLeft = (int)RightToLeft.Inherit;
+                rightToLeft = RightToLeft.Inherit;
             }
 
-            if (((RightToLeft)rightToLeft) == RightToLeft.Inherit)
+            if (rightToLeft == RightToLeft.Inherit)
             {
                 if (Owner is not null)
                 {
-                    rightToLeft = (int)Owner.RightToLeft;
+                    rightToLeft = Owner.RightToLeft;
                 }
                 else if (ParentInternal is not null)
                 {
                     // case for Overflow & Grip
-                    rightToLeft = (int)ParentInternal.RightToLeft;
+                    rightToLeft = ParentInternal.RightToLeft;
                 }
                 else
                 {
-                    rightToLeft = (int)DefaultRightToLeft;
+                    rightToLeft = DefaultRightToLeft;
                 }
             }
 
-            return (RightToLeft)rightToLeft;
+            return rightToLeft;
         }
 
         set
@@ -1731,9 +1667,9 @@ public abstract partial class ToolStripItem : BindableComponent,
 
             RightToLeft oldValue = RightToLeft;
 
-            if (Properties.ContainsInteger(s_rightToLeftProperty) || value != RightToLeft.Inherit)
+            if (Properties.ContainsKey(s_rightToLeftProperty) || value != RightToLeft.Inherit)
             {
-                Properties.SetInteger(s_rightToLeftProperty, (int)value);
+                Properties.AddValue(s_rightToLeftProperty, value);
             }
 
             if (oldValue != RightToLeft)
@@ -1781,12 +1717,12 @@ public abstract partial class ToolStripItem : BindableComponent,
                 Image mirroredImage = (Image)image.Clone();
                 mirroredImage.RotateFlip(RotateFlipType.RotateNoneFlipX);
 
-                Properties.SetObject(s_mirroredImageProperty, mirroredImage);
+                Properties.AddValue(s_mirroredImageProperty, mirroredImage);
                 _state[s_stateInvalidMirroredImage] = false;
                 return mirroredImage;
             }
 
-            return Properties.GetObject(s_mirroredImageProperty) as Image;
+            return Properties.GetValueOrDefault<Image>(s_mirroredImageProperty);
         }
     }
 
@@ -1804,18 +1740,24 @@ public abstract partial class ToolStripItem : BindableComponent,
     ///  if the item is selected we return true.
     ///
     ///  FAQ: Why don't we have a Hot or MouseIsOver property?
-    ///  After going through the scenarios, we've decided NOT to add a separate MouseIsOver or Hot flag to ToolStripItem. The thing to use is 'Selected'.
-    ///  Why?  While the selected thing can be different than the moused over item, the selected item is ALWAYS the one you want to paint differently
+    ///  After going through the scenarios, we've decided NOT to add a separate MouseIsOver or Hot flag to ToolStripItem.
+    ///  The thing to use is 'Selected'.
+    ///  Why?  While the selected thing can be different than the moused over item, the selected item is ALWAYS the
+    ///  one you want to paint differently
     ///
     ///  Scenario 1:  Keyboard select an item then select a different item with the mouse.
     ///  -          Do Alt+F to expand your File menu, keyboard down several items.
     ///  -          Mouse over a different item
-    ///  -          Notice how two things are never painted hot at the same time, and how the selection changes from the keyboard selected item to the one selected with the mouse. In  this case the selection should move with the mouse selection.
+    ///  -          Notice how two things are never painted hot at the same time, and how the selection changes
+    ///  -          from the keyboard selected item to the one selected with the mouse. In  this case the selection
+    ///  -          should move with the mouse selection.
     ///  -          Notice how if you hit enter when the mouse is over it, it executes the item. That's selection.
     ///  Scenario 2: Put focus into a combo box, then mouse over a different item
-    ///  -          Notice how all the other items you mouse over do not change the way they are painted, if you hit enter, that goes to the combobox, rather than executing the current item.
+    ///  -          Notice how all the other items you mouse over do not change the way they are painted, if you
+    ///  -          hit enter, that goes to the ComboBox, rather than executing the current item.
     ///
-    ///  At first look "MouseIsOver" or "Hot" seems to be the thing people want, but its almost never the desired behavior. A unified selection model is simpler and seems to meet the scenarios.
+    ///  At first look "MouseIsOver" or "Hot" seems to be the thing people want, but its almost never the desired
+    ///  behavior. A unified selection model is simpler and seems to meet the scenarios.
     /// </summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -1823,6 +1765,30 @@ public abstract partial class ToolStripItem : BindableComponent,
         => CanSelect && !DesignMode && (_state[s_stateSelected] ||
             (ParentInternal is not null && ParentInternal.IsSelectionSuspended &&
              ParentInternal.LastMouseDownedItem == this));
+
+    /// <summary>
+    ///  Occurs when value of the <see cref="Selected" /> property changes.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This event is raised when item is selected by mouse, keyboard or programmatically.
+    ///   .NET Core 3.1 had removed MainMenu and MenuItem controls. ToolStripMenuItem.SelectedChanged event
+    ///   is recommended as a replacement for MenuItem.Select event.
+    ///  </para>
+    /// </remarks>
+    [SRDescription(nameof(SR.ToolStripItemSelectedChangedDescr))]
+    public event EventHandler? SelectedChanged
+    {
+        add => Events.AddHandler(s_selectedChangedEvent, value);
+        remove => Events.RemoveHandler(s_selectedChangedEvent, value);
+    }
+
+    /// <summary>
+    ///  Raises the <see cref="SelectedChanged" /> event. This method will be called when selected
+    ///  <see cref="ToolStripItem" /> changes. Call base.OnSelectedChanged to send this event to any registered
+    ///  event listeners.
+    /// </summary>
+    protected virtual void OnSelectedChanged(EventArgs e) => RaiseEvent(s_selectedChangedEvent, e);
 
     protected internal virtual bool ShowKeyboardCues
         => DesignMode || ToolStripManager.ShowMenuFocusCues;
@@ -1876,8 +1842,8 @@ public abstract partial class ToolStripItem : BindableComponent,
     [TypeConverter(typeof(StringConverter))]
     public object? Tag
     {
-        get => Properties.TryGetObject(ToolStripItem.s_tagProperty, out object? tag) ? tag : null;
-        set => Properties.SetObject(ToolStripItem.s_tagProperty, value);
+        get => Properties.GetValueOrDefault<object>(s_tagProperty);
+        set => Properties.AddOrRemoveValue(s_tagProperty, value);
     }
 
     /// <summary>
@@ -1889,14 +1855,11 @@ public abstract partial class ToolStripItem : BindableComponent,
     [SRDescription(nameof(SR.ToolStripItemTextDescr))]
     public virtual string? Text
     {
-        get => Properties.TryGetObject(ToolStripItem.s_textProperty, out string? text)
-            ? text
-            : string.Empty;
+        get => Properties.TryGetValueOrNull(s_textProperty, out string? value) ? value : string.Empty;
         set
         {
-            if (value != Text)
+            if (Properties.AddOrRemoveValue(s_textProperty, value, defaultValue: string.Empty) != value)
             {
-                Properties.SetObject(ToolStripItem.s_textProperty, value);
                 OnTextChanged(EventArgs.Empty);
             }
         }
@@ -1938,17 +1901,13 @@ public abstract partial class ToolStripItem : BindableComponent,
     {
         get
         {
-            ToolStripTextDirection textDirection = ToolStripTextDirection.Inherit;
-            if (Properties.TryGetObject(ToolStripItem.s_textDirectionProperty, out ToolStripTextDirection direction))
-            {
-                textDirection = direction;
-            }
+            ToolStripTextDirection textDirection = Properties.GetValueOrDefault(s_textDirectionProperty, ToolStripTextDirection.Inherit);
 
             if (textDirection == ToolStripTextDirection.Inherit)
             {
                 if (ParentInternal is not null)
                 {
-                    // in the case we're on a ToolStripOverflow
+                    // In the case we're on a ToolStripOverflow
                     textDirection = ParentInternal.TextDirection;
                 }
                 else
@@ -1962,8 +1921,7 @@ public abstract partial class ToolStripItem : BindableComponent,
         set
         {
             SourceGenerated.EnumValidator.Validate(value);
-
-            Properties.SetObject(ToolStripItem.s_textDirectionProperty, value);
+            Properties.AddOrRemoveValue(s_textDirectionProperty, value, defaultValue: ToolStripTextDirection.Inherit);
             InvalidateItemLayout("TextDirection");
         }
     }
@@ -2082,11 +2040,11 @@ public abstract partial class ToolStripItem : BindableComponent,
 
         if (animate)
         {
-            ImageAnimator.Animate(image, new EventHandler(OnAnimationFrameChanged));
+            ImageAnimator.Animate(image, OnAnimationFrameChanged);
         }
         else
         {
-            ImageAnimator.StopAnimate(image, new EventHandler(OnAnimationFrameChanged));
+            ImageAnimator.StopAnimate(image, OnAnimationFrameChanged);
         }
 
         _state[s_stateCurrentlyAnimatingImage] = animate;
@@ -2113,15 +2071,13 @@ public abstract partial class ToolStripItem : BindableComponent,
     ///  should not call base.CreateAccessibilityObject.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
-    protected virtual AccessibleObject CreateAccessibilityInstance()
-        => new ToolStripItemAccessibleObject(this);
+    protected virtual AccessibleObject CreateAccessibilityInstance() => new ToolStripItemAccessibleObject(this);
 
     /// <summary>
     ///  Creates an instance of the object that defines how image and text
     ///  gets laid out in the ToolStripItem
     /// </summary>
-    private protected virtual ToolStripItemInternalLayout CreateInternalLayout()
-        => new(this);
+    private protected virtual ToolStripItemInternalLayout CreateInternalLayout() => new(this);
 
     /// <summary>
     ///  Disposes this ToolStrip item.
@@ -2148,8 +2104,8 @@ public abstract partial class ToolStripItem : BindableComponent,
         {
             // need to call base() first since the Component.Dispose(_) is listened to by the ComponentChangeService
             // which Serializes the object in Undo-Redo transactions.
-            Properties.SetObject(s_mirroredImageProperty, null);
-            Properties.SetObject(s_imageProperty, null);
+            Properties.RemoveValue(s_mirroredImageProperty);
+            Properties.RemoveValue(s_imageProperty);
             _state[s_stateDisposing] = false;
         }
     }
@@ -2176,36 +2132,36 @@ public abstract partial class ToolStripItem : BindableComponent,
     }
 
     /// <summary>
-    ///  Begins a drag operation. The <paramref name="allowedEffects"/> determine which drag operations can occur. If the drag operation
-    ///  needs to interop with applications in another process, <paramref name="data"/> should either be a base managed class
-    ///  (<see cref="string"/>, <see cref="Bitmap"/>, or <see cref="Drawing.Imaging.Metafile"/>) or some <see cref="object"/> that implements
-    ///  <see cref="Runtime.Serialization.ISerializable"/>. <paramref name="data"/> can also be any <see cref="object"/> that implements
-    ///  <see cref="IDataObject"/>. <paramref name="dragImage"/> is the bitmap that will be displayed during the  drag operation and
-    ///  <paramref name="cursorOffset"/> specifies the location of the cursor within <paramref name="dragImage"/>, which is an offset from the
-    ///  upper-left corner. Specify <see langword="true"/> for <paramref name="useDefaultDragImage"/> to use a layered window drag image with a
-    ///  size of 96x96; otherwise <see langword="false"/>. Note the outer edges of <paramref name="dragImage"/> are blended out if the image width
-    ///  or height exceeds 300 pixels.
+    ///  Begins a drag operation. The <paramref name="allowedEffects"/> determine which drag operations can occur.
+    ///  If the drag operation needs to interop with applications in another process, <paramref name="data"/> should
+    ///  either be a base managed class (<see cref="string"/>, <see cref="Bitmap"/>, or <see cref="Metafile"/>)
+    ///  or some <see cref="object"/> that implements <see cref="Runtime.Serialization.ISerializable"/>.
+    ///  <paramref name="data"/> can also be any <see cref="object"/> that implements <see cref="IDataObject"/>.
+    ///  <paramref name="dragImage"/> is the bitmap that will be displayed during the  drag operation and
+    ///  <paramref name="cursorOffset"/> specifies the location of the cursor within <paramref name="dragImage"/>,
+    ///  which is an offset from the upper-left corner. Specify <see langword="true"/> for
+    ///  <paramref name="useDefaultDragImage"/> to use a layered window drag image with a
+    ///  size of 96x96; otherwise <see langword="false"/>. Note the outer edges of <paramref name="dragImage"/>
+    ///  are blended out if the image width or height exceeds 300 pixels.
     /// </summary>
     /// <returns>
-    ///  A value from the <see cref="DragDropEffects"/> enumeration that represents the final effect that was performed during the drag-and-drop
-    ///  operation.
+    ///  A value from the <see cref="DragDropEffects"/> enumeration that represents the final effect that was performed
+    ///  during the drag-and-drop operation.
     /// </returns>
     /// <remarks>
     ///  <para>
-    ///   Because <see cref="DoDragDrop(object, DragDropEffects, Bitmap, Point, bool)"/> always performs the RGB multiplication step in calculating
-    ///   the alpha value, you should always pass a <see cref="Bitmap"/> without premultiplied alpha blending. Note that no error will result from
-    ///   passing a <see cref="Bitmap"/> with premultiplied alpha blending, but this method will multiply it again, doubling the resulting alpha
-    ///   value.
+    ///   Because <see cref="DoDragDrop(object, DragDropEffects, Bitmap, Point, bool)"/> always performs the
+    ///   RGB multiplication step in calculating the alpha value, you should always pass a <see cref="Bitmap"/>
+    ///   without pre-multiplied alpha blending. Note that no error will result from passing a <see cref="Bitmap"/>
+    ///   with pre-multiplied alpha blending, but this method will multiply it again, doubling the resulting alpha value.
     ///  </para>
     /// </remarks>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
-    public DragDropEffects DoDragDrop(object data, DragDropEffects allowedEffects, Bitmap? dragImage, Point cursorOffset, bool useDefaultDragImage)
+    public unsafe DragDropEffects DoDragDrop(object data, DragDropEffects allowedEffects, Bitmap? dragImage, Point cursorOffset, bool useDefaultDragImage)
     {
-        IComDataObject? dataObject = data as IComDataObject;
-
-        if (dataObject is null)
+        if (data is not IComDataObject dataObject)
         {
-            DataObject? iwdata = null;
+            DataObject? iwdata;
             if (data is IDataObject idataObject)
             {
                 iwdata = new DataObject(idataObject);
@@ -2227,15 +2183,16 @@ public abstract partial class ToolStripItem : BindableComponent,
                 iwdata.SetData(data);
             }
 
-            dataObject = (IComDataObject)iwdata;
+            dataObject = iwdata;
         }
 
         DROPEFFECT finalEffect;
 
         try
         {
-            IDropSource.Interface dropSource = CreateDropSource(dataObject, dragImage, cursorOffset, useDefaultDragImage);
-            if (Ole32.DoDragDrop(dataObject, dropSource, (DROPEFFECT)(uint)allowedEffects, out finalEffect).Failed)
+            using var dropSource = ComHelpers.GetComScope<IDropSource>(CreateDropSource(dataObject, dragImage, cursorOffset, useDefaultDragImage));
+            using var dataObjectScope = ComHelpers.GetComScope<Com.IDataObject>(dataObject);
+            if (PInvoke.DoDragDrop(dataObjectScope, dropSource, (DROPEFFECT)(uint)allowedEffects, out finalEffect).Failed)
             {
                 return DragDropEffects.None;
             }
@@ -2431,10 +2388,10 @@ public abstract partial class ToolStripItem : BindableComponent,
 
     internal void InvalidateImageListImage()
     {
-        // invalidate the cache.
+        // Invalidate the cache.
         if (ImageIndexer.ActualIndex >= 0)
         {
-            Properties.SetObject(s_imageProperty, null);
+            Properties.RemoveValue(s_imageProperty);
             InvalidateItemLayout(PropertyNames.Image);
         }
     }
@@ -2447,8 +2404,6 @@ public abstract partial class ToolStripItem : BindableComponent,
 
     private void HandleClick(EventArgs e)
     {
-        s_mouseDebugging.TraceVerbose($"[{Text}] HandleClick");
-
         try
         {
             if (!DesignMode)
@@ -2456,13 +2411,12 @@ public abstract partial class ToolStripItem : BindableComponent,
                 _state[s_statePressed] = true;
             }
 
-            // force painting w/o using message loop here because it may be quite a long
+            // Force painting w/o using message loop here because it may be quite a long
             // time before it gets pumped again.
             InvokePaint();
 
             if (SupportsItemClick && Owner is not null)
             {
-                s_mouseDebugging.TraceVerbose($"[{Text}] HandleItemClick");
                 Owner.HandleItemClick(this);
             }
 
@@ -2470,7 +2424,6 @@ public abstract partial class ToolStripItem : BindableComponent,
 
             if (SupportsItemClick && Owner is not null)
             {
-                s_mouseDebugging.TraceVerbose($"[{Text}] HandleItemClicked");
                 Owner.HandleItemClicked(this);
             }
         }
@@ -2532,15 +2485,12 @@ public abstract partial class ToolStripItem : BindableComponent,
         if (Enabled)
         {
             OnMouseEnter(e);
-            s_mouseDebugging.TraceVerbose($"[{Text}] MouseEnter");
             RaiseEvent(s_mouseEnterEvent, e);
         }
     }
 
     private void HandleMouseMove(MouseEventArgs mea)
     {
-        s_mouseDebugging.TraceVerbose($"[{Text}] MouseMove");
-
         if (Enabled && CanSelect && !Selected)
         {
             if (ParentInternal is not null
@@ -2561,7 +2511,6 @@ public abstract partial class ToolStripItem : BindableComponent,
 
     private void HandleMouseHover(EventArgs e)
     {
-        s_mouseDebugging.TraceVerbose($"[{Text}] MouseHover");
         OnMouseHover(e);
         RaiseEvent(s_mouseHoverEvent, e);
     }
@@ -2580,7 +2529,6 @@ public abstract partial class ToolStripItem : BindableComponent,
 
     private void HandleMouseLeave(EventArgs e)
     {
-        s_mouseDebugging.TraceVerbose($"[{Text}] MouseLeave");
         HandleLeave();
         if (Enabled)
         {
@@ -2591,8 +2539,6 @@ public abstract partial class ToolStripItem : BindableComponent,
 
     private void HandleMouseDown(MouseEventArgs e)
     {
-        s_mouseDebugging.TraceVerbose($"[{Text}] MouseDown");
-
         _state[s_stateMouseDownAndNoDrag] = !BeginDragForItemReorder();
         if (_state[s_stateMouseDownAndNoDrag])
         {
@@ -2608,8 +2554,6 @@ public abstract partial class ToolStripItem : BindableComponent,
 
     private void HandleMouseUp(MouseEventArgs e)
     {
-        s_mouseDebugging.TraceVerbose($"[{Text}] MouseUp");
-
         bool fireMouseUp = (ParentInternal?.LastMouseDownedItem == this);
 
         if (!fireMouseUp && !MouseDownAndUpMustBeInSameItem)
@@ -2725,7 +2669,7 @@ public abstract partial class ToolStripItem : BindableComponent,
 
             if (parent.IsHandleCreated && parent.InvokeRequired)
             {
-                parent.BeginInvoke(new EventHandler(OnAnimationFrameChanged), new object?[] { o, e });
+                parent.BeginInvoke(new EventHandler(OnAnimationFrameChanged), [o, e]);
                 return;
             }
 
@@ -2736,7 +2680,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     protected virtual void OnAvailableChanged(EventArgs e) => RaiseEvent(s_availableChangedEvent, e);
 
     /// <summary>
-    ///  Raises the <see cref="ToolStripItem.CommandChanged"/> event.
+    ///  Raises the <see cref="CommandChanged"/> event.
     /// </summary>
     /// <param name="e">An empty <see cref="EventArgs"/> instance.</param>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -2744,7 +2688,7 @@ public abstract partial class ToolStripItem : BindableComponent,
         => RaiseEvent(s_commandChangedEvent, e);
 
     /// <summary>
-    ///  Raises the <see cref="ToolStripItem.CommandCanExecuteChanged"/> event.
+    ///  Raises the <see cref="CommandCanExecuteChanged"/> event.
     /// </summary>
     /// <param name="e">An empty <see cref="EventArgs"/> instance.</param>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -2752,7 +2696,7 @@ public abstract partial class ToolStripItem : BindableComponent,
         => ((EventHandler?)Events[s_commandCanExecuteChangedEvent])?.Invoke(this, e);
 
     /// <summary>
-    ///  Raises the <see cref="ToolStripItem.CommandParameterChanged"/> event.
+    ///  Raises the <see cref="CommandParameterChanged"/> event.
     /// </summary>
     /// <param name="e">An empty <see cref="EventArgs"/> instance.</param>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -2760,7 +2704,7 @@ public abstract partial class ToolStripItem : BindableComponent,
 
     /// <summary>
     ///  Called in the context of <see cref="OnClick(EventArgs)"/> to invoke
-    ///  <see cref="System.Windows.Input.ICommand.Execute(object?)"/> if the context allows.
+    ///  <see cref="Input.ICommand.Execute(object?)"/> if the context allows.
     /// </summary>
     /// <param name="e">An empty <see cref="EventArgs"/> instance.</param>
     protected virtual void OnRequestCommandExecute(EventArgs e)
@@ -2775,7 +2719,7 @@ public abstract partial class ToolStripItem : BindableComponent,
         => OnCommandCanExecuteChanged(e);
 
     /// <summary>
-    ///  Raises the <see cref="ToolStripItem.DragEnter"/> event.
+    ///  Raises the <see cref="DragEnter"/> event.
     ///  Inheriting classes should override this method to handle this event.
     ///  Call base.OnEnter to send this event to any registered event listeners.
     /// </summary>
@@ -2934,7 +2878,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     protected virtual void OnParentBackColorChanged(EventArgs e)
     {
-        Color backColor = Properties.GetColor(s_backColorProperty);
+        Color backColor = Properties.GetValueOrDefault<Color>(s_backColorProperty);
         if (backColor.IsEmpty)
         {
             OnBackColorChanged(e);
@@ -2982,7 +2926,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     protected virtual void OnParentForeColorChanged(EventArgs e)
     {
-        Color foreColor = Properties.GetColor(s_foreColorProperty);
+        Color foreColor = Properties.GetValueOrDefault<Color>(s_foreColorProperty);
         if (foreColor.IsEmpty)
         {
             OnForeColorChanged(e);
@@ -2992,7 +2936,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     protected internal virtual void OnParentRightToLeftChanged(EventArgs e)
     {
-        if (!Properties.ContainsInteger(s_rightToLeftProperty) || ((RightToLeft)Properties.GetInteger(s_rightToLeftProperty)) == RightToLeft.Inherit)
+        if (!Properties.TryGetValue(s_rightToLeftProperty, out RightToLeft rightToLeft) || rightToLeft == RightToLeft.Inherit)
         {
             OnRightToLeftChanged(e);
         }
@@ -3008,13 +2952,12 @@ public abstract partial class ToolStripItem : BindableComponent,
         if (Owner is not null)
         {
             // check if we need to fire OnRightToLeftChanged
-            int rightToLeft = Properties.GetInteger(s_rightToLeftProperty, out bool found);
-            if (!found)
+            if (!Properties.TryGetValue(s_rightToLeftProperty, out RightToLeft rightToLeft))
             {
-                rightToLeft = (int)RightToLeft.Inherit;
+                rightToLeft = RightToLeft.Inherit;
             }
 
-            if ((rightToLeft == (int)RightToLeft.Inherit) && RightToLeft != DefaultRightToLeft)
+            if (rightToLeft == RightToLeft.Inherit && RightToLeft != DefaultRightToLeft)
             {
                 OnRightToLeftChanged(EventArgs.Empty);
             }
@@ -3024,11 +2967,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     internal void OnOwnerTextDirectionChanged()
     {
-        ToolStripTextDirection textDirection = ToolStripTextDirection.Inherit;
-        if (Properties.TryGetObject(ToolStripItem.s_textDirectionProperty, out ToolStripTextDirection direction))
-        {
-            textDirection = direction;
-        }
+        ToolStripTextDirection textDirection = Properties.GetValueOrDefault(s_textDirectionProperty, ToolStripTextDirection.Inherit);
 
         if (textDirection == ToolStripTextDirection.Inherit)
         {
@@ -3109,6 +3048,8 @@ public abstract partial class ToolStripItem : BindableComponent,
                 ParentInternal.RestoreFocusInternal();
             }
 
+            Owner?.UpdateToolTip(this, true);
+
             return true;
         }
 
@@ -3127,39 +3068,27 @@ public abstract partial class ToolStripItem : BindableComponent,
         return true;
     }
 
-    internal void RaiseCancelEvent(object key, CancelEventArgs e)
-        => ((CancelEventHandler?)Events[key])?.Invoke(this, e);
+    internal void RaiseCancelEvent(object key, CancelEventArgs e) => ((CancelEventHandler?)Events[key])?.Invoke(this, e);
 
-    internal void RaiseDragEvent(object key, DragEventArgs e)
-        => ((DragEventHandler?)Events[key])?.Invoke(this, e);
+    internal void RaiseDragEvent(object key, DragEventArgs e) => ((DragEventHandler?)Events[key])?.Invoke(this, e);
 
-    internal void RaiseKeyEvent(object key, KeyEventArgs e)
-        => ((KeyEventHandler?)Events[key])?.Invoke(this, e);
+    internal void RaiseKeyEvent(object key, KeyEventArgs e) => ((KeyEventHandler?)Events[key])?.Invoke(this, e);
 
-    internal void RaiseKeyPressEvent(object key, KeyPressEventArgs e)
-        => ((KeyPressEventHandler?)Events[key])?.Invoke(this, e);
+    internal void RaiseKeyPressEvent(object key, KeyPressEventArgs e) => ((KeyPressEventHandler?)Events[key])?.Invoke(this, e);
 
-    internal void RaiseMouseEvent(object key, MouseEventArgs e)
-        => ((MouseEventHandler?)Events[key])?.Invoke(this, e);
+    internal void RaiseMouseEvent(object key, MouseEventArgs e) => ((MouseEventHandler?)Events[key])?.Invoke(this, e);
 
-    internal void RaisePaintEvent(object key, PaintEventArgs e)
-        => ((PaintEventHandler?)Events[key])?.Invoke(this, e);
+    internal void RaisePaintEvent(object key, PaintEventArgs e) => ((PaintEventHandler?)Events[key])?.Invoke(this, e);
 
-    internal void RaiseQueryContinueDragEvent(object key, QueryContinueDragEventArgs e)
-        => ((QueryContinueDragEventHandler?)Events[key])?.Invoke(this, e);
+    internal void RaiseQueryContinueDragEvent(object key, QueryContinueDragEventArgs e) =>
+        ((QueryContinueDragEventHandler?)Events[key])?.Invoke(this, e);
 
     internal virtual void ReleaseUiaProvider()
     {
-        if (TryGetAccessibilityObject(out AccessibleObject? accessibleObject))
+        if (Properties.TryGetValue(s_accessibilityProperty, out AccessibleObject? accessibleObject))
         {
             PInvoke.UiaDisconnectProvider(accessibleObject, skipOSCheck: true);
-            Properties.SetObject(s_accessibilityProperty, null);
-        }
-
-        bool TryGetAccessibilityObject(out AccessibleObject? accessibleObject)
-        {
-            accessibleObject = Properties.GetObject(s_accessibilityProperty) as AccessibleObject;
-            return accessibleObject is not null;
+            Properties.RemoveValue(s_accessibilityProperty);
         }
     }
 
@@ -3177,24 +3106,19 @@ public abstract partial class ToolStripItem : BindableComponent,
     {
         ToolStripManager.CurrentDpi = newDpi;
         _defaultFont = ToolStripManager.DefaultFont;
-        _scaledDefaultMargin = DpiHelper.LogicalToDeviceUnits(s_defaultMargin, _deviceDpi);
-        _scaledDefaultStatusStripMargin = DpiHelper.LogicalToDeviceUnits(s_defaultStatusStripMargin, _deviceDpi);
+        ScaleConstants(newDpi);
     }
 
-    public void Select()
+    private void ScaleConstants(int dpi)
     {
-        Select(forceRaiseAccessibilityFocusChanged: false);
+        _defaultMargin = ScaleHelper.ScaleToDpi(new Padding(0, 1, 0, 2), dpi);
+        _defaultStatusStripMargin = ScaleHelper.ScaleToDpi(new Padding(0, 2, 0, 0), dpi);
     }
+
+    public void Select() => Select(forceRaiseAccessibilityFocusChanged: false);
 
     internal void Select(bool forceRaiseAccessibilityFocusChanged)
     {
-        // let's not snap the stack trace unless we're debugging selection.
-        ToolStrip.s_selectionDebug.TraceVerbose($"""
-            [Selection DBG] WBI.Select: {ToString()}
-            {new StackTrace().ToString().AsSpan(0, 200)}
-
-            """);
-
         if (!CanSelect)
         {
             return;
@@ -3202,35 +3126,32 @@ public abstract partial class ToolStripItem : BindableComponent,
 
         if (Owner is not null && Owner.IsCurrentlyDragging)
         {
-            // make sure we don't select during a drag operation.
+            // Make sure we don't select during a drag operation.
             return;
         }
 
         if (ParentInternal is not null && ParentInternal.IsSelectionSuspended)
         {
-            ToolStrip.s_selectionDebug.TraceVerbose("[Selection DBG] BAILING, selection is currently suspended");
             return;
         }
 
         if (!Selected)
         {
             _state[s_stateSelected] = true;
-            if (ParentInternal is not null)
-            {
-                ParentInternal.NotifySelectionChange(this);
-                Debug.Assert(_state[s_stateSelected], "calling notify selection change changed the selection state of this item");
-            }
+            ParentInternal?.NotifySelectionChange(this);
 
             if (IsOnDropDown)
             {
                 if (OwnerItem is not null && OwnerItem.IsOnDropDown)
                 {
-                    // ensure the selection is moved back to our owner item.
+                    // Ensure the selection is moved back to our owner item.
                     OwnerItem.Select();
                 }
             }
 
             KeyboardToolTipStateMachine.Instance.NotifyAboutGotFocus(this);
+
+            OnSelectedChanged(EventArgs.Empty);
 
             forceRaiseAccessibilityFocusChanged = true;
         }
@@ -3341,9 +3262,11 @@ public abstract partial class ToolStripItem : BindableComponent,
     internal void SetPlacement(ToolStripItemPlacement placement) => _placement = placement;
 
     /// <remarks>
-    ///  Some implementations of DefaultMargin check which container they
-    ///  are on. They need to be re-evaluated when the containership changes.
-    ///  DefaultMargin will stop being honored the moment someone sets the Margin property.
+    ///  <para>
+    ///   Some implementations of DefaultMargin check which container they
+    ///   are on. They need to be re-evaluated when the containership changes.
+    ///   DefaultMargin will stop being honored the moment someone sets the Margin property.
+    ///  </para>
     /// </remarks>
     internal void SetAmbientMargin()
     {
@@ -3362,7 +3285,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal virtual bool ShouldSerializeBackColor()
     {
-        Color backColor = Properties.GetColor(s_backColorProperty);
+        Color backColor = Properties.GetValueOrDefault<Color>(s_backColorProperty);
         return !backColor.IsEmpty;
     }
 
@@ -3376,7 +3299,7 @@ public abstract partial class ToolStripItem : BindableComponent,
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal virtual bool ShouldSerializeForeColor()
     {
-        Color foreColor = Properties.GetColor(s_foreColorProperty);
+        Color foreColor = Properties.GetValueOrDefault<Color>(s_foreColorProperty);
         return !foreColor.IsEmpty;
     }
 
@@ -3430,25 +3353,15 @@ public abstract partial class ToolStripItem : BindableComponent,
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal virtual bool ShouldSerializeRightToLeft()
     {
-        int rightToLeft = Properties.GetInteger(s_rightToLeftProperty, out bool found);
-        if (!found)
+        if (!Properties.TryGetValue(s_rightToLeftProperty, out RightToLeft rightToLeft))
         {
             return false;
         }
 
-        return rightToLeft != (int)DefaultRightToLeft;
+        return rightToLeft != DefaultRightToLeft;
     }
 
-    private bool ShouldSerializeTextDirection()
-    {
-        ToolStripTextDirection textDirection = ToolStripTextDirection.Inherit;
-        if (Properties.TryGetObject(ToolStripItem.s_textDirectionProperty, out ToolStripTextDirection direction))
-        {
-            textDirection = direction;
-        }
-
-        return textDirection != ToolStripTextDirection.Inherit;
-    }
+    private bool ShouldSerializeTextDirection() => Properties.ContainsKey(s_textDirectionProperty);
 
     /// <summary>
     ///  Resets the back color to be based on the parent's back color.
@@ -3525,7 +3438,7 @@ public abstract partial class ToolStripItem : BindableComponent,
             return fromPoint;
         }
 
-        Point toPoint = Point.Empty;
+        Point toPoint;
         Point currentToolStripItemLocation = Bounds.Location;
 
         // From: Screen
@@ -3613,7 +3526,6 @@ public abstract partial class ToolStripItem : BindableComponent,
     /// </summary>
     internal void Unselect()
     {
-        ToolStrip.s_selectionDebug.TraceVerbose($"[Selection DBG] WBI.Unselect: {ToString()}");
         if (_state[s_stateSelected])
         {
             _state[s_stateSelected] = false;
@@ -3634,7 +3546,7 @@ public abstract partial class ToolStripItem : BindableComponent,
 
     IList<Rectangle> IKeyboardToolTip.GetNeighboringToolsRectangles()
     {
-        List<Rectangle> neighbors = new List<Rectangle>(3);
+        List<Rectangle> neighbors = new(3);
         if (_parent is not null)
         {
             ToolStripItemCollection items = _parent.DisplayedItems;
@@ -3642,7 +3554,7 @@ public abstract partial class ToolStripItem : BindableComponent,
             bool found = false;
             while (!found && i < count)
             {
-                found = object.ReferenceEquals(items[i], this);
+                found = ReferenceEquals(items[i], this);
                 if (found)
                 {
                     int previousIndex = i - 1;
@@ -3713,15 +3625,10 @@ public abstract partial class ToolStripItem : BindableComponent,
     /// </summary>
     internal bool IsParentAccessibilityObjectCreated => ParentInternal is not null && ParentInternal.IsAccessibilityObjectCreated;
 
-    internal virtual bool IsBeingTabbedTo() => ToolStrip.AreCommonNavigationalKeysDown();
+    internal virtual bool IsBeingTabbedTo() => Control.AreCommonNavigationalKeysDown();
 
     /// <summary>
-    /// Query font from property bag.
+    ///  Query font from property bag.
     /// </summary>
-    internal bool TryGetExplicitlySetFont([NotNullWhen(true)] out Font? local)
-    {
-        local = (Font?)Properties.GetObject(s_fontProperty);
-
-        return local is not null;
-    }
+    internal bool TryGetExplicitlySetFont([NotNullWhen(true)] out Font? local) => Properties.TryGetValue(s_fontProperty, out local);
 }

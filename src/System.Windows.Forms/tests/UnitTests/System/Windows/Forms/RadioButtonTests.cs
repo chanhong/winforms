@@ -11,12 +11,12 @@ using Size = System.Drawing.Size;
 
 namespace System.Windows.Forms.Tests;
 
-public class RadioButtonTests
+public class RadioButtonTests : AbstractButtonBaseTests
 {
     [WinFormsFact]
     public void RadioButton_Ctor_Default()
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         Assert.Null(control.AccessibleDefaultActionDescription);
         Assert.Null(control.AccessibleDescription);
         Assert.Null(control.AccessibleName);
@@ -123,7 +123,7 @@ public class RadioButtonTests
     [WinFormsFact]
     public void RadioButton_CreateParams_GetDefault_ReturnsExpected()
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = (SubRadioButton)CreateButton();
         CreateParams createParams = control.CreateParams;
         Assert.Null(createParams.Caption);
         Assert.Equal("Button", createParams.ClassName);
@@ -145,7 +145,7 @@ public class RadioButtonTests
     [InlineData(false, 0x5600000B)]
     public void RadioButton_CreateParams_GetUserPaint_ReturnsExpected(bool userPaint, int expectedStyle)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = (SubRadioButton)CreateButton();
         control.SetStyle(ControlStyles.UserPaint, userPaint);
 
         CreateParams createParams = control.CreateParams;
@@ -168,15 +168,41 @@ public class RadioButtonTests
     [InvalidEnumData<ContentAlignment>]
     public void RadioButton_CheckAlign_SetInvalidValue_ThrowsInvalidEnumArgumentException(ContentAlignment value)
     {
-        using var control = new RadioButton();
+        using RadioButton control = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => control.CheckAlign = value);
+    }
+
+    public static TheoryData<ContentAlignment> CheckAlignData =>
+    [
+        ContentAlignment.TopLeft,
+        ContentAlignment.TopRight,
+        ContentAlignment.BottomCenter,
+        ContentAlignment.BottomLeft,
+        ContentAlignment.BottomRight,
+        ContentAlignment.MiddleLeft,
+        ContentAlignment.MiddleRight,
+        ContentAlignment.TopCenter,
+        ContentAlignment.MiddleCenter
+    ];
+
+    [WinFormsTheory]
+    [MemberData(nameof(CheckAlignData))]
+    public void RadioButton_CheckAlign_Set_GetReturnsExpected(ContentAlignment value)
+    {
+        using RadioButton control = new();
+        control.CheckAlign = value;
+        control.CheckAlign.Should().Be(value);
+
+        // Set same.
+        control.CheckAlign = value;
+        control.CheckAlign.Should().Be(value);
     }
 
     [WinFormsTheory]
     [BoolData]
     public void RadioRadioButton_TabStop_Set_GetReturnsExpected(bool value)
     {
-        using var control = new RadioButton
+        using RadioButton control = new()
         {
             TabStop = value
         };
@@ -198,7 +224,7 @@ public class RadioButtonTests
     [BoolData]
     public void RadioRadioButton_TabStop_SetWithHandle_GetReturnsExpected(bool value)
     {
-        using var control = new RadioButton();
+        using RadioButton control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -234,7 +260,7 @@ public class RadioButtonTests
     [WinFormsFact]
     public void RadioRadioButton_TabStop_SetWithHandler_CallsTabStopChanged()
     {
-        using var control = new RadioButton
+        using RadioButton control = new()
         {
             TabStop = true
         };
@@ -287,7 +313,7 @@ public class RadioButtonTests
     [MemberData(nameof(TextAlign_Set_TestData))]
     public void RadioRadioButton_TextAlign_Set_GetReturnsExpected(bool autoSize, FlatStyle flatStyle, ContentAlignment value)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             AutoSize = autoSize,
             FlatStyle = flatStyle
@@ -326,7 +352,7 @@ public class RadioButtonTests
     [MemberData(nameof(TextAlign_SetWithHandle_TestData))]
     public void RadioRadioButton_TextAlign_SetWithHandle_GetReturnsExpected(bool autoSize, FlatStyle flatStyle, ContentAlignment value, int expectedInvalidatedCallCount, int expectedStyleChangedCallCount)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             AutoSize = autoSize,
             FlatStyle = flatStyle
@@ -363,7 +389,7 @@ public class RadioButtonTests
     [InvalidEnumData<ContentAlignment>]
     public void RadioRadioButton_TextAlign_SetInvalidValue_ThrowsInvalidEnumArgumentException(ContentAlignment value)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => control.TextAlign = value);
     }
 
@@ -371,7 +397,7 @@ public class RadioButtonTests
     [EnumData<FlatStyle>]
     public void RadioButton_CreateAccessibilityInstance_Invoke_ReturnsExpected_IfHandleIsCreated(FlatStyle flatStyle)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle
         };
@@ -393,7 +419,7 @@ public class RadioButtonTests
     [EnumData<FlatStyle>]
     public void RadioButton_CreateAccessibilityInstance_Invoke_ReturnsExpected_IfHandleIsNotCreated(FlatStyle flatStyle)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle
         };
@@ -414,7 +440,7 @@ public class RadioButtonTests
     [EnumData<FlatStyle>]
     public void RadioButton_CreateAccessibilityInstance_InvokeWithCustomRole_ReturnsExpected_IfHandleIsCreated(FlatStyle flatStyle)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle,
             AccessibleRole = AccessibleRole.HelpBalloon
@@ -437,7 +463,7 @@ public class RadioButtonTests
     [EnumData<FlatStyle>]
     public void RadioButton_CreateAccessibilityInstance_InvokeWithCustomRole_ReturnsExpected_IfHandleIsNotCreated(FlatStyle flatStyle)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle,
             AccessibleRole = AccessibleRole.HelpBalloon
@@ -474,7 +500,7 @@ public class RadioButtonTests
     [InlineData(FlatStyle.System, "Description", false, AccessibleStates.None)]
     public void RadioButton_CreateAccessibilityInstance_InvokeWithCustomDefaultActionDescription_ReturnsExpected(FlatStyle flatStyle, string defaultActionDescription, bool createControl, AccessibleStates expectedAccessibleStates)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle,
             AccessibleDefaultActionDescription = defaultActionDescription
@@ -501,7 +527,7 @@ public class RadioButtonTests
     [EnumData<FlatStyle>]
     public void RadioButton_CreateAccessibilityInstance_InvokeChecked_ReturnsExpected_IfHandleIsCreated(FlatStyle flatStyle)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle,
             Checked = true
@@ -524,7 +550,7 @@ public class RadioButtonTests
     [EnumData<FlatStyle>]
     public void RadioButton_CreateAccessibilityInstance_InvokeChecked_ReturnsExpected_IfHandleIsNotCreated(FlatStyle flatStyle)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle,
             Checked = true
@@ -546,7 +572,7 @@ public class RadioButtonTests
     [EnumData<FlatStyle>]
     public void RadioButton_CreateAccessibilityInstance_InvokeDoDefaultAction_CallsOnClick_IfHandleIsCreated(FlatStyle flatStyle)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle
         };
@@ -568,7 +594,7 @@ public class RadioButtonTests
     [EnumData<FlatStyle>]
     public void RadioButton_CreateAccessibilityInstance_InvokeDoDefaultAction_CallsOnClick_IfHandleIsNotCreated(FlatStyle flatStyle)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle
         };
@@ -588,7 +614,7 @@ public class RadioButtonTests
     [WinFormsFact]
     public void RadioButton_GetAutoSizeMode_Invoke_ReturnsExpected()
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         Assert.Equal(AutoSizeMode.GrowAndShrink, control.GetAutoSizeMode());
     }
 
@@ -615,7 +641,7 @@ public class RadioButtonTests
     [InlineData((ControlStyles)(-1), false)]
     public void RadioButton_GetStyle_Invoke_ReturnsExpected(ControlStyles flag, bool expected)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         Assert.Equal(expected, control.GetStyle(flag));
 
         // Call again to test caching.
@@ -625,7 +651,7 @@ public class RadioButtonTests
     [WinFormsFact]
     public void RadioButton_GetTopLevel_Invoke_ReturnsExpected()
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         Assert.False(control.GetTopLevel());
     }
 
@@ -633,7 +659,7 @@ public class RadioButtonTests
     [NewAndDefaultData<EventArgs>]
     public void RadioButton_OnCheckedChanged_Invoke_CallsCheckedChanged(EventArgs eventArgs)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -659,7 +685,7 @@ public class RadioButtonTests
     [NewAndDefaultData<EventArgs>]
     public void RadioButton_OnCheckedChanged_InvokeWithHandle_CallsCheckedChanged(EventArgs eventArgs)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -709,7 +735,7 @@ public class RadioButtonTests
     [MemberData(nameof(OnClick_TestData))]
     public void RadioButton_OnClick_Invoke_CallsClick(bool autoCheck, EventArgs eventArgs)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             AutoCheck = autoCheck
         };
@@ -749,7 +775,7 @@ public class RadioButtonTests
     [MemberData(nameof(OnClick_WithHandle_TestData))]
     public void RadioButton_OnClick_InvokeWithHandle_CallsClick(bool autoCheck, EventArgs eventArgs, int expectedInvalidatedCallCount)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             AutoCheck = autoCheck
         };
@@ -794,7 +820,7 @@ public class RadioButtonTests
     [NewAndDefaultData<EventArgs>]
     public void RadioButton_OnDoubleClick_Invoke_CallsDoubleClick(EventArgs eventArgs)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -820,7 +846,7 @@ public class RadioButtonTests
     [NewAndDefaultData<EventArgs>]
     public void RadioButton_OnEnter_Invoke_CallsEnter(EventArgs eventArgs)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -846,7 +872,7 @@ public class RadioButtonTests
     [NewAndDefaultData<EventArgs>]
     public void RadioButton_OnEnter_InvokeWithHandle_CallsEnter(EventArgs eventArgs)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -887,7 +913,7 @@ public class RadioButtonTests
     [NewAndDefaultData<EventArgs>]
     public void RadioButton_OnHandleCreated_Invoke_CallsHandleCreated(EventArgs eventArgs)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -913,7 +939,7 @@ public class RadioButtonTests
     [NewAndDefaultData<EventArgs>]
     public void RadioButton_OnHandleCreated_InvokeWithHandle_CallsHandleCreated(EventArgs eventArgs)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int callCount = 0;
         EventHandler handler = (sender, e) =>
@@ -940,7 +966,7 @@ public class RadioButtonTests
     [NewAndDefaultData<EventArgs>]
     public void RadioButton_OnHandleDestroyed_Invoke_CallsHandleDestroyed(EventArgs eventArgs)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -966,7 +992,7 @@ public class RadioButtonTests
     [NewAndDefaultData<EventArgs>]
     public void RadioButton_OnHandleDestroyed_InvokeWithHandle_CallsHandleDestroyed(EventArgs eventArgs)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int callCount = 0;
         EventHandler handler = (sender, e) =>
@@ -993,7 +1019,7 @@ public class RadioButtonTests
     [CommonMemberData(typeof(CommonTestHelperEx), nameof(CommonTestHelperEx.GetMouseEventArgsTheoryData))]
     public void RadioButton_OnMouseDoubleClick_Invoke_CallsMouseDoubleClick(MouseEventArgs eventArgs)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         int callCount = 0;
         MouseEventHandler handler = (sender, e) =>
         {
@@ -1034,7 +1060,7 @@ public class RadioButtonTests
     [MemberData(nameof(OnMouseUp_TestData))]
     public void RadioButton_OnMouseUp_Invoke_CallsMouseUp(FlatStyle flatStyle, MouseEventArgs eventArgs)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle
         };
@@ -1087,7 +1113,7 @@ public class RadioButtonTests
     [MemberData(nameof(OnMouseUp_MouseDown_TestData))]
     public void RadioButton_OnMouseUp_InvokeMouseDown_CallsMouseUp(FlatStyle flatStyle, MouseEventArgs eventArgs, bool expectedIsHandleCreated)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle
         };
@@ -1125,7 +1151,7 @@ public class RadioButtonTests
     [MemberData(nameof(OnMouseUp_TestData))]
     public void RadioButton_OnMouseUp_InvokeWithHandle_CallsMouseUp(FlatStyle flatStyle, MouseEventArgs eventArgs)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle
         };
@@ -1190,7 +1216,7 @@ public class RadioButtonTests
     [MemberData(nameof(OnMouseUp_WithHandle_TestData))]
     public void RadioButton_OnMouseUp_InvokeMouseDownWithHandle_CallsMouseUp(FlatStyle flatStyle, MouseEventArgs eventArgs)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             FlatStyle = flatStyle
         };
@@ -1240,14 +1266,14 @@ public class RadioButtonTests
     [WinFormsFact]
     public void RadioButton_OnMouseUp_NullE_ThrowsNullReferenceException()
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         Assert.Throws<NullReferenceException>(() => control.OnMouseUp(null));
     }
 
     [WinFormsFact]
     public void RadioButton_PerformClick_Invoke_CallsClick()
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -1272,7 +1298,7 @@ public class RadioButtonTests
     [WinFormsFact]
     public void RadioButton_PerformClick_InvokeWithHandle_CallsClick()
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -1324,7 +1350,7 @@ public class RadioButtonTests
     [InlineData(false, "text", 'a', false)]
     public void RadioButton_ProcessMnemonic_Invoke_ReturnsExpected(bool useMnemonic, string text, char charCode, bool expected)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             UseMnemonic = useMnemonic,
             Text = text
@@ -1353,7 +1379,7 @@ public class RadioButtonTests
     [InlineData(false, "text", 'a')]
     public void RadioButton_ProcessMnemonic_InvokeCantProcessMnemonic_ReturnsFalse(bool useMnemonic, string text, char charCode)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             UseMnemonic = useMnemonic,
             Text = text,
@@ -1383,7 +1409,7 @@ public class RadioButtonTests
     [InlineData(false, "text", 'a', false)]
     public void RadioButton_ProcessMnemonic_InvokeWithHandle_ReturnsExpected(bool useMnemonic, string text, char charCode, bool expected)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             UseMnemonic = useMnemonic,
             Text = text
@@ -1423,7 +1449,7 @@ public class RadioButtonTests
     [InlineData(false, "text", 'a')]
     public void RadioButton_ProcessMnemonic_InvokeCantProcessMnemonicWithHandle_ReturnsFalse(bool useMnemonic, string text, char charCode)
     {
-        using var control = new SubRadioButton
+        using SubRadioButton control = new()
         {
             UseMnemonic = useMnemonic,
             Text = text,
@@ -1450,7 +1476,7 @@ public class RadioButtonTests
     [WinFormsFact]
     public void RadioButton_RaiseAutomationEvent_Invoke_Success()
     {
-        using var radioButton = new TestRadioButton();
+        using TestRadioButton radioButton = new();
         Assert.False(radioButton.IsHandleCreated);
 
         var accessibleObject = (SubRadioButtonAccessibleObject)radioButton.AccessibilityObject;
@@ -1470,7 +1496,7 @@ public class RadioButtonTests
     [InlineData(-1, -2)]
     public void RadioButton_RescaleConstantsForDpi_Invoke_Nop(int deviceDpiOld, int deviceDpiNew)
     {
-        using var control = new SubRadioButton();
+        using SubRadioButton control = new();
         control.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
         Assert.False(control.IsHandleCreated);
 
@@ -1482,14 +1508,14 @@ public class RadioButtonTests
     [WinFormsFact]
     public void RadioButton_ToString_Invoke_ReturnsExpected()
     {
-        using var control = new RadioButton();
+        using RadioButton control = new();
         Assert.Equal("System.Windows.Forms.RadioButton, Checked: False", control.ToString());
     }
 
     [WinFormsFact]
     public void RadioButton_ToString_InvokeShortText_ReturnsExpected()
     {
-        using var control = new RadioButton
+        using RadioButton control = new()
         {
             Text = "Text"
         };
@@ -1625,4 +1651,17 @@ public class RadioButtonTests
             return base.RaiseAutomationPropertyChangedEvent(propertyId, oldValue, newValue);
         }
     }
+
+    [WinFormsTheory]
+    [InlineData(Appearance.Button, FlatStyle.Standard)]
+    [InlineData(Appearance.Button, FlatStyle.Flat)]
+    [InlineData(Appearance.Button, FlatStyle.Popup)]
+    [InlineData(Appearance.Button, FlatStyle.System)]
+    [InlineData(Appearance.Normal, FlatStyle.Standard)]
+    [InlineData(Appearance.Normal, FlatStyle.Flat)]
+    [InlineData(Appearance.Normal, FlatStyle.Popup)]
+    [InlineData(Appearance.Normal, FlatStyle.System)]
+    public void RadioButton_OverChangeRectangle_Get(Appearance appearance, FlatStyle flatStyle) => base.ButtonBase_OverChangeRectangle_Get(appearance, flatStyle);
+
+    protected override ButtonBase CreateButton() => new SubRadioButton();
 }

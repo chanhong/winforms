@@ -16,34 +16,32 @@ internal abstract partial class ButtonBaseAdapter
     // SystemInformation.Border3DSize + 2 pixels for focus rect
     protected const int ButtonBorderSize = 4;
 
-    internal ButtonBaseAdapter(ButtonBase control) =>
-        Control = control.OrThrowIfNull();
+    internal ButtonBaseAdapter(ButtonBase control) => Control = control.OrThrowIfNull();
 
     protected ButtonBase Control { get; }
 
     /// <summary>
-    ///  Returns the darkened color according to the required color contrast ratio
+    ///  Returns a darkened color according to the required color contrast ratio.
     /// </summary>
-    private protected static Color GetContrastingBorderColor(Color buttonBorderShadowColor)
-        => Color.FromArgb(
-            buttonBorderShadowColor.A,
-            (int)(buttonBorderShadowColor.R * 0.8f),
-            (int)(buttonBorderShadowColor.G * 0.8f),
-            (int)(buttonBorderShadowColor.B * 0.8f));
+    private protected static Color GetContrastingBorderColor(Color buttonBorderShadowColor) => Color.FromArgb(
+        buttonBorderShadowColor.A,
+        (int)(buttonBorderShadowColor.R * 0.8f),
+        (int)(buttonBorderShadowColor.G * 0.8f),
+        (int)(buttonBorderShadowColor.B * 0.8f));
 
-    internal void Paint(PaintEventArgs pevent)
+    internal void Paint(PaintEventArgs e)
     {
         if (Control.MouseIsDown)
         {
-            PaintDown(pevent, CheckState.Unchecked);
+            PaintDown(e, CheckState.Unchecked);
         }
         else if (Control.MouseIsOver)
         {
-            PaintOver(pevent, CheckState.Unchecked);
+            PaintOver(e, CheckState.Unchecked);
         }
         else
         {
-            PaintUp(pevent, CheckState.Unchecked);
+            PaintUp(e, CheckState.Unchecked);
         }
     }
 
@@ -51,9 +49,9 @@ internal abstract partial class ButtonBaseAdapter
     {
         LayoutOptions? options = default;
         using (var screen = GdiCache.GetScreenHdc())
-        using (PaintEventArgs pe = new PaintEventArgs(screen, default))
+        using (PaintEventArgs e = new(screen, default))
         {
-            options = Layout(pe);
+            options = Layout(e);
         }
 
         return options.GetPreferredSizeCore(proposedSize);
@@ -68,34 +66,30 @@ internal abstract partial class ButtonBaseAdapter
     internal abstract void PaintOver(PaintEventArgs e, CheckState state);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected bool IsHighContrastHighlighted()
-        => SystemInformation.HighContrast
-            && Application.RenderWithVisualStyles
-            && (Control.Focused || Control.MouseIsOver || (Control.IsDefault && Control.Enabled));
+    protected bool IsHighContrastHighlighted() => SystemInformation.HighContrast
+        && Application.RenderWithVisualStyles
+        && (Control.Focused || Control.MouseIsOver || (Control.IsDefault && Control.Enabled));
 
     internal static Brush CreateDitherBrush(Color color1, Color color2)
     {
-        // Note: Don't dispose the bitmap here. The texture brush will take ownership
-        // of the bitmap. So the bitmap will get disposed by the brush's Dispose().
+        using Bitmap bitmap = new(2, 2);
 
-        using Bitmap b = new Bitmap(2, 2);
+        bitmap.SetPixel(0, 0, color1);
+        bitmap.SetPixel(0, 1, color2);
+        bitmap.SetPixel(1, 1, color1);
+        bitmap.SetPixel(1, 0, color2);
 
-        b.SetPixel(0, 0, color1);
-        b.SetPixel(0, 1, color2);
-        b.SetPixel(1, 1, color1);
-        b.SetPixel(1, 0, color2);
-
-        return new TextureBrush(b);
+        return new TextureBrush(bitmap);
     }
 
     /// <summary>
-    ///  Get StringFormat object for rendering text using GDI+ (Graphics).
+    ///  Get <see cref="StringFormat"/> object for rendering text using GDI+ (<see cref="Graphics"/>).
     /// </summary>
     internal virtual StringFormat CreateStringFormat()
         => ControlPaint.CreateStringFormat(Control, Control.TextAlign, Control.ShowToolTip, Control.UseMnemonic);
 
     /// <summary>
-    ///  Get TextFormatFlags flags for rendering text using GDI (TextRenderer).
+    ///  Get <see cref="TextFormatFlags"/> for rendering text using GDI (<see cref="TextRenderer"/>).
     /// </summary>
     internal virtual TextFormatFlags CreateTextFormatFlags()
         => ControlPaint.CreateTextFormatFlags(Control, Control.TextAlign, Control.ShowToolTip, Control.UseMnemonic);
@@ -137,16 +131,16 @@ internal abstract partial class ButtonBaseAdapter
         bool stockColor = colors.ButtonFace.ToKnownColor() == SystemColors.Control.ToKnownColor();
         bool disabledHighContrast = (!Control.Enabled) && SystemInformation.HighContrast;
 
-        using DeviceContextHdcScope hdc = new(deviceContext);
+        using DeviceContextHdcScope hdc = deviceContext.ToHdcScope();
 
         // Draw counter-clock-wise
-        Point p1 = new Point(bounds.X + bounds.Width - 1, bounds.Y);                        // Upper inner right
-        Point p2 = new Point(bounds.X, bounds.Y);                                           // Upper left
-        Point p3 = new Point(bounds.X, bounds.Y + bounds.Height - 1);                       // Bottom inner left
-        Point p4 = new Point(bounds.X + bounds.Width - 1, bounds.Y + bounds.Height - 1);    // Inner bottom right
+        Point p1 = new(bounds.X + bounds.Width - 1, bounds.Y);                        // Upper inner right
+        Point p2 = new(bounds.X, bounds.Y);                                           // Upper left
+        Point p3 = new(bounds.X, bounds.Y + bounds.Height - 1);                       // Bottom inner left
+        Point p4 = new(bounds.X + bounds.Width - 1, bounds.Y + bounds.Height - 1);    // Inner bottom right
 
         // Top + left
-        using PInvoke.CreatePenScope penTopLeft = new(
+        using CreatePenScope penTopLeft = new(
             disabledHighContrast
             ? colors.WindowDisabled
             : stockColor ? SystemColors.ControlLightLight : colors.Highlight);
@@ -155,7 +149,7 @@ internal abstract partial class ButtonBaseAdapter
         hdc.DrawLine(penTopLeft, p2, p3);           // Left (up-down)
 
         // Bottom + right
-        using PInvoke.CreatePenScope penBottomRight = new(
+        using CreatePenScope penBottomRight = new(
             disabledHighContrast
                 ? colors.WindowDisabled
                 : stockColor ? SystemColors.ControlDarkDark : colors.ButtonShadowDark);
@@ -165,7 +159,7 @@ internal abstract partial class ButtonBaseAdapter
         hdc.DrawLine(penBottomRight, p4, p1);       // Right  (bottom-up)
 
         // Draw inset using the background color to make the top and left lines thinner
-        using PInvoke.CreatePenScope insetPen = new(
+        using CreatePenScope insetPen = new(
             stockColor
                 ? SystemInformation.HighContrast ? SystemColors.ControlLight : SystemColors.Control
                 : SystemInformation.HighContrast ? colors.Highlight : colors.ButtonFace);
@@ -180,7 +174,7 @@ internal abstract partial class ButtonBaseAdapter
         hdc.DrawLine(insetPen, p2, p3);             // Left (up-down)
 
         // Bottom + right inset
-        using PInvoke.CreatePenScope bottomRightInsetPen = new(
+        using CreatePenScope bottomRightInsetPen = new(
             disabledHighContrast
             ? colors.WindowDisabled
             : stockColor ? SystemColors.ControlDark : colors.ButtonShadow);
@@ -192,28 +186,28 @@ internal abstract partial class ButtonBaseAdapter
 
     private static void Draw3DBorderNormal(IDeviceContext deviceContext, ref Rectangle bounds, ColorData colors)
     {
-        using DeviceContextHdcScope hdc = new(deviceContext);
+        using DeviceContextHdcScope hdc = deviceContext.ToHdcScope();
 
         // Draw counter-clock-wise
-        Point p1 = new Point(bounds.X + bounds.Width - 1, bounds.Y);                        // Upper inner right
-        Point p2 = new Point(bounds.X, bounds.Y);                                           // Upper left
-        Point p3 = new Point(bounds.X, bounds.Y + bounds.Height - 1);                       // Bottom inner left
-        Point p4 = new Point(bounds.X + bounds.Width - 1, bounds.Y + bounds.Height - 1);    // Inner bottom right
+        Point p1 = new(bounds.X + bounds.Width - 1, bounds.Y);                        // Upper inner right
+        Point p2 = new(bounds.X, bounds.Y);                                           // Upper left
+        Point p3 = new(bounds.X, bounds.Y + bounds.Height - 1);                       // Bottom inner left
+        Point p4 = new(bounds.X + bounds.Width - 1, bounds.Y + bounds.Height - 1);    // Inner bottom right
 
         // Top + left
-        using PInvoke.CreatePenScope shadowPen = new(colors.ButtonShadowDark);
+        using CreatePenScope shadowPen = new(colors.ButtonShadowDark);
         hdc.DrawLine(shadowPen, p1, p2);                                                    // Top (right-left)
         hdc.DrawLine(shadowPen, p2, p3);                                                    // Left(up-down)
 
         // Bottom + right
-        using PInvoke.CreatePenScope highlightPen = new(colors.Highlight);
+        using CreatePenScope highlightPen = new(colors.Highlight);
         p1.Offset(0, -1);                       // Need to paint last pixel too.
         hdc.DrawLine(highlightPen, p3, p4);     // Bottom (left-right)
         hdc.DrawLine(highlightPen, p4, p1);     // Right  (bottom-up)
 
         // Draw inset
 
-        using PInvoke.CreatePenScope facePen = new(colors.ButtonFace);
+        using CreatePenScope facePen = new(colors.ButtonFace);
 
         p1.Offset(-1, 2);
         p2.Offset(1, 1);
@@ -225,7 +219,7 @@ internal abstract partial class ButtonBaseAdapter
         hdc.DrawLine(facePen, p2, p3);          // Left (up-down)
 
         // Bottom + right inset
-        using PInvoke.CreatePenScope insetPen = new(
+        using CreatePenScope insetPen = new(
             colors.ButtonFace.ToKnownColor() == SystemColors.Control.ToKnownColor()
                 ? SystemColors.ControlLight
                 : colors.ButtonFace);
@@ -240,16 +234,16 @@ internal abstract partial class ButtonBaseAdapter
         bool stockColor = colors.ButtonFace.ToKnownColor() == SystemColors.Control.ToKnownColor();
         bool disabledHighContrast = (!Control.Enabled) && SystemInformation.HighContrast;
 
-        using DeviceContextHdcScope hdc = new(deviceContext);
+        using DeviceContextHdcScope hdc = deviceContext.ToHdcScope();
 
         // Draw counter-clock-wise.
-        Point p1 = new Point(bounds.X + bounds.Width - 1, bounds.Y);                        // Upper inner right
-        Point p2 = new Point(bounds.X, bounds.Y);                                           // Upper left
-        Point p3 = new Point(bounds.X, bounds.Y + bounds.Height - 1);                       // Bottom inner left
-        Point p4 = new Point(bounds.X + bounds.Width - 1, bounds.Y + bounds.Height - 1);    // Inner bottom right
+        Point p1 = new(bounds.X + bounds.Width - 1, bounds.Y);                        // Upper inner right
+        Point p2 = new(bounds.X, bounds.Y);                                           // Upper left
+        Point p3 = new(bounds.X, bounds.Y + bounds.Height - 1);                       // Bottom inner left
+        Point p4 = new(bounds.X + bounds.Width - 1, bounds.Y + bounds.Height - 1);    // Inner bottom right
 
         // Top + left
-        using PInvoke.CreatePenScope topLeftPen = new(
+        using CreatePenScope topLeftPen = new(
             disabledHighContrast
                 ? colors.WindowDisabled
                 : stockColor ? SystemColors.ControlLightLight : colors.Highlight);
@@ -258,7 +252,7 @@ internal abstract partial class ButtonBaseAdapter
         hdc.DrawLine(topLeftPen, p2, p3);           // Left (up-down)
 
         // Bottom + right
-        using PInvoke.CreatePenScope bottomRightPen = new(
+        using CreatePenScope bottomRightPen = new(
             disabledHighContrast
             ? colors.WindowDisabled
             : stockColor ? SystemColors.ControlDarkDark : colors.ButtonShadowDark);
@@ -273,7 +267,7 @@ internal abstract partial class ButtonBaseAdapter
         p3.Offset(1, -1);
         p4.Offset(-1, -1);
 
-        using PInvoke.CreatePenScope topLeftInsetPen = new(
+        using CreatePenScope topLeftInsetPen = new(
             !stockColor
                 ? colors.ButtonFace
                 : SystemInformation.HighContrast ? SystemColors.ControlLight : SystemColors.Control);
@@ -284,7 +278,7 @@ internal abstract partial class ButtonBaseAdapter
 
         // Bottom + right inset
 
-        using PInvoke.CreatePenScope bottomRightInsetPen = new(
+        using CreatePenScope bottomRightInsetPen = new(
             disabledHighContrast
             ? colors.WindowDisabled
             : stockColor ? SystemColors.ControlDark : colors.ButtonShadow);
@@ -299,7 +293,7 @@ internal abstract partial class ButtonBaseAdapter
     /// </summary>
     protected internal static void Draw3DLiteBorder(IDeviceContext deviceContext, Rectangle r, ColorData colors, bool up)
     {
-        using DeviceContextHdcScope hdc = new(deviceContext);
+        using DeviceContextHdcScope hdc = deviceContext.ToHdcScope();
 
         // Draw counter-clock-wise.
         Point p1 = new(r.Right - 1, r.Top);           // Upper inner right
@@ -309,13 +303,13 @@ internal abstract partial class ButtonBaseAdapter
         Color color = GetContrastingBorderColor(colors.ButtonShadow);
 
         // Top, left
-        using PInvoke.CreatePenScope topLeftPen = new(up ? colors.Highlight : color);
+        using CreatePenScope topLeftPen = new(up ? colors.Highlight : color);
 
         hdc.DrawLine(topLeftPen, p1, p2);                   // top  (right-left)
         hdc.DrawLine(topLeftPen, p2, p3);                   // left (top-down)
 
         // Bottom, right
-        using PInvoke.CreatePenScope bottomRightPen = new(up ? color : colors.Highlight);
+        using CreatePenScope bottomRightPen = new(up ? color : colors.Highlight);
 
         p1.Offset(0, -1);                                   // Need to paint last pixel too.
         hdc.DrawLine(bottomRightPen, p3, p4);               // Bottom (left-right)
@@ -323,7 +317,7 @@ internal abstract partial class ButtonBaseAdapter
     }
 
     /// <summary>
-    ///  Draws the flat border with specified bordersize.
+    ///  Draws a flat border with specified border size.
     /// </summary>
     internal static void DrawFlatBorderWithSize(
         PaintEventArgs e,
@@ -331,7 +325,7 @@ internal abstract partial class ButtonBaseAdapter
         Color color,
         int size)
     {
-        // This function gets called only for Flatstyle == Flatstyle.Flat.
+        // This function gets called only for FlatStyle == FlatStyle.Flat.
 
         size = Math.Min(size, Math.Min(bounds.Width, bounds.Height));
 
@@ -352,7 +346,7 @@ internal abstract partial class ButtonBaseAdapter
         }
 
         using DeviceContextHdcScope hdc = new(e);
-        using PInvoke.CreateBrushScope hbrush = new(color);
+        using CreateBrushScope hbrush = new(color);
         hdc.FillRectangle(left, hbrush);
         hdc.FillRectangle(right, hbrush);
         hdc.FillRectangle(top, hbrush);
@@ -361,13 +355,13 @@ internal abstract partial class ButtonBaseAdapter
 
     internal static void DrawFlatFocus(IDeviceContext deviceContext, Rectangle r, Color color)
     {
-        using DeviceContextHdcScope hdc = new(deviceContext);
-        using PInvoke.CreatePenScope focusPen = new(color);
+        using DeviceContextHdcScope hdc = deviceContext.ToHdcScope();
+        using CreatePenScope focusPen = new(color);
         hdc.DrawRectangle(r, focusPen);
     }
 
     /// <summary>
-    ///  Draws the focus rectangle if the control has focus.
+    ///  Draws a focus rectangle if the control has focus.
     /// </summary>
     private void DrawFocus(Graphics g, Rectangle r)
     {
@@ -377,14 +371,13 @@ internal abstract partial class ButtonBaseAdapter
         }
     }
 
-    // here for DropDownButton
     internal virtual void DrawImageCore(Graphics graphics, Image image, Rectangle imageBounds, Point imageStart, LayoutData layout)
     {
         Region oldClip = graphics.Clip;
 
         if (!layout.Options.DotNetOneButtonCompat)
         {
-            Rectangle bounds = new Rectangle(
+            Rectangle bounds = new(
                 ButtonBorderSize,
                 ButtonBorderSize,
                 Control.Width - (2 * ButtonBorderSize),
@@ -447,13 +440,13 @@ internal abstract partial class ButtonBaseAdapter
             }
         }
 
-        using PInvoke.CreatePenScope hpen = new(color);
-        using DeviceContextHdcScope hdc = new(deviceContext);
+        using CreatePenScope hpen = new(color);
+        using DeviceContextHdcScope hdc = deviceContext.ToHdcScope();
         hdc.DrawRectangle(r, hpen);
     }
 
     /// <summary>
-    ///  Draws the button's text. Color c is the foreground color set with enabled/disabled state in mind.
+    ///  Draws the button's text. <paramref name="color"/> is the foreground color set with enabled/disabled state in mind.
     /// </summary>
     private void DrawText(PaintEventArgs e, LayoutData layout, Color color, ColorData colors)
     {
@@ -567,9 +560,7 @@ internal abstract partial class ButtonBaseAdapter
         string text,
         bool enabled,
         ContentAlignment textAlign,
-        RightToLeft rtl)
-    {
-        LayoutOptions layout = new LayoutOptions
+        RightToLeft rtl) => new()
         {
             Client = LayoutUtils.DeflateRect(clientRectangle, padding),
             Padding = padding,
@@ -594,12 +585,9 @@ internal abstract partial class ButtonBaseAdapter
             UseCompatibleTextRendering = false
         };
 
-        return layout;
-    }
-
     internal virtual LayoutOptions CommonLayout()
     {
-        LayoutOptions layout = new LayoutOptions
+        LayoutOptions layout = new()
         {
             Client = LayoutUtils.DeflateRect(Control.ClientRectangle, Control.Padding),
             Padding = Control.Padding,
@@ -644,38 +632,26 @@ internal abstract partial class ButtonBaseAdapter
         IDeviceContext deviceContext,
         Color foreColor,
         Color backColor,
-        bool enabled)
-    {
-        ColorOptions colors = new ColorOptions(deviceContext, foreColor, backColor)
+        bool enabled) => new(deviceContext, foreColor, backColor)
         {
             Enabled = enabled
         };
 
-        return colors;
-    }
-
-    private ColorOptions CommonRender(IDeviceContext deviceContext)
-    {
-        ColorOptions colors = new ColorOptions(deviceContext, Control.ForeColor, Control.BackColor)
+    private ColorOptions CommonRender(IDeviceContext deviceContext) =>
+        new(deviceContext, Control.ForeColor, Control.BackColor)
         {
             Enabled = Control.Enabled
         };
 
-        return colors;
-    }
+    protected ColorOptions PaintRender(IDeviceContext deviceContext) => CommonRender(deviceContext);
 
-    protected ColorOptions PaintRender(IDeviceContext deviceContext)
-        => CommonRender(deviceContext);
+    internal static ColorOptions PaintFlatRender(Graphics g, Color foreColor, Color backColor, bool enabled) =>
+        CommonRender(g, foreColor, backColor, enabled);
 
-    internal static ColorOptions PaintFlatRender(Graphics g, Color foreColor, Color backColor, bool enabled)
-        => CommonRender(g, foreColor, backColor, enabled);
+    protected ColorOptions PaintFlatRender(IDeviceContext deviceContext) => CommonRender(deviceContext);
 
-    protected ColorOptions PaintFlatRender(IDeviceContext deviceContext)
-        => CommonRender(deviceContext);
+    internal static ColorOptions PaintPopupRender(Graphics g, Color foreColor, Color backColor, bool enabled) =>
+        CommonRender(g, foreColor, backColor, enabled);
 
-    internal static ColorOptions PaintPopupRender(Graphics g, Color foreColor, Color backColor, bool enabled)
-        => CommonRender(g, foreColor, backColor, enabled);
-
-    protected ColorOptions PaintPopupRender(IDeviceContext deviceContext)
-        => CommonRender(deviceContext);
+    protected ColorOptions PaintPopupRender(IDeviceContext deviceContext) => CommonRender(deviceContext);
 }

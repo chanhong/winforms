@@ -16,17 +16,17 @@ namespace System.Windows.Forms;
 [SRDescription(nameof(SR.DescriptionTextBox))]
 public partial class TextBox : TextBoxBase
 {
-    private static readonly object EVENT_TEXTALIGNCHANGED = new();
+    private static readonly object s_textAlignChangedEvent = new();
 
     /// <summary>
     ///  Controls whether or not the edit box consumes/respects ENTER key
-    ///  presses.  While this is typically desired by multiline edits, this
+    ///  presses. While this is typically desired by multiline edits, this
     ///  can interfere with normal key processing in a dialog.
     /// </summary>
     private bool _acceptsReturn;
 
     /// <summary>
-    ///  Indicates what the current special password character is.  This is
+    ///  Indicates what the current special password character is. This is
     ///  displayed instead of any other text the user might enter.
     /// </summary>
     private char _passwordChar;
@@ -50,7 +50,7 @@ public partial class TextBox : TextBoxBase
     private HorizontalAlignment _textAlign = HorizontalAlignment.Left;
 
     /// <summary>
-    ///  True if the selection has been set by the user.  If the selection has
+    ///  True if the selection has been set by the user. If the selection has
     ///  never been set and we get focus, we focus all the text in the control
     ///  so we mimic the Windows dialog manager.
     /// </summary>
@@ -187,8 +187,8 @@ public partial class TextBox : TextBoxBase
         {
             if (_autoCompleteCustomSource is null)
             {
-                _autoCompleteCustomSource = new AutoCompleteStringCollection();
-                _autoCompleteCustomSource.CollectionChanged += new CollectionChangeEventHandler(OnAutoCompleteCustomSourceChanged);
+                _autoCompleteCustomSource = [];
+                _autoCompleteCustomSource.CollectionChanged += OnAutoCompleteCustomSourceChanged;
             }
 
             return _autoCompleteCustomSource;
@@ -199,14 +199,14 @@ public partial class TextBox : TextBoxBase
             {
                 if (_autoCompleteCustomSource is not null)
                 {
-                    _autoCompleteCustomSource.CollectionChanged -= new CollectionChangeEventHandler(OnAutoCompleteCustomSourceChanged);
+                    _autoCompleteCustomSource.CollectionChanged -= OnAutoCompleteCustomSourceChanged;
                 }
 
                 _autoCompleteCustomSource = value;
 
                 if (_autoCompleteCustomSource is not null)
                 {
-                    _autoCompleteCustomSource.CollectionChanged += new CollectionChangeEventHandler(OnAutoCompleteCustomSourceChanged);
+                    _autoCompleteCustomSource.CollectionChanged += OnAutoCompleteCustomSourceChanged;
                 }
 
                 SetAutoComplete(false);
@@ -344,7 +344,7 @@ public partial class TextBox : TextBoxBase
                 CreateHandle();
             }
 
-            return (char)PInvoke.SendMessage(this, PInvoke.EM_GETPASSWORDCHAR);
+            return (char)PInvokeCore.SendMessage(this, PInvokeCore.EM_GETPASSWORDCHAR);
         }
         set
         {
@@ -356,7 +356,7 @@ public partial class TextBox : TextBoxBase
                     if (PasswordChar != value)
                     {
                         // Set the password mode.
-                        PInvoke.SendMessage(this, PInvoke.EM_SETPASSWORDCHAR, (WPARAM)value);
+                        PInvokeCore.SendMessage(this, PInvokeCore.EM_SETPASSWORDCHAR, (WPARAM)value);
 
                         // Disable IME if setting the control to password mode.
                         VerifyImeRestrictedModeChanged();
@@ -464,7 +464,7 @@ public partial class TextBox : TextBoxBase
     /// <summary>
     ///  Indicates if the text in the edit control should appear as
     ///  the default password character. This property has precedence
-    ///  over the PasswordChar property.  Whenever the UseSystemPasswordChar
+    ///  over the PasswordChar property. Whenever the UseSystemPasswordChar
     ///  is set to true, the default system password character is used,
     ///  any character set into PasswordChar is ignored.
     /// </summary>
@@ -499,8 +499,8 @@ public partial class TextBox : TextBoxBase
     [SRDescription(nameof(SR.RadioButtonOnTextAlignChangedDescr))]
     public event EventHandler? TextAlignChanged
     {
-        add => Events.AddHandler(EVENT_TEXTALIGNCHANGED, value);
-        remove => Events.RemoveHandler(EVENT_TEXTALIGNCHANGED, value);
+        add => Events.AddHandler(s_textAlignChangedEvent, value);
+        remove => Events.RemoveHandler(s_textAlignChangedEvent, value);
     }
 
     protected override void Dispose(bool disposing)
@@ -514,7 +514,7 @@ public partial class TextBox : TextBoxBase
             ResetAutoComplete(true);
             if (_autoCompleteCustomSource is not null)
             {
-                _autoCompleteCustomSource.CollectionChanged -= new CollectionChangeEventHandler(OnAutoCompleteCustomSourceChanged);
+                _autoCompleteCustomSource.CollectionChanged -= OnAutoCompleteCustomSourceChanged;
             }
 
             if (_stringSource is not null)
@@ -581,12 +581,12 @@ public partial class TextBox : TextBoxBase
         base.OnGotFocus(e);
         if (!_selectionSet)
         {
-            // We get one shot at selecting when we first get focus.  If we don't
+            // We get one shot at selecting when we first get focus. If we don't
             // do it, we still want to act like the selection was set.
             _selectionSet = true;
 
             // If the user didn't provide a selection, force one in.
-            if (SelectionLength == 0 && Control.MouseButtons == MouseButtons.None)
+            if (SelectionLength == 0 && MouseButtons == MouseButtons.None)
             {
                 SelectAll();
             }
@@ -610,13 +610,13 @@ public partial class TextBox : TextBoxBase
             return;
         }
 
-        base.SetSelectionOnHandle();
+        SetSelectionOnHandle();
 
         if (_passwordChar != 0)
         {
             if (!_useSystemPasswordChar)
             {
-                PInvoke.SendMessage(this, PInvoke.EM_SETPASSWORDCHAR, (WPARAM)_passwordChar);
+                PInvokeCore.SendMessage(this, PInvokeCore.EM_SETPASSWORDCHAR, (WPARAM)_passwordChar);
             }
         }
 
@@ -673,7 +673,7 @@ public partial class TextBox : TextBoxBase
 
     protected virtual void OnTextAlignChanged(EventArgs e)
     {
-        if (Events[EVENT_TEXTALIGNCHANGED] is EventHandler eh)
+        if (Events[s_textAlignChangedEvent] is EventHandler eh)
         {
             eh(this, e);
         }
@@ -682,7 +682,7 @@ public partial class TextBox : TextBoxBase
     /// <summary>
     ///  Process a command key.
     ///  Native "EDIT" control does not support "Select All" shortcut represented by Ctrl-A keys, when in multiline mode,
-    ///  Winforms TextBox supports this in .NET.
+    ///  WinForms TextBox supports this in .NET.
     /// </summary>
     /// <param name="m">The current windows message.</param>
     /// <param name="keyData">The bitmask containing one or more keys.</param>
@@ -721,17 +721,6 @@ public partial class TextBox : TextBoxBase
         base.SelectInternal(start, length, textLen);
     }
 
-    private string[] GetStringsForAutoComplete()
-    {
-        string[] strings = new string[AutoCompleteCustomSource.Count];
-        for (int i = 0; i < AutoCompleteCustomSource.Count; i++)
-        {
-            strings[i] = AutoCompleteCustomSource[i];
-        }
-
-        return strings;
-    }
-
     /// <summary>
     ///  Sets the AutoComplete mode in TextBox.
     /// </summary>
@@ -748,7 +737,7 @@ public partial class TextBox : TextBoxBase
             if (!_fromHandleCreate)
             {
                 // RecreateHandle to avoid Leak.
-                // notice the use of member variable to avoid re-entrancy
+                // notice the use of member variable to avoid reentrancy
                 AutoCompleteMode backUpMode = AutoCompleteMode;
                 _autoCompleteMode = AutoCompleteMode.None;
                 RecreateHandle();
@@ -767,7 +756,7 @@ public partial class TextBox : TextBoxBase
                     {
                         if (_stringSource is null)
                         {
-                            _stringSource = new StringSource(GetStringsForAutoComplete());
+                            _stringSource = new StringSource(AutoCompleteCustomSource.ToArray());
                             if (!_stringSource.Bind(this, (AUTOCOMPLETEOPTIONS)AutoCompleteMode))
                             {
                                 throw new ArgumentException(SR.AutoCompleteFailure);
@@ -775,7 +764,7 @@ public partial class TextBox : TextBoxBase
                         }
                         else
                         {
-                            _stringSource.RefreshList(GetStringsForAutoComplete());
+                            _stringSource.RefreshList(AutoCompleteCustomSource.ToArray());
                         }
                     }
                 }
@@ -834,7 +823,7 @@ public partial class TextBox : TextBoxBase
             && BorderStyle == BorderStyle.Fixed3D)
         {
             using Graphics g = Graphics.FromHdc((HDC)m.WParamInternal);
-            Rectangle rect = new Rectangle(0, 0, Size.Width - 1, Size.Height - 1);
+            Rectangle rect = new(0, 0, Size.Width - 1, Size.Height - 1);
             using var pen = VisualStyleInformation.TextControlBorder.GetCachedPenScope();
             g.DrawRectangle(pen, rect);
             rect.Inflate(-1, -1);
@@ -926,7 +915,7 @@ public partial class TextBox : TextBoxBase
         switch (m.MsgInternal)
         {
             // Work around a very obscure Windows issue.
-            case PInvoke.WM_LBUTTONDOWN:
+            case PInvokeCore.WM_LBUTTONDOWN:
                 MouseButtons realState = MouseButtons;
                 bool wasValidationCancelled = ValidationCancelled;
                 Focus();
@@ -938,7 +927,7 @@ public partial class TextBox : TextBoxBase
 
                 break;
 
-            case PInvoke.WM_PAINT:
+            case PInvokeCore.WM_PAINT:
                 {
                     // The native control tracks its own state, so it is get into a state Where either the native control invalidates
                     // itself, and thus blastsover the placeholder text
@@ -966,7 +955,7 @@ public partial class TextBox : TextBoxBase
                         PInvoke.InvalidateRect(this, lpRect: null, bErase: true);
 
                         // Use BeginPaint instead of GetDC to prevent flicker and support print-to-image scenarios.
-                        using PInvoke.BeginPaintScope paintScope = new((HWND)Handle);
+                        using BeginPaintScope paintScope = new(HWND);
                         DrawPlaceholderText(paintScope);
 
                         PInvoke.ValidateRect(this, lpRect: null);
@@ -975,7 +964,7 @@ public partial class TextBox : TextBoxBase
 
                 break;
 
-            case PInvoke.WM_PRINT:
+            case PInvokeCore.WM_PRINT:
                 WmPrint(ref m);
                 break;
 

@@ -1,15 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms.IntegrationTests.Common;
 using Microsoft.Win32;
 using WindowsFormsApp1;
-using WinformsControlsTest.UserControls;
+using WinFormsControlsTest.UserControls;
 
-namespace WinformsControlsTest;
+namespace WinFormsControlsTest;
 
 [DesignerCategory("code")]
 public partial class MainForm : Form
@@ -218,6 +217,15 @@ public partial class MainForm : Form
             // Test GetPreferredSize output https://github.com/dotnet/winforms/issues/2576
             MainFormControlsTabOrder.ToolStripSeparatorPreferredSize,
             new InitInfo("ToolStripSeparatorPreferredSize", (obj, e) => new ToolStripSeparatorPreferredSize().Show(this))
+        },
+        {
+            // Test possible approach to https://github.com/dotnet/winforms/issues/6514
+            MainFormControlsTabOrder.CustomComCtl32Button,
+            new InitInfo("ComCtl32 Button Custom Border", (obj, e) => new CustomComCtl32Button().Show(this))
+        },
+        {
+            MainFormControlsTabOrder.ScrollableControlsButton,
+            new InitInfo("ScrollableControlsButton", (obj, e) => new ScrollableControls().Show(this))
         }
     };
 
@@ -233,9 +241,9 @@ public partial class MainForm : Form
     {
         MinimumSize = default;
         Debug.WriteLine($"MessageBoxFont: {SystemFonts.MessageBoxFont}", nameof(MainForm));
-        Debug.WriteLine($"Default font: {Control.DefaultFont}", nameof(MainForm));
+        Debug.WriteLine($"Default font: {DefaultFont}", nameof(MainForm));
 
-        List<Button> buttons = new List<Button>();
+        List<Button> buttons = [];
         foreach (Control control in overarchingFlowLayoutPanel.Controls)
         {
             if (control is Button button)
@@ -279,11 +287,12 @@ public partial class MainForm : Form
 
         overarchingFlowLayoutPanel.ResumeLayout(true);
 
-        // 4. Calculate the new form size showing all buttons in two vertical columns
+        // 4. Calculate the new form size showing all buttons in three vertical columns
         int padding = overarchingFlowLayoutPanel.Controls[0].Margin.All;
+
         ClientSize = new Size(
-            (biggestButton.Width + padding * 2) * 2 + padding * 2 + overarchingFlowLayoutPanel.Location.X * 2,
-            (overarchingFlowLayoutPanel.Controls.Count + 1) / 2 * (biggestButton.Height + padding * 2)
+            (biggestButton.Width + padding * 2) * 3 + padding * 2 + overarchingFlowLayoutPanel.Location.X * 2,
+            (int)Math.Ceiling((overarchingFlowLayoutPanel.Controls.Count + 1) / 3.0) * (biggestButton.Height + padding * 2)
                 + padding * 2 + overarchingFlowLayoutPanel.Location.Y * 2);
         MinimumSize = Size;
         Debug.WriteLine($"Minimum form size: {MinimumSize}", nameof(MainForm));

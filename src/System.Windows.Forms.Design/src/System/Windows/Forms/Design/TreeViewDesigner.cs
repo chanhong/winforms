@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
-
 using System.ComponentModel;
 using System.ComponentModel.Design;
 using System.Drawing;
@@ -10,15 +8,15 @@ using System.Drawing;
 namespace System.Windows.Forms.Design;
 
 /// <summary>
-///  This is the designer for tree view controls.  It inherits
+///  This is the designer for tree view controls. It inherits
 ///  from the base control designer and adds live hit testing
-///  capabilites for the tree view control.
+///  capabilities for the tree view control.
 /// </summary>
 internal class TreeViewDesigner : ControlDesigner
 {
     private TVHITTESTINFO _tvhit;
-    private DesignerActionListCollection _actionLists;
-    private TreeView _treeView;
+    private DesignerActionListCollection? _actionLists;
+    private TreeView? _treeView;
 
     public TreeViewDesigner()
     {
@@ -53,7 +51,7 @@ internal class TreeViewDesigner : ControlDesigner
     {
         point = Control.PointToClient(point);
         _tvhit.pt = point;
-        PInvoke.SendMessage(Control, PInvoke.TVM_HITTEST, 0, ref _tvhit);
+        PInvokeCore.SendMessage(Control, PInvoke.TVM_HITTEST, 0, ref _tvhit);
         return _tvhit.flags == TVHITTESTINFO_FLAGS.TVHT_ONITEMBUTTON;
     }
 
@@ -69,11 +67,10 @@ internal class TreeViewDesigner : ControlDesigner
         }
     }
 
-    private void TreeViewInvalidate(object sender, TreeViewEventArgs e) => _treeView?.Invalidate();
+    private void TreeViewInvalidate(object? sender, TreeViewEventArgs e) => _treeView?.Invalidate();
 
-    public override DesignerActionListCollection ActionLists
-        => _actionLists ??= new DesignerActionListCollection
-            {
-                new TreeViewActionList(this)
-            };
+    public override DesignerActionListCollection ActionLists => _actionLists ??= new DesignerActionListCollection
+    {
+        new TreeViewActionList(this)
+    };
 }

@@ -12,19 +12,20 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
     [WinFormsFact]
     public void CalendarBodyAccessibleObject_ctor_default()
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
         MonthCalendarAccessibleObject controlAccessibleObject = (MonthCalendarAccessibleObject)control.AccessibilityObject;
         CalendarAccessibleObject calendarAccessibleObject = new(controlAccessibleObject, 0, "Test name");
         CalendarBodyAccessibleObject accessibleObject = new(calendarAccessibleObject, controlAccessibleObject, 0);
 
-        Assert.Equal(calendarAccessibleObject, accessibleObject.Parent);
-        Assert.False(control.IsHandleCreated);
+        accessibleObject.Parent.Should().Be(calendarAccessibleObject);
+        control.IsHandleCreated.Should().BeFalse();
+        accessibleObject.RowOrColumnMajor.Should().Be(RowOrColumnMajor.RowOrColumnMajor_RowMajor);
     }
 
     [WinFormsFact]
     public void CalendarBodyAccessibleObject_Bounds_HasExpectedSize()
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
 
         control.CreateControl();
         CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
@@ -41,10 +42,10 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
     [InlineData((int)MONTH_CALDENDAR_MESSAGES_VIEW.MCMV_CENTURY, 4)]
     public void CalendarBodyAccessibleObject_ColumnCount_ReturnsExpected(int view, int expected)
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
 
         control.CreateControl();
-        PInvoke.SendMessage(control, PInvoke.MCM_SETCURRENTVIEW, 0, view);
+        PInvokeCore.SendMessage(control, PInvoke.MCM_SETCURRENTVIEW, 0, view);
         CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
 
         Assert.Equal(expected, accessibleObject.ColumnCount);
@@ -54,7 +55,7 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
     [WinFormsFact]
     public void CalendarBodyAccessibleObject_GetChildId_ReturnsExpected()
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
         CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
 
         Assert.Equal(2, accessibleObject.GetChildId());
@@ -67,10 +68,10 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
     [InlineData((int)MONTH_CALDENDAR_MESSAGES_VIEW.MCMV_CENTURY)]
     public void CalendarBodyAccessibleObject_GetColumnHeaders_IsNull_IfViewIsNotMonth(int view)
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
 
         control.CreateControl();
-        PInvoke.SendMessage(control, PInvoke.MCM_SETCURRENTVIEW, 0, view);
+        PInvokeCore.SendMessage(control, PInvoke.MCM_SETCURRENTVIEW, 0, view);
         CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
 
         Assert.Null(accessibleObject.GetColumnHeaders());
@@ -80,7 +81,7 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
     [WinFormsFact]
     public void CalendarBodyAccessibleObject_GetColumnHeaders_HasSevenCells()
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
 
         control.CreateControl();
         CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
@@ -92,7 +93,7 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
     [WinFormsFact]
     public void CalendarBodyAccessibleObject_ControlType_IsTable()
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
         CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
 
         Assert.Equal(UIA_CONTROLTYPE_ID.UIA_TableControlTypeId, (UIA_CONTROLTYPE_ID)(int)accessibleObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ControlTypePropertyId));
@@ -104,7 +105,7 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
     [InlineData((int)UIA_PATTERN_ID.UIA_TablePatternId)]
     public void CalendarBodyAccessibleObject_Supports_GridAndTablePatterns(int pattern)
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
         CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
 
         Assert.True(accessibleObject.IsPatternSupported((UIA_PATTERN_ID)pattern));
@@ -130,13 +131,13 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
     [InlineData((int)MONTH_CALDENDAR_MESSAGES_VIEW.MCMV_CENTURY, 3, "2300-2399")]
     public void CalendarBodyAccessibleObject_Name_IsExpected(int view, int calendarIndex, string expected)
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
         control.FirstDayOfWeek = Day.Sunday;
         control.Size = new Size(450, 450);
         control.SelectionStart = new DateTime(2021, 1, 1);
 
         control.CreateControl();
-        PInvoke.SendMessage(control, PInvoke.MCM_SETCURRENTVIEW, 0, (nint)view);
+        PInvokeCore.SendMessage(control, PInvoke.MCM_SETCURRENTVIEW, 0, (nint)view);
         MonthCalendarAccessibleObject controlAccessibleObject = (MonthCalendarAccessibleObject)control.AccessibilityObject;
         LinkedListNode<CalendarAccessibleObject> calendarNode = controlAccessibleObject.CalendarsAccessibleObjects.First;
 
@@ -156,7 +157,7 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
     [WinFormsFact]
     public void CalendarBodyAccessibleObject_Parent_IsCalendarAccessibleObject()
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
         MonthCalendarAccessibleObject controlAccessibleObject = (MonthCalendarAccessibleObject)control.AccessibilityObject;
         CalendarAccessibleObject calendarAccessibleObject = new(controlAccessibleObject, 0, "Test name");
         CalendarBodyAccessibleObject accessibleObject = new(calendarAccessibleObject, controlAccessibleObject, 0);
@@ -168,7 +169,7 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
     [WinFormsFact]
     public void CalendarBodyAccessibleObject_Role_IsTable()
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
         CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
 
         Assert.Equal(AccessibleRole.Table, accessibleObject.Role);
@@ -178,7 +179,7 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
     [WinFormsFact]
     public void CalendarBodyAccessibleObject_State_IsDefault()
     {
-        using MonthCalendar control = new MonthCalendar();
+        using MonthCalendar control = new();
         CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
 
         Assert.Equal(AccessibleStates.Default, accessibleObject.State);
@@ -242,5 +243,91 @@ public class MonthCalendar_CalendarBodyAccessibleObjectTests
         CalendarBodyAccessibleObject bodyAccessibleObject = new(calendarAccessibleObject, controlAccessibleObject, calendarIndex);
 
         return bodyAccessibleObject;
+    }
+
+    [WinFormsTheory]
+    [InlineData(-1, -1, null)]
+    [InlineData(5, 6, typeof(CalendarCellAccessibleObject))]
+    public void CalendarBodyAccessibleObject_GetItem_ReturnsExpectedResult_ForGivenIndices(int rowIndex, int columnIndex, Type expectedType)
+    {
+        using MonthCalendar control = new();
+        control.CreateControl();
+        CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
+
+        var result = accessibleObject.GetItem(rowIndex, columnIndex);
+
+        if (expectedType is null)
+        {
+            result.Should().BeNull();
+        }
+        else
+        {
+            result.Should().NotBeNull();
+            result.Should().BeOfType(expectedType);
+        }
+
+        control.IsHandleCreated.Should().BeTrue();
+    }
+
+    [WinFormsTheory]
+    [InlineData(true, (int)MONTH_CALDENDAR_MESSAGES_VIEW.MCMV_MONTH, 6)]
+    [InlineData(false, (int)MONTH_CALDENDAR_MESSAGES_VIEW.MCMV_MONTH, 0)]
+    [InlineData(true, (int)MONTH_CALDENDAR_MESSAGES_VIEW.MCMV_YEAR, 0)]
+    [InlineData(true, (int)MONTH_CALDENDAR_MESSAGES_VIEW.MCMV_DECADE, 0)]
+    [InlineData(true, (int)MONTH_CALDENDAR_MESSAGES_VIEW.MCMV_CENTURY, 0)]
+    public void CalendarBodyAccessibleObject_GetRowHeaders_ReturnsExpected(bool showWeekNumbers, int viewInt, int expectedCount)
+    {
+        MONTH_CALDENDAR_MESSAGES_VIEW view = (MONTH_CALDENDAR_MESSAGES_VIEW)viewInt;
+        using MonthCalendar control = new() { ShowWeekNumbers = showWeekNumbers };
+        control.CreateControl();
+        PInvokeCore.SendMessage(control, PInvoke.MCM_SETCURRENTVIEW, 0, (nint)view);
+        CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
+
+        var rowHeaders = accessibleObject.GetRowHeaders();
+
+        if (expectedCount == 0)
+        {
+            rowHeaders.Should().BeNull();
+        }
+        else
+        {
+            rowHeaders.Should().NotBeNull();
+            rowHeaders.Length.Should().Be(expectedCount);
+        }
+
+        control.IsHandleCreated.Should().BeTrue();
+    }
+
+    [WinFormsFact]
+    public void CalendarBodyAccessibleObject_GetRowHeaders_ReturnsCorrectType()
+    {
+        using MonthCalendar control = new() { ShowWeekNumbers = true };
+        control.CreateControl();
+        CalendarBodyAccessibleObject accessibleObject = CreateCalendarBodyAccessibleObject(control);
+
+        var rowHeaders = accessibleObject.GetRowHeaders();
+
+        rowHeaders.Should().AllBeOfType<CalendarWeekNumberCellAccessibleObject>();
+        control.IsHandleCreated.Should().BeTrue();
+    }
+
+    [WinFormsTheory]
+    [InlineData(null, false)]
+    [InlineData("CustomName", false)]
+    [InlineData("AccessibleName", false, true)]
+    public void CalendarBodyAccessibleObject_CanGetNameInternal_ShouldBeConsistentlyFalse(string name, bool expected, bool isAccessibleName = false)
+    {
+        using MonthCalendar control = new();
+        if (isAccessibleName)
+        {
+            control.AccessibleName = name;
+        }
+        else
+        {
+            control.Name = name;
+        }
+
+        var accessibleObject = CreateCalendarBodyAccessibleObject(control);
+        accessibleObject.CanGetNameInternal.Should().Be(expected);
     }
 }

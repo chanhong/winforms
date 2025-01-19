@@ -25,7 +25,7 @@ public partial class ComboBox
 
         public FlatComboAdapter(ComboBox comboBox, bool smallButton)
         {
-            // adapter is re-created when combobox is resized, see IsValid method, thus we don't need to handle DPI changed explicitly
+            // adapter is re-created when ComboBox is resized, see IsValid method, thus we don't need to handle DPI changed explicitly
             s_offsetPixels = comboBox.LogicalToDeviceUnits(OFFSET_2PIXELS);
 
             _clientRect = comboBox.ClientRectangle;
@@ -77,7 +77,7 @@ public partial class ComboBox
             // Draw the drop down
             DrawFlatComboDropDown(comboBox, g, _dropDownRect);
 
-            // When we are disabled there is one line of color that seems to eek through if backcolor is set
+            // When we are disabled there is one line of color that seems to eek through if BackColor is set
             // so let's erase it.
             if (!LayoutUtils.IsZeroWidthOrHeight(_whiteFillRect))
             {
@@ -145,7 +145,7 @@ public partial class ComboBox
 
             Brush brush = (comboBox.Enabled) ? SystemBrushes.ControlText : SystemBrushes.ControlDark;
 
-            Point middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
+            Point middle = new(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
             if (_origRightToLeft == RightToLeft.Yes)
             {
                 // if the width is odd - favor pushing it over one pixel left.
@@ -159,12 +159,12 @@ public partial class ComboBox
 
             g.FillPolygon(
                 brush,
-                new Point[]
-                {
+                (ReadOnlySpan<Point>)
+                [
                     new(middle.X - s_offsetPixels, middle.Y - 1),
                     new(middle.X + s_offsetPixels + 1, middle.Y - 1),
                     new(middle.X, middle.Y + s_offsetPixels)
-                });
+                ]);
         }
 
         protected virtual Color GetOuterBorderColor(ComboBox comboBox)

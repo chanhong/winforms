@@ -3,7 +3,6 @@
 
 using System.ComponentModel;
 using System.Drawing.Design;
-using System.Runtime.InteropServices;
 using Windows.Win32.UI.Controls.Dialogs;
 using static Windows.Win32.UI.Controls.Dialogs.OPEN_FILENAME_FLAGS;
 using static Windows.Win32.UI.Shell.FILEOPENDIALOGOPTIONS;
@@ -18,9 +17,9 @@ namespace System.Windows.Forms;
 public abstract partial class FileDialog : CommonDialog
 {
     private const int FileBufferSize = 8192;
-    private static readonly char[] s_wildcards = new char[] { '*', '?' };
+    private static readonly char[] s_wildcards = ['*', '?'];
 
-    protected static readonly object EventFileOk = new(); // Don't rename (public API)
+    protected static readonly object EventFileOk = new();
 
     private protected OPEN_FILENAME_FLAGS _fileNameFlags;
     private protected FILEOPENDIALOGOPTIONS _dialogOptions;
@@ -152,7 +151,7 @@ public abstract partial class FileDialog : CommonDialog
         set => SetOption(OFN_NODEREFERENCELINKS, !value);
     }
 
-    private protected string DialogCaption => PInvoke.GetWindowText(_dialogHWnd);
+    private protected string DialogCaption => PInvokeCore.GetWindowText(_dialogHWnd);
 
     /// <summary>
     ///  Gets or sets a string containing the file name selected in the file dialog box.
@@ -164,7 +163,7 @@ public abstract partial class FileDialog : CommonDialog
     public string FileName
     {
         get => _fileNames is { } names && names.Length > 0 ? names[0] : string.Empty;
-        set => _fileNames = value is not null ? new string[] { value } : null;
+        set => _fileNames = value is not null ? [value] : null;
     }
 
     /// <summary>
@@ -176,7 +175,7 @@ public abstract partial class FileDialog : CommonDialog
     [AllowNull]
     public string[] FileNames
     {
-        get => _fileNames is not null ? (string[])_fileNames.Clone() : Array.Empty<string>();
+        get => _fileNames is not null ? (string[])_fileNames.Clone() : [];
     }
 
     /// <summary>
@@ -217,7 +216,7 @@ public abstract partial class FileDialog : CommonDialog
 
     /// <summary>
     ///  Extracts the file extensions specified by the current file filter into an
-    ///  array of strings.  None of the extensions contain .'s, and the  default
+    ///  array of strings. None of the extensions contain .'s, and the  default
     ///  extension is first.
     /// </summary>
     private string[] FilterExtensions
@@ -225,7 +224,7 @@ public abstract partial class FileDialog : CommonDialog
         get
         {
             string? filter = _filter;
-            List<string> extensions = new List<string>();
+            List<string> extensions = [];
 
             // First extension is the default one. It's not expected that DefaultExt
             // is not in the filters list, but this is legal.
@@ -257,7 +256,7 @@ public abstract partial class FileDialog : CommonDialog
                 }
             }
 
-            return extensions.ToArray();
+            return [.. extensions];
         }
     }
 
@@ -398,14 +397,14 @@ public abstract partial class FileDialog : CommonDialog
 
             _fileNames = _fileNameFlags.HasFlag(OFN_ALLOWMULTISELECT)
                 ? GetMultiselectFiles(new((char*)lpOFN->lpstrFile, (int)lpOFN->nMaxFile))
-                : new string[] { lpOFN->lpstrFile.ToString() };
+                : [lpOFN->lpstrFile.ToString()];
 
             if (!ProcessFileNames(_fileNames))
             {
                 return ok;
             }
 
-            CancelEventArgs ceevent = new CancelEventArgs();
+            CancelEventArgs ceevent = new();
             if (NativeWindow.WndProcShouldBeDebuggable)
             {
                 OnFileOk(ceevent);
@@ -457,13 +456,16 @@ public abstract partial class FileDialog : CommonDialog
     private static string[] GetMultiselectFiles(ReadOnlySpan<char> fileBuffer)
     {
         var directory = fileBuffer.SliceAtFirstNull();
-        var fileNames = fileBuffer[directory.Length..];
-        if (fileNames.Length == 0)
+        var fileNames = fileBuffer[(directory.Length + 1)..];
+
+        // When a single file is returned, the directory is not null delimited.
+        // So we check here to see if the filename starts with a null.
+        if (fileNames.Length == 0 || fileNames[0] == '\0')
         {
-            return new string[] { directory.ToString() };
+            return [directory.ToString()];
         }
 
-        List<string> names = new List<string>();
+        List<string> names = [];
         var fileName = fileNames.SliceAtFirstNull();
         while (fileName.Length > 0)
         {
@@ -471,11 +473,11 @@ public abstract partial class FileDialog : CommonDialog
                 ? fileName.ToString()
                 : Path.Join(directory, fileName));
 
-            fileNames = fileNames[fileName.Length..];
+            fileNames = fileNames[(fileName.Length + 1)..];
             fileName = fileNames.SliceAtFirstNull();
         }
 
-        return names.ToArray();
+        return [.. names];
     }
 
     /// <summary>
@@ -489,7 +491,7 @@ public abstract partial class FileDialog : CommonDialog
     /// </summary>
     protected override unsafe IntPtr HookProc(IntPtr hWnd, int msg, IntPtr wparam, IntPtr lparam)
     {
-        if (msg != (int)PInvoke.WM_NOTIFY)
+        if (msg != (int)PInvokeCore.WM_NOTIFY)
         {
             return IntPtr.Zero;
         }
@@ -506,7 +508,7 @@ public abstract partial class FileDialog : CommonDialog
                     break;
                 case PInvoke.CDN_SELCHANGE:
                     // Get the buffer size required to store the selected file names.
-                    int sizeNeeded = (int)PInvoke.SendMessage(_dialogHWnd, PInvoke.CDM_GETSPEC);
+                    int sizeNeeded = (int)PInvokeCore.SendMessage(_dialogHWnd, PInvoke.CDM_GETSPEC);
                     if (sizeNeeded > notify->lpOFN->nMaxFile)
                     {
                         // A bigger buffer is required.
@@ -544,14 +546,14 @@ public abstract partial class FileDialog : CommonDialog
                         {
                             // This is the second CDN_FILEOK, so we want to ignore it.
                             _ignoreSecondFileOkNotification = false;
-                            PInvoke.SetWindowLong((HWND)hWnd, 0, -1);
+                            PInvokeCore.SetWindowLong((HWND)hWnd, 0, -1);
                             return -1;
                         }
                     }
 
                     if (!DoFileOk(notify->lpOFN))
                     {
-                        PInvoke.SetWindowLong((HWND)hWnd, 0, -1);
+                        PInvokeCore.SetWindowLong((HWND)hWnd, 0, -1);
                         return -1;
                     }
 
@@ -739,7 +741,6 @@ public abstract partial class FileDialog : CommonDialog
 
     private unsafe bool RunDialogOld(HWND owner)
     {
-        WNDPROC hookProc = HookProcInternal;
         _charBuffer = GC.AllocateArray<char>(FileBufferSize, pinned: true);
         FileName.CopyTo(_charBuffer);
 
@@ -765,7 +766,7 @@ public abstract partial class FileDialog : CommonDialog
                 Flags = (OPEN_FILENAME_FLAGS)Options | OFN_EXPLORER | OFN_ENABLEHOOK | OFN_ENABLESIZING,
                 FlagsEx = OPEN_FILENAME_FLAGS_EX.OFN_EX_NONE,
                 lpstrDefExt = AddExtension ? extension : null,
-                lpfnHook = (void*)Marshal.GetFunctionPointerForDelegate(hookProc)
+                lpfnHook = HookProcFunctionPointer
             };
 
             try
@@ -775,7 +776,6 @@ public abstract partial class FileDialog : CommonDialog
             finally
             {
                 _charBuffer = null;
-                GC.KeepAlive(hookProc);
             }
         }
     }
@@ -800,8 +800,5 @@ public abstract partial class FileDialog : CommonDialog
         }
     }
 
-    /// <summary>
-    ///  Provides a string version of this Object.
-    /// </summary>
     public override string ToString() => $"{base.ToString()}: Title: {Title}, FileName: {FileName}";
 }

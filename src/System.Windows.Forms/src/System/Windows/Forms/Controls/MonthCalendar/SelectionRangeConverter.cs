@@ -11,7 +11,7 @@ namespace System.Windows.Forms;
 
 /// <summary>
 ///  SelectionRangeConverter is a class that can be used to convert
-///  SelectionRange objects from one data type to another.  Access this
+///  SelectionRange objects from one data type to another. Access this
 ///  class through the TypeDescriptor.
 /// </summary>
 public class SelectionRangeConverter : TypeConverter
@@ -83,10 +83,10 @@ public class SelectionRangeConverter : TypeConverter
     }
 
     /// <summary>
-    ///  Converts the given object to another type.  The most common types to convert
-    ///  are to and from a string object.  The default implementation will make a call
+    ///  Converts the given object to another type. The most common types to convert
+    ///  are to and from a string object. The default implementation will make a call
     ///  to ToString on the object if the object is valid and if the destination
-    ///  type is string.  If this cannot convert to the destination type, this will
+    ///  type is string. If this cannot convert to the destination type, this will
     ///  throw a NotSupportedException.
     /// </summary>
     public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
@@ -119,10 +119,10 @@ public class SelectionRangeConverter : TypeConverter
 
             if (destinationType == typeof(InstanceDescriptor))
             {
-                ConstructorInfo? ctor = typeof(SelectionRange).GetConstructor(new Type[]
-                {
+                ConstructorInfo? ctor = typeof(SelectionRange).GetConstructor(
+                [
                     typeof(DateTime), typeof(DateTime)
-                });
+                ]);
                 if (ctor is not null)
                 {
                     return new InstanceDescriptor(ctor, new object[] { range.Start, range.End });
@@ -135,8 +135,8 @@ public class SelectionRangeConverter : TypeConverter
 
     /// <summary>
     ///  Creates an instance of this type given a set of property values
-    ///  for the object.  This is useful for objects that are immutable, but still
-    ///  want to provide changable properties.
+    ///  for the object. This is useful for objects that are immutable, but still
+    ///  want to provide changeable properties.
     /// </summary>
     public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
     {
@@ -165,19 +165,19 @@ public class SelectionRangeConverter : TypeConverter
     }
 
     /// <summary>
-    ///  Retrieves the set of properties for this type.  By default, a type has
-    ///  does not return any properties.  An easy implementation of this method
+    ///  Retrieves the set of properties for this type. By default, a type has
+    ///  does not return any properties. An easy implementation of this method
     ///  can just call TypeDescriptor.GetProperties for the correct data type.
     /// </summary>
     [RequiresUnreferencedCode(TrimmingConstants.TypeConverterGetPropertiesMessage)]
     public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object value, Attribute[]? attributes)
     {
         PropertyDescriptorCollection props = TypeDescriptor.GetProperties(typeof(SelectionRange), attributes);
-        return props.Sort(new string[] { "Start", "End" });
+        return props.Sort(["Start", "End"]);
     }
 
     /// <summary>
-    ///  Determines if this object supports properties.  By default, this
+    ///  Determines if this object supports properties. By default, this
     ///  is false.
     /// </summary>
     public override bool GetPropertiesSupported(ITypeDescriptorContext? context)

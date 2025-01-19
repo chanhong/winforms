@@ -5,7 +5,6 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms.Layout;
-using static Interop;
 
 namespace System.Windows.Forms;
 
@@ -16,14 +15,14 @@ public partial class StatusStrip : ToolStrip
     private const AnchorStyles HorizontalAnchor = AnchorStyles.Left | AnchorStyles.Right;
     private const AnchorStyles VerticalAnchor = AnchorStyles.Top | AnchorStyles.Bottom;
 
-    private BitVector32 state;
+    private BitVector32 _state;
 
-    private static readonly int stateSizingGrip = BitVector32.CreateMask();
-    private static readonly int stateCalledSpringTableLayout = BitVector32.CreateMask(stateSizingGrip);
+    private static readonly int s_stateSizingGrip = BitVector32.CreateMask();
+    private static readonly int s_stateCalledSpringTableLayout = BitVector32.CreateMask(s_stateSizingGrip);
 
-    private const int gripWidth = 12;
-    private RightToLeftLayoutGrip? rtlLayoutGrip;
-    private Orientation lastOrientation = Orientation.Horizontal;
+    private const int GripWidth = 12;
+    private RightToLeftLayoutGrip? _rtlLayoutGrip;
+    private Orientation _lastOrientation = Orientation.Horizontal;
 
     public StatusStrip()
     {
@@ -35,7 +34,7 @@ public partial class StatusStrip : ToolStrip
 
         SetStyle(ControlStyles.ResizeRedraw, true);
         Stretch = true;
-        state[stateSizingGrip] = true;
+        _state[s_stateSizingGrip] = true;
         ResumeLayout(true);
     }
 
@@ -139,9 +138,9 @@ public partial class StatusStrip : ToolStrip
     {
         get
         {
-            rtlLayoutGrip ??= new RightToLeftLayoutGrip();
+            _rtlLayoutGrip ??= new RightToLeftLayoutGrip();
 
-            return rtlLayoutGrip;
+            return _rtlLayoutGrip;
         }
     }
 
@@ -184,13 +183,13 @@ public partial class StatusStrip : ToolStrip
     {
         get
         {
-            return state[stateSizingGrip];
+            return _state[s_stateSizingGrip];
         }
         set
         {
-            if (value != state[stateSizingGrip])
+            if (value != _state[s_stateSizingGrip])
             {
-                state[stateSizingGrip] = value;
+                _state[s_stateSizingGrip] = value;
                 EnsureRightToLeftGrip();
                 Invalidate(true);
             }
@@ -211,11 +210,11 @@ public partial class StatusStrip : ToolStrip
 
                 if (RightToLeft == RightToLeft.Yes)
                 {
-                    return new Rectangle(0, statusStripSize.Height - gripHeight, gripWidth, gripHeight);
+                    return new Rectangle(0, statusStripSize.Height - gripHeight, GripWidth, gripHeight);
                 }
                 else
                 {
-                    return new Rectangle(statusStripSize.Width - gripWidth, statusStripSize.Height - gripHeight, gripWidth, gripHeight);
+                    return new Rectangle(statusStripSize.Width - GripWidth, statusStripSize.Height - gripHeight, GripWidth, gripHeight);
                 }
             }
 
@@ -251,10 +250,10 @@ public partial class StatusStrip : ToolStrip
     {
         if (disposing)
         {
-            if (rtlLayoutGrip is not null)
+            if (_rtlLayoutGrip is not null)
             {
-                rtlLayoutGrip.Dispose();
-                rtlLayoutGrip = null;
+                _rtlLayoutGrip.Dispose();
+                _rtlLayoutGrip = null;
             }
         }
 
@@ -275,17 +274,17 @@ public partial class StatusStrip : ToolStrip
                 }
             }
         }
-        else if (rtlLayoutGrip is not null)
+        else if (_rtlLayoutGrip is not null)
         {
-            if (Controls.Contains(rtlLayoutGrip))
+            if (Controls.Contains(_rtlLayoutGrip))
             {
                 if (Controls is ReadOnlyControlCollection controlCollection)
                 {
-                    controlCollection.RemoveInternal(rtlLayoutGrip);
+                    controlCollection.RemoveInternal(_rtlLayoutGrip);
                 }
 
-                rtlLayoutGrip.Dispose();
-                rtlLayoutGrip = null;
+                _rtlLayoutGrip.Dispose();
+                _rtlLayoutGrip = null;
             }
         }
     }
@@ -329,7 +328,7 @@ public partial class StatusStrip : ToolStrip
 
     protected override void OnLayout(LayoutEventArgs levent)
     {
-        state[stateCalledSpringTableLayout] = false;
+        _state[s_stateCalledSpringTableLayout] = false;
         bool inDisplayedItemCollection = false;
         ToolStripItem? item = levent.AffectedComponent as ToolStripItem;
         int itemCount = DisplayedItems.Count;
@@ -361,11 +360,22 @@ public partial class StatusStrip : ToolStrip
         EnsureRightToLeftGrip();
     }
 
+    internal override void ResetRenderMode()
+    {
+        RenderMode = ToolStripRenderMode.System;
+    }
+
+    internal override bool ShouldSerializeRenderMode()
+    {
+        // We should NEVER serialize custom.
+        return (RenderMode is not ToolStripRenderMode.System and not ToolStripRenderMode.Custom);
+    }
+
     internal override bool SupportsUiaProviders => true;
 
     protected override void SetDisplayedItems()
     {
-        if (state[stateCalledSpringTableLayout])
+        if (_state[s_stateCalledSpringTableLayout])
         {
             // shove all items that don't fit one pixel outside the displayed region
             Rectangle displayRect = DisplayRectangle;
@@ -429,31 +439,20 @@ public partial class StatusStrip : ToolStrip
         base.SetDisplayedItems();
     }
 
-    internal override void ResetRenderMode()
-    {
-        RenderMode = ToolStripRenderMode.System;
-    }
-
-    internal override bool ShouldSerializeRenderMode()
-    {
-        // We should NEVER serialize custom.
-        return (RenderMode != ToolStripRenderMode.System && RenderMode != ToolStripRenderMode.Custom);
-    }
-
     /// <summary>
     ///  Override this function if you want to do custom table layouts for the
-    ///  StatusStrip.  The default layoutstyle is tablelayout, and we need to play
+    ///  StatusStrip. The default layoutstyle is tablelayout, and we need to play
     ///  with the row/column styles
     /// </summary>
     protected virtual void OnSpringTableLayoutCore()
     {
         if (LayoutStyle == ToolStripLayoutStyle.Table)
         {
-            state[stateCalledSpringTableLayout] = true;
+            _state[s_stateCalledSpringTableLayout] = true;
 
             SuspendLayout();
 
-            if (lastOrientation != Orientation)
+            if (_lastOrientation != Orientation)
             {
                 TableLayoutSettings settings = TableLayoutSettings;
                 settings.RowCount = 0;
@@ -462,7 +461,7 @@ public partial class StatusStrip : ToolStrip
                 settings.RowStyles.Clear();
             }
 
-            lastOrientation = Orientation;
+            _lastOrientation = Orientation;
 
             if (Orientation == Orientation.Horizontal)
             {
@@ -492,7 +491,7 @@ public partial class StatusStrip : ToolStrip
                     colStyle.SizeType = (spring) ? SizeType.Percent : SizeType.AutoSize;
                 }
 
-                if (TableLayoutSettings.RowStyles.Count > 1 || TableLayoutSettings.RowStyles.Count == 0)
+                if (TableLayoutSettings.RowStyles.Count is > 1 or 0)
                 {
                     TableLayoutSettings.RowStyles.Clear();
                     TableLayoutSettings.RowStyles.Add(new RowStyle());
@@ -541,7 +540,7 @@ public partial class StatusStrip : ToolStrip
 
                 TableLayoutSettings.ColumnCount = 1;
 
-                if (TableLayoutSettings.ColumnStyles.Count > 1 || TableLayoutSettings.ColumnStyles.Count == 0)
+                if (TableLayoutSettings.ColumnStyles.Count is > 1 or 0)
                 {
                     TableLayoutSettings.ColumnStyles.Clear();
                     TableLayoutSettings.ColumnStyles.Add(new ColumnStyle());
@@ -566,7 +565,7 @@ public partial class StatusStrip : ToolStrip
 
     protected override void WndProc(ref Message m)
     {
-        if ((m.Msg == (int)PInvoke.WM_NCHITTEST) && SizingGrip)
+        if ((m.Msg == (int)PInvokeCore.WM_NCHITTEST) && SizingGrip)
         {
             // if we're within the grip bounds tell windows
             // that we're the bottom right of the window.
@@ -580,9 +579,9 @@ public partial class StatusStrip : ToolStrip
                 // double check that we're at the bottom right hand corner of the window.
                 if (!rootHwnd.IsNull && !PInvoke.IsZoomed(rootHwnd))
                 {
-                    // get the client area of the topmost window.  If we're next to the edge then
+                    // get the client area of the topmost window. If we're next to the edge then
                     // the sizing grip is valid.
-                    PInvoke.GetClientRect(rootHwnd, out RECT rootHwndClientArea);
+                    PInvokeCore.GetClientRect(rootHwnd, out RECT rootHwndClientArea);
 
                     // map the size grip FROM statusStrip coords TO the toplevel window coords.
                     Point gripLocation;
@@ -595,7 +594,7 @@ public partial class StatusStrip : ToolStrip
                         gripLocation = new Point(SizeGripBounds.Right, SizeGripBounds.Bottom);
                     }
 
-                    PInvoke.MapWindowPoints(this, rootHwnd, ref gripLocation);
+                    PInvokeCore.MapWindowPoints(this, rootHwnd, ref gripLocation);
 
                     int deltaBottomEdge = Math.Abs(rootHwndClientArea.bottom - gripLocation.Y);
                     int deltaRightEdge = Math.Abs(rootHwndClientArea.right - gripLocation.X);
@@ -636,7 +635,7 @@ public partial class StatusStrip : ToolStrip
 
         protected override void WndProc(ref Message m)
         {
-            if (m.MsgInternal == PInvoke.WM_NCHITTEST)
+            if (m.MsgInternal == PInvokeCore.WM_NCHITTEST)
             {
                 if (ClientRectangle.Contains(PointToClient(PARAM.ToPoint(m.LParamInternal))))
                 {

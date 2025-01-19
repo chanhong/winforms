@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Drawing;
-using Windows.Win32.System.Ole;
+using Windows.Win32.Graphics.GdiPlus;
 using Windows.Win32.System.Variant;
 
 namespace Windows.Win32.System.Com.Tests;
@@ -13,8 +13,8 @@ public partial class IDispatchTests
     [StaFact]
     public unsafe void IDispatch_GetIDsOfNames_Invoke_Success()
     {
-        using var image = new Bitmap(16, 32);
-        using var picture = IPictureDisp.CreateFromImage(image);
+        using Bitmap image = new(16, 32);
+        using var picture = image.CreateIPictureDisp();
         Assert.False(picture.IsNull);
 
         Guid riid = Guid.Empty;
@@ -22,14 +22,14 @@ public partial class IDispatchTests
         fixed (char* other = "Other")
         {
             var rgszNames = new PWSTR[] { width, other };
-            var rgDispId = new int[rgszNames.Length];
+            int[] rgDispId = new int[rgszNames.Length];
             fixed (int* pRgDispId = rgDispId)
             fixed (PWSTR* pRgszNames = rgszNames)
             {
-                picture.Value->GetIDsOfNames(&riid, pRgszNames, (uint)rgszNames.Length, PInvoke.GetThreadLocale(), pRgDispId);
-                Assert.Equal(new PWSTR[] { width, other }, rgszNames);
+                picture.Value->GetIDsOfNames(&riid, pRgszNames, (uint)rgszNames.Length, PInvokeCore.GetThreadLocale(), pRgDispId);
+                Assert.Equal([width, other], rgszNames);
 
-                Assert.Equal(new int[] { (int)PInvoke.DISPID_PICT_WIDTH, PInvoke.DISPID_UNKNOWN }, rgDispId);
+                Assert.Equal([(int)PInvokeCore.DISPID_PICT_WIDTH, PInvokeCore.DISPID_UNKNOWN], rgDispId);
             }
         }
     }
@@ -37,19 +37,19 @@ public partial class IDispatchTests
     [StaFact]
     public unsafe void IDispatch_GetTypeInfo_Invoke_Success()
     {
-        using var image = new Bitmap(16, 16);
-        using var picture = IPictureDisp.CreateFromImage(image);
+        using Bitmap image = new(16, 16);
+        using var picture = image.CreateIPictureDisp();
         Assert.False(picture.IsNull);
 
         using ComScope<ITypeInfo> typeInfo = new(null);
-        picture.Value->GetTypeInfo(0, PInvoke.GetThreadLocale(), typeInfo);
+        picture.Value->GetTypeInfo(0, PInvokeCore.GetThreadLocale(), typeInfo);
     }
 
     [StaFact]
     public unsafe void IDispatch_GetTypeInfoCount_Invoke_Success()
     {
-        using var image = new Bitmap(16, 16);
-        using var picture = IPictureDisp.CreateFromImage(image);
+        using Bitmap image = new(16, 16);
+        using var picture = image.CreateIPictureDisp();
         Assert.False(picture.IsNull);
 
         uint ctInfo = uint.MaxValue;
@@ -60,15 +60,15 @@ public partial class IDispatchTests
     [StaFact]
     public unsafe void IDispatch_Invoke_Invoke_Success()
     {
-        using var image = new Bitmap(16, 32);
-        using var picture = IPictureDisp.CreateFromImage(image);
+        using Bitmap image = new(16, 32);
+        using var picture = image.CreateIPictureDisp();
         Assert.False(picture.IsNull);
 
         using VARIANT varResult = default;
         HRESULT hr = ((IDispatch*)picture.Value)->TryGetProperty(
-            PInvoke.DISPID_PICT_WIDTH,
+            PInvokeCore.DISPID_PICT_WIDTH,
             &varResult,
-            PInvoke.GetThreadLocale());
+            PInvokeCore.GetThreadLocale());
         Assert.Equal(HRESULT.S_OK, hr);
         Assert.Equal(VARENUM.VT_I4, varResult.vt);
         Assert.Equal(16, GdiHelper.HimetricToPixelY(varResult.data.intVal));

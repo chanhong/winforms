@@ -18,9 +18,9 @@ public class RadioButton_RadioButtonAccessibleObjectTests
     [WinFormsFact]
     public void RadioButtonAccessibleObject_Ctor_Default()
     {
-        using var radioButton = new RadioButton();
+        using RadioButton radioButton = new();
         Assert.False(radioButton.IsHandleCreated);
-        var radioButtonAccessibleObject = new RadioButtonAccessibleObject(radioButton);
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
 
         Assert.NotNull(radioButtonAccessibleObject.Owner);
         Assert.False(radioButton.IsHandleCreated);
@@ -29,13 +29,13 @@ public class RadioButton_RadioButtonAccessibleObjectTests
     [WinFormsFact]
     public void RadioButtonAccessibleObject_DefaultAction_ReturnsExpected()
     {
-        using var radioButton = new RadioButton
+        using RadioButton radioButton = new()
         {
             AccessibleDefaultActionDescription = "TestActionDescription"
         };
 
         Assert.False(radioButton.IsHandleCreated);
-        var radioButtonAccessibleObject = new RadioButtonAccessibleObject(radioButton);
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
 
         Assert.Equal("TestActionDescription", radioButtonAccessibleObject.DefaultAction);
         Assert.False(radioButton.IsHandleCreated);
@@ -44,12 +44,12 @@ public class RadioButton_RadioButtonAccessibleObjectTests
     [WinFormsFact]
     public void RadioButtonAccessibleObject_GetProperyValue_LegacyIAccessibleDefaultActionPropertyId_ReturnsExpected()
     {
-        using var radioButton = new RadioButton
+        using RadioButton radioButton = new()
         {
             AccessibleDefaultActionDescription = "TestActionDescription"
         };
 
-        var radioButtonAccessibleObject = new RadioButtonAccessibleObject(radioButton);
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
 
         Assert.Equal("TestActionDescription", ((BSTR)radioButtonAccessibleObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_LegacyIAccessibleDefaultActionPropertyId)).ToStringAndFree());
         Assert.False(radioButton.IsHandleCreated);
@@ -58,43 +58,74 @@ public class RadioButton_RadioButtonAccessibleObjectTests
     [WinFormsFact]
     public void RadioButtonAccessibleObject_Description_ReturnsExpected()
     {
-        using var radioButton = new RadioButton
+        using RadioButton radioButton = new()
         {
             AccessibleDescription = "TestDescription"
         };
 
         Assert.False(radioButton.IsHandleCreated);
-        var radioButtonAccessibleObject = new RadioButtonAccessibleObject(radioButton);
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
 
         Assert.Equal("TestDescription", radioButtonAccessibleObject.Description);
         Assert.False(radioButton.IsHandleCreated);
     }
 
     [WinFormsFact]
-    public void RadioButtonAccessibleObject_Name_ReturnsExpected()
+    public void RadioButtonAccessibleObject_Name_ReturnsExpected_AccessibleName()
     {
-        using var radioButton = new RadioButton
+        using RadioButton radioButton = new()
         {
             AccessibleName = "TestName"
         };
 
         Assert.False(radioButton.IsHandleCreated);
-        var radioButtonAccessibleObject = new RadioButtonAccessibleObject(radioButton);
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
 
         Assert.Equal("TestName", radioButtonAccessibleObject.Name);
         Assert.False(radioButton.IsHandleCreated);
     }
 
     [WinFormsFact]
+    public void RadioButtonAccessibleObject_Name_ReturnsExpected_FromText()
+    {
+        using RadioButton radioButton = new() { Text = "TestText" };
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
+
+        radioButtonAccessibleObject.Name.Should().Be("TestText");
+    }
+
+    [WinFormsTheory]
+    [InlineData(true, "TestText")]
+    [InlineData(false, "&TestText")]
+    public void RadioButtonAccessibleObject_Name_ReturnsExpected_FromText_WithOrWithoutMnemonics(bool useMnemonic, string expectedName)
+    {
+        using RadioButton radioButton = new() { Text = "&TestText", UseMnemonic = useMnemonic };
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
+
+        radioButtonAccessibleObject.Name.Should().Be(expectedName);
+    }
+
+    [WinFormsTheory]
+    [InlineData(true, "Alt+r")]
+    [InlineData(false, null)]
+    public void RadioButtonAccessibleObject_KeyboardShortcut_ReturnsExpected(bool useMnemonic, string expectedShortcut)
+    {
+        using RadioButton radioButton = new() { Text = "&RadioButton", UseMnemonic = useMnemonic };
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
+
+        radioButtonAccessibleObject.KeyboardShortcut.Should().Be(expectedShortcut);
+    }
+
+    [WinFormsFact]
     public void RadioButtonAccessibleObject_Role_Custom_ReturnsExpected()
     {
-        using var radioButton = new RadioButton
+        using RadioButton radioButton = new()
         {
             AccessibleRole = AccessibleRole.PushButton
         };
 
         Assert.False(radioButton.IsHandleCreated);
-        var radioButtonAccessibleObject = new RadioButtonAccessibleObject(radioButton);
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
 
         Assert.Equal(AccessibleRole.PushButton, radioButtonAccessibleObject.Role);
         Assert.False(radioButton.IsHandleCreated);
@@ -103,9 +134,9 @@ public class RadioButton_RadioButtonAccessibleObjectTests
     [WinFormsFact]
     public void RadioButtonAccessibleObject_Role_Default_ReturnsExpected()
     {
-        using var radioButton = new RadioButton();
+        using RadioButton radioButton = new();
         Assert.False(radioButton.IsHandleCreated);
-        var radioButtonAccessibleObject = new RadioButtonAccessibleObject(radioButton);
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
 
         Assert.Equal(AccessibleRole.RadioButton, radioButtonAccessibleObject.Role);
         Assert.False(radioButton.IsHandleCreated);
@@ -116,14 +147,14 @@ public class RadioButton_RadioButtonAccessibleObjectTests
     [InlineData(false, AccessibleStates.None, AccessibleStates.None)]
     public void RadioButtonAccessibleObject_State_ReturnsExpected(bool createControl, AccessibleStates accessibleStatesFirstStage, AccessibleStates accessibleStatesSecondStage)
     {
-        using var radioButton = new RadioButton();
+        using RadioButton radioButton = new();
 
         if (createControl)
         {
             radioButton.CreateControl();
         }
 
-        var radioButtonAccessibleObject = new RadioButtonAccessibleObject(radioButton);
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
         Assert.Equal(accessibleStatesFirstStage, radioButtonAccessibleObject.State);
 
         radioButtonAccessibleObject.DoDefaultAction();
@@ -137,14 +168,14 @@ public class RadioButton_RadioButtonAccessibleObjectTests
     [InlineData(false)]
     public void RadioButtonAccessibleObject_IsItemSelected_ReturnsExpected(bool createControl)
     {
-        using var radioButton = new RadioButton();
+        using RadioButton radioButton = new();
 
         if (createControl)
         {
             radioButton.CreateControl();
         }
 
-        var radioButtonAccessibleObject = new RadioButtonAccessibleObject(radioButton);
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
         Assert.False(radioButtonAccessibleObject.IsItemSelected);
 
         radioButtonAccessibleObject.DoDefaultAction();
@@ -160,14 +191,14 @@ public class RadioButton_RadioButtonAccessibleObjectTests
     [InlineData((int)UIA_PROPERTY_ID.UIA_AutomationIdPropertyId, "RadioButton1")]
     public void RadioButtonAccessibleObject_GetPropertyValue_Invoke_ReturnsExpected(int propertyID, object expected)
     {
-        using var radioButton = new RadioButton
+        using RadioButton radioButton = new()
         {
             Name = "RadioButton1",
             AccessibleName = "TestName"
         };
 
         Assert.False(radioButton.IsHandleCreated);
-        var radioButtonAccessibleObject = new RadioButtonAccessibleObject(radioButton);
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
         using VARIANT value = radioButtonAccessibleObject.GetPropertyValue((UIA_PROPERTY_ID)propertyID);
 
         Assert.Equal(expected, value.ToObject());
@@ -179,13 +210,13 @@ public class RadioButton_RadioButtonAccessibleObjectTests
     [InlineData((int)UIA_PATTERN_ID.UIA_SelectionItemPatternId)]
     public void RadioButtonAccessibleObject_IsPatternSupported_Invoke_ReturnsExpected(int patternId)
     {
-        using var radioButton = new RadioButton
+        using RadioButton radioButton = new()
         {
             Name = "RadioButton1"
         };
 
         Assert.False(radioButton.IsHandleCreated);
-        var radioButtonAccessibleObject = new RadioButtonAccessibleObject(radioButton);
+        RadioButtonAccessibleObject radioButtonAccessibleObject = new(radioButton);
 
         Assert.True(radioButtonAccessibleObject.IsPatternSupported((UIA_PATTERN_ID)patternId));
         Assert.False(radioButton.IsHandleCreated);
@@ -210,7 +241,7 @@ public class RadioButton_RadioButtonAccessibleObjectTests
     [MemberData(nameof(RadioButtonAccessibleObject_GetPropertyValue_ControlType_IsExpected_ForCustomRole_TestData))]
     public void RadioButtonAccessibleObject_GetPropertyValue_ControlType_IsExpected_ForCustomRole(AccessibleRole role)
     {
-        using RadioButton radioButton = new RadioButton();
+        using RadioButton radioButton = new();
         radioButton.AccessibleRole = role;
 
         var actual = (UIA_CONTROLTYPE_ID)(int)radioButton.AccessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ControlTypePropertyId);

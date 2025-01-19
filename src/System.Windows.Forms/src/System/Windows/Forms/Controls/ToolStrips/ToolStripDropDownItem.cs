@@ -19,11 +19,11 @@ public abstract class ToolStripDropDownItem : ToolStripItem
     private ToolStripDropDown? _dropDown;
     private ToolStripDropDownDirection _toolStripDropDownDirection = ToolStripDropDownDirection.Default;
     private ToolTip? _hookedKeyboardTooltip;
-    private static readonly object EventDropDownShow = new();
-    private static readonly object EventDropDownHide = new();
-    private static readonly object EventDropDownOpened = new();
-    private static readonly object EventDropDownClosed = new();
-    private static readonly object EventDropDownItemClicked = new();
+    private static readonly object s_dropDownShowEvent = new();
+    private static readonly object s_dropDownHideEvent = new();
+    private static readonly object s_dropDownOpenedEvent = new();
+    private static readonly object s_dropDownClosedEvent = new();
+    private static readonly object s_dropDownItemClickedEvent = new();
 
     /// <summary>
     ///  Protected ctor so you can't create one of these without deriving from it.
@@ -89,9 +89,9 @@ public abstract class ToolStripDropDownItem : ToolStripItem
                         KeyboardToolTipStateMachine.Instance.Unhook(_dropDown, _hookedKeyboardTooltip);
                     }
 
-                    _dropDown.Opened -= new EventHandler(DropDown_Opened);
-                    _dropDown.Closed -= new ToolStripDropDownClosedEventHandler(DropDown_Closed);
-                    _dropDown.ItemClicked -= new ToolStripItemClickedEventHandler(DropDown_ItemClicked);
+                    _dropDown.Opened -= DropDown_Opened;
+                    _dropDown.Closed -= DropDown_Closed;
+                    _dropDown.ItemClicked -= DropDown_ItemClicked;
                     _dropDown.UnassignDropDownItem();
                 }
 
@@ -103,9 +103,9 @@ public abstract class ToolStripDropDownItem : ToolStripItem
                         KeyboardToolTipStateMachine.Instance.Hook(_dropDown, _hookedKeyboardTooltip);
                     }
 
-                    _dropDown.Opened += new EventHandler(DropDown_Opened);
-                    _dropDown.Closed += new ToolStripDropDownClosedEventHandler(DropDown_Closed);
-                    _dropDown.ItemClicked += new ToolStripItemClickedEventHandler(DropDown_ItemClicked);
+                    _dropDown.Opened += DropDown_Opened;
+                    _dropDown.Closed += DropDown_Closed;
+                    _dropDown.ItemClicked += DropDown_ItemClicked;
                     _dropDown.AssignToDropDownItem();
                 }
             }
@@ -113,8 +113,7 @@ public abstract class ToolStripDropDownItem : ToolStripItem
     }
 
     // the area which activates the dropdown.
-    internal virtual Rectangle DropDownButtonArea
-        => Bounds;
+    internal virtual Rectangle DropDownButtonArea => Bounds;
 
     [Browsable(false)]
     [SRDescription(nameof(SR.ToolStripDropDownItemDropDownDirectionDescr))]
@@ -139,7 +138,7 @@ public abstract class ToolStripDropDownItem : ToolStripItem
                     {
                         // we gotta make sure that we don't collide with the existing menu.
                         Rectangle bounds = GetDropDownBounds(dropDownDirection);
-                        Rectangle ownerItemBounds = new Rectangle(TranslatePoint(Point.Empty, ToolStripPointType.ToolStripItemCoords, ToolStripPointType.ScreenCoords), Size);
+                        Rectangle ownerItemBounds = new(TranslatePoint(Point.Empty, ToolStripPointType.ToolStripItemCoords, ToolStripPointType.ScreenCoords), Size);
                         Rectangle intersectionBetweenChildAndParent = Rectangle.Intersect(bounds, ownerItemBounds);
 
                         // grab the intersection
@@ -199,8 +198,8 @@ public abstract class ToolStripDropDownItem : ToolStripItem
     [SRDescription(nameof(SR.ToolStripDropDownClosedDecr))]
     public event EventHandler? DropDownClosed
     {
-        add => Events.AddHandler(EventDropDownClosed, value);
-        remove => Events.RemoveHandler(EventDropDownClosed, value);
+        add => Events.AddHandler(s_dropDownClosedEvent, value);
+        remove => Events.RemoveHandler(s_dropDownClosedEvent, value);
     }
 
     protected internal virtual Point DropDownLocation
@@ -221,8 +220,8 @@ public abstract class ToolStripDropDownItem : ToolStripItem
     [SRDescription(nameof(SR.ToolStripDropDownOpeningDescr))]
     public event EventHandler? DropDownOpening
     {
-        add => Events.AddHandler(EventDropDownShow, value);
-        remove => Events.RemoveHandler(EventDropDownShow, value);
+        add => Events.AddHandler(s_dropDownShowEvent, value);
+        remove => Events.RemoveHandler(s_dropDownShowEvent, value);
     }
 
     /// <summary>
@@ -232,8 +231,8 @@ public abstract class ToolStripDropDownItem : ToolStripItem
     [SRDescription(nameof(SR.ToolStripDropDownOpenedDescr))]
     public event EventHandler? DropDownOpened
     {
-        add => Events.AddHandler(EventDropDownOpened, value);
-        remove => Events.RemoveHandler(EventDropDownOpened, value);
+        add => Events.AddHandler(s_dropDownOpenedEvent, value);
+        remove => Events.RemoveHandler(s_dropDownOpenedEvent, value);
     }
 
     /// <summary>
@@ -251,8 +250,8 @@ public abstract class ToolStripDropDownItem : ToolStripItem
     [SRCategory(nameof(SR.CatAction))]
     public event ToolStripItemClickedEventHandler? DropDownItemClicked
     {
-        add => Events.AddHandler(EventDropDownItemClicked, value);
-        remove => Events.RemoveHandler(EventDropDownItemClicked, value);
+        add => Events.AddHandler(s_dropDownItemClickedEvent, value);
+        remove => Events.RemoveHandler(s_dropDownItemClickedEvent, value);
     }
 
     [Browsable(false)]
@@ -360,9 +359,9 @@ public abstract class ToolStripDropDownItem : ToolStripItem
                 KeyboardToolTipStateMachine.Instance.Unhook(_dropDown, _hookedKeyboardTooltip);
             }
 
-            _dropDown.Opened -= new EventHandler(DropDown_Opened);
-            _dropDown.Closed -= new ToolStripDropDownClosedEventHandler(DropDown_Closed);
-            _dropDown.ItemClicked -= new ToolStripItemClickedEventHandler(DropDown_ItemClicked);
+            _dropDown.Opened -= DropDown_Opened;
+            _dropDown.Closed -= DropDown_Closed;
+            _dropDown.ItemClicked -= DropDown_ItemClicked;
 
             if (disposing && _dropDown.IsAutoGenerated)
             {
@@ -377,12 +376,12 @@ public abstract class ToolStripDropDownItem : ToolStripItem
 
     private Rectangle GetDropDownBounds(ToolStripDropDownDirection dropDownDirection)
     {
-        Rectangle dropDownBounds = new Rectangle(Point.Empty, DropDown.GetSuggestedSize());
+        Rectangle dropDownBounds = new(Point.Empty, DropDown.GetSuggestedSize());
         // calculate the offset from the upper left hand corner of the item.
         dropDownBounds = DropDownDirectionToDropDownBounds(dropDownDirection, dropDownBounds);
 
         // we should make sure we don't obscure the owner item.
-        Rectangle itemScreenBounds = new Rectangle(TranslatePoint(Point.Empty, ToolStripPointType.ToolStripItemCoords, ToolStripPointType.ScreenCoords), Size);
+        Rectangle itemScreenBounds = new(TranslatePoint(Point.Empty, ToolStripPointType.ToolStripItemCoords, ToolStripPointType.ScreenCoords), Size);
 
         if (Rectangle.Intersect(dropDownBounds, itemScreenBounds).Height > 1)
         {
@@ -471,7 +470,7 @@ public abstract class ToolStripDropDownItem : ToolStripItem
     {
         Invalidate();
 
-        ((EventHandler?)Events[EventDropDownHide])?.Invoke(this, e);
+        ((EventHandler?)Events[s_dropDownHideEvent])?.Invoke(this, e);
     }
 
     /// <summary>
@@ -479,7 +478,7 @@ public abstract class ToolStripDropDownItem : ToolStripItem
     /// </summary>
     protected virtual void OnDropDownShow(EventArgs e)
     {
-        ((EventHandler?)Events[EventDropDownShow])?.Invoke(this, e);
+        ((EventHandler?)Events[s_dropDownShowEvent])?.Invoke(this, e);
     }
 
     /// <summary>
@@ -494,7 +493,7 @@ public abstract class ToolStripDropDownItem : ToolStripItem
             return;
         }
 
-        ((EventHandler?)Events[EventDropDownOpened])?.Invoke(this, e);
+        ((EventHandler?)Events[s_dropDownOpenedEvent])?.Invoke(this, e);
 
         bool accessibilityIsOn = IsAccessibilityObjectCreated ||
                 (IsOnDropDown
@@ -523,7 +522,7 @@ public abstract class ToolStripDropDownItem : ToolStripItem
             return;
         }
 
-        ((EventHandler?)Events[EventDropDownClosed])?.Invoke(this, e);
+        ((EventHandler?)Events[s_dropDownClosedEvent])?.Invoke(this, e);
 
         if (!DropDown.IsAutoGenerated)
         {
@@ -548,7 +547,7 @@ public abstract class ToolStripDropDownItem : ToolStripItem
 
         if (DropDown.OwnerItem == this)
         {
-            ((ToolStripItemClickedEventHandler?)Events[EventDropDownItemClicked])?.Invoke(this, e);
+            ((ToolStripItemClickedEventHandler?)Events[s_dropDownItemClickedEvent])?.Invoke(this, e);
         }
     }
 
@@ -564,7 +563,7 @@ public abstract class ToolStripDropDownItem : ToolStripItem
 
     protected internal override bool ProcessDialogKey(Keys keyData)
     {
-        Keys keyCode = (Keys)keyData & Keys.KeyCode;
+        Keys keyCode = keyData & Keys.KeyCode;
 
         // Items on the overflow should have the same kind of keyboard handling as a toplevel.
         bool isTopLevel = (!IsOnDropDown || IsOnOverflow);
@@ -573,35 +572,31 @@ public abstract class ToolStripDropDownItem : ToolStripItem
         {
             if (isTopLevel && (keyCode == Keys.Down || keyCode == Keys.Up || keyCode == Keys.Enter || (SupportsSpaceKey && keyCode == Keys.Space)))
             {
-                ToolStrip.s_selectionDebug.TraceVerbose("[SelectDBG ProcessDialogKey] open submenu from toplevel item");
-
                 if (Enabled || DesignMode)
                 {
-                    // |__[ * File ]_____|  * is where you are.  Up or down arrow hit should expand menu.
+                    // |__[ * File ]_____|  * is where you are. Up or down arrow hit should expand menu.
                     ShowDropDown();
                     KeyboardToolTipStateMachine.Instance.NotifyAboutLostFocus(this);
                     DropDown.SelectNextToolStripItem(start: null, forward: true);
-                }// else eat the key
+                }
 
                 return true;
             }
             else if (!isTopLevel)
             {
-                // if we're on a DropDown - then cascade out.
+                // If we're on a DropDown - then cascade out.
                 bool menusCascadeRight = (((int)DropDownDirection & 0x0001) == 0);
                 bool forward = ((keyCode == Keys.Enter) || (SupportsSpaceKey && keyCode == Keys.Space));
                 forward = (forward || (menusCascadeRight && keyCode == Keys.Left) || (!menusCascadeRight && keyCode == Keys.Right));
 
                 if (forward)
                 {
-                    ToolStrip.s_selectionDebug.TraceVerbose("[SelectDBG ProcessDialogKey] open submenu from NON-toplevel item");
-
                     if (Enabled || DesignMode)
                     {
                         ShowDropDown();
                         KeyboardToolTipStateMachine.Instance.NotifyAboutLostFocus(this);
                         DropDown.SelectNextToolStripItem(start: null, forward: true);
-                    } // else eat the key
+                    }
 
                     return true;
                 }
@@ -623,27 +618,20 @@ public abstract class ToolStripDropDownItem : ToolStripItem
 
             if (backward)
             {
-                ToolStrip.s_selectionDebug.TraceVerbose("[SelectDBG ProcessDialogKey] close submenu from NON-toplevel item");
-
-                // we're on a drop down but we're heading back up the chain.
-                // remember to select the item that displayed this dropdown.
+                // We're on a drop down but we're heading back up the chain.
+                // Remember to select the item that displayed this dropdown.
                 ToolStripDropDown? parent = GetCurrentParentDropDown();
                 if (parent is not null && !parent.IsFirstDropDown)
                 {
-                    // we're walking back up the dropdown chain.
+                    // We're walking back up the dropdown chain.
                     parent.SetCloseReason(ToolStripDropDownCloseReason.Keyboard);
                     KeyboardToolTipStateMachine.Instance.NotifyAboutLostFocus(this);
                     parent.SelectPreviousToolStrip();
                     return true;
                 }
-
-                // else if (parent.IsFirstDropDown)
-                //    the base handling (ToolStripDropDown.ProcessArrowKey) will perform auto-expansion of
-                //    the previous item in the menu.
             }
         }
 
-        ToolStrip.s_selectionDebug.TraceVerbose("[SelectDBG ProcessDialogKey] ddi calling base");
         return base.ProcessDialogKey(keyData);
     }
 

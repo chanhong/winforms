@@ -48,7 +48,7 @@ internal partial class LinkAreaEditor
         [MemberNotNull(nameof(_okCancelTableLayoutPanel))]
         private void InitializeComponent()
         {
-            ComponentResourceManager resources = new ComponentResourceManager(typeof(LinkAreaEditor));
+            ComponentResourceManager resources = new(typeof(LinkAreaEditor));
             _caption = new Label();
             _sampleEdit = new TextBox();
             _okButton = new Button();
@@ -56,7 +56,7 @@ internal partial class LinkAreaEditor
             _okCancelTableLayoutPanel = new TableLayoutPanel();
             _okCancelTableLayoutPanel.SuspendLayout();
             SuspendLayout();
-            _okButton.Click += new EventHandler(okButton_click);
+            _okButton.Click += okButton_click;
 
             // caption
             resources.ApplyResources(_caption, "caption");
@@ -108,7 +108,7 @@ internal partial class LinkAreaEditor
             Name = "LinkAreaEditor";
             ShowIcon = false;
             ShowInTaskbar = false;
-            HelpButtonClicked += new CancelEventHandler(LinkAreaEditor_HelpButtonClicked);
+            HelpButtonClicked += LinkAreaEditor_HelpButtonClicked;
             _okCancelTableLayoutPanel.ResumeLayout(false);
             _okCancelTableLayoutPanel.PerformLayout();
             ResumeLayout(false);

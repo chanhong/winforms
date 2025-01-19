@@ -72,9 +72,11 @@ internal abstract unsafe class UiaTextProvider : ITextProvider.Interface, ITextP
 
     public abstract void SetSelection(int start, int end);
 
-    public static WINDOW_EX_STYLE GetWindowExStyle(IHandle<HWND> hWnd) => (WINDOW_EX_STYLE)PInvoke.GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
+    public static WINDOW_EX_STYLE GetWindowExStyle(IHandle<HWND> hWnd) =>
+        (WINDOW_EX_STYLE)PInvokeCore.GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
 
-    public static WINDOW_STYLE GetWindowStyle(IHandle<HWND> hWnd) => (WINDOW_STYLE)PInvoke.GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
+    public static WINDOW_STYLE GetWindowStyle(IHandle<HWND> hWnd) =>
+        (WINDOW_STYLE)PInvokeCore.GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
 
     public static SafeArrayScope<double> RectListToDoubleArray(List<Rectangle> rectArray)
     {
@@ -116,9 +118,15 @@ internal abstract unsafe class UiaTextProvider : ITextProvider.Interface, ITextP
     internal static VARIANT BoundingRectangleAsVariant(Rectangle bounds)
         => (VARIANT)BoundingRectangleAsArray(bounds);
 
-    public int SendInput(int inputs, ref INPUT input, int size) => (int)PInvoke.SendInput([input], size);
+    public static int SendInput(ref INPUT input)
+    {
+        fixed (INPUT* i = &input)
+        {
+            return (int)PInvoke.SendInput(1, i, sizeof(INPUT));
+        }
+    }
 
-    public unsafe int SendKeyboardInputVK(VIRTUAL_KEY vk, bool press)
+    public static unsafe int SendKeyboardInputVK(VIRTUAL_KEY vk, bool press)
     {
         INPUT keyboardInput = default;
 
@@ -135,7 +143,7 @@ internal abstract unsafe class UiaTextProvider : ITextProvider.Interface, ITextP
         keyboardInput.Anonymous.ki.time = 0;
         keyboardInput.Anonymous.ki.dwExtraInfo = UIntPtr.Zero;
 
-        return SendInput(1, ref keyboardInput, sizeof(INPUT));
+        return SendInput(ref keyboardInput);
     }
 
     public abstract HRESULT RangeFromAnnotation(IRawElementProviderSimple* annotationElement, ITextRangeProvider** pRetVal);

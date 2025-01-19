@@ -11,7 +11,7 @@ using System.Drawing;
 namespace System.Windows.Forms.Design;
 
 /// <summary>
-///  This is the designer for the list view control.  It implements hit testing for
+///  This is the designer for the list view control. It implements hit testing for
 ///  the items in the list view.
 /// </summary>
 internal class ListViewDesigner : ControlDesigner
@@ -22,7 +22,8 @@ internal class ListViewDesigner : ControlDesigner
 
     /// <summary>
     ///  <para>
-    ///  Retrieves a list of associated components.  These are components that should be included in a cut or copy operation on this component.
+    ///  Retrieves a list of associated components.
+    ///  These are components that should be included in a cut or copy operation on this component.
     ///  </para>
     /// </summary>
     public override ICollection AssociatedComponents
@@ -79,12 +80,12 @@ internal class ListViewDesigner : ControlDesigner
 
             if (!hwndHit.IsNull && hwndHit != listView.Handle)
             {
-                HWND headerHwnd = (HWND)PInvoke.SendMessage(listView, PInvoke.LVM_GETHEADER);
+                HWND headerHwnd = (HWND)PInvokeCore.SendMessage(listView, PInvoke.LVM_GETHEADER);
                 if (hwndHit == headerHwnd)
                 {
-                    PInvoke.MapWindowPoints(HWND.Null, headerHwnd, ref point);
+                    PInvokeCore.MapWindowPoints(HWND.Null, headerHwnd, ref point);
                     _hdrhit.pt = point;
-                    PInvoke.SendMessage(headerHwnd, PInvoke.HDM_HITTEST, 0, ref _hdrhit);
+                    PInvokeCore.SendMessage(headerHwnd, PInvoke.HDM_HITTEST, 0, ref _hdrhit);
                     if (_hdrhit.flags == HEADER_HITTEST_INFO_FLAGS.HHT_ONDIVIDER)
                         return true;
                 }
@@ -116,14 +117,14 @@ internal class ListViewDesigner : ControlDesigner
 
         if (ownerDrawProp is not null)
         {
-            properties["OwnerDraw"] = TypeDescriptor.CreateProperty(typeof(ListViewDesigner), ownerDrawProp, Array.Empty<Attribute>());
+            properties["OwnerDraw"] = TypeDescriptor.CreateProperty(typeof(ListViewDesigner), ownerDrawProp, []);
         }
 
         PropertyDescriptor viewProp = (PropertyDescriptor)properties["View"];
 
         if (viewProp is not null)
         {
-            properties["View"] = TypeDescriptor.CreateProperty(typeof(ListViewDesigner), viewProp, Array.Empty<Attribute>());
+            properties["View"] = TypeDescriptor.CreateProperty(typeof(ListViewDesigner), viewProp, []);
         }
 
         base.PreFilterProperties(properties);
@@ -133,7 +134,7 @@ internal class ListViewDesigner : ControlDesigner
     {
         switch (m.Msg)
         {
-            case (int)PInvoke.WM_NOTIFY:
+            case (int)PInvokeCore.WM_NOTIFY:
             case (int)MessageId.WM_REFLECT_NOTIFY:
                 NMHDR* nmhdr = (NMHDR*)(nint)m.LParamInternal;
                 if (nmhdr->code == PInvoke.HDN_ENDTRACKW)
@@ -184,7 +185,7 @@ internal class ListViewDesigner : ControlDesigner
         }
     }
 
-    private static void ShowErrorDialog(IUIService uiService, Exception ex, Control control)
+    private static void ShowErrorDialog(IUIService uiService, InvalidOperationException ex, Control control)
     {
         if (uiService is not null)
         {

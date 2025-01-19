@@ -94,14 +94,28 @@ internal class ContextMenuStripActionList : DesignerActionList
     /// </summary>
     public override DesignerActionItemCollection GetSortedActionItems()
     {
-        DesignerActionItemCollection items = new DesignerActionItemCollection
-        {
-            new DesignerActionPropertyItem("RenderMode", SR.ToolStripActionList_RenderMode, SR.ToolStripActionList_Layout, SR.ToolStripActionList_RenderModeDesc)
-        };
+        DesignerActionItemCollection items =
+        [
+            new DesignerActionPropertyItem(
+                nameof(RenderMode),
+                SR.ToolStripActionList_RenderMode,
+                SR.ToolStripActionList_Layout,
+                SR.ToolStripActionList_RenderModeDesc)
+        ];
+
         if (_toolStripDropDown is ToolStripDropDownMenu)
         {
-            items.Add(new DesignerActionPropertyItem("ShowImageMargin", SR.ContextMenuStripActionList_ShowImageMargin, SR.ToolStripActionList_Layout, SR.ContextMenuStripActionList_ShowImageMarginDesc));
-            items.Add(new DesignerActionPropertyItem("ShowCheckMargin", SR.ContextMenuStripActionList_ShowCheckMargin, SR.ToolStripActionList_Layout, SR.ContextMenuStripActionList_ShowCheckMarginDesc));
+            items.Add(new DesignerActionPropertyItem(
+                nameof(ShowImageMargin),
+                SR.ContextMenuStripActionList_ShowImageMargin,
+                SR.ToolStripActionList_Layout,
+                SR.ContextMenuStripActionList_ShowImageMarginDesc));
+
+            items.Add(new DesignerActionPropertyItem(
+                nameof(ShowCheckMargin),
+                SR.ContextMenuStripActionList_ShowCheckMargin,
+                SR.ToolStripActionList_Layout,
+                SR.ContextMenuStripActionList_ShowCheckMarginDesc));
         }
 
         return items;

@@ -14,17 +14,22 @@ namespace System.Windows.Forms;
 public abstract class CommonDialog : Component
 {
     private static readonly object s_helpRequestEvent = new();
-    private const int CDM_SETDEFAULTFOCUS = (int)PInvoke.WM_USER + 0x51;
+    private const int CDM_SETDEFAULTFOCUS = (int)PInvokeCore.WM_USER + 0x51;
     private static MessageId s_helpMessage;
 
     private nint _priorWindowProcedure;
     private HWND _defaultControlHwnd;
+    private readonly WNDPROC _hookProc;
+    private readonly unsafe delegate* unmanaged[Stdcall]<HWND, uint, WPARAM, LPARAM, nuint> _functionPointer;
 
     /// <summary>
     ///  Initializes a new instance of the <see cref="CommonDialog"/> class.
     /// </summary>
-    public CommonDialog()
+    public unsafe CommonDialog()
     {
+        // Keep the delegate in a field to avoid having it collected prematurely.
+        _hookProc = HookProcInternal;
+        _functionPointer = (delegate* unmanaged[Stdcall]<HWND, uint, WPARAM, LPARAM, nuint>)(void*)Marshal.GetFunctionPointerForDelegate(_hookProc);
     }
 
     [SRCategory(nameof(SR.CatData))]
@@ -36,8 +41,7 @@ public abstract class CommonDialog : Component
     public object? Tag { get; set; }
 
     /// <summary>
-    ///  Occurs when the user clicks the Help button on a common
-    ///  dialog box.
+    ///  Occurs when the user clicks the Help button on a common dialog box.
     /// </summary>
     [SRDescription(nameof(SR.CommonDialogHelpRequested))]
     public event EventHandler? HelpRequest
@@ -46,8 +50,11 @@ public abstract class CommonDialog : Component
         remove => Events.RemoveHandler(s_helpRequestEvent, value);
     }
 
-    internal LRESULT HookProcInternal(HWND hWnd, MessageId msg, WPARAM wparam, LPARAM lparam)
+    internal LRESULT HookProcInternal(HWND hWnd, uint msg, WPARAM wparam, LPARAM lparam)
         => (LRESULT)HookProc(hWnd, (int)msg, (nint)wparam, lparam);
+
+    private protected unsafe delegate* unmanaged[Stdcall]<HWND, uint, WPARAM, LPARAM, nuint> HookProcFunctionPointer
+        => _functionPointer;
 
     /// <summary>
     ///  Defines the common dialog box hook procedure that is overridden to add specific
@@ -55,7 +62,7 @@ public abstract class CommonDialog : Component
     /// </summary>
     protected virtual IntPtr HookProc(IntPtr hWnd, int msg, IntPtr wparam, IntPtr lparam)
     {
-        if (msg == (int)PInvoke.WM_INITDIALOG)
+        if (msg == (int)PInvokeCore.WM_INITDIALOG)
         {
             MoveToScreenCenter((HWND)hWnd);
 
@@ -64,9 +71,9 @@ public abstract class CommonDialog : Component
             _defaultControlHwnd = (HWND)wparam;
             PInvoke.SetFocus((HWND)wparam);
         }
-        else if (msg == (int)PInvoke.WM_SETFOCUS)
+        else if (msg == (int)PInvokeCore.WM_SETFOCUS)
         {
-            PInvoke.PostMessage((HWND)hWnd, CDM_SETDEFAULTFOCUS);
+            PInvokeCore.PostMessage((HWND)hWnd, CDM_SETDEFAULTFOCUS);
         }
         else if (msg == CDM_SETDEFAULTFOCUS)
         {
@@ -86,7 +93,7 @@ public abstract class CommonDialog : Component
     /// </summary>
     private protected static void MoveToScreenCenter(HWND hwnd)
     {
-        PInvoke.GetWindowRect(hwnd, out var r);
+        PInvokeCore.GetWindowRect(hwnd, out var r);
         Rectangle screen = Screen.GetWorkingArea(Control.MousePosition);
         int x = screen.X + (screen.Width - r.right + r.left) / 2;
         int y = screen.Y + (screen.Height - r.bottom + r.top) / 3;
@@ -106,7 +113,7 @@ public abstract class CommonDialog : Component
         handler?.Invoke(this, e);
     }
 
-    private LRESULT OwnerWndProcInternal(HWND hWnd, MessageId msg, WPARAM wparam, LPARAM lparam)
+    private LRESULT OwnerWndProcInternal(HWND hWnd, uint msg, WPARAM wparam, LPARAM lparam)
         => (LRESULT)OwnerWndProc(hWnd, (int)msg, (nint)wparam, lparam);
 
     /// <summary>
@@ -135,7 +142,7 @@ public abstract class CommonDialog : Component
             return IntPtr.Zero;
         }
 
-        return PInvoke.CallWindowProc((void*)_priorWindowProcedure, (HWND)hWnd, (uint)msg, (nuint)wparam, lparam);
+        return PInvokeCore.CallWindowProc((void*)_priorWindowProcedure, (HWND)hWnd, (uint)msg, (nuint)wparam, lparam);
     }
 
     /// <summary>
@@ -190,7 +197,7 @@ public abstract class CommonDialog : Component
                 ownerHwnd = new(nativeWindow, nativeWindow.HWND);
             }
 
-            if (s_helpMessage == PInvoke.WM_NULL)
+            if (s_helpMessage == PInvokeCore.WM_NULL)
             {
                 s_helpMessage = PInvoke.RegisterWindowMessage("commdlg_help");
             }
@@ -201,7 +208,7 @@ public abstract class CommonDialog : Component
 
             try
             {
-                _priorWindowProcedure = PInvoke.SetWindowLong(
+                _priorWindowProcedure = PInvokeCore.SetWindowLong(
                     ownerHwnd,
                     WINDOW_LONG_PTR_INDEX.GWL_WNDPROC,
                     hookedWndProc);
@@ -219,10 +226,10 @@ public abstract class CommonDialog : Component
             }
             finally
             {
-                nint currentSubClass = PInvoke.GetWindowLong(ownerHwnd.Handle, WINDOW_LONG_PTR_INDEX.GWL_WNDPROC);
+                nint currentSubClass = PInvokeCore.GetWindowLong(ownerHwnd.Handle, WINDOW_LONG_PTR_INDEX.GWL_WNDPROC);
                 if (_priorWindowProcedure != 0 || currentSubClass != hookedWndProc)
                 {
-                    PInvoke.SetWindowLong(ownerHwnd.Handle, WINDOW_LONG_PTR_INDEX.GWL_WNDPROC, _priorWindowProcedure);
+                    PInvokeCore.SetWindowLong(ownerHwnd.Handle, WINDOW_LONG_PTR_INDEX.GWL_WNDPROC, _priorWindowProcedure);
                 }
 
                 _priorWindowProcedure = 0;

@@ -58,11 +58,9 @@ public partial class ListViewItem
         internal override bool IsItemSelected
             => (State & AccessibleStates.Selected) != 0;
 
-        public override string? Name
-        {
-            get => _owningItem.Text;
-            set => base.Name = value;
-        }
+        public override string? Name => _owningItem.Text;
+
+        internal override bool CanGetNameInternal => false;
 
         private bool OwningListItemFocused
         {
@@ -112,6 +110,10 @@ public partial class ListViewItem
                 return SR.AccessibleActionDoubleClick;
             }
         }
+
+        private protected override bool IsInternal => true;
+
+        internal override bool CanGetDefaultActionInternal => false;
 
         public override void DoDefaultAction()
         {
@@ -172,10 +174,14 @@ public partial class ListViewItem
         {
             switch (propertyID)
             {
-                case UIA_PROPERTY_ID.UIA_ControlTypePropertyId: return (VARIANT)(int)UIA_CONTROLTYPE_ID.UIA_ListItemControlTypeId;
-                case UIA_PROPERTY_ID.UIA_HasKeyboardFocusPropertyId: return (VARIANT)OwningListItemFocused;
-                case UIA_PROPERTY_ID.UIA_IsEnabledPropertyId: return (VARIANT)_owningListView.Enabled;
-                case UIA_PROPERTY_ID.UIA_IsKeyboardFocusablePropertyId: return (VARIANT)State.HasFlag(AccessibleStates.Focusable);
+                case UIA_PROPERTY_ID.UIA_ControlTypePropertyId:
+                    return (VARIANT)(int)UIA_CONTROLTYPE_ID.UIA_ListItemControlTypeId;
+                case UIA_PROPERTY_ID.UIA_HasKeyboardFocusPropertyId:
+                    return (VARIANT)OwningListItemFocused;
+                case UIA_PROPERTY_ID.UIA_IsEnabledPropertyId:
+                    return (VARIANT)_owningListView.Enabled;
+                case UIA_PROPERTY_ID.UIA_IsKeyboardFocusablePropertyId:
+                    return (VARIANT)State.HasFlag(AccessibleStates.Focusable);
                 case UIA_PROPERTY_ID.UIA_IsOffscreenPropertyId:
                     if (OwningGroup?.CollapsedState == ListViewGroupCollapsedState.Collapsed)
                     {
@@ -186,7 +192,8 @@ public partial class ListViewItem
                     return result.IsEmpty ? VARIANT.False : result;
                 case UIA_PROPERTY_ID.UIA_NativeWindowHandlePropertyId:
                     return UIAHelper.WindowHandleToVariant(HWND.Null);
-                default: return base.GetPropertyValue(propertyID);
+                default:
+                    return base.GetPropertyValue(propertyID);
             }
         }
 
@@ -196,14 +203,14 @@ public partial class ListViewItem
         {
             get
             {
-                var owningListViewRuntimeId = _owningListView.AccessibilityObject.RuntimeId;
+                int[] id = _owningListView.AccessibilityObject.RuntimeId;
 
-                Debug.Assert(owningListViewRuntimeId.Length >= 2);
+                Debug.Assert(id.Length >= 2);
 
-                return new int[]
-                {
-                    owningListViewRuntimeId[0],
-                    owningListViewRuntimeId[1],
+                return
+                [
+                    id[0],
+                    id[1],
                     // Win32-control specific RuntimeID constant.
                     4,
                     // RuntimeId uses hash code instead of item's index. When items are removed,
@@ -213,7 +220,7 @@ public partial class ListViewItem
                     // Similar applies for items within a group, where adding the group's index
                     // was preventing from correct disconnection of items on removal.
                     _owningItem.GetHashCode()
-                };
+                ];
             }
         }
 

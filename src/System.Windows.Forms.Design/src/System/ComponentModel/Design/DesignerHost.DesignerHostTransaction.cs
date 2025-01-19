@@ -6,7 +6,7 @@ namespace System.ComponentModel.Design;
 internal sealed partial class DesignerHost
 {
     /// <summary>
-    ///  DesignerHostTransaction is our implementation of the  DesignerTransaction abstract class.
+    ///  DesignerHostTransaction is our implementation of the DesignerTransaction abstract class.
     /// </summary>
     private sealed class DesignerHostTransaction : DesignerTransaction
     {
@@ -44,7 +44,7 @@ internal sealed partial class DesignerHost
             try
             {
                 transactions.Pop();
-                DesignerTransactionCloseEventArgs e = new DesignerTransactionCloseEventArgs(false, transactions.Count == 0);
+                DesignerTransactionCloseEventArgs e = new(false, transactions.Count == 0);
                 _host.OnTransactionClosing(e);
                 _host.OnTransactionClosed(e);
             }
@@ -77,7 +77,7 @@ internal sealed partial class DesignerHost
             try
             {
                 transactions.Pop();
-                DesignerTransactionCloseEventArgs e = new DesignerTransactionCloseEventArgs(true, transactions.Count == 0);
+                DesignerTransactionCloseEventArgs e = new(true, transactions.Count == 0);
                 _host.OnTransactionClosing(e);
                 _host.OnTransactionClosed(e);
             }

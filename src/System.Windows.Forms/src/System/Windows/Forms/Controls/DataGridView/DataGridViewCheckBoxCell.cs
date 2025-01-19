@@ -20,12 +20,12 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
     private const DataGridViewContentAlignment AnyBottom = DataGridViewContentAlignment.BottomRight | DataGridViewContentAlignment.BottomCenter | DataGridViewContentAlignment.BottomLeft;
     private const DataGridViewContentAlignment AnyMiddle = DataGridViewContentAlignment.MiddleRight | DataGridViewContentAlignment.MiddleCenter | DataGridViewContentAlignment.MiddleLeft;
 
-    private static readonly VisualStyleElement CheckBoxElement = VisualStyleElement.Button.CheckBox.UncheckedNormal;
-    private static readonly int PropButtonCellState = PropertyStore.CreateKey();
-    private static readonly int PropTrueValue = PropertyStore.CreateKey();
-    private static readonly int PropFalseValue = PropertyStore.CreateKey();
-    private static readonly int PropFlatStyle = PropertyStore.CreateKey();
-    private static readonly int PropIndeterminateValue = PropertyStore.CreateKey();
+    private static readonly VisualStyleElement s_checkBoxElement = VisualStyleElement.Button.CheckBox.UncheckedNormal;
+    private static readonly int s_propButtonCellState = PropertyStore.CreateKey();
+    private static readonly int s_propTrueValue = PropertyStore.CreateKey();
+    private static readonly int s_propFalseValue = PropertyStore.CreateKey();
+    private static readonly int s_propFlatStyle = PropertyStore.CreateKey();
+    private static readonly int s_propIndeterminateValue = PropertyStore.CreateKey();
     private static Bitmap? s_checkImage;
 
     private const byte DATAGRIDVIEWCHECKBOXCELL_margin = 2;  // horizontal and vertical margins for preferred sizes
@@ -179,16 +179,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
 
     private ButtonState ButtonState
     {
-        get
-        {
-            int buttonState = Properties.GetInteger(PropButtonCellState, out bool found);
-            if (found)
-            {
-                return (ButtonState)buttonState;
-            }
-
-            return ButtonState.Normal;
-        }
+        get => Properties.GetValueOrDefault(s_propButtonCellState, ButtonState.Normal);
         set
         {
             // ButtonState.Pushed is used for mouse interaction
@@ -196,7 +187,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
             Debug.Assert((value & ~(ButtonState.Normal | ButtonState.Pushed | ButtonState.Checked)) == 0);
             if (ButtonState != value)
             {
-                Properties.SetInteger(PropButtonCellState, (int)value);
+                Properties.AddOrRemoveValue(s_propButtonCellState, value, defaultValue: ButtonState.Normal);
             }
         }
     }
@@ -215,22 +206,19 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
     [DefaultValue(null)]
     public object? FalseValue
     {
-        get => Properties.GetObject(PropFalseValue);
+        get => Properties.GetValueOrDefault<object?>(s_propFalseValue);
         set
         {
-            if (value is not null || Properties.ContainsObject(PropFalseValue))
+            Properties.AddOrRemoveValue(s_propFalseValue, value);
+            if (DataGridView is not null)
             {
-                Properties.SetObject(PropFalseValue, value);
-                if (DataGridView is not null)
+                if (RowIndex != -1)
                 {
-                    if (RowIndex != -1)
-                    {
-                        DataGridView.InvalidateCell(this);
-                    }
-                    else
-                    {
-                        DataGridView.InvalidateColumnInternal(ColumnIndex);
-                    }
+                    DataGridView.InvalidateCell(this);
+                }
+                else
+                {
+                    DataGridView.InvalidateColumnInternal(ColumnIndex);
                 }
             }
         }
@@ -238,35 +226,19 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
 
     internal object? FalseValueInternal
     {
-        set
-        {
-            if (value is not null || Properties.ContainsObject(PropFalseValue))
-            {
-                Properties.SetObject(PropFalseValue, value);
-            }
-        }
+        set => Properties.AddOrRemoveValue(s_propFalseValue, value);
     }
 
     [DefaultValue(FlatStyle.Standard)]
     public FlatStyle FlatStyle
     {
-        get
-        {
-            int flatStyle = Properties.GetInteger(PropFlatStyle, out bool found);
-            if (found)
-            {
-                return (FlatStyle)flatStyle;
-            }
-
-            return FlatStyle.Standard;
-        }
+        get => Properties.GetValueOrDefault(s_propFlatStyle, FlatStyle.Standard);
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x3
             SourceGenerated.EnumValidator.Validate(value);
-            if (value != FlatStyle)
+            FlatStyle previous = Properties.AddOrRemoveValue(s_propFlatStyle, value, defaultValue: FlatStyle.Standard);
+            if (value != previous)
             {
-                Properties.SetInteger(PropFlatStyle, (int)value);
                 OnCommonChange();
             }
         }
@@ -276,10 +248,10 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
     {
         set
         {
-            Debug.Assert(value >= FlatStyle.Flat && value <= FlatStyle.System);
+            Debug.Assert(value is >= FlatStyle.Flat and <= FlatStyle.System);
             if (value != FlatStyle)
             {
-                Properties.SetInteger(PropFlatStyle, (int)value);
+                Properties.AddOrRemoveValue(s_propFlatStyle, value, defaultValue: FlatStyle.Standard);
             }
         }
     }
@@ -289,22 +261,19 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
     [DefaultValue(null)]
     public object? IndeterminateValue
     {
-        get => Properties.GetObject(PropIndeterminateValue);
+        get => Properties.GetValueOrDefault<object?>(s_propIndeterminateValue);
         set
         {
-            if (value is not null || Properties.ContainsObject(PropIndeterminateValue))
+            Properties.AddOrRemoveValue(s_propIndeterminateValue, value);
+            if (DataGridView is not null)
             {
-                Properties.SetObject(PropIndeterminateValue, value);
-                if (DataGridView is not null)
+                if (RowIndex != -1)
                 {
-                    if (RowIndex != -1)
-                    {
-                        DataGridView.InvalidateCell(this);
-                    }
-                    else
-                    {
-                        DataGridView.InvalidateColumnInternal(ColumnIndex);
-                    }
+                    DataGridView.InvalidateCell(this);
+                }
+                else
+                {
+                    DataGridView.InvalidateColumnInternal(ColumnIndex);
                 }
             }
         }
@@ -312,13 +281,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
 
     internal object? IndeterminateValueInternal
     {
-        set
-        {
-            if (value is not null || Properties.ContainsObject(PropIndeterminateValue))
-            {
-                Properties.SetObject(PropIndeterminateValue, value);
-            }
-        }
+        set => Properties.AddOrRemoveValue(s_propIndeterminateValue, value);
     }
 
     [DefaultValue(false)]
@@ -396,12 +359,12 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
     [DefaultValue(null)]
     public object? TrueValue
     {
-        get => Properties.GetObject(PropTrueValue);
+        get => Properties.GetValueOrDefault<object?>(s_propTrueValue);
         set
         {
-            if (value is not null || Properties.ContainsObject(PropTrueValue))
+            if (value is not null || Properties.ContainsKey(s_propTrueValue))
             {
-                Properties.SetObject(PropTrueValue, value);
+                Properties.AddOrRemoveValue(s_propTrueValue, value);
                 if (DataGridView is not null)
                 {
                     if (RowIndex != -1)
@@ -419,13 +382,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
 
     internal object? TrueValueInternal
     {
-        set
-        {
-            if (value is not null || Properties.ContainsObject(PropTrueValue))
-            {
-                Properties.SetObject(PropTrueValue, value);
-            }
-        }
+        set => Properties.AddOrRemoveValue(s_propTrueValue, value);
     }
 
     public override Type? ValueType
@@ -460,7 +417,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
             dataGridViewCell = (DataGridViewCheckBoxCell)Activator.CreateInstance(thisType)!;
         }
 
-        base.CloneInternal(dataGridViewCell);
+        CloneInternal(dataGridViewCell);
         dataGridViewCell.ThreeStateInternal = ThreeState;
         dataGridViewCell.TrueValueInternal = TrueValue;
         dataGridViewCell.FalseValueInternal = FalseValue;
@@ -600,38 +557,36 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
         TypeConverter? formattedValueTypeConverter,
         DataGridViewDataErrorContexts context)
     {
-        if (value is not null)
+        if (value is int intValue)
         {
             if (ThreeState)
             {
-                if (value.Equals(TrueValue) ||
-                    (value is int && (int)value == (int)CheckState.Checked))
+                value = (CheckState)intValue switch
                 {
-                    value = CheckState.Checked;
-                }
-                else if (value.Equals(FalseValue) ||
-                         (value is int && (int)value == (int)CheckState.Unchecked))
-                {
-                    value = CheckState.Unchecked;
-                }
-                else if (value.Equals(IndeterminateValue) ||
-                         (value is int && (int)value == (int)CheckState.Indeterminate))
-                {
-                    value = CheckState.Indeterminate;
-                }
+                    CheckState.Checked => CheckState.Checked,
+                    CheckState.Unchecked => CheckState.Unchecked,
+                    CheckState.Indeterminate => CheckState.Indeterminate,
+                    _ => value
+                };
             }
             else
             {
-                if (value.Equals(TrueValue) ||
-                    (value is int && (int)value != 0))
-                {
-                    value = true;
-                }
-                else if (value.Equals(FalseValue) ||
-                         (value is int && (int)value == 0))
-                {
-                    value = false;
-                }
+                value = intValue != 0;
+            }
+        }
+        else if (value is not null)
+        {
+            if (value.Equals(TrueValue))
+            {
+                value = CheckState.Checked;
+            }
+            else if (value.Equals(FalseValue))
+            {
+                value = CheckState.Unchecked;
+            }
+            else if (ThreeState && value.Equals(IndeterminateValue))
+            {
+                value = CheckState.Indeterminate;
             }
         }
 
@@ -642,6 +597,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
             valueTypeConverter,
             formattedValueTypeConverter,
             context);
+
         if (ret is not null && (context & DataGridViewDataErrorContexts.ClipboardContent) != 0)
         {
             if (ret is bool retBool)
@@ -689,7 +645,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
 
         ArgumentNullException.ThrowIfNull(cellStyle);
 
-        DataGridViewFreeDimension freeDimension = DataGridViewCell.GetFreeDimensionFromConstraint(constraintSize);
+        DataGridViewFreeDimension freeDimension = GetFreeDimensionFromConstraint(constraintSize);
         Rectangle borderWidthsRect = StdBorderWidths;
         int borderAndPaddingWidths = borderWidthsRect.Left + borderWidthsRect.Width + cellStyle.Padding.Horizontal;
         int borderAndPaddingHeights = borderWidthsRect.Top + borderWidthsRect.Height + cellStyle.Padding.Vertical;
@@ -737,19 +693,13 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
         }
         else
         {
-            int checkBoxSize;
-            switch (FlatStyle)
+            int checkBoxSize = FlatStyle switch
             {
-                case FlatStyle.Flat:
-                    checkBoxSize = CheckBoxRenderer.GetGlyphSize(graphics, CheckBoxState.UncheckedNormal).Width - 3;
-                    break;
-                case FlatStyle.Popup:
-                    checkBoxSize = CheckBoxRenderer.GetGlyphSize(graphics, CheckBoxState.UncheckedNormal).Width - 2;
-                    break;
-                default: // FlatStyle.Standard || FlatStyle.System
-                    checkBoxSize = SystemInformation.Border3DSize.Width * 2 + 9 + 2 * DATAGRIDVIEWCHECKBOXCELL_margin;
-                    break;
-            }
+                FlatStyle.Flat => CheckBoxRenderer.GetGlyphSize(graphics, CheckBoxState.UncheckedNormal).Width - 3,
+                FlatStyle.Popup => CheckBoxRenderer.GetGlyphSize(graphics, CheckBoxState.UncheckedNormal).Width - 2,
+                // FlatStyle.Standard || FlatStyle.System
+                _ => SystemInformation.Border3DSize.Width * 2 + 9 + 2 * DATAGRIDVIEWCHECKBOXCELL_margin,
+            };
 
             switch (freeDimension)
             {
@@ -778,8 +728,9 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
         ComputeBorderStyleCellStateAndCellBounds(
             rowIndex,
             out DataGridViewAdvancedBorderStyle dgvabsEffective,
-            out DataGridViewElementStates cellState,
-            out Rectangle cellBounds);
+            out _,
+            out _);
+
         Rectangle borderWidths = BorderWidths(dgvabsEffective);
         preferredSize.Width += borderWidths.X;
         preferredSize.Height += borderWidths.Y;
@@ -1000,7 +951,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
     {
         if (IsParentAccessibilityObjectCreated)
         {
-            var cellName = AccessibilityObject.Name ?? string.Empty;
+            string cellName = AccessibilityObject.Name ?? string.Empty;
             string notificationText = CheckState switch
             {
                 CheckState.Checked => string.Format(SR.DataGridViewCheckBoxCellCheckedStateDescription, cellName),
@@ -1125,9 +1076,9 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
             drawErrorText = false;
         }
 
-        if (formattedValue is not null && formattedValue is CheckState)
+        if (formattedValue is not null and CheckState state)
         {
-            checkState = (CheckState)formattedValue;
+            checkState = state;
             bs = (checkState == CheckState.Unchecked) ? ButtonState.Normal : ButtonState.Checked;
             drawAsMixedCheckBox = (checkState == CheckState.Indeterminate);
         }
@@ -1291,7 +1242,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
             }
             else
             {
-                if (FlatStyle == FlatStyle.System || FlatStyle == FlatStyle.Standard)
+                if (FlatStyle is FlatStyle.System or FlatStyle.Standard)
                 {
                     if (paint && PaintContentForeground(paintParts))
                     {
@@ -1324,7 +1275,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
                     // CheckBox::Paint will only paint the check box differently when in FlatStyle.Flat
                     // this code is copied from CheckBox::DrawCheckFlat. it was a lot of trouble making this function static
 
-                    Rectangle checkBounds = new Rectangle(checkBoxX, checkBoxY, checkBoxSize.Width, checkBoxSize.Height);
+                    Rectangle checkBounds = new(checkBoxX, checkBoxY, checkBoxSize.Width, checkBoxSize.Height);
 
                     Color foreBrushColor = default;
                     Color backBrushColor = default;
@@ -1382,7 +1333,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
                         // draw the check box
                         if (checkState != CheckState.Unchecked)
                         {
-                            Rectangle fullSize = new Rectangle(checkBoxX - 1, checkBoxY - 1, checkBoxSize.Width + 3, checkBoxSize.Height + 3);
+                            Rectangle fullSize = new(checkBoxX - 1, checkBoxY - 1, checkBoxSize.Width + 3, checkBoxSize.Height + 3);
                             fullSize.Width++;
                             fullSize.Height++;
 
@@ -1397,7 +1348,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
                                 // We draw the checkmark slightly off center to eliminate 3-D border artifacts,
                                 // and compensate below
                                 RECT rcCheck = new Rectangle(0, 0, fullSize.Width, fullSize.Height);
-                                Bitmap bitmap = new Bitmap(fullSize.Width, fullSize.Height);
+                                Bitmap bitmap = new(fullSize.Width, fullSize.Height);
                                 using (Graphics offscreen = Graphics.FromImage(bitmap))
                                 {
                                     offscreen.Clear(Color.Transparent);
@@ -1430,7 +1381,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
                 {
                     Debug.Assert(FlatStyle == FlatStyle.Popup);
 
-                    Rectangle checkBounds = new Rectangle(checkBoxX, checkBoxY, checkBoxSize.Width - 1, checkBoxSize.Height - 1);
+                    Rectangle checkBounds = new(checkBoxX, checkBoxY, checkBoxSize.Width - 1, checkBoxSize.Height - 1);
 
                     // The CheckBoxAdapter code moves the check box down about 3 pixels so we have to take that into account
                     checkBounds.Y -= 3;
@@ -1444,7 +1395,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
                             checkBounds,
                             Padding.Empty,
                             isDefault: false,
-                            cellStyle.Font,
+                            cellStyle.Font!,
                             string.Empty,
                             DataGridView.Enabled,
                             DataGridViewUtilities.ComputeDrawingContentAlignmentForCellStyleAlignment(cellStyle.Alignment),
@@ -1470,7 +1421,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
                             CheckBoxBaseAdapter.DrawPopupBorder(g, layout.CheckBounds, colors);
                             CheckBoxBaseAdapter.DrawCheckOnly(
                                 checkBoxSize.Width,
-                                checkState == CheckState.Checked || checkState == CheckState.Indeterminate,
+                                checkState is CheckState.Checked or CheckState.Indeterminate,
                                 DataGridView.Enabled,
                                 checkState,
                                 g,
@@ -1493,7 +1444,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
                             checkBounds,
                             Padding.Empty,
                             isDefault: false,
-                            cellStyle.Font,
+                            cellStyle.Font!,
                             string.Empty,
                             DataGridView.Enabled,
                             DataGridViewUtilities.ComputeDrawingContentAlignmentForCellStyleAlignment(cellStyle.Alignment),
@@ -1520,7 +1471,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
                             CheckBoxBaseAdapter.DrawPopupBorder(g, layout.CheckBounds, colors);
                             CheckBoxBaseAdapter.DrawCheckOnly(
                                 checkBoxSize.Width,
-                                checkState == CheckState.Checked || checkState == CheckState.Indeterminate,
+                                checkState is CheckState.Checked or CheckState.Indeterminate,
                                 DataGridView.Enabled,
                                 checkState,
                                 g,
@@ -1540,7 +1491,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
                             checkBounds,
                             Padding.Empty,
                             false,
-                            cellStyle.Font,
+                            cellStyle.Font!,
                             string.Empty,
                             DataGridView.Enabled,
                             DataGridViewUtilities.ComputeDrawingContentAlignmentForCellStyleAlignment(cellStyle.Alignment),
@@ -1567,7 +1518,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
                             ControlPaint.DrawBorderSimple(g, layout.CheckBounds, colors.ButtonShadow);
                             CheckBoxBaseAdapter.DrawCheckOnly(
                                 checkBoxSize.Width,
-                                checkState == CheckState.Checked || checkState == CheckState.Indeterminate,
+                                checkState is CheckState.Checked or CheckState.Indeterminate,
                                 DataGridView.Enabled,
                                 checkState,
                                 g,
@@ -1606,7 +1557,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
         return resultBounds;
     }
 
-    public override object ParseFormattedValue(
+    public override object? ParseFormattedValue(
         object? formattedValue,
         DataGridViewCellStyle cellStyle,
         TypeConverter? formattedValueTypeConverter,
@@ -1699,7 +1650,11 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
             }
         }
 
-        return base.ParseFormattedValue(formattedValue, cellStyle, formattedValueTypeConverter, valueTypeConverter);
+        return base.ParseFormattedValue(
+            formattedValue,
+            cellStyle,
+            formattedValueTypeConverter,
+            valueTypeConverter);
     }
 
     private bool SwitchFormattedValue()
@@ -1709,7 +1664,7 @@ public partial class DataGridViewCheckBoxCell : DataGridViewCell, IDataGridViewE
             return false;
         }
 
-        IDataGridViewEditingCell editingCell = (IDataGridViewEditingCell)this;
+        DataGridViewCheckBoxCell editingCell = this;
         if (FormattedValueType.IsAssignableFrom(typeof(CheckState)))
         {
             if (_flags.HasFlag(DataGridViewCheckBoxCellFlags.Checked))

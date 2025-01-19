@@ -21,7 +21,7 @@ public partial class ListViewItem : IKeyboardToolTip
 
     IList<Rectangle> IKeyboardToolTip.GetNeighboringToolsRectangles()
     {
-        List<Rectangle> neighboringRectangles = new List<Rectangle>();
+        List<Rectangle> neighboringRectangles = [];
         if (_listView is null)
         {
             return neighboringRectangles;
@@ -94,18 +94,14 @@ public partial class ListViewItem : IKeyboardToolTip
 
         Rectangle itemBounds = _listView.GetItemRect(index, ItemBoundsPortion.Label);
         Rectangle listviewBounds = _listView.AccessibilityObject.Bounds;
-        Point point = new Point(listviewBounds.X + itemBounds.X, listviewBounds.Y + itemBounds.Y);
+        Point point = new(listviewBounds.X + itemBounds.X, listviewBounds.Y + itemBounds.Y);
 
-        switch (_listView.View)
+        return _listView.View switch
         {
-            case View.Details:
-            case View.List:
-                return GetDetailsListRectangle(point, item, itemBounds);
-            case View.Tile:
-                return GetTileRectangle(point, item, itemBounds);
-            default:
-                return new Rectangle(point, new Size(itemBounds.Width, itemBounds.Height));
-        }
+            View.Details or View.List => GetDetailsListRectangle(point, item, itemBounds),
+            View.Tile => GetTileRectangle(point, item, itemBounds),
+            _ => new Rectangle(point, new Size(itemBounds.Width, itemBounds.Height)),
+        };
     }
 
     private static Rectangle GetDetailsListRectangle(Point point, ListViewItem item, Rectangle itemBounds)

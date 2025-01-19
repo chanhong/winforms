@@ -8,7 +8,7 @@ using System.Text;
 
 namespace System.Diagnostics;
 
-internal class DebuggerAttributeInfo
+internal sealed class DebuggerAttributeInfo
 {
     public object Instance { get; set; }
     public IEnumerable<PropertyInfo> Properties { get; set; }
@@ -75,7 +75,7 @@ internal static class DebuggerAttributes
     {
         // The debugger doesn't evaluate non-public members of type proxies. GetGetMethod returns null if the getter is non-public.
         IEnumerable<PropertyInfo> visibleProperties = debuggerAttributeType.GetProperties()
-            .Where(pi => pi.GetGetMethod() is object && GetDebuggerBrowsableState(pi) != DebuggerBrowsableState.Never);
+            .Where(pi => pi.GetGetMethod() is not null && GetDebuggerBrowsableState(pi) != DebuggerBrowsableState.Never);
         return visibleProperties;
     }
 
@@ -128,7 +128,7 @@ internal static class DebuggerAttributes
         // Get the text of the DebuggerDisplayAttribute
         string attrText = (string)cad.ConstructorArguments[0].Value;
 
-        string[] segments = attrText.Split(new[] { '{', '}' });
+        string[] segments = attrText.Split(['{', '}']);
 
         if (segments.Length % 2 == 0)
         {
@@ -150,13 +150,12 @@ internal static class DebuggerAttributes
             if (i + 1 < segments.Length)
             {
                 string reference = segments[i + 1];
-                bool noQuotes = reference.EndsWith(",nq");
+                bool noQuotes = reference.EndsWith(",nq", StringComparison.Ordinal);
 
                 reference = reference.Replace(",nq", string.Empty);
 
                 // Evaluate the reference.
-                object member;
-                if (!TryEvaluateReference(obj, reference, out member))
+                if (!TryEvaluateReference(obj, reference, out object member))
                 {
                     throw new InvalidOperationException($"The DebuggerDisplayAttribute for {objType} contains the expression \"{reference}\".");
                 }
@@ -176,7 +175,7 @@ internal static class DebuggerAttributes
         {
             null => "null",
             byte or sbyte or short or ushort or int or uint or long or ulong or float or double => member.ToString(),
-            string _ when noQuotes => member.ToString(),
+            string when noQuotes => member.ToString(),
             string => $"\"{member}\"",
             _ => $"{{{member}}}"
         };
@@ -184,17 +183,15 @@ internal static class DebuggerAttributes
 
     private static bool TryEvaluateReference(object obj, string reference, out object member)
     {
-        PropertyInfo pi = GetProperty(obj, reference);
-        if (pi is object)
+        if (GetProperty(obj, reference) is { } property)
         {
-            member = pi.GetValue(obj);
+            member = property.GetValue(obj);
             return true;
         }
 
-        FieldInfo fi = GetField(obj, reference);
-        if (fi is object)
+        if (GetField(obj, reference) is { } field)
         {
-            member = fi.GetValue(obj);
+            member = field.GetValue(obj);
             return true;
         }
 
@@ -204,12 +201,11 @@ internal static class DebuggerAttributes
 
     private static FieldInfo GetField(object obj, string fieldName)
     {
-        for (Type t = obj.GetType(); t is object; t = t.GetTypeInfo().BaseType)
+        for (Type t = obj.GetType(); t is not null; t = t.GetTypeInfo().BaseType)
         {
-            FieldInfo fi = t.GetTypeInfo().GetDeclaredField(fieldName);
-            if (fi is object)
+            if (t.GetTypeInfo().GetDeclaredField(fieldName) is { } field)
             {
-                return fi;
+                return field;
             }
         }
 
@@ -218,12 +214,11 @@ internal static class DebuggerAttributes
 
     private static PropertyInfo GetProperty(object obj, string propertyName)
     {
-        for (Type t = obj.GetType(); t is object; t = t.GetTypeInfo().BaseType)
+        for (Type t = obj.GetType(); t is not null; t = t.GetTypeInfo().BaseType)
         {
-            PropertyInfo pi = t.GetTypeInfo().GetDeclaredProperty(propertyName);
-            if (pi is object)
+            if (t.GetTypeInfo().GetDeclaredProperty(propertyName) is { } property)
             {
-                return pi;
+                return property;
             }
         }
 

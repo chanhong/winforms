@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Drawing;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
 
@@ -11,7 +10,7 @@ public partial class DataGridView
 {
     protected class DataGridViewAccessibleObject : ControlAccessibleObject
     {
-        private int[]? runtimeId; // Used by UIAutomation
+        private int[]? _runtimeId;
         private bool? _isModal;
 
         private DataGridViewTopRowAccessibleObject? _topRowAccessibilityObject;
@@ -47,28 +46,13 @@ public partial class DataGridView
             _selectedCellsAccessibilityObject = null;
         }
 
-        public override AccessibleRole Role
-            => this.GetOwnerAccessibleRole(AccessibleRole.Table);
+        public override AccessibleRole Role => this.GetOwnerAccessibleRole(AccessibleRole.Table);
 
-        private AccessibleObject? TopRowAccessibilityObject
-        {
-            get
-            {
-                _topRowAccessibilityObject ??= this.TryGetOwnerAs(out DataGridView? owner) ? new DataGridViewTopRowAccessibleObject(owner) : null;
+        private DataGridViewTopRowAccessibleObject? TopRowAccessibilityObject =>
+            _topRowAccessibilityObject ??= this.TryGetOwnerAs(out DataGridView? owner) ? new(owner) : null;
 
-                return _topRowAccessibilityObject;
-            }
-        }
-
-        private AccessibleObject SelectedCellsAccessibilityObject
-        {
-            get
-            {
-                _selectedCellsAccessibilityObject ??= new DataGridViewSelectedCellsAccessibleObject(this);
-
-                return _selectedCellsAccessibilityObject;
-            }
-        }
+        private DataGridViewSelectedCellsAccessibleObject SelectedCellsAccessibilityObject =>
+            _selectedCellsAccessibilityObject ??= new(this);
 
         public override AccessibleObject? GetChild(int index)
         {
@@ -79,7 +63,7 @@ public partial class DataGridView
 
             if (owner.Columns.Count == 0)
             {
-                Diagnostics.Debug.Assert(GetChildCount() == 0);
+                Debug.Assert(GetChildCount() == 0);
                 return null;
             }
 
@@ -164,10 +148,7 @@ public partial class DataGridView
             }
         }
 
-        public override AccessibleObject GetSelected()
-        {
-            return SelectedCellsAccessibilityObject;
-        }
+        public override AccessibleObject GetSelected() => SelectedCellsAccessibilityObject;
 
         public override AccessibleObject? HitTest(int x, int y)
         {
@@ -207,34 +188,18 @@ public partial class DataGridView
             }
         }
 
-        public override AccessibleObject? Navigate(AccessibleNavigation navigationDirection)
+        public override AccessibleObject? Navigate(AccessibleNavigation navigationDirection) => navigationDirection switch
         {
-            switch (navigationDirection)
-            {
-                case AccessibleNavigation.FirstChild:
-                    return GetChild(0);
-                case AccessibleNavigation.LastChild:
-                    return GetChild(GetChildCount() - 1);
-                default:
-                    return null;
-            }
-        }
+            AccessibleNavigation.FirstChild => GetChild(0),
+            AccessibleNavigation.LastChild => GetChild(GetChildCount() - 1),
+            _ => null,
+        };
 
-        /* Microsoft: why is this method defined and not used?
-        // this method is called when the accessible object needs to be reset
-        // Example: when the user changes the display index on a column or when the user modifies the column collection
-        internal void Reset()
-        {
-            this.NotifyClients(AccessibleEvents.Reorder);
-        }
-        */
-
-        internal override int[] RuntimeId
-            => runtimeId ??= new int[]
-            {
-                RuntimeIDFirstItem, // first item is static - 0x2a
-                GetHashCode()
-            };
+        internal override int[] RuntimeId => _runtimeId ??=
+        [
+            RuntimeIDFirstItem,
+            GetHashCode()
+        ];
 
         internal override bool IsIAccessibleExSupported() => true;
 
@@ -257,7 +222,7 @@ public partial class DataGridView
                 case UIA_PROPERTY_ID.UIA_IsKeyboardFocusablePropertyId:
                     return (VARIANT)(this.TryGetOwnerAs(out owner) && owner.CanFocus);
                 case UIA_PROPERTY_ID.UIA_ItemStatusPropertyId:
-                    var canSort = false;
+                    bool canSort = false;
                     if (!this.TryGetOwnerAs(out owner))
                     {
                         return base.GetPropertyValue(propertyID);

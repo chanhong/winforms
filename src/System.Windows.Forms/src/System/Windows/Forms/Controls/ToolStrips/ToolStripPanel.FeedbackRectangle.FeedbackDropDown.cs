@@ -13,7 +13,7 @@ public partial class ToolStripPanel
         private class FeedbackDropDown : ToolStripDropDown
         {
             private const int MaxPaintsToService = 20;
-            private int _numPaintsServiced; // member variable to protect against re-entrancy
+            private int _numPaintsServiced; // member variable to protect against reentrancy
 
             public FeedbackDropDown(Rectangle bounds) : base()
             {
@@ -45,15 +45,15 @@ public partial class ToolStripPanel
                     return;
                 }
 
-                // Protect against re-entrancy.
+                // Protect against reentrancy.
                 try
                 {
                     MSG msg = default;
-                    while (PInvoke.PeekMessage(
+                    while (PInvokeCore.PeekMessage(
                         &msg,
                         HWND.Null,
-                        (uint)PInvoke.WM_PAINT,
-                        (uint)PInvoke.WM_PAINT,
+                        PInvokeCore.WM_PAINT,
+                        PInvokeCore.WM_PAINT,
                         PEEK_MESSAGE_REMOVE_TYPE.PM_REMOVE))
                     {
                         PInvoke.UpdateWindow(msg.hwnd);
@@ -100,9 +100,9 @@ public partial class ToolStripPanel
 
             protected override void WndProc(ref Message m)
             {
-                if (m.MsgInternal == PInvoke.WM_NCHITTEST)
+                if (m.MsgInternal == PInvokeCore.WM_NCHITTEST)
                 {
-                    m.ResultInternal = (LRESULT)(nint)PInvoke.HTTRANSPARENT;
+                    m.ResultInternal = (LRESULT)PInvoke.HTTRANSPARENT;
                 }
 
                 base.WndProc(ref m);

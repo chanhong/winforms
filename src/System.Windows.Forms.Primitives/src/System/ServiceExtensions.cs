@@ -35,7 +35,9 @@ internal static class ServiceExtensions
     /// </summary>
     /// <typeparam name="T">The type of the service object to get.</typeparam>
     /// <param name="provider">The <see cref="IServiceProvider"/> to retrieve the service object from.</param>
-    /// <param name="service">If found, contains the service object when this method returns; otherwise, <see langword="null"/>.</param>
+    /// <param name="service">
+    ///  If found, contains the service object when this method returns; otherwise, <see langword="null"/>.
+    /// </param>
     /// <returns>A service object of type <typeparamref name="T"/> or <see langword="null"/> if there is no such service.</returns>
     public static bool TryGetService<T>(
         [NotNullWhen(true)] this IServiceProvider? provider,
@@ -48,7 +50,9 @@ internal static class ServiceExtensions
     /// </summary>
     /// <typeparam name="T">The type of the service object to get.</typeparam>
     /// <param name="designerHost">The <see cref="IDesignerHost"/> to retrieve the service object from.</param>
-    /// <param name="service">If found, contains the service object when this method returns; otherwise, <see langword="null"/>.</param>
+    /// <param name="service">
+    ///  If found, contains the service object when this method returns; otherwise, <see langword="null"/>.
+    /// </param>
     /// <returns>A service object of type <typeparamref name="T"/> or <see langword="null"/> if there is no such service.</returns>
     public static bool TryGetService<T>(
         [NotNullWhen(true)] this IDesignerHost? designerHost,
@@ -61,7 +65,9 @@ internal static class ServiceExtensions
     /// </summary>
     /// <typeparam name="T">The type of the service object to get.</typeparam>
     /// <param name="context">The <see cref="ITypeDescriptorContext"/> to retrieve the service object from.</param>
-    /// <param name="service">If found, contains the service object when this method returns; otherwise, <see langword="null"/>.</param>
+    /// <param name="service">
+    ///  If found, contains the service object when this method returns; otherwise, <see langword="null"/>.
+    /// </param>
     /// <returns>A service object of type <typeparamref name="T"/> or <see langword="null"/> if there is no such service.</returns>
     public static bool TryGetService<T>(
         [NotNullWhen(true)] this ITypeDescriptorContext? context,
@@ -78,15 +84,11 @@ internal static class ServiceExtensions
         where TService : class
         where TInterface : class
     {
-        var service = provider.GetService<TService, TInterface>();
-
-        if (service is null)
-        {
-            throw new InvalidOperationException(string.Format(SR.General_MissingService, typeof(TInterface).FullName))
+        TInterface service = provider.GetService<TService, TInterface>()
+            ?? throw new InvalidOperationException(string.Format(SR.General_MissingService, typeof(TInterface).FullName))
             {
                 HelpLink = SR.General_MissingService
             };
-        }
 
         return service;
     }

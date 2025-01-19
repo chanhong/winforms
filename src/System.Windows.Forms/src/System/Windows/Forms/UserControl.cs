@@ -9,9 +9,8 @@ using System.Windows.Forms.Layout;
 namespace System.Windows.Forms;
 
 /// <summary>
-///  Represents an empty control that can be used in the Forms Designer to create other  controls.   By extending form, UserControl inherits all of
-///  the standard positioning and mnemonic handling code that is necessary
-///  in a user control.
+///  Represents an empty control that can be used in the Forms Designer to create other  controls. By extending form,
+///  UserControl inherits all of the standard positioning and mnemonic handling code that is necessary in a user control.
 /// </summary>
 [Designer($"System.Windows.Forms.Design.UserControlDocumentDesigner, {AssemblyRef.SystemDesign}", typeof(IRootDesigner))]
 [Designer($"System.Windows.Forms.Design.ControlDesigner, {AssemblyRef.SystemDesign}")]
@@ -19,7 +18,7 @@ namespace System.Windows.Forms;
 [DefaultEvent(nameof(Load))]
 public class UserControl : ContainerControl
 {
-    private static readonly object EVENT_LOAD = new();
+    private static readonly object s_loadEvent = new();
     private BorderStyle _borderStyle = BorderStyle.None;
 
     /// <summary>
@@ -83,7 +82,7 @@ public class UserControl : ContainerControl
 
                 if (toLayout is not null)
                 {
-                    // DefaultLayout does not keep anchor information until it needs to.  When
+                    // DefaultLayout does not keep anchor information until it needs to. When
                     // AutoSize became a common property, we could no longer blindly call into
                     // DefaultLayout, so now we do a special InitLayout just for DefaultLayout.
                     if (toLayout.LayoutEngine == DefaultLayout.Instance)
@@ -146,8 +145,8 @@ public class UserControl : ContainerControl
     }
 
     /// <summary>
-    ///  Returns the parameters needed to create the handle.  Inheriting classes
-    ///  can override this to provide extra functionality.  They should not,
+    ///  Returns the parameters needed to create the handle. Inheriting classes
+    ///  can override this to provide extra functionality. They should not,
     ///  however, forget to call base.getCreateParams() first to get the struct
     ///  filled up with the basic info.This is required as we now need to pass the
     ///  styles for appropriate BorderStyle that is set by the user.
@@ -193,8 +192,8 @@ public class UserControl : ContainerControl
     [SRDescription(nameof(SR.UserControlOnLoadDescr))]
     public event EventHandler? Load
     {
-        add => Events.AddHandler(EVENT_LOAD, value);
-        remove => Events.RemoveHandler(EVENT_LOAD, value);
+        add => Events.AddHandler(s_loadEvent, value);
+        remove => Events.RemoveHandler(s_loadEvent, value);
     }
 
     [Browsable(false)]
@@ -274,7 +273,7 @@ public class UserControl : ContainerControl
     {
         // There is no good way to explain this event except to say
         // that it's just another name for OnControlCreated.
-        ((EventHandler?)Events[EVENT_LOAD])?.Invoke(this, e);
+        ((EventHandler?)Events[s_loadEvent])?.Invoke(this, e);
     }
 
     /// <summary>
@@ -321,7 +320,7 @@ public class UserControl : ContainerControl
     {
         switch (m.MsgInternal)
         {
-            case PInvoke.WM_SETFOCUS:
+            case PInvokeCore.WM_SETFOCUS:
                 WmSetFocus(ref m);
                 break;
             default:

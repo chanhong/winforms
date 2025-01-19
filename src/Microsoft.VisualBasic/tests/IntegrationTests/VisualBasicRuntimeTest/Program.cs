@@ -11,16 +11,16 @@ using Microsoft.VisualBasic.CompilerServices;
 
 namespace VisualBasicRuntimeTest;
 
-internal class Program
+internal static class Program
 {
     [STAThread]
-    static void Main(string[] args)
+    public static void Main(string[] args)
     {
         try
         {
             if (args.Length != 1)
             {
-                throw new ArgumentException();
+                throw new ArgumentException(message: null, nameof(args));
             }
 
             switch (args[0])
@@ -53,7 +53,7 @@ internal class Program
                     VBInputBox_ShowDialog();
                     break;
                 default:
-                    throw new ArgumentException();
+                    throw new ArgumentException(message: null, nameof(args));
             }
         }
         catch (Exception)
@@ -107,7 +107,7 @@ internal class Program
             }
         };
 
-        application.Run(Array.Empty<string>());
+        application.Run([]);
 
         if (startUpNextInstance)
         {

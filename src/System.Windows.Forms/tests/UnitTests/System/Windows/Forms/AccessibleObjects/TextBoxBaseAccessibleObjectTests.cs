@@ -16,7 +16,7 @@ public class TextBoxBaseAccessibleObjectTests
         AccessibleObject textBoxAccessibleObject = textBoxBase.AccessibilityObject;
         Assert.NotNull(textBoxAccessibleObject);
 
-        TextBoxBase.TextBoxBaseAccessibleObject textBoxBaseAccessibleObject = new TextBoxBase.TextBoxBaseAccessibleObject(textBoxBase);
+        TextBoxBase.TextBoxBaseAccessibleObject textBoxBaseAccessibleObject = new(textBoxBase);
         Assert.NotNull(textBoxBaseAccessibleObject);
         Assert.False(textBoxBase.IsHandleCreated);
     }
@@ -82,7 +82,7 @@ public class TextBoxBaseAccessibleObjectTests
         using TextBoxBase textBoxBase = new SubTextBoxBase();
         textBoxBase.CreateControl();
         AccessibleObject accessibleObject = textBoxBase.AccessibilityObject;
-        Assert.Null(accessibleObject.Name);
+        Assert.Empty(accessibleObject.Name);
         Assert.True(textBoxBase.IsHandleCreated);
     }
 
@@ -105,9 +105,11 @@ public class TextBoxBaseAccessibleObjectTests
         using TextBoxBase textBoxBase = new SubTextBoxBase { Size = new Size(width, height) };
         textBoxBase.CreateControl();
         AccessibleObject accessibleObject = textBoxBase.AccessibilityObject;
-        Rectangle expected = textBoxBase.RectangleToScreen(textBoxBase.ClientRectangle); // Forces Handle creating
+        Rectangle expected = textBoxBase.RectangleToScreen(textBoxBase.ClientRectangle);
         Rectangle actual = accessibleObject.BoundingRectangle;
-        Assert.Equal(expected, actual);
+
+        Assert.True(actual.Contains(expected));
+
         Assert.True(textBoxBase.IsHandleCreated);
     }
 

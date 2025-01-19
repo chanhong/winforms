@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Drawing;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
 
@@ -94,6 +93,8 @@ internal partial class PropertyGridView
                         owner.OwnerGrid.AccessibilityObject.Name);
             }
         }
+
+        internal override bool CanGetNameInternal => false;
 
         public override AccessibleRole Role => this.GetOwnerAccessibleRole(AccessibleRole.Table);
 
@@ -392,6 +393,8 @@ internal partial class PropertyGridView
                 return null;
             }
         }
+
+        private protected override bool IsInternal => true;
 
         public override int GetChildCount() =>
             this.TryGetOwnerAs(out PropertyGridView? owner) && owner.AccessibilityGetGridEntries() is { } entries

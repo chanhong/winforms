@@ -8,14 +8,14 @@ using System.ComponentModel.Design;
 namespace System.Windows.Forms.Design;
 
 /// <summary>
-///  <para>
-///  Provides a designer for TextBox.</para>
+///  Provides a designer for TextBox.
 /// </summary>
 internal class TextBoxDesigner : TextBoxBaseDesigner
 {
-    private char passwordChar;
+    private char _passwordChar;
 
     private DesignerActionListCollection? _actionLists;
+
     public override DesignerActionListCollection ActionLists
     {
         get
@@ -33,7 +33,7 @@ internal class TextBoxDesigner : TextBoxBaseDesigner
     /// <summary>
     ///  Allows a designer to filter the set of properties
     ///  the component it is designing will expose through the
-    ///  TypeDescriptor object.  This method is called
+    ///  TypeDescriptor object. This method is called
     ///  immediately before its corresponding "Post" method.
     ///  If you are overriding this method you should call
     ///  the base implementation before you perform your own
@@ -45,12 +45,12 @@ internal class TextBoxDesigner : TextBoxBaseDesigner
 
         PropertyDescriptor? prop;
 
-        string[] shadowProps = new string[]
-        {
+        string[] shadowProps =
+        [
             "PasswordChar"
-        };
+        ];
 
-        Attribute[] empty = Array.Empty<Attribute>();
+        Attribute[] empty = [];
 
         for (int i = 0; i < shadowProps.Length; i++)
         {
@@ -63,8 +63,8 @@ internal class TextBoxDesigner : TextBoxBaseDesigner
     }
 
     /// <summary>
-    ///  Shadows the PasswordChar.  UseSystemPasswordChar overrides PasswordChar so independent on the value
-    ///  of PasswordChar it will return the system password char.  However, the value of PasswordChar is
+    ///  Shadows the PasswordChar. UseSystemPasswordChar overrides PasswordChar so independent on the value
+    ///  of PasswordChar it will return the system password char. However, the value of PasswordChar is
     ///  cached so if UseSystemPasswordChar is reset at design time the PasswordChar value can be restored.
     ///  So in the case both properties are set, we need to serialize the real PasswordChar value as well.
     /// </summary>
@@ -77,7 +77,7 @@ internal class TextBoxDesigner : TextBoxBaseDesigner
 
             if (tb.UseSystemPasswordChar)
             {
-                return passwordChar;
+                return _passwordChar;
             }
             else
             {
@@ -89,7 +89,7 @@ internal class TextBoxDesigner : TextBoxBaseDesigner
             TextBox tb = (Control as TextBox)!;
             Debug.Assert(tb is not null, "Designed control is not a TextBox.");
 
-            passwordChar = value;
+            _passwordChar = value;
             tb.PasswordChar = value;
         }
     }

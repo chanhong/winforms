@@ -547,10 +547,10 @@ public sealed unsafe partial class HtmlElement
         return iHTMLElementCollection is not null ? new HtmlElementCollection(_shimManager, iHTMLElementCollection) : new HtmlElementCollection(_shimManager);
     }
 
-    public HtmlElement? InsertAdjacentElement(HtmlElementInsertionOrientation orient, HtmlElement newElement)
+    public HtmlElement? InsertAdjacentElement(HtmlElementInsertionOrientation orientation, HtmlElement newElement)
     {
         using var htmlElement2 = GetHtmlElement<IHTMLElement2>();
-        using BSTR where = new(orient.ToString());
+        using BSTR where = new(orientation.ToString());
         using var htmlElement = NativeHtmlElement.GetInterface();
         using var insertedElement = ComHelpers.GetComScope<IHTMLElement>(newElement.DomElement);
         IHTMLElement* adjElement;
@@ -571,12 +571,12 @@ public sealed unsafe partial class HtmlElement
                 return null;
             }
 
-            int dispid = PInvoke.DISPID_UNKNOWN;
+            int dispid = PInvokeCore.DISPID_UNKNOWN;
 
             fixed (char* n = methodName)
             {
-                hr = scriptDispatch.Value->GetIDsOfNames(IID.NULL(), (PWSTR*)&n, 1, PInvoke.GetThreadLocale(), &dispid);
-                if (!hr.Succeeded || dispid == PInvoke.DISPID_UNKNOWN)
+                hr = scriptDispatch.Value->GetIDsOfNames(IID.NULL(), (PWSTR*)&n, 1, PInvokeCore.GetThreadLocale(), &dispid);
+                if (!hr.Succeeded || dispid == PInvokeCore.DISPID_UNKNOWN)
                 {
                     return null;
                 }
@@ -604,7 +604,7 @@ public sealed unsafe partial class HtmlElement
                 hr = scriptDispatch.Value->Invoke(
                     dispid,
                     IID.NULL(),
-                    PInvoke.GetThreadLocale(),
+                    PInvokeCore.GetThreadLocale(),
                     DISPATCH_FLAGS.DISPATCH_METHOD,
                     &dispParams,
                     &result,

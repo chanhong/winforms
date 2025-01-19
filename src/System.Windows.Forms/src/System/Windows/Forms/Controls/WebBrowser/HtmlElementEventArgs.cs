@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Drawing;
 using Windows.Win32.Web.MsHtml;
 
 namespace System.Windows.Forms;
@@ -94,7 +93,7 @@ public sealed class HtmlElementEventArgs : EventArgs
         get
         {
             object obj = NativeHTMLEventObj.GetReturnValue();
-            return obj is null ? true : (bool)obj;
+            return obj is null || (bool)obj;
         }
         set => NativeHTMLEventObj.SetReturnValue(value);
     }

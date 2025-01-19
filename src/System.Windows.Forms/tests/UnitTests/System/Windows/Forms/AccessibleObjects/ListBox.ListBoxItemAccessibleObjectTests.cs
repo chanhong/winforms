@@ -15,12 +15,12 @@ public class ListBox_ListBoxItemAccessibleObjectTests
     {
         // Regression test for https://github.com/dotnet/winforms/issues/3706
 
-        using var form = new Form
+        using Form form = new()
         {
-            BindingContext = new BindingContext()
+            BindingContext = []
         };
 
-        using var control = new ListBox
+        using ListBox control = new()
         {
             Parent = form,
             DisplayMember = TestDataSources.PersonDisplayMember,
@@ -30,7 +30,7 @@ public class ListBox_ListBoxItemAccessibleObjectTests
         ListBox.ListBoxAccessibleObject accessibleObject =
             Assert.IsType<ListBox.ListBoxAccessibleObject>(control.AccessibilityObject);
 
-        Collections.Generic.List<Person> persons = TestDataSources.GetPersons();
+        List<Person> persons = TestDataSources.GetPersons();
         Assert.Equal(persons.Count, accessibleObject.GetChildCount());
 
         for (int i = 0; i < persons.Count; i++)
@@ -156,7 +156,47 @@ public class ListBox_ListBoxItemAccessibleObjectTests
         ListBox.ListBoxAccessibleObject listBoxAccessibleObject = new(listBox);
         ListBox.ListBoxItemAccessibleObject accessibleObject = (ListBox.ListBoxItemAccessibleObject)listBoxAccessibleObject.GetChild(0);
         VARIANT result = accessibleObject.GetPropertyValue((UIA_PROPERTY_ID)propertyId);
-        Assert.Equal(expected, result.IsEmpty ? false : (bool)result);
+        Assert.Equal(expected, !result.IsEmpty && (bool)result);
         Assert.False(listBox.IsHandleCreated);
     }
+
+#nullable enable
+
+    [WinFormsFact]
+    public void ListBoxItemAccessibleObject_VerifyProperties()
+    {
+        using ListBox listBox = new();
+        listBox.Items.Add("Item 1");
+
+        var accessibleObject = listBox.AccessibilityObject;
+        var itemAccessibleObject = accessibleObject.GetChild(0).Should().BeOfType<ListBox.ListBoxItemAccessibleObject>().Which;
+
+        itemAccessibleObject.Bounds.Should().Be(Rectangle.Empty);
+
+        listBox.CreateControl();
+        listBox.IsHandleCreated.Should().BeTrue();
+
+        itemAccessibleObject.Role.Should().Be(AccessibleRole.ListItem);
+        itemAccessibleObject.Name.Should().Be("Item 1");
+        itemAccessibleObject.DefaultAction.Should().NotBeNull();
+    }
+
+    [WinFormsTheory]
+    [InlineData(AccessibleSelection.AddSelection)]
+    [InlineData(AccessibleSelection.RemoveSelection)]
+    [InlineData(AccessibleSelection.TakeFocus)]
+    [InlineData((AccessibleSelection)int.MaxValue)]
+    public void Select_WithVariousFlags_ShouldNotThrow(AccessibleSelection flags)
+    {
+        using ListBox listBox = new();
+        ItemArray.Entry itemEntry = new ItemArray.Entry("Test Item");
+        ListBox.ListBoxAccessibleObject listBoxAccessibleObject = new(listBox);
+        ListBox.ListBoxItemAccessibleObject listBoxItemAccessibleObject = new(listBox, itemEntry, listBoxAccessibleObject);
+
+        Action action = () => listBoxItemAccessibleObject.Select(flags);
+
+        action.Should().NotThrow();
+    }
+
+#nullable disable
 }

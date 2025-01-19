@@ -40,8 +40,8 @@ public class ContainerControl : ScrollableControl, IContainerControl
     private AutoScaleMode _autoScaleMode = AutoScaleMode.Inherit;
 
     /// <summary>
-    /// Top-level window is scaled by suggested rectangle received from windows WM_DPICHANGED message event.
-    /// We use this flag to indicate it is top-level window and is already scaled.
+    ///  Top-level window is scaled by suggested rectangle received from windows WM_DPICHANGED message event.
+    ///  We use this flag to indicate it is top-level window and is already scaled.
     /// </summary>
     private bool _isScaledByDpiChangedEvent;
 
@@ -77,7 +77,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
     private const string FontMeasureString = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     /// <summary>
-    /// Child Container control that inherit <see cref="AutoScaleMode"/> (and does not store their own) would need
+    ///  Child Container control that inherit <see cref="AutoScaleMode"/> (and does not store their own) would need
     /// <see cref="AutoScaleFactor"/> from parent to scale them during Dpi changed events. We can not use
     /// <see cref="AutoScaleFactor"/> property as it get computed with already updated Font and Dpi of their parent.
     /// </summary>
@@ -217,7 +217,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
         }
         set
         {
-            if (value < AutoValidate.Inherit || value > AutoValidate.EnableAllowFocusChange)
+            if (value is < AutoValidate.Inherit or > AutoValidate.EnableAllowFocusChange)
             {
                 throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(AutoValidate));
             }
@@ -251,36 +251,28 @@ public class ContainerControl : ScrollableControl, IContainerControl
     {
         get
         {
+            if (!Binding.IsSupported)
+            {
+                throw new NotSupportedException(SR.BindingNotSupported);
+            }
+
             BindingContext? bm = base.BindingContext;
             if (bm is null)
             {
-                bm = new BindingContext();
+                bm = [];
                 BindingContext = bm;
             }
 
             return bm;
         }
+
         set => base.BindingContext = value;
     }
 
     /// <summary>
     ///  Container controls support ImeMode only to allow child controls to inherit it from their parents.
     /// </summary>
-    protected override bool CanEnableIme
-    {
-        get
-        {
-            // Note: If overriding this property make sure to copy the Debug code and call this method.
-
-            Debug.Indent();
-            Debug.WriteLineIf(
-                CompModSwitches.ImeMode.Level >= TraceLevel.Info,
-                $"Inside get_CanEnableIme(), value = false, this = {this}");
-            Debug.Unindent();
-
-            return false;
-        }
-    }
+    protected override bool CanEnableIme => false;
 
     /// <summary>
     ///  Indicates the current active control on the container control.
@@ -327,7 +319,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
 
     internal SizeF GetCurrentAutoScaleDimensions(HFONT fontHandle)
     {
-        var currentAutoScaleDimensions = SizeF.Empty;
+        SizeF currentAutoScaleDimensions;
         switch (AutoScaleMode)
         {
             case AutoScaleMode.Font:
@@ -336,14 +328,14 @@ public class ContainerControl : ScrollableControl, IContainerControl
 
             case AutoScaleMode.Dpi:
                 // Screen Dpi
-                if (DpiHelper.IsPerMonitorV2Awareness)
+                if (ScaleHelper.IsThreadPerMonitorV2Aware)
                 {
                     currentAutoScaleDimensions = new SizeF(_deviceDpi, _deviceDpi);
                 }
                 else
                 {
                     // This Dpi value comes from the primary monitor.
-                    currentAutoScaleDimensions = new SizeF(DpiHelper.DeviceDpi, DpiHelper.DeviceDpi);
+                    currentAutoScaleDimensions = new SizeF(ScaleHelper.InitialSystemDpi, ScaleHelper.InitialSystemDpi);
                 }
 
                 break;
@@ -357,7 +349,8 @@ public class ContainerControl : ScrollableControl, IContainerControl
     }
 
     /// <summary>
-    /// Gets or sets whether the container needs to be scaled when <see cref="DpiChangedEventHandler" />, irrespective whether the font was inherited or set explicitly.
+    ///  Gets or sets whether the container needs to be scaled when <see cref="DpiChangedEventHandler" />,
+    ///  irrespective whether the font was inherited or set explicitly.
     /// </summary>
     internal bool IsDpiChangeScalingRequired { get; set; }
 
@@ -401,8 +394,6 @@ public class ContainerControl : ScrollableControl, IContainerControl
 
     internal bool ActivateControl(Control? control, bool originator)
     {
-        s_focusTracing.TraceVerbose($"ContainerControl::ActivateControl({control?.Name ?? "null"},{originator}) - {Name}");
-
         // Recursive function that makes sure that the chain of active controls is coherent.
         bool ret = true;
         bool updateContainerActiveControl = false;
@@ -475,7 +466,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
     {
         ContainerControl? cc;
         Debug.Assert(control is not null);
-        s_focusTracing.TraceVerbose($"ContainerControl::AfterControlRemoved({control.Name}) - {Name}");
+
         if (control == _activeControl || control.Contains(_activeControl))
         {
             bool selected = SelectNextControl(control, true, true, true, true);
@@ -546,7 +537,6 @@ public class ContainerControl : ScrollableControl, IContainerControl
         }
 #endif
 
-        s_focusTracing.TraceVerbose($"ContainerControl::AssignActiveControlInternal({value?.Name ?? "null"}) - {Name}");
         if (_activeControl != value)
         {
             try
@@ -585,37 +575,21 @@ public class ContainerControl : ScrollableControl, IContainerControl
     ///  Used to notify the AxContainer that the form has been created. This should only be called
     ///  if there is an AX container.
     /// </summary>
-    private void AxContainerFormCreated()
-    {
-        ((AxHost.AxContainer?)Properties.GetObject(s_propAxContainer))?.FormCreated();
-    }
+    private void AxContainerFormCreated() => Properties.GetValueOrDefault<AxHost.AxContainer>(s_propAxContainer)?.FormCreated();
 
     /// <summary>
     ///  Specifies whether this control can process the mnemonic or not.
     /// </summary>
-    internal override bool CanProcessMnemonic()
-    {
-#if DEBUG
-        TraceCanProcessMnemonic();
-#endif
-        if (_state[s_stateProcessingMnemonic])
-        {
-            return true;
-        }
-
-        return base.CanProcessMnemonic();
-    }
+    internal override bool CanProcessMnemonic() => _state[s_stateProcessingMnemonic] || base.CanProcessMnemonic();
 
     internal AxHost.AxContainer CreateAxContainer()
     {
-        object? aXContainer = Properties.GetObject(s_propAxContainer);
-        if (aXContainer is null)
+        if (!Properties.TryGetValue(s_propAxContainer, out AxHost.AxContainer? container))
         {
-            aXContainer = new AxHost.AxContainer(this);
-            Properties.SetObject(s_propAxContainer, aXContainer);
+            container = Properties.AddValue(s_propAxContainer, new AxHost.AxContainer(this));
         }
 
-        return (AxHost.AxContainer)aXContainer;
+        return container;
     }
 
     /// <summary>
@@ -647,19 +621,13 @@ public class ContainerControl : ScrollableControl, IContainerControl
     }
 
     /// <summary>
-    ///  Assigns focus to the activeControl. If there is no activeControl then focus is given to
-    ///  the form. package scope for Form
+    ///  Assigns focus to the active Control. If there is no active Control then focus is given to the Form.
     /// </summary>
     internal void FocusActiveControlInternal()
     {
-        s_focusTracing.TraceVerbose($"ContainerControl::FocusActiveControlInternal() - {Name}");
-#if DEBUG
         // Things really get ugly if you try to pop up an assert dialog here
-        if (_activeControl is not null && !Contains(_activeControl))
-        {
-            Debug.WriteLine("ActiveControl is not a child of this ContainerControl");
-        }
-#endif
+        Debug.WriteLineIf(_activeControl is not null
+            && !Contains(_activeControl), "ActiveControl is not a child of this ContainerControl");
 
         if (_activeControl is not null && _activeControl.Visible)
         {
@@ -724,7 +692,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
         if (GetTopLevel())
         {
             // Get window's client rectangle (i.e. without chrome) expressed in screen coordinates
-            PInvoke.GetClientRect(this, out RECT clientRectangle);
+            PInvokeCore.GetClientRect(this, out RECT clientRectangle);
             Point topLeftPoint = default;
             PInvoke.ClientToScreen(this, ref topLeftPoint);
             return new Rectangle(topLeftPoint.X, topLeftPoint.Y, clientRectangle.right, clientRectangle.bottom);
@@ -743,7 +711,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
         // Windows uses CreateCompatibleDC(NULL) to get a memory DC for
         // the monitor the application is currently on.
 
-        using PInvoke.CreateDcScope dc = new(default);
+        using CreateDcScope dc = new(default);
         if (dc.IsNull)
         {
             throw new Win32Exception();
@@ -756,7 +724,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
         // We must do the same here if our dialogs are to scale in a
         // similar fashion.
 
-        using PInvoke.SelectObjectScope fontSelection = new(dc, fontHandle);
+        using SelectObjectScope fontSelection = new(dc, fontHandle);
 
         TEXTMETRICW tm = default;
         PInvoke.GetTextMetrics(dc, &tm);
@@ -874,7 +842,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
     {
         base.OnCreateControl();
 
-        if (Properties.ContainsObjectThatIsNotNull(s_propAxContainer))
+        if (Properties.ContainsKey(s_propAxContainer))
         {
             AxContainerFormCreated();
         }
@@ -970,19 +938,23 @@ public class ContainerControl : ScrollableControl, IContainerControl
     public void PerformAutoScale() => PerformAutoScale(includedBounds: true, excludedBounds: true);
 
     /// <summary>
-    /// Performs scaling of this control. Scaling works by scaling all children of this control.
-    /// PerformAutoScale is automatically called during OnLayout. The parameters to
-    /// PerformAutoScale are passed as follows:
-    ///  1. If AutoScaleDimensions are set, includedBounds is set to true.
-    ///  2. If a font change occurred, excludedBounds is set to true.
+    ///  Performs scaling of this control. Scaling works by scaling all children of this control.
+    ///  PerformAutoScale is automatically called during OnLayout. The parameters to
+    ///  PerformAutoScale are passed as follows:
+    ///   1. If AutoScaleDimensions are set, includedBounds is set to true.
+    ///   2. If a font change occurred, excludedBounds is set to true.
     /// </summary>
     /// <param name="includedBounds">If includedBounds is true those controls whose bounds have changed since
     ///  they were last scaled will be auto scaled.</param>
-    /// <param name="excludedBounds">If excludedBounds is true those controls whose bounds have not changed
-    /// since they were last scaled will be auto scaled.</param>
-    /// <param name="causedByFontChanged">Helps to distinguish the scaling by ResumeLayout
-    /// or <see cref="OnFontChanged(EventArgs)"/> event. Scaling by <see cref="OnFontChanged(EventArgs)"/> event
-    /// does not need to scale child container control as they receive their own <see cref="OnFontChanged(EventArgs)"/> event.</param>
+    /// <param name="excludedBounds">
+    ///  If excludedBounds is true those controls whose bounds have not changed
+    ///  since they were last scaled will be auto scaled.
+    /// </param>
+    /// <param name="causedByFontChanged">
+    ///  Helps to distinguish the scaling by ResumeLayout or <see cref="OnFontChanged(EventArgs)"/> event.
+    ///  Scaling by <see cref="OnFontChanged(EventArgs)"/> event does not need to scale child container control as
+    ///  they receive their own <see cref="OnFontChanged(EventArgs)"/> event.
+    /// </param>
     private void PerformAutoScale(bool includedBounds, bool excludedBounds, bool causedByFontChanged = false)
     {
         bool suspended = false;
@@ -1161,7 +1133,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
                 // Top-level window may be already scaled by WM_DPICHANGE message. So, we skip it in such case.
                 if (!_isScaledByDpiChangedEvent)
                 {
-                    ScaleControl(includedFactor, ourExternalContainerFactor, requestingControl);
+                    ScaleControl(includedFactor, ourExternalContainerFactor);
                 }
 
                 if (!_doNotScaleChildren)
@@ -1173,11 +1145,14 @@ public class ContainerControl : ScrollableControl, IContainerControl
     }
 
     /// <summary>
-    /// Scales container's properties Min and Max size with the scale factor provided.
+    ///  Scales container's properties Min and Max size with the scale factor provided.
     /// </summary>
     /// <param name="xScaleFactor">The scale factor to be applied on width of the property being scaled.</param>
     /// <param name="yScaleFactor">The scale factor to be applied on height of the property being scaled.</param>
-    /// <param name="updateContainerSize"><see langword="true"/> to resize of the container control along with properties being scaled; otherwise, <see langword="false"/>.</param>
+    /// <param name="updateContainerSize">
+    ///  <see langword="true"/> to resize of the container control along with properties being scaled;
+    ///  otherwise, <see langword="false"/>.
+    /// </param>
     protected virtual void ScaleMinMaxSize(float xScaleFactor, float yScaleFactor, bool updateContainerSize = true)
     { }
 
@@ -1205,8 +1180,6 @@ public class ContainerControl : ScrollableControl, IContainerControl
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     protected override bool ProcessDialogChar(char charCode)
     {
-        s_controlKeyboardRouting.TraceVerbose($"ContainerControl.ProcessDialogChar [{charCode}]");
-
         // If we're the top-level form or control, we need to do the mnemonic handling
         if (GetContainerControl() is ContainerControl && charCode != ' ' && ProcessMnemonic(charCode))
         {
@@ -1216,20 +1189,12 @@ public class ContainerControl : ScrollableControl, IContainerControl
         return base.ProcessDialogChar(charCode);
     }
 
-    /// <summary>
-    ///  Processes a dialog key. Overrides Control.processDialogKey(). This method implements
-    ///  handling of the TAB, LEFT, RIGHT, UP, and DOWN keys in dialogs.
-    ///  The method performs no processing on keys that include the ALT or CONTROL modifiers.
-    ///  For the TAB key, the method selects the next control on the form. For the arrow keys, !!!
-    /// </summary>
     protected override bool ProcessDialogKey(Keys keyData)
     {
-        s_controlKeyboardRouting.TraceVerbose($"ContainerControl.ProcessDialogKey [{keyData}]");
-
         LastKeyData = keyData;
         if ((keyData & (Keys.Alt | Keys.Control)) == Keys.None)
         {
-            Keys keyCode = (Keys)keyData & Keys.KeyCode;
+            Keys keyCode = keyData & Keys.KeyCode;
             switch (keyCode)
             {
                 case Keys.Tab:
@@ -1243,8 +1208,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
                 case Keys.Right:
                 case Keys.Up:
                 case Keys.Down:
-                    if (ProcessArrowKey(keyCode == Keys.Right ||
-                                        keyCode == Keys.Down))
+                    if (ProcessArrowKey(keyCode is Keys.Right or Keys.Down))
                     {
                         return true;
                     }
@@ -1258,8 +1222,6 @@ public class ContainerControl : ScrollableControl, IContainerControl
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
-        s_controlKeyboardRouting.TraceVerbose($"ContainerControl.ProcessCmdKey {msg}");
-
         if (base.ProcessCmdKey(ref msg, keyData))
         {
             return true;
@@ -1281,10 +1243,6 @@ public class ContainerControl : ScrollableControl, IContainerControl
 
     protected internal override bool ProcessMnemonic(char charCode)
     {
-        s_controlKeyboardRouting.TraceVerbose($"ContainerControl.ProcessMnemonic [{charCode}]");
-        Debug.Indent();
-        s_controlKeyboardRouting.TraceVerbose($"this == {this}");
-
         if (!CanProcessMnemonic())
         {
             return false;
@@ -1292,7 +1250,6 @@ public class ContainerControl : ScrollableControl, IContainerControl
 
         if (Controls.Count == 0)
         {
-            Debug.Unindent();
             return false;
         }
 
@@ -1315,7 +1272,6 @@ public class ContainerControl : ScrollableControl, IContainerControl
             bool wrapped = false;
 
             Control? ctl = start;
-            s_controlKeyboardRouting.TraceVerbose($"Check starting at '{start?.ToString() ?? "<null>"}'");
 
             do
             {
@@ -1331,21 +1287,9 @@ public class ContainerControl : ScrollableControl, IContainerControl
 
                 if (ctl is not null)
                 {
-#if DEBUG
-                    s_controlKeyboardRouting.TraceVerbose($"  ...checking for mnemonics on {ctl}");
-                    // Control.TraceMnemonicProcessing.Enabled disables CanProcessMnemonic consistency check.
-                    bool canProcess = s_traceMnemonicProcessing.Enabled || ctl.CanProcessMnemonic(); // Processing the mnemonic can change the value of CanProcessMnemonic.
-#endif
                     // Processing the mnemonic can change the value of CanProcessMnemonic.
                     if (ctl.ProcessMnemonic(charCode))
                     {
-#if DEBUG
-                        s_controlKeyboardRouting.TraceVerbose("  ...mnemonics found");
-                        Debug.Assert(
-                            s_traceMnemonicProcessing.Enabled || canProcess,
-                            "ProcessMnemonic returned true, even though CanProcessMnemonic() is false. Someone probably overrode ProcessMnemonic and forgot to test CanSelect or CanProcessMnemonic().");
-                        Debug.Unindent();
-#endif
                         processed = true;
                         break;
                     }
@@ -1368,7 +1312,6 @@ public class ContainerControl : ScrollableControl, IContainerControl
             _state[s_stateProcessingMnemonic] = false;
         }
 
-        Debug.Unindent();
         return processed;
     }
 
@@ -1383,7 +1326,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
     private static ScrollableControl? FindScrollableParent(Control ctl)
     {
         Control? current = ctl.ParentInternal;
-        while (current is not null && current is not ScrollableControl)
+        while (current is not null and not ScrollableControl)
         {
             current = current.ParentInternal;
         }
@@ -1415,7 +1358,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
 
         base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
 
-        // Check if font is inherited from parent and is not being scaled by Parent (e.g. Winforms designer
+        // Check if font is inherited from parent and is not being scaled by Parent (e.g. WinForms designer
         // in Visual Studio). In this case we need to scale Control explicitly with respect to new scaled Font.
         if (TryGetExplicitlySetFont(out _))
         {
@@ -1512,8 +1455,6 @@ public class ContainerControl : ScrollableControl, IContainerControl
     /// </summary>
     internal void SetActiveControl(Control? value)
     {
-        s_focusTracing.TraceVerbose($"ContainerControl::SetActiveControl({value?.Name ?? "null"}) - {Name}");
-
         if (_activeControl == value && (value is null || value.Focused))
         {
             return;
@@ -1599,8 +1540,6 @@ public class ContainerControl : ScrollableControl, IContainerControl
     /// </summary>
     internal void UpdateFocusedControl()
     {
-        s_focusTracing.TraceVerbose($"ContainerControl::UpdateFocusedControl() - {Name}");
-
         // Capture the current focusedControl as the unvalidatedControl if we don't have one/are not validating.
         EnsureUnvalidatedControl(_focusedControl);
         Control? pathControl = _focusedControl;
@@ -1634,13 +1573,13 @@ public class ContainerControl : ScrollableControl, IContainerControl
                 pathControl = nextControlDown;
                 if (NativeWindow.WndProcShouldBeDebuggable)
                 {
-                    pathControl.NotifyEnter();
+                    pathControl.OnEnter(EventArgs.Empty);
                 }
                 else
                 {
                     try
                     {
-                        pathControl.NotifyEnter();
+                        pathControl.OnEnter(EventArgs.Empty);
                     }
                     catch (Exception e)
                     {
@@ -1662,7 +1601,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
                     if (innerMostFCC != this)
                     {
                         innerMostFCC._focusedControl = null;
-                        if (!(innerMostFCC.ParentInternal is not null && innerMostFCC.ParentInternal is MdiClient))
+                        if (innerMostFCC.ParentInternal is not (not null and MdiClient))
                         {
                             // Don't reset the active control of a MDIChild that loses the focus
                             innerMostFCC._activeControl = null;
@@ -1703,13 +1642,13 @@ public class ContainerControl : ScrollableControl, IContainerControl
                     {
                         if (NativeWindow.WndProcShouldBeDebuggable)
                         {
-                            leaveControl.NotifyLeave();
+                            leaveControl.OnLeave(EventArgs.Empty);
                         }
                         else
                         {
                             try
                             {
-                                leaveControl.NotifyLeave();
+                                leaveControl.OnLeave(EventArgs.Empty);
                             }
                             catch (Exception e)
                             {
@@ -1741,7 +1680,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
     /// </summary>
     private void EnsureUnvalidatedControl(Control? candidate)
     {
-        // Don't change the unvalidated control while in the middle of validation (re-entrancy)
+        // Don't change the unvalidated control while in the middle of validation (reentrancy)
         if (_state[s_stateValidating])
         {
             return;
@@ -1807,7 +1746,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
         }
 
         // Get the effective AutoValidate mode for this control (based on its container control)
-        AutoValidate autoValidateMode = Control.GetAutoValidateForControl(_unvalidatedControl);
+        AutoValidate autoValidateMode = GetAutoValidateForControl(_unvalidatedControl);
 
         // Auto-validate has been turned off in container of unvalidated control - stop now
         if (autoValidateMode == AutoValidate.Disable)
@@ -1884,7 +1823,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
             if (controlToValidate is not null)
             {
                 // Get the effective AutoValidate mode for unvalidated control (based on its container control)
-                AutoValidate autoValidateMode = Control.GetAutoValidateForControl(controlToValidate);
+                AutoValidate autoValidateMode = GetAutoValidateForControl(controlToValidate);
 
                 // Auto-validate has been turned off in container of unvalidated control - stop now
                 if (checkAutoValidate && autoValidateMode == AutoValidate.Disable)
@@ -1919,7 +1858,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
     [EditorBrowsable(EditorBrowsableState.Never)]
     public virtual bool ValidateChildren(ValidationConstraints validationConstraints)
     {
-        if ((int)validationConstraints < 0x00 || (int)validationConstraints > 0x1F)
+        if ((int)validationConstraints is < 0x00 or > 0x1F)
         {
             throw new InvalidEnumArgumentException(nameof(validationConstraints), (int)validationConstraints, typeof(ValidationConstraints));
         }
@@ -1996,7 +1935,9 @@ public class ContainerControl : ScrollableControl, IContainerControl
                         {
                             Cancel = true
                         };
-                        currentActiveControl.NotifyValidationResult(currentValidatingControl, ev);
+
+                        currentActiveControl.ValidationCancelled = ev.Cancel;
+
                         if (currentActiveControl is ContainerControl currentActiveContainerControl)
                         {
                             if (currentActiveContainerControl._focusedControl is not null)
@@ -2053,52 +1994,38 @@ public class ContainerControl : ScrollableControl, IContainerControl
     /// </summary>
     private void WmSetFocus(ref Message m)
     {
-        s_focusTracing.TraceVerbose($"ContainerControl::WmSetFocus() - {Name}");
-        if (!HostedInWin32DialogManager)
-        {
-            if (ActiveControl is not null)
-            {
-                WmImeSetFocus();
-                // Do not raise GotFocus event since the focus is given to the visible ActiveControl
-                if (!ActiveControl.Visible)
-                {
-                    InvokeGotFocus(this, EventArgs.Empty);
-                }
-
-                FocusActiveControlInternal();
-            }
-            else
-            {
-                if (ParentInternal is not null)
-                {
-                    IContainerControl? c = ParentInternal.GetContainerControl();
-                    if (c is not null)
-                    {
-                        bool succeeded;
-
-                        if (c is ContainerControl knowncontainer)
-                        {
-                            succeeded = knowncontainer.ActivateControl(this);
-                        }
-                        else
-                        {
-                            succeeded = c.ActivateControl(this);
-                        }
-
-                        if (!succeeded)
-                        {
-                            return;
-                        }
-                    }
-                }
-
-                base.WndProc(ref m);
-            }
-        }
-        else
+        if (HostedInWin32DialogManager)
         {
             base.WndProc(ref m);
+            return;
         }
+
+        if (ActiveControl is not null)
+        {
+            WmImeSetFocus();
+
+            // Do not raise GotFocus event since the focus is given to the visible ActiveControl
+            if (!ActiveControl.Visible)
+            {
+                InvokeGotFocus(this, EventArgs.Empty);
+            }
+
+            FocusActiveControlInternal();
+            return;
+        }
+
+        // Try to set the focus to the parent container if there is one.
+        if (ParentInternal?.GetContainerControl() is IContainerControl container)
+        {
+            if (!(container is ContainerControl knowncontainer
+                ? knowncontainer.ActivateControl(this)
+                : container.ActivateControl(this)))
+            {
+                return;
+            }
+        }
+
+        base.WndProc(ref m);
     }
 
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -2106,7 +2033,7 @@ public class ContainerControl : ScrollableControl, IContainerControl
     {
         switch (m.MsgInternal)
         {
-            case PInvoke.WM_SETFOCUS:
+            case PInvokeCore.WM_SETFOCUS:
                 WmSetFocus(ref m);
                 break;
             default:

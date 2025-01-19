@@ -4,7 +4,6 @@
 using System.Drawing;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
-using static Interop;
 
 namespace System.Windows.Forms;
 
@@ -12,7 +11,7 @@ public partial class LinkLabel
 {
     public partial class Link
     {
-        internal class LinkAccessibleObject : AccessibleObject
+        internal sealed class LinkAccessibleObject : AccessibleObject
         {
             private readonly LinkLabelAccessibleObject _linkLabelAccessibleObject;
             private readonly Link _owningLink;
@@ -60,7 +59,11 @@ public partial class LinkLabel
 
             public override string DefaultAction => SR.AccessibleActionClick;
 
+            internal override bool CanGetDefaultActionInternal => false;
+
             public override string? Description => _owningLink.Description;
+
+            internal override bool CanGetDescriptionInternal => false;
 
             public override void DoDefaultAction()
             {
@@ -97,8 +100,7 @@ public partial class LinkLabel
 
             internal override bool IsPatternSupported(UIA_PATTERN_ID patternId)
             {
-                if (patternId == UIA_PATTERN_ID.UIA_LegacyIAccessiblePatternId ||
-                    patternId == UIA_PATTERN_ID.UIA_InvokePatternId)
+                if (patternId is UIA_PATTERN_ID.UIA_LegacyIAccessiblePatternId or UIA_PATTERN_ID.UIA_InvokePatternId)
                 {
                     return true;
                 }
@@ -111,26 +113,28 @@ public partial class LinkLabel
                 get
                 {
                     string? text = _owningLinkLabel.Text;
-                    int start = LinkLabel.ConvertToCharIndex(_owningLink.Start, text);
-                    int end = LinkLabel.ConvertToCharIndex(_owningLink.Start + _owningLink.Length, text);
-                    string? name = text.Substring(start, end - start);
+                    int start = ConvertToCharIndex(_owningLink.Start, text);
+                    int end = ConvertToCharIndex(_owningLink.Start + _owningLink.Length, text);
+                    string? name = text[start..end];
 
-                     return _owningLinkLabel.UseMnemonic ? name = WindowsFormsUtils.TextWithoutMnemonics(name) : name;
+                    return _owningLinkLabel.UseMnemonic ? name = WindowsFormsUtils.TextWithoutMnemonics(name) : name;
                 }
-                set => base.Name = value;
             }
+
+            internal override bool CanGetNameInternal => false;
 
             public override AccessibleObject Parent => _linkLabelAccessibleObject;
 
+            private protected override bool IsInternal => true;
+
             public override AccessibleRole Role => AccessibleRole.Link;
 
-            internal override int[] RuntimeId
-                => new int[]
-                {
-                    RuntimeIDFirstItem,
-                    PARAM.ToInt(_owningLinkLabel.InternalHandle),
-                    _owningLink.GetHashCode()
-                };
+            internal override int[] RuntimeId =>
+            [
+                RuntimeIDFirstItem,
+                (int)_owningLinkLabel.InternalHandle,
+                _owningLink.GetHashCode()
+            ];
 
             public override AccessibleStates State
             {
@@ -152,6 +156,8 @@ public partial class LinkLabel
             // Narrator announces Link's text twice, once as a Name property and once as a Value, thus removing value.
             // Value is optional for this role (Link).
             public override string Value => string.Empty;
+
+            internal override bool CanGetValueInternal => false;
         }
     }
 }

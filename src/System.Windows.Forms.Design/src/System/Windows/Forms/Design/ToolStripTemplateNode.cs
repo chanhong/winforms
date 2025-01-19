@@ -12,7 +12,11 @@ using System.Windows.Forms.Design.Behavior;
 namespace System.Windows.Forms.Design;
 
 /// <summary>
-///  This internal class wraps the InSitu Editor. The editor is a runtime ToolStrip  control which contains a leftButton (for image), centerLabel (for text) which  gets swapped by a centerTextBox (when InSitu is ON). The ToolStripTemplateNode is also responsible for intercepting the Escape and Enter keys and implements the IMenuStatusHandler so that it can commit and rollback as required. Finally this ToolStripTemplateNode has a private class ItemTypeToolStripMenuItem for adding  ToolStripItem types to the Dropdown for addItemButton.
+///  This internal class wraps the InSitu Editor. The editor is a runtime ToolStrip control which contains a leftButton
+///  (for image), centerLabel (for text) which gets swapped by a centerTextBox (when InSitu is ON).
+///  The ToolStripTemplateNode is also responsible for intercepting the Escape and Enter keys and implements
+///  the IMenuStatusHandler so that it can commit and rollback as required. Finally this ToolStripTemplateNode
+///  has a private class ItemTypeToolStripMenuItem for adding ToolStripItem types to the Dropdown for addItemButton.
 /// </summary>
 internal class ToolStripTemplateNode : IMenuStatusHandler
 {
@@ -27,13 +31,13 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     private const int TEMPLATE_HOTREGION_WIDTH_ORIGINAL = 9;
     private const int MINITOOLSTRIP_TEXTBOX_WIDTH_ORIGINAL = 90;
 
-    private static int TOOLSTRIP_TEMPLATE_HEIGHT = TOOLSTRIP_TEMPLATE_HEIGHT_ORIGINAL;
-    private static int TEMPLATE_HEIGHT = TEMPLATE_HEIGHT_ORIGINAL;
-    private static int TOOLSTRIP_TEMPLATE_WIDTH = TOOLSTRIP_TEMPLATE_WIDTH_ORIGINAL;
-    private static int TEMPLATE_WIDTH = TEMPLATE_WIDTH_ORIGINAL;
-    private static int MINITOOLSTRIP_DROPDOWN_BUTTON_WIDTH = MINITOOLSTRIP_DROPDOWN_BUTTON_WIDTH_ORIGINAL;
-    private static int TEMPLATE_HOTREGION_WIDTH = TEMPLATE_HOTREGION_WIDTH_ORIGINAL;
-    private static int MINITOOLSTRIP_TEXTBOX_WIDTH = MINITOOLSTRIP_TEXTBOX_WIDTH_ORIGINAL;
+    private static int s_toolStripTempateHeight = TOOLSTRIP_TEMPLATE_HEIGHT_ORIGINAL;
+    private static int s_templateHeight = TEMPLATE_HEIGHT_ORIGINAL;
+    private static int s_toolStripTemplateWidth = TOOLSTRIP_TEMPLATE_WIDTH_ORIGINAL;
+    private static int s_templateWidth = TEMPLATE_WIDTH_ORIGINAL;
+    private static int s_miniToolStripDropDownButtonWidth = MINITOOLSTRIP_DROPDOWN_BUTTON_WIDTH_ORIGINAL;
+    private static int s_templateHotRegionWidth = TEMPLATE_HOTREGION_WIDTH_ORIGINAL;
+    private static int s_miniToolStripTextBoxWidth = MINITOOLSTRIP_TEXTBOX_WIDTH_ORIGINAL;
 
     private static bool s_isScalingInitialized;
     internal const string CenterLabelName = "centerLabel";
@@ -58,16 +62,21 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     private ToolStripControlHost _centerTextBox;
 
     // reqd as rtb does accept Enter..
-    internal bool ignoreFirstKeyUp;
+    internal bool _ignoreFirstKeyUp;
 
-    // This is the Bounding Rectangle for the ToolStripTemplateNode. This is set by the itemDesigner in terms of the "AdornerWindow" bounds.  The ToolStripEditorManager uses this Bounds to actually activate the  editor on the AdornerWindow.
+    // This is the Bounding Rectangle for the ToolStripTemplateNode.
+    // This is set by the itemDesigner in terms of the "AdornerWindow" bounds.
+    // The ToolStripEditorManager uses this Bounds to actually activate the editor on the AdornerWindow.
     private Rectangle _boundingRect;
-    // Keeps track of Insitu Mode.
+    // Keeps track of InSitu Mode.
     private bool _inSituMode;
     // Tells whether the editorNode is listening to Menu commands.
     private bool _active;
 
-    // Need to keep a track of Last Selection to uncheck it. This is the Checked property on ToolStripItems on the Menu. We check this cached in value to the current Selection on the addItemButton and if different then uncheck the Checked for this lastSelection.. Check for the currentSelection and finally save the currentSelection as the lastSelection for future check.
+    // Need to keep a track of Last Selection to uncheck it. This is the Checked property on ToolStripItems on the Menu.
+    // We check this cached in value to the current Selection on the addItemButton and if different then
+    // uncheck the Checked for this lastSelection.. Check for the currentSelection and finally save the currentSelection
+    // as the lastSelection for future check.
     private ItemTypeToolStripMenuItem _lastSelection;
 
     // This is the renderer used to Draw the Strips.....
@@ -83,7 +92,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     private BehaviorService _behaviorService;
     // ControlHost for selection on mouseclicks
     private DesignerToolStripControlHost _controlHost;
-    // On DropDowns the component passed in is the parent (ownerItem) and hence we need the  reference for actual item
+    // On DropDowns the component passed in is the parent (ownerItem) and hence we need the reference for actual item
     private ToolStripItem _activeItem;
 
     private EventHandler _onActivated;
@@ -99,46 +108,44 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     private bool _imeModeSet;
     // DesignSurface to hook up to the Flushed event
     private DesignSurface _designSurface;
-    // Is system context menu displayed for the insitu text box?
+    // Is system context menu displayed for the InSitu text box?
     private bool _isSystemContextMenuDisplayed;
     // delay population of custom menu items until ready to open the drop down
     private bool _isPopulated;
 
-    public ToolStripTemplateNode(IComponent component, string text, Image image)
+    public ToolStripTemplateNode(IComponent component, string text)
     {
         _component = component;
-        // In most of the cases this is true; except for ToolStripItems on DropDowns. the toolstripMenuItemDesigners sets the public property in those cases.
+
+        // In most of the cases this is true; except for ToolStripItems on DropDowns. the toolstripMenuItemDesigners
+        // sets the public property in those cases.
         _activeItem = component as ToolStripItem;
-        _designerHost = (IDesignerHost)component.Site.GetService(typeof(IDesignerHost));
+        _designerHost = component.Site.GetService<IDesignerHost>();
         _designer = _designerHost.GetDesigner(component);
-        _designSurface = (DesignSurface)component.Site.GetService(typeof(DesignSurface));
+        _designSurface = component.Site.GetService<DesignSurface>();
         if (_designSurface is not null)
         {
-            _designSurface.Flushed += new EventHandler(OnLoaderFlushed);
+            _designSurface.Flushed += OnLoaderFlushed;
         }
 
         if (!s_isScalingInitialized)
         {
-            if (DpiHelper.IsScalingRequired)
-            {
-                // dimensions of the "Type Here" text box
-                TOOLSTRIP_TEMPLATE_HEIGHT = DpiHelper.LogicalToDeviceUnitsY(TOOLSTRIP_TEMPLATE_HEIGHT_ORIGINAL);
-                TEMPLATE_HEIGHT = DpiHelper.LogicalToDeviceUnitsY(TEMPLATE_HEIGHT_ORIGINAL);
-                TOOLSTRIP_TEMPLATE_WIDTH = DpiHelper.LogicalToDeviceUnitsX(TOOLSTRIP_TEMPLATE_WIDTH_ORIGINAL);
-                TEMPLATE_WIDTH = DpiHelper.LogicalToDeviceUnitsX(TEMPLATE_WIDTH_ORIGINAL);
-                // hotregion is the arrow button next to "Type Here" box
-                TEMPLATE_HOTREGION_WIDTH = DpiHelper.LogicalToDeviceUnitsX(TEMPLATE_HOTREGION_WIDTH_ORIGINAL);
-
-                MINITOOLSTRIP_DROPDOWN_BUTTON_WIDTH = DpiHelper.LogicalToDeviceUnitsX(MINITOOLSTRIP_DROPDOWN_BUTTON_WIDTH_ORIGINAL);
-                MINITOOLSTRIP_TEXTBOX_WIDTH = DpiHelper.LogicalToDeviceUnitsX(MINITOOLSTRIP_TEXTBOX_WIDTH_ORIGINAL);
-            }
+            // Dimensions of the "Type Here" text box.
+            s_toolStripTempateHeight = ScaleHelper.ScaleToInitialSystemDpi(TOOLSTRIP_TEMPLATE_HEIGHT_ORIGINAL);
+            s_templateHeight = ScaleHelper.ScaleToInitialSystemDpi(TEMPLATE_HEIGHT_ORIGINAL);
+            s_toolStripTemplateWidth = ScaleHelper.ScaleToInitialSystemDpi(TOOLSTRIP_TEMPLATE_WIDTH_ORIGINAL);
+            s_templateWidth = ScaleHelper.ScaleToInitialSystemDpi(TEMPLATE_WIDTH_ORIGINAL);
+            // The hot region is the arrow button next to "Type Here" box.
+            s_templateHotRegionWidth = ScaleHelper.ScaleToInitialSystemDpi(TEMPLATE_HOTREGION_WIDTH_ORIGINAL);
+            s_miniToolStripDropDownButtonWidth = ScaleHelper.ScaleToInitialSystemDpi(MINITOOLSTRIP_DROPDOWN_BUTTON_WIDTH_ORIGINAL);
+            s_miniToolStripTextBoxWidth = ScaleHelper.ScaleToInitialSystemDpi(MINITOOLSTRIP_TEXTBOX_WIDTH_ORIGINAL);
 
             s_isScalingInitialized = true;
         }
 
-        SetupNewEditNode(this, text, image, component);
-        _commands = Array.Empty<MenuCommand>();
-        _addCommands = Array.Empty<MenuCommand>();
+        SetupNewEditNode(this, text, component);
+        _commands = [];
+        _addCommands = [];
     }
 
     /// <summary>
@@ -264,15 +271,15 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     {
         get
         {
-            BaseContextMenuStrip templateNodeContextMenu = new BaseContextMenuStrip(_component.Site)
+            BaseContextMenuStrip templateNodeContextMenu = new(_component.Site)
             {
                 Populated = false
             };
             templateNodeContextMenu.GroupOrdering.Clear();
-            templateNodeContextMenu.GroupOrdering.AddRange(new string[] { StandardGroups.Code, StandardGroups.Custom, StandardGroups.Selection, StandardGroups.Edit });
+            templateNodeContextMenu.GroupOrdering.AddRange([StandardGroups.Code, StandardGroups.Custom, StandardGroups.Selection, StandardGroups.Edit]);
             templateNodeContextMenu.Text = "CustomContextMenu";
 
-            TemplateNodeCustomMenuItemCollection templateNodeCustomMenuItemCollection = new TemplateNodeCustomMenuItemCollection(_component.Site, _controlHost);
+            TemplateNodeCustomMenuItemCollection templateNodeCustomMenuItemCollection = new(_component.Site, _controlHost);
             foreach (ToolStripItem item in templateNodeCustomMenuItemCollection)
             {
                 templateNodeContextMenu.Groups[StandardGroups.Custom].Items.Add(item);
@@ -374,7 +381,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     }
 
     /// <summary>
-    ///  Is system context menu for the insitu edit box displayed?.
+    ///  Is system context menu for the InSitu edit box displayed?.
     /// </summary>
     internal bool IsSystemContextMenuDisplayed
     {
@@ -484,12 +491,13 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
 
                 SelectionService.SetSelectedComponents(null, SelectionTypes.Replace);
                 ToolStripDropDown oldContextMenu = _contextMenu;
+
                 // PERF: Consider refresh mechanism for the derived items.
                 if (oldContextMenu is not null)
                 {
-                    oldContextMenu.Closed -= new ToolStripDropDownClosedEventHandler(OnContextMenuClosed);
+                    oldContextMenu.Closed -= OnContextMenuClosed;
                     oldContextMenu.Closing -= OnContextMenuClosing;
-                    oldContextMenu.Opened -= new EventHandler(OnContextMenuOpened);
+                    oldContextMenu.Opened -= OnContextMenuOpened;
                     oldContextMenu.Dispose();
                 }
 
@@ -501,7 +509,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
                 // Remember the click position.
                 ToolStripDesigner.s_lastCursorPosition = Cursor.Position;
 
-                if (_designer is ToolStripDesigner)
+                if (_designer is ToolStripDesigner designer)
                 {
                     if (KeyboardService.TemplateNodeActive)
                     {
@@ -516,10 +524,10 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
 
                     KeyboardService.SelectedDesignerControl = _controlHost;
                     SelectionService.SetSelectedComponents(null, SelectionTypes.Replace);
-                    ((ToolStripDesigner)_designer).ShowEditNode(true);
+                    designer.ShowEditNode(true);
                 }
 
-                if (_designer is ToolStripMenuItemDesigner)
+                if (_designer is ToolStripMenuItemDesigner itemDesigner)
                 {
                     // cache the serviceProvider (Site) since the component can potential get disposed after the call to CommitAndSelect();
                     IServiceProvider svcProvider = _component.Site;
@@ -528,19 +536,20 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
                     {
                         if (_component is ToolStripItem currentItem)
                         {
-                            // We have clicked the TemplateNode of a visible Item .. so just commit the current Insitu...
+                            // We have clicked the TemplateNode of a visible Item .. so just commit the current InSitu...
                             if (currentItem.Visible)
                             {
                                 // If templateNode Active .. commit
                                 KeyboardService.ActiveTemplateNode.Commit(false, false);
                             }
-                            else  // we have clicked the templateNode of a Invisible Item ... so a dummyItem. In this case select the item.
+                            else // we have clicked the templateNode of a Invisible Item ...
+                                 // so a dummyItem. In this case select the item.
                             {
                                 // If templateNode Active .. commit and Select
                                 KeyboardService.ActiveTemplateNode.Commit(false, true);
                             }
                         }
-                        else  // If Component is not a ToolStripItem
+                        else // If Component is not a ToolStripItem
                         {
                             KeyboardService.ActiveTemplateNode.Commit(false, false);
                         }
@@ -548,19 +557,19 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
 
                     if (_designer is not null)
                     {
-                        ((ToolStripMenuItemDesigner)_designer).EditTemplateNode(true);
+                        itemDesigner.EditTemplateNode(true);
                     }
                     else
                     {
                         ISelectionService cachedSelSvc = (ISelectionService)svcProvider.GetService(typeof(ISelectionService));
                         if (cachedSelSvc.PrimarySelection is ToolStripItem selectedItem && _designerHost is not null)
                         {
-                            if (_designerHost.GetDesigner(selectedItem) is ToolStripMenuItemDesigner itemDesigner)
+                            if (_designerHost.GetDesigner(selectedItem) is ToolStripMenuItemDesigner menuItemDesigner)
                             {
                                 // Invalidate the item only if its toplevel.
                                 if (!selectedItem.IsOnDropDown)
                                 {
-                                    Rectangle bounds = itemDesigner.GetGlyphBounds();
+                                    Rectangle bounds = menuItemDesigner.GetGlyphBounds();
                                     ToolStripDesignerUtils.GetAdjustedBounds(selectedItem, ref bounds);
                                     if (svcProvider.GetService(typeof(BehaviorService)) is BehaviorService bSvc)
                                     {
@@ -568,7 +577,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
                                     }
                                 }
 
-                                itemDesigner.EditTemplateNode(true);
+                                menuItemDesigner.EditTemplateNode(true);
                             }
                         }
                     }
@@ -661,7 +670,9 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     }
 
     /// <summary>
-    ///  This Internal function is called from the ToolStripItemDesigner to relinquish the resources used by the EditorToolStrip. This Function disposes the ToolStrip and its components and also clears the event handlers associated.
+    ///  This Internal function is called from the ToolStripItemDesigner to relinquish the resources used
+    ///  by the EditorToolStrip. This Function disposes the ToolStrip and its components and also
+    ///  clears the event handlers associated.
     /// </summary>
     internal void CloseEditor()
     {
@@ -676,32 +687,32 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
 
             if (_component is ToolStrip strip)
             {
-                strip.RightToLeftChanged -= new EventHandler(OnRightToLeftChanged);
+                strip.RightToLeftChanged -= OnRightToLeftChanged;
             }
             else
             {
                 if (_component is ToolStripDropDownItem stripItem)
                 {
-                    stripItem.RightToLeftChanged -= new EventHandler(OnRightToLeftChanged);
+                    stripItem.RightToLeftChanged -= OnRightToLeftChanged;
                 }
             }
 
             if (_centerLabel is not null)
             {
-                _centerLabel.MouseUp -= new MouseEventHandler(CenterLabelClick);
-                _centerLabel.MouseEnter -= new EventHandler(CenterLabelMouseEnter);
-                _centerLabel.MouseMove -= new MouseEventHandler(CenterLabelMouseMove);
-                _centerLabel.MouseLeave -= new EventHandler(CenterLabelMouseLeave);
+                _centerLabel.MouseUp -= CenterLabelClick;
+                _centerLabel.MouseEnter -= CenterLabelMouseEnter;
+                _centerLabel.MouseMove -= CenterLabelMouseMove;
+                _centerLabel.MouseLeave -= CenterLabelMouseLeave;
                 _centerLabel.Dispose();
                 _centerLabel = null;
             }
 
             if (_addItemButton is not null)
             {
-                _addItemButton.MouseMove -= new MouseEventHandler(OnMouseMove);
-                _addItemButton.MouseUp -= new MouseEventHandler(OnMouseUp);
-                _addItemButton.MouseDown -= new MouseEventHandler(OnMouseDown);
-                _addItemButton.DropDownOpened -= new EventHandler(OnAddItemButtonDropDownOpened);
+                _addItemButton.MouseMove -= OnMouseMove;
+                _addItemButton.MouseUp -= OnMouseUp;
+                _addItemButton.MouseDown -= OnMouseDown;
+                _addItemButton.DropDownOpened -= OnAddItemButtonDropDownOpened;
                 _addItemButton.DropDown.Dispose();
                 _addItemButton.Dispose();
                 _addItemButton = null;
@@ -709,19 +720,20 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
 
             if (_contextMenu is not null)
             {
-                _contextMenu.Closed -= new ToolStripDropDownClosedEventHandler(OnContextMenuClosed);
+                _contextMenu.Closed -= OnContextMenuClosed;
                 _contextMenu.Closing -= OnContextMenuClosing;
-                _contextMenu.Opened -= new EventHandler(OnContextMenuOpened);
+                _contextMenu.Opened -= OnContextMenuOpened;
                 _contextMenu = null;
             }
 
-            _miniToolStrip.MouseLeave -= new EventHandler(OnMouseLeave);
+            _miniToolStrip.MouseLeave -= OnMouseLeave;
             _miniToolStrip.Dispose();
             _miniToolStrip = null;
+
             // Surface can be null. VS Whidbey #572862
             if (_designSurface is not null)
             {
-                _designSurface.Flushed -= new EventHandler(OnLoaderFlushed);
+                _designSurface.Flushed -= OnLoaderFlushed;
                 _designSurface = null;
             }
 
@@ -731,7 +743,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     }
 
     /// <summary>
-    ///  This internal Function is called by item designers to ROLLBACK the current Insitu editing mode.
+    ///  This internal Function is called by item designers to ROLLBACK the current InSitu editing mode.
     /// </summary>
     internal void Commit(bool enterKeyPressed, bool tabKeyPressed)
     {
@@ -780,29 +792,36 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
                 selectedType = supportedTypes[0];
             }
 
-            if (_designer is ToolStripDesigner)
+            if (_designer is ToolStripDesigner designer)
             {
-                ((ToolStripDesigner)_designer).AddNewItem(selectedType, text, enterKeyPressed, tabKeyPressed);
+                designer.AddNewItem(selectedType, text, enterKeyPressed, tabKeyPressed);
             }
             else
             {
                 ((ToolStripItemDesigner)_designer).CommitEdit(selectedType, text, commit, enterKeyPressed, tabKeyPressed);
             }
         }
-        else if (_designer is ToolStripItemDesigner)
+        else if (_designer is ToolStripItemDesigner designer)
         {
-            ((ToolStripItemDesigner)_designer).CommitEdit(_designer.Component.GetType(), text, commit, enterKeyPressed, tabKeyPressed);
+            designer.CommitEdit(_designer.Component.GetType(), text, commit, enterKeyPressed, tabKeyPressed);
         }
     }
 
     /// <summary>
-    ///  This private function performs the job of committing the current InSitu Editor. This will call the CommitEdit(...) function for the appropriate designers so that they can actually do their own Specific things for committing (or ROLLING BACK) the Insitu Edit mode.  The commit flag is used for commit or rollback. BE SURE TO ALWAYS call ExitInSituEdit from this function to put the EditorToolStrip in a sane "NON EDIT" mode.
+    ///  This private function performs the job of committing the current InSitu Editor.
+    ///  This will call the CommitEdit(...) function for the appropriate designers so that they can actually do
+    ///  their own Specific things for committing (or ROLLING BACK) the InSitu Edit mode.
+    ///  The commit flag is used for commit or rollback. BE SURE TO ALWAYS call ExitInSituEdit
+    ///  from this function to put the EditorToolStrip in a sane "NON EDIT" mode.
     /// </summary>
     private void CommitEditor(bool commit, bool enterKeyPressed, bool tabKeyPressed)
     {
-        // After the node is commited the templateNode gets the selection. But the original selection is not invalidated. consider following case
-        // FOO -> BAR -> TEMPLATENODE node
-        // When the TemplateNode is committed "FOO" is selected but after the commit is complete, The TemplateNode gets the selection but "FOO" is never invalidated and hence retains selection. So we get the selection and then invalidate it at the end of this function. Get the currentSelection to invalidate
+        // After the node is committed the templateNode gets the selection.
+        // But the original selection is not invalidated. consider following case FOO -> BAR -> TEMPLATENODE node
+        // When the TemplateNode is committed "FOO" is selected but after the commit is complete.
+        // The TemplateNode gets the selection but "FOO" is never invalidated and hence retains selection.
+        // So we get the selection and then invalidate it at the end of this function.
+        // Get the currentSelection to invalidate.
         string text = (_centerTextBox is not null) ? ((TextBox)(_centerTextBox.Control)).Text : string.Empty;
         ExitInSituEdit();
         FocusForm();
@@ -817,7 +836,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
                     Rectangle invalidateBounds = designer.GetGlyphBounds();
                     ToolStripDesignerUtils.GetAdjustedBounds(curSel, ref invalidateBounds);
                     invalidateBounds.Inflate(GLYPHBORDER, GLYPHBORDER);
-                    Region rgn = new Region(invalidateBounds);
+                    Region rgn = new(invalidateBounds);
                     invalidateBounds.Inflate(-GLYPHINSET, -GLYPHINSET);
                     rgn.Exclude(invalidateBounds);
                     BehaviorService?.Invalidate(rgn);
@@ -829,7 +848,11 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     }
 
     /// <summary>
-    ///  The ToolStripTemplateNode enters into InSitu Edit Mode through this Function. This Function is called by FocusEditor( ) which starts the InSitu. The centerLabel is SWAPPED by centerTextBox and the ToolStripTemplateNode is Ready for  Text.  Settting "Active = true" pushes the IEventHandler which now intercepts the  Escape and Enter keys to ROLLBACK or COMMIT the InSitu Editing respectively.
+    ///  The ToolStripTemplateNode enters into InSitu Edit Mode through this Function.
+    ///  This Function is called by FocusEditor( ) which starts the InSitu.
+    ///  The centerLabel is SWAPPED by centerTextBox and the ToolStripTemplateNode is Ready for Text.
+    ///  Setting "Active = true" pushes the IEventHandler which now intercepts the Escape and Enter keys to ROLLBACK or
+    ///  COMMIT the InSitu Editing respectively.
     /// </summary>
     private void EnterInSituEdit()
     {
@@ -859,7 +882,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
                 {
                     Dock = DockStyle.None,
                     AutoSize = false,
-                    Width = MINITOOLSTRIP_TEXTBOX_WIDTH
+                    Width = s_miniToolStripTextBoxWidth
                 };
 
                 if (_activeItem is ToolStripDropDownItem item && !item.IsOnDropDown)
@@ -876,7 +899,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
                 _centerTextBox.MouseEnter += CenterTextBoxMouseEnter;
                 _centerTextBox.MouseLeave += CenterTextBoxMouseLeave;
                 int index = _miniToolStrip.Items.IndexOf(_centerLabel);
-                // swap in our insitu textbox
+                // swap in our InSitu textbox
                 if (index != -1)
                 {
                     _miniToolStrip.Items.Insert(index, _centerTextBox);
@@ -890,9 +913,9 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
                 if (_designerHost is not null)
                 {
                     baseComponent = (Control)_designerHost.RootComponent;
-                    PInvoke.SendMessage(baseComponent, PInvoke.WM_SETREDRAW, (WPARAM)(BOOL)false);
+                    PInvokeCore.SendMessage(baseComponent, PInvokeCore.WM_SETREDRAW, (WPARAM)(BOOL)false);
                     tb.Focus();
-                    PInvoke.SendMessage(baseComponent, PInvoke.WM_SETREDRAW, (WPARAM)(BOOL)true);
+                    PInvokeCore.SendMessage(baseComponent, PInvokeCore.WM_SETREDRAW, (WPARAM)(BOOL)true);
                 }
             }
             finally
@@ -903,7 +926,10 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     }
 
     /// <summary>
-    ///  The ToolStripTemplateNode exits from InSitu Edit Mode through this Function. This Function is called by CommitEditor( ) which stops the InSitu. The centerTextBox is SWAPPED by centerLabel and the ToolStripTemplateNode is exits the   InSitu Mode.  Settting "Active = false" pops the IEventHandler.
+    ///  The ToolStripTemplateNode exits from InSitu Edit Mode through this Function.
+    ///  This Function is called by CommitEditor( ) which stops the InSitu.
+    ///  The centerTextBox is SWAPPED by centerLabel and the ToolStripTemplateNode is exits the InSitu Mode.
+    ///  Setting "Active = false" pops the IEventHandler.
     /// </summary>
     private void ExitInSituEdit()
     {
@@ -914,21 +940,21 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
 
             try
             {
-                // if going insitu with a real item, set & select all the text
+                // if going InSitu with a real item, set & select all the text
                 int index = _miniToolStrip.Items.IndexOf(_centerTextBox);
                 // validate index
                 if (index != -1)
                 {
                     _centerLabel.Text = SR.ToolStripDesignerTemplateNodeEnterText;
-                    // swap in our insitu textbox
+                    // swap in our InSitu textbox
                     _miniToolStrip.Items.Insert(index, _centerLabel);
                     _miniToolStrip.Items.Remove(_centerTextBox);
-                    ((TextBox)(_centerTextBox.Control)).KeyUp -= new KeyEventHandler(OnKeyUp);
-                    ((TextBox)(_centerTextBox.Control)).KeyDown -= new KeyEventHandler(OnKeyDown);
+                    ((TextBox)(_centerTextBox.Control)).KeyUp -= OnKeyUp;
+                    ((TextBox)(_centerTextBox.Control)).KeyDown -= OnKeyDown;
                 }
 
-                _centerTextBox.MouseEnter -= new EventHandler(CenterTextBoxMouseEnter);
-                _centerTextBox.MouseLeave -= new EventHandler(CenterTextBoxMouseLeave);
+                _centerTextBox.MouseEnter -= CenterTextBoxMouseEnter;
+                _centerTextBox.MouseLeave -= CenterTextBoxMouseLeave;
                 _centerTextBox.Dispose();
                 _centerTextBox = null;
                 _inSituMode = false;
@@ -946,7 +972,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     }
 
     /// <summary>
-    ///  This internal function is called from ToolStripItemDesigner to put the  current item into InSitu Edit Mode.
+    ///  This internal function is called from ToolStripItemDesigner to put the current item into InSitu Edit Mode.
     /// </summary>
     internal void FocusEditor(ToolStripItem currentItem)
     {
@@ -967,9 +993,9 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
             && _designerHost is not null)
         {
             Control baseComponent = (Control)_designerHost.RootComponent;
-            PInvoke.SendMessage(baseComponent, PInvoke.WM_SETREDRAW, (WPARAM)(BOOL)false);
+            PInvokeCore.SendMessage(baseComponent, PInvokeCore.WM_SETREDRAW, (WPARAM)(BOOL)false);
             designerFrame.Focus();
-            PInvoke.SendMessage(baseComponent, PInvoke.WM_SETREDRAW, (WPARAM)(BOOL)true);
+            PInvokeCore.SendMessage(baseComponent, PInvokeCore.WM_SETREDRAW, (WPARAM)(BOOL)true);
         }
     }
 
@@ -1026,7 +1052,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     }
 
     /// <summary>
-    ///  Called by the design surface when it is being flushed.  This will save any changes made to TemplateNode.
+    ///  Called by the design surface when it is being flushed. This will save any changes made to TemplateNode.
     /// </summary>
     private void OnLoaderFlushed(object sender, EventArgs e)
     {
@@ -1034,7 +1060,9 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     }
 
     /// <summary>
-    ///  This is small HACK. For some reason if the InSituEditor's textbox has focus the escape key is lost and the menu service doesnt get it.... but the textbox gets it. So need to check for the escape key here and call CommitEditor(false) which  will ROLLBACK the edit.
+    ///  This is small HACK. For some reason if the InSituEditor's textbox has focus the escape key is lost and
+    ///  the menu service doesn't get it.... but the textbox gets it. So need to check for the escape key here and
+    ///  call CommitEditor(false) which will ROLLBACK the edit.
     /// </summary>
     private void OnKeyUp(object sender, KeyEventArgs e)
     {
@@ -1057,9 +1085,9 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
                 CommitEditor(false, false, false);
                 break;
             case Keys.Return:
-                if (ignoreFirstKeyUp)
+                if (_ignoreFirstKeyUp)
                 {
-                    ignoreFirstKeyUp = false;
+                    _ignoreFirstKeyUp = false;
                     return;
                 }
 
@@ -1088,11 +1116,11 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     }
 
     /// <summary>
-    ///  Check for the Enter key here and call CommitEditor(true) which  will COMMIT the edit.
+    ///  Check for the Enter key here and call CommitEditor(true) which will COMMIT the edit.
     /// </summary>
     private void OnKeyDefaultAction(object sender, EventArgs e)
     {
-        // exit Insitu with committing....
+        // exit InSitu with committing....
         Active = false;
         Debug.Assert(_centerTextBox.Control is not null, "The TextBox is null");
         if (_centerTextBox.Control is not null)
@@ -1242,7 +1270,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     }
 
     /// <summary>
-    ///  This internal Function is called by item designers to ROLLBACK the current Insitu editing mode.
+    ///  This internal Function is called by item designers to ROLLBACK the current InSitu editing mode.
     /// </summary>
     internal void RollBack()
     {
@@ -1276,22 +1304,35 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
             {
                 Point loc = BehaviorService.ControlToAdornerWindow(_miniToolStrip);
                 loc = BehaviorService.AdornerWindowPointToScreen(loc);
-                Rectangle translatedBounds = new Rectangle(loc, _miniToolStrip.Size);
+                Rectangle translatedBounds = new(loc, _miniToolStrip.Size);
                 _miniToolStrip.RaiseStateChangeEvent();
 
                 if (_contextMenu is null)
                 {
                     _isPopulated = true;
-                    _contextMenu = ToolStripDesignerUtils.GetNewItemDropDown(_component, null, new EventHandler(AddNewItemClick), false, _component.Site, true);
-                    _contextMenu.Closed += new ToolStripDropDownClosedEventHandler(OnContextMenuClosed);
+                    _contextMenu = ToolStripDesignerUtils.GetNewItemDropDown(
+                        _component,
+                        currentItem: null,
+                        AddNewItemClick,
+                        convertTo: false,
+                        _component.Site,
+                        populateCustom: true);
+
+                    _contextMenu.Closed += OnContextMenuClosed;
                     _contextMenu.Closing += OnContextMenuClosing;
-                    _contextMenu.Opened += new EventHandler(OnContextMenuOpened);
+                    _contextMenu.Opened += OnContextMenuOpened;
                     _contextMenu.Text = "ItemSelectionMenu";
                 }
                 else if (!_isPopulated)
                 {
                     _isPopulated = true;
-                    ToolStripDesignerUtils.GetCustomNewItemDropDown(_contextMenu, _component, null, new EventHandler(AddNewItemClick), false, _component.Site);
+                    ToolStripDesignerUtils.GetCustomNewItemDropDown(
+                        _contextMenu,
+                        _component,
+                        currentItem: null,
+                        AddNewItemClick,
+                        convertTo: false,
+                        _component.Site);
                 }
 
                 if (_component is ToolStrip strip)
@@ -1320,7 +1361,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     /// <summary>
     ///  This function sets up the MenuStrip specific TemplateNode.
     /// </summary>
-    private void SetUpMenuTemplateNode(ToolStripTemplateNode owner, string text, Image image, IComponent currentItem)
+    private void SetUpMenuTemplateNode(string text, IComponent currentItem)
     {
         _centerLabel = new ToolStripLabel
         {
@@ -1332,6 +1373,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
 
             Margin = new Padding(1)
         };
+
         if (currentItem is ToolStripDropDownItem)
         {
             _centerLabel.Margin = new Padding(1, 2, 1, 3);
@@ -1341,18 +1383,18 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         _centerLabel.Name = CenterLabelName;
         _centerLabel.Size = _miniToolStrip.DisplayRectangle.Size - _centerLabel.Margin.Size;
         _centerLabel.ToolTipText = SR.ToolStripDesignerTemplateNodeLabelToolTip;
-        _centerLabel.MouseUp += new MouseEventHandler(CenterLabelClick);
-        _centerLabel.MouseEnter += new EventHandler(CenterLabelMouseEnter);
-        _centerLabel.MouseMove += new MouseEventHandler(CenterLabelMouseMove);
-        _centerLabel.MouseLeave += new EventHandler(CenterLabelMouseLeave);
+        _centerLabel.MouseUp += CenterLabelClick;
+        _centerLabel.MouseEnter += CenterLabelMouseEnter;
+        _centerLabel.MouseMove += CenterLabelMouseMove;
+        _centerLabel.MouseLeave += CenterLabelMouseLeave;
 
-        _miniToolStrip.Items.AddRange(new ToolStripItem[] { _centerLabel });
+        _miniToolStrip.Items.AddRange((ToolStripItem[])[_centerLabel]);
     }
 
     /// <summary>
     ///  This function sets up TemplateNode for ToolStrip, StatusStrip, ContextMenuStrip.
     /// </summary>
-    private void SetUpToolTemplateNode(ToolStripTemplateNode owner, string text, Image image, IComponent component)
+    private void SetUpToolTemplateNode(IComponent component)
     {
         _addItemButton = new ToolStripSplitButton
         {
@@ -1360,7 +1402,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
             Margin = new Padding(1)
         };
         _addItemButton.Size = _miniToolStrip.DisplayRectangle.Size - _addItemButton.Margin.Size;
-        _addItemButton.DropDownButtonWidth = MINITOOLSTRIP_DROPDOWN_BUTTON_WIDTH;
+        _addItemButton.DropDownButtonWidth = s_miniToolStripDropDownButtonWidth;
         _addItemButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
         if (component is StatusStrip)
         {
@@ -1371,18 +1413,26 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
             _addItemButton.ToolTipText = SR.ToolStripDesignerTemplateNodeSplitButtonToolTip;
         }
 
-        _addItemButton.MouseDown += new MouseEventHandler(OnMouseDown);
-        _addItemButton.MouseMove += new MouseEventHandler(OnMouseMove);
-        _addItemButton.MouseUp += new MouseEventHandler(OnMouseUp);
+        _addItemButton.MouseDown += OnMouseDown;
+        _addItemButton.MouseMove += OnMouseMove;
+        _addItemButton.MouseUp += OnMouseUp;
         _addItemButton.DropDownOpened += OnAddItemButtonDropDownOpened;
-        _contextMenu = ToolStripDesignerUtils.GetNewItemDropDown(component, null, new EventHandler(AddNewItemClick), false, component.Site, false);
+        _contextMenu = ToolStripDesignerUtils.GetNewItemDropDown(
+            component,
+            currentItem: null,
+            AddNewItemClick,
+            convertTo: false,
+            component.Site,
+            populateCustom: false);
+
         _contextMenu.Text = "ItemSelectionMenu";
-        _contextMenu.Closed += new ToolStripDropDownClosedEventHandler(OnContextMenuClosed);
+        _contextMenu.Closed += OnContextMenuClosed;
         _contextMenu.Closing += OnContextMenuClosing;
-        _contextMenu.Opened += new EventHandler(OnContextMenuOpened);
+        _contextMenu.Opened += OnContextMenuOpened;
         _addItemButton.DropDown = _contextMenu;
         _addItemButton.AccessibleName = SR.ToolStripDesignerTemplateNodeSplitButtonStatusStripAccessibleName;
         _addItemButton.AccessibleRole = AccessibleRole.ButtonDropDown;
+
         // Set up default item and image.
         try
         {
@@ -1390,13 +1440,11 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
             {
                 ItemTypeToolStripMenuItem firstItem = (ItemTypeToolStripMenuItem)_addItemButton.DropDownItems[0];
                 _addItemButton.ImageTransparentColor = Color.Lime;
-                Bitmap bmp = new Icon(typeof(ToolStripTemplateNode), "ToolStripTemplateNode").ToBitmap();
-                if (DpiHelper.IsScalingRequired)
-                {
-                    DpiHelper.ScaleBitmapLogicalToDevice(ref bmp);
-                }
+                _addItemButton.Image = ScaleHelper.GetSmallIconResourceAsBitmap(
+                    typeof(ToolStripTemplateNode),
+                    "ToolStripTemplateNode",
+                    ScaleHelper.InitialSystemDpi);
 
-                _addItemButton.Image = bmp;
                 _addItemButton.DefaultItem = firstItem;
             }
 
@@ -1406,16 +1454,16 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         {
         }
 
-        _miniToolStrip.Items.AddRange(new ToolStripItem[]
-        {
+        _miniToolStrip.Items.AddRange((ToolStripItem[])
+        [
             _addItemButton
-        });
+        ]);
     }
 
     /// <summary>
     ///  This method does actual edit node creation.
     /// </summary>
-    private void SetupNewEditNode(ToolStripTemplateNode owner, string text, Image image, IComponent currentItem)
+    private void SetupNewEditNode(ToolStripTemplateNode owner, string text, IComponent currentItem)
     {
         // setup the MINIToolStrip host...
         _renderer = new MiniToolStripRenderer(owner);
@@ -1423,15 +1471,17 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         if (currentItem is ToolStrip strip)
         {
             _miniToolStrip.RightToLeft = strip.RightToLeft;
-            strip.RightToLeftChanged += new EventHandler(OnRightToLeftChanged);
-            // Make TransparentToolStrip has the same "Site" as ToolStrip. This could make sure TransparentToolStrip has the same design time behavior as ToolStrip.
+            strip.RightToLeftChanged += OnRightToLeftChanged;
+
+            // Make TransparentToolStrip has the same "Site" as ToolStrip. This could make sure TransparentToolStrip
+            // has the same design time behavior as ToolStrip.
             _miniToolStrip.Site = strip.Site;
         }
 
         if (currentItem is ToolStripDropDownItem stripItem)
         {
             _miniToolStrip.RightToLeft = stripItem.RightToLeft;
-            stripItem.RightToLeftChanged += new EventHandler(OnRightToLeftChanged);
+            stripItem.RightToLeftChanged += OnRightToLeftChanged;
         }
 
         _miniToolStrip.SuspendLayout();
@@ -1445,24 +1495,24 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         _miniToolStrip.Renderer = _renderer;
 
         // Add items to the Template ToolStrip depending upon the Parent Type...
-        if (currentItem is MenuStrip || currentItem is ToolStripDropDownItem)
+        if (currentItem is MenuStrip or ToolStripDropDownItem)
         {
-            SetUpMenuTemplateNode(owner, text, image, currentItem);
+            SetUpMenuTemplateNode(text, currentItem);
             _miniToolStrip.AccessibleRole = AccessibleRole.ComboBox;
             _miniToolStrip.Text = text;
         }
         else
         {
-            SetUpToolTemplateNode(owner, text, image, currentItem);
+            SetUpToolTemplateNode(currentItem);
             _miniToolStrip.AccessibleRole = AccessibleRole.ButtonDropDown;
         }
 
-        _miniToolStrip.MouseLeave += new EventHandler(OnMouseLeave);
+        _miniToolStrip.MouseLeave += OnMouseLeave;
         _miniToolStrip.ResumeLayout();
     }
 
     /// <summary>
-    ///  This method does sets the width of the Editor (_miniToolStrip) based on the  text passed in.
+    ///  This method does sets the width of the Editor (_miniToolStrip) based on the text passed in.
     /// </summary>
     internal void SetWidth(string text)
     {
@@ -1482,14 +1532,14 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     /// </summary>
     private class TemplateTextBox : TextBox
     {
-        private readonly TransparentToolStrip parent;
-        private readonly ToolStripTemplateNode owner;
+        private readonly TransparentToolStrip _parent;
+        private readonly ToolStripTemplateNode _owner;
         private const int IMEMODE = 229;
 
         public TemplateTextBox(TransparentToolStrip parent, ToolStripTemplateNode owner) : base()
         {
-            this.parent = parent;
-            this.owner = owner;
+            _parent = parent;
+            _owner = owner;
             AutoSize = false;
             Multiline = false;
         }
@@ -1499,7 +1549,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         /// </summary>
         private bool IsParentWindow(IntPtr hWnd)
         {
-            if (hWnd == parent.Handle)
+            if (hWnd == _parent.Handle)
             {
                 return true;
             }
@@ -1512,7 +1562,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
             switch (keyData & Keys.KeyCode)
             {
                 case Keys.Return:
-                    owner.Commit(true, false);
+                    _owner.Commit(true, false);
                     return true;
             }
 
@@ -1526,41 +1576,43 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         {
             if ((int)keyData == IMEMODE)
             {
-                owner.IMEModeSet = true;
+                _owner.IMEModeSet = true;
             }
             else
             {
-                owner.IMEModeSet = false;
-                owner.ignoreFirstKeyUp = false;
+                _owner.IMEModeSet = false;
+                _owner._ignoreFirstKeyUp = false;
             }
 
             return base.ProcessDialogKey(keyData);
         }
 
         /// <summary>
-        ///  Process the WNDPROC for WM_KILLFOCUS to commit the Insitu Editor..
+        ///  Process the WNDPROC for WM_KILLFOCUS to commit the InSitu Editor..
         /// </summary>
         protected override void WndProc(ref Message m)
         {
             switch (m.MsgInternal)
             {
-                case PInvoke.WM_KILLFOCUS:
+                case PInvokeCore.WM_KILLFOCUS:
                     base.WndProc(ref m);
                     HWND focusedWindow = (HWND)m.WParamInternal;
                     if (!IsParentWindow(focusedWindow))
                     {
-                        owner.Commit(enterKeyPressed: false, tabKeyPressed: false);
+                        _owner.Commit(enterKeyPressed: false, tabKeyPressed: false);
                     }
 
                     break;
 
                 // 1.Slowly click on a menu strip item twice to make it editable, while the item's dropdown menu is visible
                 // 2.Select the text of the item and right click on it
-                // 3.Left click 'Copy' or 'Cut' in the context menu IDE crashed because left click in step3 invoked glyph  behavior, which commited and destroyed the insitu edit box and thus  the 'copy' or 'cut' action has no text to work with.  Thus need to block glyph behaviors while the context menu is displayed.
-                case PInvoke.WM_CONTEXTMENU:
-                    owner.IsSystemContextMenuDisplayed = true;
+                // 3.Left click 'Copy' or 'Cut' in the context menu IDE crashed because left click in step3 invoked glyph
+                //   behavior, which committed and destroyed the InSitu edit box and thus the 'copy' or 'cut' action has no
+                //   text to work with. Thus need to block glyph behaviors while the context menu is displayed.
+                case PInvokeCore.WM_CONTEXTMENU:
+                    _owner.IsSystemContextMenuDisplayed = true;
                     base.WndProc(ref m);
-                    owner.IsSystemContextMenuDisplayed = false;
+                    _owner.IsSystemContextMenuDisplayed = false;
                     break;
                 default:
                     base.WndProc(ref m);
@@ -1570,17 +1622,18 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     }
 
     /// <summary>
-    ///  Private class to Change the ToolStrip to a TransparentToolStrip. Our EditorToolStrip is a TransparentToolStrip so that it picks up the itemColor.
+    ///  Private class to Change the ToolStrip to a TransparentToolStrip. Our EditorToolStrip is a TransparentToolStrip
+    ///  so that it picks up the itemColor.
     /// </summary>
     public class TransparentToolStrip : ToolStrip
     {
-        private readonly ToolStripTemplateNode owner;
-        private readonly IComponent currentItem;
+        private readonly ToolStripTemplateNode _owner;
+        private readonly IComponent _currentItem;
 
         public TransparentToolStrip(ToolStripTemplateNode owner)
         {
-            this.owner = owner;
-            currentItem = owner._component;
+            _owner = owner;
+            _currentItem = owner._component;
             TabStop = true;
             SetStyle(ControlStyles.Selectable, true);
             AutoSize = false;
@@ -1593,7 +1646,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         /// </summary>
         public ToolStripTemplateNode TemplateNode
         {
-            get => owner;
+            get => _owner;
         }
 
         /// <summary>
@@ -1601,8 +1654,8 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         /// </summary>
         private void CommitAndSelectNext(bool forward)
         {
-            owner.Commit(false, true);
-            owner.KeyboardService?.ProcessKeySelect(!forward, null);
+            _owner.Commit(enterKeyPressed: false, tabKeyPressed: true);
+            _owner.KeyboardService?.ProcessKeySelect(reverse: !forward);
         }
 
         /// <summary>
@@ -1625,13 +1678,13 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public override Size GetPreferredSize(Size proposedSize)
         {
-            if (currentItem is ToolStripDropDownItem)
+            if (_currentItem is ToolStripDropDownItem)
             {
-                return new Size(Width, TOOLSTRIP_TEMPLATE_HEIGHT);
+                return new Size(Width, s_toolStripTempateHeight);
             }
             else
             {
-                return new Size(Width, TEMPLATE_HEIGHT);
+                return new Size(Width, s_templateHeight);
             }
         }
 
@@ -1657,7 +1710,7 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         protected override bool ProcessDialogKey(Keys keyData)
         {
             bool retVal = false;
-            if (owner.Active)
+            if (_owner.Active)
             {
                 if ((keyData & (Keys.Alt | Keys.Control)) == Keys.None)
                 {
@@ -1682,17 +1735,17 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
         {
-            if (currentItem is ToolStripDropDownItem)
+            if (_currentItem is ToolStripDropDownItem)
             {
-                base.SetBoundsCore(x, y, TOOLSTRIP_TEMPLATE_WIDTH, TOOLSTRIP_TEMPLATE_HEIGHT, specified);
+                base.SetBoundsCore(x, y, s_toolStripTemplateWidth, s_toolStripTempateHeight, specified);
             }
-            else if (currentItem is MenuStrip)
+            else if (_currentItem is MenuStrip)
             {
-                base.SetBoundsCore(x, y, TOOLSTRIP_TEMPLATE_WIDTH, TEMPLATE_HEIGHT, specified);
+                base.SetBoundsCore(x, y, s_toolStripTemplateWidth, s_templateHeight, specified);
             }
             else
             {
-                base.SetBoundsCore(x, y, TEMPLATE_WIDTH, TEMPLATE_HEIGHT, specified);
+                base.SetBoundsCore(x, y, s_templateWidth, s_templateHeight, specified);
             }
         }
 
@@ -1705,11 +1758,10 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         {
             switch (m.MsgInternal)
             {
-                case PInvoke.WM_GETOBJECT:
-                    if (owner._addItemButton is null)
+                case PInvokeCore.WM_GETOBJECT:
+                    if (_owner._addItemButton is null)
                     {
                         // only adding patterns to _miniToolStrip associated with MenuStrip or ContextMenu
-                        // m.Result = AutomationInteropProvider.ReturnRawElementProvider(Handle, m.WParam, m.LParam, (IRawElementProviderSimple)(new TransparentToolStripUiaProvider(this)));
                         return;
                     }
 
@@ -1725,24 +1777,24 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
     /// </summary>
     public class MiniToolStripRenderer : ToolStripSystemRenderer
     {
-        private int state = (int)TemplateNodeSelectionState.None;
-        private readonly Color selectedBorderColor;
-        private readonly Color defaultBorderColor;
-        private readonly Color dropDownMouseOverColor;
-        private readonly Color dropDownMouseDownColor;
-        private readonly Color toolStripBorderColor;
-        private readonly ToolStripTemplateNode owner;
-        private Rectangle hotRegion = Rectangle.Empty;
+        private int _state = (int)TemplateNodeSelectionState.None;
+        private readonly Color _selectedBorderColor;
+        private readonly Color _defaultBorderColor;
+        private readonly Color _dropDownMouseOverColor;
+        private readonly Color _dropDownMouseDownColor;
+        private readonly Color _toolStripBorderColor;
+        private readonly ToolStripTemplateNode _owner;
+        private Rectangle _hotRegion = Rectangle.Empty;
 
         public MiniToolStripRenderer(ToolStripTemplateNode owner) : base()
         {
             // Add Colors
-            this.owner = owner;
-            selectedBorderColor = Color.FromArgb(46, 106, 197);
-            defaultBorderColor = Color.FromArgb(171, 171, 171);
-            dropDownMouseOverColor = Color.FromArgb(193, 210, 238);
-            dropDownMouseDownColor = Color.FromArgb(152, 181, 226);
-            toolStripBorderColor = Color.White;
+            _owner = owner;
+            _selectedBorderColor = Color.FromArgb(46, 106, 197);
+            _defaultBorderColor = Color.FromArgb(171, 171, 171);
+            _dropDownMouseOverColor = Color.FromArgb(193, 210, 238);
+            _dropDownMouseDownColor = Color.FromArgb(152, 181, 226);
+            _toolStripBorderColor = Color.White;
         }
 
         /// <summary>
@@ -1750,8 +1802,8 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         /// </summary>
         public int State
         {
-            get => state;
-            set => state = value;
+            get => _state;
+            set => _state = value;
         }
 
         /// <summary>
@@ -1772,23 +1824,23 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
             {
                 case 1: // TemplateNodeSelected
                 case 4: // MouseOver
-                    using (LinearGradientBrush brush = new LinearGradientBrush(bounds, Color.White, defaultBorderColor, LinearGradientMode.Vertical))
+                    using (LinearGradientBrush brush = new(bounds, Color.White, _defaultBorderColor, LinearGradientMode.Vertical))
                     {
                         g.FillRectangle(brush, bounds);
                     }
 
                     break;
                 case 5: // MouseOverHotRegion
-                    using (SolidBrush b = new SolidBrush(dropDownMouseOverColor))
+                    using (SolidBrush b = new(_dropDownMouseOverColor))
                     {
-                        g.FillRectangle(b, hotRegion);
+                        g.FillRectangle(b, _hotRegion);
                     }
 
                     break;
                 case 6: // HotRegionSelected
-                    using (SolidBrush b = new SolidBrush(dropDownMouseDownColor))
+                    using (SolidBrush b = new(_dropDownMouseDownColor))
                     {
-                        g.FillRectangle(b, hotRegion);
+                        g.FillRectangle(b, _hotRegion);
                     }
 
                     break;
@@ -1799,10 +1851,10 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
 
         protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
         {
-            if (owner._component is MenuStrip || owner._component is ToolStripDropDownItem)
+            if (_owner._component is MenuStrip or ToolStripDropDownItem)
             {
                 Graphics g = e.Graphics;
-                g.Clear(toolStripBorderColor);
+                g.Clear(_toolStripBorderColor);
             }
             else
             {
@@ -1816,9 +1868,9 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
         protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
         {
             Graphics g = e.Graphics;
-            Rectangle bounds = new Rectangle(Point.Empty, e.ToolStrip.Size);
-            Pen selectborderPen = new Pen(toolStripBorderColor);
-            Rectangle drawRect = new Rectangle(bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
+            Rectangle bounds = new(Point.Empty, e.ToolStrip.Size);
+            Pen selectborderPen = new(_toolStripBorderColor);
+            Rectangle drawRect = new(bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
             g.DrawRectangle(selectborderPen, drawRect);
             selectborderPen.Dispose();
         }
@@ -1831,79 +1883,79 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
             base.OnRenderLabelBackground(e);
             ToolStripItem item = e.Item;
             Graphics g = e.Graphics;
-            Rectangle bounds = new Rectangle(Point.Empty, item.Size);
-            Rectangle drawRect = new Rectangle(bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
-            Pen borderPen = new Pen(defaultBorderColor);
-            if (state == (int)TemplateNodeSelectionState.TemplateNodeSelected) // state Template node is selected.
+            Rectangle bounds = new(Point.Empty, item.Size);
+            Rectangle drawRect = new(bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
+            Pen borderPen = new(_defaultBorderColor);
+            if (_state == (int)TemplateNodeSelectionState.TemplateNodeSelected) // state Template node is selected.
             {
-                using (SolidBrush brush = new SolidBrush(toolStripBorderColor))
+                using (SolidBrush brush = new(_toolStripBorderColor))
                 {
                     g.FillRectangle(brush, drawRect);
                 }
 
-                if (owner.EditorToolStrip.RightToLeft == RightToLeft.Yes)
+                if (_owner.EditorToolStrip.RightToLeft == RightToLeft.Yes)
                 {
-                    hotRegion = new Rectangle(bounds.Left + 2, bounds.Top + 2, TEMPLATE_HOTREGION_WIDTH, bounds.Bottom - 4);
+                    _hotRegion = new Rectangle(bounds.Left + 2, bounds.Top + 2, s_templateHotRegionWidth, bounds.Bottom - 4);
                 }
                 else
                 {
-                    hotRegion = new Rectangle(bounds.Right - TEMPLATE_HOTREGION_WIDTH - 2, bounds.Top + 2, TEMPLATE_HOTREGION_WIDTH, bounds.Bottom - 4);
+                    _hotRegion = new Rectangle(bounds.Right - s_templateHotRegionWidth - 2, bounds.Top + 2, s_templateHotRegionWidth, bounds.Bottom - 4);
                 }
 
-                owner.HotRegion = hotRegion;
+                _owner.HotRegion = _hotRegion;
 
                 // do the Actual Drawing
-                DrawDropDown(g, hotRegion, state);
+                DrawDropDown(g, _hotRegion, _state);
 
                 borderPen.Color = Color.Black;
-                item.ForeColor = defaultBorderColor;
+                item.ForeColor = _defaultBorderColor;
                 g.DrawRectangle(borderPen, drawRect);
             }
 
-            if (state == (int)TemplateNodeSelectionState.MouseOverLabel) // state Template node is selected.
+            if (_state == (int)TemplateNodeSelectionState.MouseOverLabel) // state Template node is selected.
             {
-                if (owner.EditorToolStrip.RightToLeft == RightToLeft.Yes)
+                if (_owner.EditorToolStrip.RightToLeft == RightToLeft.Yes)
                 {
-                    hotRegion = new Rectangle(bounds.Left + 2, bounds.Top + 2, TEMPLATE_HOTREGION_WIDTH, bounds.Bottom - 4);
+                    _hotRegion = new Rectangle(bounds.Left + 2, bounds.Top + 2, s_templateHotRegionWidth, bounds.Bottom - 4);
                 }
                 else
                 {
-                    hotRegion = new Rectangle(bounds.Right - TEMPLATE_HOTREGION_WIDTH - 2, bounds.Top + 2, TEMPLATE_HOTREGION_WIDTH, bounds.Bottom - 4);
+                    _hotRegion = new Rectangle(bounds.Right - s_templateHotRegionWidth - 2, bounds.Top + 2, s_templateHotRegionWidth, bounds.Bottom - 4);
                 }
 
-                owner.HotRegion = hotRegion;
+                _owner.HotRegion = _hotRegion;
 
-                g.Clear(toolStripBorderColor);
-                DrawDropDown(g, hotRegion, state);
+                g.Clear(_toolStripBorderColor);
+                DrawDropDown(g, _hotRegion, _state);
                 borderPen.Color = Color.Black;
                 borderPen.DashStyle = DashStyle.Dot;
                 g.DrawRectangle(borderPen, drawRect);
             }
 
-            if (state == (int)TemplateNodeSelectionState.MouseOverHotRegion)
+            if (_state == (int)TemplateNodeSelectionState.MouseOverHotRegion)
             {
-                g.Clear(toolStripBorderColor);
-                DrawDropDown(g, hotRegion, state);
+                g.Clear(_toolStripBorderColor);
+                DrawDropDown(g, _hotRegion, _state);
                 borderPen.Color = Color.Black;
                 borderPen.DashStyle = DashStyle.Dot;
-                item.ForeColor = defaultBorderColor;
+                item.ForeColor = _defaultBorderColor;
                 g.DrawRectangle(borderPen, drawRect);
             }
 
-            if (state == (int)TemplateNodeSelectionState.HotRegionSelected)
+            if (_state == (int)TemplateNodeSelectionState.HotRegionSelected)
             {
-                g.Clear(toolStripBorderColor);
-                DrawDropDown(g, hotRegion, state);
+                g.Clear(_toolStripBorderColor);
+                DrawDropDown(g, _hotRegion, _state);
                 borderPen.Color = Color.Black;
-                item.ForeColor = defaultBorderColor;
+                item.ForeColor = _defaultBorderColor;
                 g.DrawRectangle(borderPen, drawRect);
             }
 
-            if (state == (int)TemplateNodeSelectionState.None) // state Template node is not selected.
+            if (_state == (int)TemplateNodeSelectionState.None) // state Template node is not selected.
             {
-                g.Clear(toolStripBorderColor);
+                g.Clear(_toolStripBorderColor);
                 g.DrawRectangle(borderPen, drawRect);
-                item.ForeColor = defaultBorderColor;
+                item.ForeColor = _defaultBorderColor;
             }
 
             borderPen.Dispose();
@@ -1922,45 +1974,45 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
                 // Get the DropDownButton Bounds
                 Rectangle buttonBounds = splitButton.DropDownButtonBounds;
                 // Draw the White Divider Line...
-                using (Pen p = new Pen(toolStripBorderColor))
+                using (Pen p = new(_toolStripBorderColor))
                 {
                     g.DrawLine(p, buttonBounds.Left, buttonBounds.Top + 1, buttonBounds.Left, buttonBounds.Bottom - 1);
                 }
 
-                Rectangle bounds = new Rectangle(Point.Empty, splitButton.Size);
+                Rectangle bounds = new(Point.Empty, splitButton.Size);
                 bool splitButtonSelected = false;
                 if (splitButton.DropDownButtonPressed)
                 {
                     // Button is pressed
-                    state = 0;
-                    Rectangle fillRect = new Rectangle(buttonBounds.Left + 1, buttonBounds.Top, buttonBounds.Right, buttonBounds.Bottom);
-                    using (SolidBrush brush = new SolidBrush(dropDownMouseDownColor))
+                    _state = 0;
+                    Rectangle fillRect = new(buttonBounds.Left + 1, buttonBounds.Top, buttonBounds.Right, buttonBounds.Bottom);
+                    using (SolidBrush brush = new(_dropDownMouseDownColor))
                     {
                         g.FillRectangle(brush, fillRect);
                     }
 
                     splitButtonSelected = true;
                 }
-                else if (state == (int)TemplateNodeSelectionState.SplitButtonSelected)
+                else if (_state == (int)TemplateNodeSelectionState.SplitButtonSelected)
                 {
-                    using (SolidBrush brush = new SolidBrush(dropDownMouseOverColor))
+                    using (SolidBrush brush = new(_dropDownMouseOverColor))
                     {
                         g.FillRectangle(brush, splitButton.ButtonBounds);
                     }
 
                     splitButtonSelected = true;
                 }
-                else if (state == (int)TemplateNodeSelectionState.DropDownSelected)
+                else if (_state == (int)TemplateNodeSelectionState.DropDownSelected)
                 {
-                    Rectangle fillRect = new Rectangle(buttonBounds.Left + 1, buttonBounds.Top, buttonBounds.Right, buttonBounds.Bottom);
-                    using (SolidBrush brush = new SolidBrush(dropDownMouseOverColor))
+                    Rectangle fillRect = new(buttonBounds.Left + 1, buttonBounds.Top, buttonBounds.Right, buttonBounds.Bottom);
+                    using (SolidBrush brush = new(_dropDownMouseOverColor))
                     {
                         g.FillRectangle(brush, fillRect);
                     }
 
                     splitButtonSelected = true;
                 }
-                else if (state == (int)TemplateNodeSelectionState.TemplateNodeSelected)
+                else if (_state == (int)TemplateNodeSelectionState.TemplateNodeSelected)
                 {
                     splitButtonSelected = true;
                 }
@@ -1969,15 +2021,15 @@ internal class ToolStripTemplateNode : IMenuStatusHandler
                 if (splitButtonSelected)
                 {
                     // DrawSelected Boder
-                    selectborderPen = new Pen(selectedBorderColor);
+                    selectborderPen = new Pen(_selectedBorderColor);
                 }
                 else
                 {
                     // Draw Gray Border
-                    selectborderPen = new Pen(defaultBorderColor);
+                    selectborderPen = new Pen(_defaultBorderColor);
                 }
 
-                Rectangle drawRect = new Rectangle(bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
+                Rectangle drawRect = new(bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
                 g.DrawRectangle(selectborderPen, drawRect);
                 selectborderPen.Dispose();
 

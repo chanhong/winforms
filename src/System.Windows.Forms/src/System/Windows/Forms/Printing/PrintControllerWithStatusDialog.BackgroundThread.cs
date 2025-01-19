@@ -12,6 +12,7 @@ public partial class PrintControllerWithStatusDialog
         private readonly Thread _thread;
         private bool _alreadyStopped;
         private StatusDialog? _dialog;
+        private readonly Lock _lock = new();
 
         // Called from any thread
         internal BackgroundThread(PrintControllerWithStatusDialog parent)
@@ -28,11 +29,11 @@ public partial class PrintControllerWithStatusDialog
         // Called from any thread
         internal void Stop()
         {
-            lock (this)
+            lock (_lock)
             {
-                if (_dialog is not null && _dialog.IsHandleCreated)
+                if (_dialog is { } dialog && dialog.IsHandleCreated)
                 {
-                    _dialog.BeginInvoke(new MethodInvoker(_dialog.Close));
+                    dialog.BeginInvoke(new MethodInvoker(dialog.Close));
                     return;
                 }
 
@@ -43,9 +44,9 @@ public partial class PrintControllerWithStatusDialog
         // Called from any thread
         internal void UpdateLabel()
         {
-            if (_dialog is not null && _dialog.IsHandleCreated)
+            if (_dialog is { } dialog && dialog.IsHandleCreated)
             {
-                _dialog.BeginInvoke(new MethodInvoker(ThreadUnsafeUpdateLabel));
+                dialog.BeginInvoke(new MethodInvoker(ThreadUnsafeUpdateLabel));
                 // Don't wait for a response
             }
         }
@@ -55,7 +56,7 @@ public partial class PrintControllerWithStatusDialog
         {
             try
             {
-                lock (this)
+                lock (_lock)
                 {
                     if (_alreadyStopped)
                     {
@@ -74,13 +75,10 @@ public partial class PrintControllerWithStatusDialog
             }
             finally
             {
-                lock (this)
+                lock (_lock)
                 {
-                    if (_dialog is not null)
-                    {
-                        _dialog.Dispose();
-                        _dialog = null;
-                    }
+                    _dialog?.Dispose();
+                    _dialog = null;
                 }
             }
         }
@@ -89,7 +87,7 @@ public partial class PrintControllerWithStatusDialog
         private void ThreadUnsafeUpdateLabel()
         {
             // "page {0} of {1}"
-            _dialog!._label1.Text = string.Format(
+            _dialog!._messageLabel.Text = string.Format(
                 SR.PrintControllerWithStatusDialog_NowPrinting,
                 _parent._pageNumber,
                 _parent._document?.DocumentName);

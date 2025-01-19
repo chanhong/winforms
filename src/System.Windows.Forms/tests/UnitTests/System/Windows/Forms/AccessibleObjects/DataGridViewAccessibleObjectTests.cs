@@ -262,10 +262,10 @@ public class DataGridViewAccessibleObjectTests
         using DataGridView dataGridView = new();
         Type type = dataGridView.AccessibilityObject.GetType();
 
-        ConstructorInfo ctor = type.GetConstructor(new Type[] { typeof(DataGridView) });
+        ConstructorInfo ctor = type.GetConstructor([typeof(DataGridView)]);
 
         Assert.NotNull(ctor);
-        Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] { null }));
+        Assert.Throws<TargetInvocationException>(() => ctor.Invoke([null]));
     }
 
     [WinFormsFact]
@@ -1196,7 +1196,7 @@ public class DataGridViewAccessibleObjectTests
         var columnHeaders = dataGridView.AccessibilityObject.GetColumnHeaders();
 
         Assert.NotNull(columnHeaders);
-        Assert.Equal(0, columnHeaders.Length);
+        Assert.Empty(columnHeaders);
         Assert.False(dataGridView.IsHandleCreated);
     }
 
@@ -1291,7 +1291,7 @@ public class DataGridViewAccessibleObjectTests
         var rowHeaders = dataGridView.AccessibilityObject.GetRowHeaders();
 
         Assert.NotNull(rowHeaders);
-        Assert.Equal(0, rowHeaders.Length);
+        Assert.Empty(rowHeaders);
         Assert.False(dataGridView.IsHandleCreated);
     }
 

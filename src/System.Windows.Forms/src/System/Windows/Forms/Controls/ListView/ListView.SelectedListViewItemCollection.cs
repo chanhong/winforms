@@ -30,7 +30,7 @@ public partial class ListView
             {
                 if (_owner.IsHandleCreated)
                 {
-                    int cnt = (int)PInvoke.SendMessage(_owner, PInvoke.LVM_GETSELECTEDCOUNT);
+                    int cnt = (int)PInvokeCore.SendMessage(_owner, PInvoke.LVM_GETSELECTEDCOUNT);
 
                     ListViewItem[] lvitems = new ListViewItem[cnt];
 
@@ -38,11 +38,11 @@ public partial class ListView
 
                     for (int i = 0; i < cnt; i++)
                     {
-                        int fidx = (int)PInvoke.SendMessage(
+                        int fidx = (int)PInvokeCore.SendMessage(
                             _owner,
                             PInvoke.LVM_GETNEXTITEM,
                             (WPARAM)displayIndex,
-                            (LPARAM)(uint)PInvoke.LVNI_SELECTED);
+                            (LPARAM)PInvoke.LVNI_SELECTED);
 
                         if (fidx > -1)
                         {
@@ -71,7 +71,7 @@ public partial class ListView
                     }
                     else
                     {
-                        return Array.Empty<ListViewItem>();
+                        return [];
                     }
                 }
             }
@@ -92,7 +92,7 @@ public partial class ListView
 
                 if (_owner.IsHandleCreated)
                 {
-                    return (int)PInvoke.SendMessage(_owner, PInvoke.LVM_GETSELECTEDCOUNT);
+                    return (int)PInvokeCore.SendMessage(_owner, PInvoke.LVM_GETSELECTEDCOUNT);
                 }
                 else
                 {
@@ -127,11 +127,11 @@ public partial class ListView
                     int fidx = -1;
                     for (int count = 0; count <= index; count++)
                     {
-                        fidx = (int)PInvoke.SendMessage(
+                        fidx = (int)PInvokeCore.SendMessage(
                             _owner,
                             PInvoke.LVM_GETNEXTITEM,
                             (WPARAM)fidx,
-                            (LPARAM)(uint)PInvoke.LVNI_SELECTED);
+                            (LPARAM)PInvoke.LVNI_SELECTED);
 
                         Debug.Assert(fidx != -1, "Invalid index returned from LVM_GETNEXTITEM");
                     }
@@ -418,7 +418,7 @@ public partial class ListView
                 }
             }
 
-            // step 3 - we didn't find it.  Invalidate the last accessed index and return -1.
+            // step 3 - we didn't find it. Invalidate the last accessed index and return -1.
             _lastAccessedIndex = -1;
             return -1;
         }

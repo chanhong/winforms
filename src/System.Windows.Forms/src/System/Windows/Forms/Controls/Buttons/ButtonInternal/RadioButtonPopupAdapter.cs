@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Drawing;
-
 namespace System.Windows.Forms.ButtonInternal;
 
 internal class RadioButtonPopupAdapter : RadioButtonFlatAdapter
@@ -13,7 +11,7 @@ internal class RadioButtonPopupAdapter : RadioButtonFlatAdapter
     {
         if (Control.Appearance == Appearance.Button)
         {
-            ButtonPopupAdapter adapter = new ButtonPopupAdapter(Control);
+            ButtonPopupAdapter adapter = new(Control);
             adapter.PaintUp(e, Control.Checked ? CheckState.Checked : CheckState.Unchecked);
         }
         else
@@ -21,7 +19,7 @@ internal class RadioButtonPopupAdapter : RadioButtonFlatAdapter
             ColorData colors = PaintPopupRender(e).Calculate();
             LayoutData layout = Layout(e).Layout();
 
-            PaintButtonBackground(e, Control.ClientRectangle, null);
+            PaintButtonBackground(e, Control.ClientRectangle, background: null);
 
             PaintImage(e, layout);
 
@@ -31,10 +29,10 @@ internal class RadioButtonPopupAdapter : RadioButtonFlatAdapter
                 colors.ButtonShadow,
                 colors.Options.HighContrast ? colors.ButtonFace : colors.Highlight);
 
-            DrawCheckOnly(e, layout, colors.WindowText, true);
+            DrawCheckOnly(e, layout, colors.WindowText, disabledColors: true);
 
             AdjustFocusRectangle(layout);
-            PaintField(e, layout, colors, colors.WindowText, true);
+            PaintField(e, layout, colors, colors.WindowText, drawFocus: true);
         }
     }
 
@@ -42,7 +40,7 @@ internal class RadioButtonPopupAdapter : RadioButtonFlatAdapter
     {
         if (Control.Appearance == Appearance.Button)
         {
-            ButtonPopupAdapter adapter = new ButtonPopupAdapter(Control);
+            ButtonPopupAdapter adapter = new(Control);
             adapter.PaintOver(e, Control.Checked ? CheckState.Checked : CheckState.Unchecked);
         }
         else
@@ -50,16 +48,16 @@ internal class RadioButtonPopupAdapter : RadioButtonFlatAdapter
             ColorData colors = PaintPopupRender(e).Calculate();
             LayoutData layout = Layout(e).Layout();
 
-            PaintButtonBackground(e, Control.ClientRectangle, null);
+            PaintButtonBackground(e, Control.ClientRectangle, background: null);
 
             PaintImage(e, layout);
 
             Color checkBackgroundColor = colors.Options.HighContrast ? colors.ButtonFace : colors.Highlight;
-            DrawCheckBackground3DLite(e, layout.CheckBounds, checkBackgroundColor, colors, true);
-            DrawCheckOnly(e, layout, colors.WindowText, true);
+            DrawCheckBackground3DLite(e, layout.CheckBounds, checkBackgroundColor, colors, disabledColors: true);
+            DrawCheckOnly(e, layout, colors.WindowText, disabledColors: true);
 
             AdjustFocusRectangle(layout);
-            PaintField(e, layout, colors, colors.WindowText, true);
+            PaintField(e, layout, colors, colors.WindowText, drawFocus: true);
         }
     }
 
@@ -67,7 +65,7 @@ internal class RadioButtonPopupAdapter : RadioButtonFlatAdapter
     {
         if (Control.Appearance == Appearance.Button)
         {
-            ButtonPopupAdapter adapter = new ButtonPopupAdapter(Control);
+            ButtonPopupAdapter adapter = new(Control);
             adapter.PaintDown(e, Control.Checked ? CheckState.Checked : CheckState.Unchecked);
         }
         else
@@ -75,24 +73,19 @@ internal class RadioButtonPopupAdapter : RadioButtonFlatAdapter
             ColorData colors = PaintPopupRender(e).Calculate();
             LayoutData layout = Layout(e).Layout();
 
-            PaintButtonBackground(e, Control.ClientRectangle, null);
+            PaintButtonBackground(e, Control.ClientRectangle, background: null);
 
             PaintImage(e, layout);
 
-            DrawCheckBackground3DLite(e, layout.CheckBounds, colors.Highlight, colors, true);
-            DrawCheckOnly(e, layout, colors.ButtonShadow, true);
+            DrawCheckBackground3DLite(e, layout.CheckBounds, colors.Highlight, colors, disabledColors: true);
+            DrawCheckOnly(e, layout, colors.ButtonShadow, disabledColors: true);
 
             AdjustFocusRectangle(layout);
-            PaintField(e, layout, colors, colors.WindowText, true);
+            PaintField(e, layout, colors, colors.WindowText, drawFocus: true);
         }
     }
 
-    #region Layout
-
-    protected override ButtonBaseAdapter CreateButtonAdapter()
-    {
-        return new ButtonPopupAdapter(Control);
-    }
+    protected override ButtonBaseAdapter CreateButtonAdapter() => new ButtonPopupAdapter(Control);
 
     protected override LayoutOptions Layout(PaintEventArgs e)
     {
@@ -105,6 +98,4 @@ internal class RadioButtonPopupAdapter : RadioButtonFlatAdapter
 
         return layout;
     }
-
-    #endregion
 }

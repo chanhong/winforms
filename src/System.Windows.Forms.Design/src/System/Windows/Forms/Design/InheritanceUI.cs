@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
-
 using System.ComponentModel;
 using System.Drawing;
 
@@ -13,30 +11,18 @@ namespace System.Windows.Forms.Design;
 /// </summary>
 internal class InheritanceUI
 {
-    private static Bitmap s_inheritanceGlyph;
+    private static Bitmap? s_inheritanceGlyph;
     private static Rectangle s_inheritanceGlyphRect;
-    private ToolTip _tooltip;
+    private ToolTip? _toolTip;
 
     /// <summary>
     ///  The bitmap we use to show inheritance.
     /// </summary>
-    public static Bitmap InheritanceGlyph
-    {
-        get
-        {
-            if (s_inheritanceGlyph is null)
-            {
-                s_inheritanceGlyph = new Icon(typeof(InheritanceUI), "InheritedGlyph").ToBitmap();
-
-                if (DpiHelper.IsScalingRequired)
-                {
-                    DpiHelper.ScaleBitmapLogicalToDevice(ref s_inheritanceGlyph);
-                }
-            }
-
-            return s_inheritanceGlyph;
-        }
-    }
+    public static Bitmap InheritanceGlyph =>
+        s_inheritanceGlyph ??= ScaleHelper.GetSmallIconResourceAsBitmap(
+            typeof(InheritanceUI),
+            "InheritedGlyph",
+            ScaleHelper.InitialSystemDpi);
 
     /// <summary>
     ///  The rectangle surrounding the glyph.
@@ -56,14 +42,14 @@ internal class InheritanceUI
     }
 
     /// <summary>
-    ///  Adds an inherited control to our list.  This creates a tool tip for that control.
+    ///  Adds an inherited control to our list. This creates a tool tip for that control.
     /// </summary>
     public void AddInheritedControl(Control c, InheritanceLevel level)
     {
-        _tooltip ??= new ToolTip
-            {
-                ShowAlways = true
-            };
+        _toolTip ??= new ToolTip
+        {
+            ShowAlways = true
+        };
 
         Debug.Assert(level != InheritanceLevel.NotInherited, "This should only be called for inherited components.");
         string text;
@@ -76,21 +62,21 @@ internal class InheritanceUI
             text = SR.DesignerInherited;
         }
 
-        _tooltip.SetToolTip(c, text);
+        _toolTip.SetToolTip(c, text);
 
         // Also, set all of its non-sited children
         foreach (Control child in c.Controls)
         {
             if (child.Site is null)
             {
-                _tooltip.SetToolTip(child, text);
+                _toolTip.SetToolTip(child, text);
             }
         }
     }
 
     public void Dispose()
     {
-        _tooltip?.Dispose();
+        _toolTip?.Dispose();
     }
 
     /// <summary>
@@ -98,15 +84,17 @@ internal class InheritanceUI
     /// </summary>
     public void RemoveInheritedControl(Control c)
     {
-        if (_tooltip is not null && _tooltip.GetToolTip(c).Length > 0)
+        if (_toolTip is not null
+            && !string.IsNullOrEmpty(_toolTip.GetToolTip(c)))
         {
-            _tooltip.SetToolTip(c, null);
+            _toolTip.SetToolTip(c, caption: null);
+
             // Also, set all of its non-sited children
             foreach (Control child in c.Controls)
             {
                 if (child.Site is null)
                 {
-                    _tooltip.SetToolTip(child, null);
+                    _toolTip.SetToolTip(child, caption: null);
                 }
             }
         }

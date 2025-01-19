@@ -10,24 +10,25 @@ public class AssemblyInfoTests
     [Fact]
     public void Constructor_ArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => new AssemblyInfo(null));
+        Action action = () => new AssemblyInfo(null);
+        action.Should().Throw<ArgumentNullException>();
     }
 
     [Theory]
     [MemberData(nameof(AssemblyProperties_TestData))]
-    public void AssemblyProperties(System.Reflection.Assembly assembly)
+    public void AssemblyProperties(Assembly assembly)
     {
-        var assemblyInfo = new AssemblyInfo(assembly);
+        AssemblyInfo assemblyInfo = new(assembly);
         var assemblyName = assembly.GetName();
-        Assert.Equal(assemblyName.Name, assemblyInfo.AssemblyName);
-        Assert.Equal(System.IO.Path.GetDirectoryName(assembly.Location), assemblyInfo.DirectoryPath);
-        Assert.Equal(GetAttributeValue<AssemblyCompanyAttribute>(assembly, attr => attr.Company), assemblyInfo.CompanyName);
-        Assert.Equal(GetAttributeValue<AssemblyCopyrightAttribute>(assembly, attr => attr.Copyright), assemblyInfo.Copyright);
-        Assert.Equal(GetAttributeValue<AssemblyDescriptionAttribute>(assembly, attr => attr.Description), assemblyInfo.Description);
-        Assert.Equal(GetAttributeValue<AssemblyProductAttribute>(assembly, attr => attr.Product), assemblyInfo.ProductName);
-        Assert.Equal(GetAttributeValue<AssemblyTitleAttribute>(assembly, attr => attr.Title), assemblyInfo.Title);
-        Assert.Equal(GetAttributeValue<AssemblyTrademarkAttribute>(assembly, attr => attr.Trademark), assemblyInfo.Trademark);
-        Assert.Equal(assemblyName.Version, assemblyInfo.Version);
+        assemblyInfo.AssemblyName.Should().Be(assemblyName.Name);
+        assemblyInfo.DirectoryPath.Should().Be(Path.GetDirectoryName(assembly.Location));
+        assemblyInfo.CompanyName.Should().Be(GetAttributeValue<AssemblyCompanyAttribute>(assembly, attr => attr.Company));
+        assemblyInfo.Copyright.Should().Be(GetAttributeValue<AssemblyCopyrightAttribute>(assembly, attr => attr.Copyright));
+        assemblyInfo.Description.Should().Be(GetAttributeValue<AssemblyDescriptionAttribute>(assembly, attr => attr.Description));
+        assemblyInfo.ProductName.Should().Be(GetAttributeValue<AssemblyProductAttribute>(assembly, attr => attr.Product));
+        assemblyInfo.Title.Should().Be(GetAttributeValue<AssemblyTitleAttribute>(assembly, attr => attr.Title));
+        assemblyInfo.Trademark.Should().Be(GetAttributeValue<AssemblyTrademarkAttribute>(assembly, attr => attr.Trademark));
+        assemblyInfo.Version.Should().Be(assemblyName.Version);
     }
 
     public static IEnumerable<object[]> AssemblyProperties_TestData()
@@ -40,30 +41,30 @@ public class AssemblyInfoTests
     public void LoadedAssemblies()
     {
         var executingAssembly = Assembly.GetExecutingAssembly();
-        var assemblyInfo = new AssemblyInfo(executingAssembly);
+        AssemblyInfo assemblyInfo = new(executingAssembly);
         var loadedAssemblies = assemblyInfo.LoadedAssemblies;
-        Assert.Contains(executingAssembly, loadedAssemblies);
+        loadedAssemblies.Should().Contain(executingAssembly);
     }
 
     [Fact]
     public void StackTrace()
     {
         // Property is independent of the actual assembly.
-        var assemblyInfo = new AssemblyInfo(Assembly.GetExecutingAssembly());
-        var stackTrace = assemblyInfo.StackTrace;
-        Assert.Contains(nameof(AssemblyInfoTests), stackTrace);
+        AssemblyInfo assemblyInfo = new(Assembly.GetExecutingAssembly());
+        string stackTrace = assemblyInfo.StackTrace;
+        stackTrace.Should().Contain(nameof(AssemblyInfoTests));
     }
 
     [Fact]
     public void WorkingSet()
     {
         // Property is independent of the actual assembly.
-        var assemblyInfo = new AssemblyInfo(Assembly.GetExecutingAssembly());
-        var workingSet = assemblyInfo.WorkingSet;
-        Assert.True(workingSet > 0);
+        AssemblyInfo assemblyInfo = new(Assembly.GetExecutingAssembly());
+        long workingSet = assemblyInfo.WorkingSet;
+        workingSet.Should().BeGreaterThan(0);
     }
 
-    private static string GetAttributeValue<TAttribute>(System.Reflection.Assembly assembly, Func<TAttribute, string> getAttributeValue)
+    private static string GetAttributeValue<TAttribute>(Assembly assembly, Func<TAttribute, string> getAttributeValue)
         where TAttribute : Attribute
     {
         var attribute = (TAttribute)assembly.GetCustomAttribute(typeof(TAttribute));

@@ -4,11 +4,11 @@
 namespace System.ComponentModel.Design;
 
 /// <summary>
-///  A service container that supports "fixed" services.  Fixed  services cannot be removed.
+///  A service container that supports "fixed" services. Fixed services cannot be removed.
 /// </summary>
 internal sealed class DesignSurfaceServiceContainer : ServiceContainer
 {
-    private readonly HashSet<Type> _fixedServices = new();
+    private readonly HashSet<Type> _fixedServices = [];
 
     /// <summary>
     ///  We always add ourselves as a service.
@@ -37,7 +37,7 @@ internal sealed class DesignSurfaceServiceContainer : ServiceContainer
     }
 
     /// <summary>
-    ///  Removes the given service type from the service container.  Throws an exception if the service is fixed.
+    ///  Removes the given service type from the service container. Throws an exception if the service is fixed.
     /// </summary>
     public override void RemoveService(Type serviceType, bool promote)
     {

@@ -6,9 +6,11 @@ namespace Microsoft.VisualBasic.Devices.Tests;
 public class ComputerTests
 {
     [Fact]
+    // This test does not modify the system clipboard state, do not move it into the
+    // sequential collection, it is safe to run in parallel with other tests in this assembly.
     public void Properties()
     {
-        var computer = new Computer();
+        Computer computer = new();
 
         var audio = computer.Audio;
         Assert.NotNull(audio);
@@ -30,7 +32,7 @@ public class ComputerTests
     [Fact]
     public void Screen()
     {
-        var computer = new Computer();
+        Computer computer = new();
         Assert.Equal(System.Windows.Forms.Screen.PrimaryScreen, computer.Screen);
     }
 }

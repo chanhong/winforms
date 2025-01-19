@@ -22,13 +22,13 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(Add_TestData))]
     public void TabPageCollection_Add_InvokeValueWithoutHandleOwnerWithoutHandle_Success(TabAppearance appearance)
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Appearance = appearance,
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         int layoutCallCount1 = 0;
@@ -36,7 +36,7 @@ public class TabControlTabPageCollectionTests
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -147,14 +147,14 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(Add_WithHandle_TestData))]
     public void TabPageCollection_Add_InvokeValueWithoutHandleOwnerWithHandle_Success(TabAppearance appearance, Size itemSize, int expectedParentInvalidatedCallCount)
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Appearance = appearance,
             ItemSize = itemSize,
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         int layoutCallCount1 = 0;
@@ -162,7 +162,7 @@ public class TabControlTabPageCollectionTests
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -311,13 +311,13 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(Add_TestData))]
     public void TabPageCollection_Add_InvokeValueWithHandleOwnerWithoutHandle_Success(TabAppearance appearance)
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Appearance = appearance,
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         int layoutCallCount1 = 0;
@@ -325,7 +325,7 @@ public class TabControlTabPageCollectionTests
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -454,14 +454,14 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(Add_WithHandle_TestData))]
     public void TabPageCollection_Add_InvokeValueWithHandleOwnerWithHandle_Success(TabAppearance appearance, Size itemSize, int expectedParentInvalidatedCallCount)
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Appearance = appearance,
             ItemSize = itemSize,
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         int layoutCallCount1 = 0;
@@ -469,7 +469,7 @@ public class TabControlTabPageCollectionTests
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -646,21 +646,23 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Add_OwnerWithSiteContainer_AddsToContainer()
     {
-        var container = new Container();
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Container container = new();
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
         mockSite
             .Setup(s => s.Container)
             .Returns(container);
-        using var value = new TabPage();
-        using var owner = new TabControl
+        using TabPage value = new();
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(value);
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            value
+        };
         Assert.Same(owner, value.Parent);
         Assert.NotNull(value.Site);
         Assert.Same(value, Assert.Single(container.Components));
@@ -670,31 +672,33 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Add_OwnerWithSiteContainerValueHasSite_DoesNotAddToContainer()
     {
-        var container = new Container();
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Container container = new();
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
         mockSite
             .Setup(s => s.Container)
             .Returns(container);
-        var mockValueSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockValueSite = new(MockBehavior.Strict);
         mockValueSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
         mockValueSite
             .Setup(s => s.Container)
             .Returns((IContainer)null);
-        using var value = new TabPage
+        using TabPage value = new()
         {
             Site = mockValueSite.Object
         };
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(value);
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            value
+        };
         Assert.Same(owner, value.Parent);
         Assert.Same(mockValueSite.Object, value.Site);
         Assert.Empty(container.Components);
@@ -704,20 +708,22 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Add_OwnerWithSiteNoContainer_DoesNotAddContainer()
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
         mockSite
             .Setup(s => s.Container)
             .Returns((IContainer)null);
-        using var value = new TabPage();
-        using var owner = new TabControl
+        using TabPage value = new();
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(value);
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            value
+        };
         Assert.Same(owner, value.Parent);
         Assert.Null(value.Site);
         mockSite.Verify(s => s.Container, Times.Once());
@@ -726,13 +732,13 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Add_ManyControls_Success()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
 
-        var items = new List<TabPage>();
+        List<TabPage> items = [];
         for (int i = 0; i < 24; i++)
         {
-            var value = new TabPage();
+            TabPage value = new();
             items.Add(value);
             collection.Add(value);
             Assert.Equal(items, collection.Cast<TabPage>());
@@ -749,21 +755,23 @@ public class TabControlTabPageCollectionTests
     [InlineData("&Text", "&&Text")]
     public unsafe void TabPageCollection_Add_GetItemsWithHandle_Success(string text, string expectedText)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var page1 = new TabPage();
-        using var page2 = new TabPage
+        using TabPage page1 = new();
+        using TabPage page2 = new()
         {
             Text = text,
             ImageIndex = 1
         };
-        using var page3 = new NullTextTabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page2);
-        collection.Add(page3);
-        Assert.Equal(3, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
+        using NullTextTabPage page3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page2,
+            page3
+        };
+        Assert.Equal(3, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
 
         char* buffer = stackalloc char[256];
         TCITEMW item = default;
@@ -773,7 +781,7 @@ public class TabControlTabPageCollectionTests
         item.mask = (TCITEMHEADERA_MASK)uint.MaxValue;
 
         // Get item 0.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
         Assert.Equal(TAB_CONTROL_ITEM_STATE.TCIS_BUTTONPRESSED, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -781,7 +789,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(-1, item.iImage);
 
         // Get item 1.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -789,7 +797,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(1, item.iImage);
 
         // Get item 2.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -804,7 +812,7 @@ public class TabControlTabPageCollectionTests
     [InlineData("&Text", "&&Text")]
     public unsafe void TabPageCollection_Add_GetItemsDesignModeWithHandle_Success(string text, string expectedText)
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
@@ -814,24 +822,26 @@ public class TabControlTabPageCollectionTests
         mockSite
             .Setup(s => s.Container)
             .Returns((IContainer)null);
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var page1 = new TabPage();
-        using var page2 = new TabPage
+        using TabPage page1 = new();
+        using TabPage page2 = new()
         {
             Text = text,
             ImageIndex = 1
         };
-        using var page3 = new NullTextTabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page2);
-        collection.Add(page3);
-        Assert.Equal(3, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
+        using NullTextTabPage page3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page2,
+            page3
+        };
+        Assert.Equal(3, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
 
         char* buffer = stackalloc char[256];
         TCITEMW item = default;
@@ -841,7 +851,7 @@ public class TabControlTabPageCollectionTests
         item.mask = (TCITEMHEADERA_MASK)uint.MaxValue;
 
         // Get item 0.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
         Assert.Equal(TAB_CONTROL_ITEM_STATE.TCIS_BUTTONPRESSED, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -849,7 +859,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(-1, item.iImage);
 
         // Get item 1.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -857,7 +867,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(1, item.iImage);
 
         // Get item 2.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -868,7 +878,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Add_NullValue_ThrowsArgumentNullException()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.Throws<ArgumentNullException>("value", () => collection.Add((TabPage)null));
     }
@@ -877,9 +887,11 @@ public class TabControlTabPageCollectionTests
     [NormalizedStringData]
     public void TabPageCollection_Add_InvokeString_Success(string text, string expectedText)
     {
-        using var owner = new TabControl();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(text);
+        using TabControl owner = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            text
+        };
 
         TabPage page = Assert.IsType<TabPage>(Assert.Single(collection));
         Assert.Empty(page.Name);
@@ -896,9 +908,11 @@ public class TabControlTabPageCollectionTests
     [InlineData("name", "text", "name", "text")]
     public void TabPageCollection_Add_InvokeStringString_Success(string key, string text, string expectedName, string expectedText)
     {
-        using var owner = new TabControl();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(key, text);
+        using TabControl owner = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            { key, text }
+        };
 
         TabPage page = Assert.IsType<TabPage>(Assert.Single(collection));
         Assert.Equal(expectedName, page.Name);
@@ -915,9 +929,11 @@ public class TabControlTabPageCollectionTests
     [InlineData("name", "text", 1, "name", "text")]
     public void TabPageCollection_Add_InvokeStringStringInt_Success(string key, string text, int imageIndex, string expectedName, string expectedText)
     {
-        using var owner = new TabControl();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(key, text, imageIndex);
+        using TabControl owner = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            { key, text, imageIndex }
+        };
 
         TabPage page = Assert.IsType<TabPage>(Assert.Single(collection));
         Assert.Equal(expectedName, page.Name);
@@ -934,9 +950,11 @@ public class TabControlTabPageCollectionTests
     [InlineData("name", "text", "imageKey", "name", "text", "imageKey")]
     public void TabPageCollection_Add_InvokeStringStringString_Success(string key, string text, string imageKey, string expectedName, string expectedText, string expectedImageKey)
     {
-        using var owner = new TabControl();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(key, text, imageKey);
+        using TabControl owner = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            { key, text, imageKey }
+        };
 
         TabPage page = Assert.IsType<TabPage>(Assert.Single(collection));
         Assert.Equal(expectedName, page.Name);
@@ -951,13 +969,13 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(Add_TestData))]
     public void TabPageCollection_IListAdd_InvokeValueWithoutHandleOwnerWithoutHandle_Success(TabAppearance appearance)
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Appearance = appearance,
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
 
@@ -966,7 +984,7 @@ public class TabControlTabPageCollectionTests
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -1070,7 +1088,7 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(IListAdd_InvalidValue_TestData))]
     public void TabPageCollection_IListAdd_InvalidValue_ThrowsArgumentException(object value)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         Assert.Throws<ArgumentException>(() => iList.Add(value));
@@ -1079,10 +1097,10 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_AddRange_Invoke_Success()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
-        using var child3 = new TabPage();
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
+        using TabPage child3 = new();
         var collection = new TabControl.TabPageCollection(owner);
         int parentLayoutCallCount = 0;
         void parentHandler(object sender, LayoutEventArgs e) => parentLayoutCallCount++;
@@ -1092,7 +1110,7 @@ public class TabControlTabPageCollectionTests
 
         try
         {
-            collection.AddRange(new TabPage[] { child1, child2, child3 });
+            collection.AddRange([child1, child2, child3]);
             Assert.Equal(new TabPage[] { child1, child2, child3 }, collection.Cast<TabPage>());
             Assert.Same(owner, child1.Parent);
             Assert.Same(owner, child2.Parent);
@@ -1104,7 +1122,7 @@ public class TabControlTabPageCollectionTests
             Assert.False(child2.IsHandleCreated);
             Assert.False(child3.IsHandleCreated);
 
-            collection.AddRange(new TabPage[] { child1, child2, child3 });
+            collection.AddRange([child1, child2, child3]);
             Assert.Equal(new TabPage[] { child1, child2, child3, child1, child2, child3 }, collection.Cast<TabPage>());
             Assert.Same(owner, child1.Parent);
             Assert.Same(owner, child2.Parent);
@@ -1138,7 +1156,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_AddRange_NullPages_ThrowsArgumentNullException()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.Throws<ArgumentNullException>("pages", () => collection.AddRange(null));
     }
@@ -1146,7 +1164,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Ctor_TabControl()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         Assert.Empty(collection);
@@ -1166,37 +1184,37 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_CopyTo_InvokeEmpty_Success()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.CopyTo(null, 0);
 
-        var array = new object[] { 1, 2, 3, 4 };
+        object[] array = [1, 2, 3, 4];
         iList.CopyTo(array, 1);
-        Assert.Equal(new object[] { 1, 2, 3, 4 }, array);
+        Assert.Equal([1, 2, 3, 4], array);
     }
 
     [WinFormsFact]
     public void TabPageCollection_CopyTo_InvokeNotEmpty_Success()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(child1);
         iList.Add(child2);
 
-        var array = new object[] { 1, 2, 3, 4 };
+        object[] array = [1, 2, 3, 4];
         iList.CopyTo(array, 1);
-        Assert.Equal(new object[] { 1, child1, child2, 4 }, array);
+        Assert.Equal([1, child1, child2, 4], array);
     }
 
     [WinFormsFact]
     public void TabPageCollection_CopyTo_NullArray_ThrowsArgumentNullException()
     {
-        using var owner = new TabControl();
-        using var child = new TabPage();
+        using TabControl owner = new();
+        using TabPage child = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(child);
@@ -1207,78 +1225,78 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_CopyTo_InvalidIndex_ThrowsArgumentOutOfRangeException()
     {
-        using var owner = new TabControl();
-        using var child = new TabPage();
+        using TabControl owner = new();
+        using TabPage child = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(child);
 
-        var array = new object[] { 1, 2 };
+        object[] array = [1, 2];
         Assert.Throws<ArgumentOutOfRangeException>("destinationIndex", () => iList.CopyTo(array, -1));
     }
 
     [WinFormsFact]
     public void TabPageCollection_CopyTo_InvokeNullGetItemsEmpty_Success()
     {
-        using var owner = new NullGetItemsTabControl();
+        using NullGetItemsTabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.CopyTo(null, 0);
 
-        var array = new object[] { 1, 2, 3, 4 };
+        object[] array = [1, 2, 3, 4];
         iList.CopyTo(array, 1);
-        Assert.Equal(new object[] { 1, 2, 3, 4 }, array);
+        Assert.Equal([1, 2, 3, 4], array);
     }
 
     [WinFormsFact]
     public void TabPageCollection_CopyTo_InvokeInvalidGetItemsEmpty_Success()
     {
-        using var owner = new InvalidGetItemsTabControl();
+        using InvalidGetItemsTabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.CopyTo(null, 0);
 
-        var array = new object[] { 1, 2, 3, 4 };
+        object[] array = [1, 2, 3, 4];
         iList.CopyTo(array, 1);
-        Assert.Equal(new object[] { 1, 2, 3, 4 }, array);
+        Assert.Equal([1, 2, 3, 4], array);
     }
 
     [WinFormsFact]
     public void TabPageCollection_CopyTo_InvokeNullGetItemsNotEmpty_Success()
     {
-        using var owner = new NullGetItemsTabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
+        using NullGetItemsTabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(child1);
         iList.Add(child2);
 
-        var array = new object[] { 1, 2, 3, 4 };
+        object[] array = [1, 2, 3, 4];
         Assert.Throws<ArgumentNullException>("sourceArray", () => iList.CopyTo(array, 1));
-        Assert.Equal(new object[] { 1, 2, 3, 4 }, array);
+        Assert.Equal([1, 2, 3, 4], array);
     }
 
     [WinFormsFact]
     public void TabPageCollection_CopyTo_InvokeInvalidGetItemsNotEmpty_Success()
     {
-        using var owner = new InvalidGetItemsTabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
+        using InvalidGetItemsTabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(child1);
         iList.Add(child2);
 
-        var array = new object[] { 1, 2, 3, 4 };
+        object[] array = [1, 2, 3, 4];
         Assert.Throws<InvalidCastException>(() => iList.CopyTo(array, 1));
-        Assert.Equal(new object[] { 1, 2, 3, 4 }, array);
+        Assert.Equal([1, 2, 3, 4], array);
     }
 
     [WinFormsFact]
     public void TabPageCollection_Clear_InvokeEmpty_Success()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         int parentLayoutCallCount = 0;
         void parentHandler(object sender, LayoutEventArgs e) => parentLayoutCallCount++;
@@ -1314,14 +1332,16 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Clear_InvokeNotEmpty_Success()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
-        using var child3 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
+        using TabPage child3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
         int parentLayoutCallCount = 0;
         void parentHandler(object sender, LayoutEventArgs e)
         {
@@ -1375,7 +1395,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Clear_InvokeEmptyWithHandle_Success()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         int controlRemovedCallCount = 0;
@@ -1425,14 +1445,16 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Clear_InvokeNotEmptyWithHandle_Success()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
-        using var child3 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
+        using TabPage child3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
 
         int controlRemovedCallCount = 0;
         owner.ControlRemoved += (sender, e) => controlRemovedCallCount++;
@@ -1500,29 +1522,33 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Clear_GetItemsWithHandle_Success()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
-        using var child3 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
+        using TabPage child3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
 
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
         collection.Clear();
-        Assert.Equal(0, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
+        Assert.Equal(0, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
     }
 
     [WinFormsFact]
     public void TabPageCollection_Contains_Invoke_ReturnsExpected()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2
+        };
 
         Assert.True(collection.Contains(child1));
         Assert.True(collection.Contains(child2));
@@ -1532,7 +1558,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Contains_InvokeEmpty_ReturnsExpected()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.False(collection.Contains(new TabPage()));
     }
@@ -1540,7 +1566,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Contains_NullPage_ThrowsArgumentNullException()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.Throws<ArgumentNullException>("page", () => collection.Contains(null));
     }
@@ -1548,9 +1574,9 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_IListContains_InvokeNotEmpty_ReturnsExpected()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(child1);
@@ -1567,7 +1593,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_IListContains_InvokeEmpty_ReturnsExpected()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         Assert.False(iList.Contains(new TabPage()));
@@ -1588,23 +1614,25 @@ public class TabControlTabPageCollectionTests
     [InlineData("abcdef", false)]
     public void TabPageCollection_ContainsKey_Invoke_ReturnsExpected(string key, bool expected)
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage
+        using TabControl owner = new();
+        using TabPage child1 = new()
         {
             Name = "name1"
         };
-        using var child2 = new TabPage
+        using TabPage child2 = new()
         {
             Name = "name2"
         };
-        using var child3 = new TabPage
+        using TabPage child3 = new()
         {
             Name = "name2"
         };
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
 
         Assert.Equal(expected, collection.ContainsKey(key));
 
@@ -1617,7 +1645,7 @@ public class TabControlTabPageCollectionTests
     [StringWithNullData]
     public void TabPageCollection_ContainsKey_InvokeEmpty_ReturnsExpected(string key)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         Assert.False(collection.ContainsKey(key));
@@ -1630,7 +1658,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_GetEnumerator_InvokeEmpty_ReturnsExpected()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IEnumerator enumerator = collection.GetEnumerator();
         for (int i = 0; i < 2; i++)
@@ -1651,14 +1679,16 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_GetEnumerator_InvokeNotEmpty_ReturnsExpected()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
-        using var child3 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
+        using TabPage child3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
 
         IEnumerator enumerator = collection.GetEnumerator();
         for (int i = 0; i < 2; i++)
@@ -1688,8 +1718,8 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_GetEnumerator_AddDuringEnumeration_ReturnsExpected()
     {
-        using var owner = new TabControl();
-        using var child = new TabPage();
+        using TabControl owner = new();
+        using TabPage child = new();
         var collection = new TabControl.TabPageCollection(owner);
         IEnumerator enumerator = collection.GetEnumerator();
         collection.Add(child);
@@ -1711,14 +1741,16 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_GetEnumerator_InvokeRemoveBeforeEnumeration_ReturnsExpected()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
-        using var child3 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
+        using TabPage child3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
 
         IEnumerator enumerator = collection.GetEnumerator();
         collection.Remove(child1);
@@ -1745,14 +1777,16 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_GetEnumerator_InvokeRemoveAtEndOfEnumeration_ReturnsExpected()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
-        using var child3 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
+        using TabPage child3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
 
         IEnumerator enumerator = collection.GetEnumerator();
         Assert.Throws<InvalidOperationException>(() => enumerator.Current);
@@ -1783,7 +1817,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_GetEnumerator_InvokeNullGetItems_ReturnsExpected()
     {
-        using var owner = new NullGetItemsTabControl();
+        using NullGetItemsTabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IEnumerator enumerator = collection.GetEnumerator();
         for (int i = 0; i < 2; i++)
@@ -1804,20 +1838,22 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_GetEnumerator_InvokeInvalidGetItems_ReturnsExpected()
     {
-        using var owner = new InvalidGetItemsTabControl();
+        using InvalidGetItemsTabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
-        Assert.Throws<InvalidCastException>(() => collection.GetEnumerator());
+        Assert.Throws<InvalidCastException>(collection.GetEnumerator);
     }
 
     [WinFormsFact]
     public void TabPageCollection_IndexOf_InvokeNotEmpty_ReturnsExpected()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2
+        };
 
         Assert.Equal(0, collection.IndexOf(child1));
         Assert.Equal(1, collection.IndexOf(child2));
@@ -1827,7 +1863,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_IndexOf_InvokeEmpty_ReturnsExpected()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.Equal(-1, collection.IndexOf(new TabPage()));
     }
@@ -1835,7 +1871,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_IndexOf_NullPage_ThrowsArgumentNullException()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.Throws<ArgumentNullException>("page", () => collection.IndexOf(null));
     }
@@ -1843,9 +1879,9 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_IListIndexOf_InvokeNotEmpty_ReturnsExpected()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(child1);
@@ -1862,7 +1898,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_IListIndexOf_InvokeEmpty_ReturnsExpected()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         Assert.Equal(-1, iList.IndexOf(new TabPage()));
@@ -1883,23 +1919,25 @@ public class TabControlTabPageCollectionTests
     [InlineData("abcdef", -1)]
     public void TabPageCollection_IndexOfKey_InvokeNotEmpty_ReturnsExpected(string key, int expected)
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage
+        using TabControl owner = new();
+        using TabPage child1 = new()
         {
             Name = "name1"
         };
-        using var child2 = new TabPage
+        using TabPage child2 = new()
         {
             Name = "name2"
         };
-        using var child3 = new TabPage
+        using TabPage child3 = new()
         {
             Name = "name2"
         };
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
 
         Assert.Equal(expected, collection.IndexOfKey(key));
 
@@ -1912,7 +1950,7 @@ public class TabControlTabPageCollectionTests
     [StringWithNullData]
     public void TabPageCollection_IndexOfKey_InvokeEmpty_ReturnsExpected(string key)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         Assert.Equal(-1, collection.IndexOfKey(key));
@@ -1926,13 +1964,13 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(Add_TestData))]
     public void TabPageCollection_Insert_InvokeValueWithoutHandleOwnerWithoutHandle_Success(TabAppearance appearance)
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Appearance = appearance,
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         int layoutCallCount1 = 0;
@@ -1940,7 +1978,7 @@ public class TabControlTabPageCollectionTests
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -2046,14 +2084,14 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(Add_WithHandle_TestData))]
     public void TabPageCollection_Insert_InvokeValueWithoutHandleOwnerWithHandle_Success(TabAppearance appearance, Size itemSize, int expectedParentInvalidatedCallCount)
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Appearance = appearance,
             ItemSize = itemSize,
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         int layoutCallCount1 = 0;
@@ -2061,7 +2099,7 @@ public class TabControlTabPageCollectionTests
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -2216,13 +2254,13 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(Add_TestData))]
     public void TabPageCollection_Insert_InvokeValueWithHandleOwnerWithoutHandle_Success(TabAppearance appearance)
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Appearance = appearance,
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         int layoutCallCount1 = 0;
@@ -2230,7 +2268,7 @@ public class TabControlTabPageCollectionTests
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -2365,14 +2403,14 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(Add_WithHandle_TestData))]
     public void TabPageCollection_Insert_InvokeValueWithHandleOwnerWithHandle_Success(TabAppearance appearance, Size itemSize, int expectedParentInvalidatedCallCount)
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Appearance = appearance,
             ItemSize = itemSize,
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         int layoutCallCount1 = 0;
@@ -2380,7 +2418,7 @@ public class TabControlTabPageCollectionTests
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -2563,16 +2601,16 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Insert_OwnerWithSiteContainer_AddsToContainer()
     {
-        var container = new Container();
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Container container = new();
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
         mockSite
             .Setup(s => s.Container)
             .Returns(container);
-        using var value = new TabPage();
-        using var owner = new TabControl
+        using TabPage value = new();
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
@@ -2587,26 +2625,26 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Insert_OwnerWithSiteContainerValueHasSite_DoesNotAddToContainer()
     {
-        var container = new Container();
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Container container = new();
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
         mockSite
             .Setup(s => s.Container)
             .Returns(container);
-        var mockValueSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockValueSite = new(MockBehavior.Strict);
         mockValueSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
         mockValueSite
             .Setup(s => s.Container)
             .Returns((IContainer)null);
-        using var value = new TabPage
+        using TabPage value = new()
         {
             Site = mockValueSite.Object
         };
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
@@ -2621,15 +2659,15 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Insert_OwnerWithSiteNoContainer_DoesNotAddContainer()
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
         mockSite
             .Setup(s => s.Container)
             .Returns((IContainer)null);
-        using var value = new TabPage();
-        using var owner = new TabControl
+        using TabPage value = new();
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
@@ -2643,14 +2681,14 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Insert_ManyControls_Success()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        var items = new List<TabPage>();
+        List<TabPage> items = [];
         for (int i = 0; i < 24; i++)
         {
-            var value = new TabPage();
+            TabPage value = new();
             items.Insert(0, value);
             collection.Insert(0, value);
             Assert.Equal(items, collection.Cast<TabPage>());
@@ -2664,7 +2702,7 @@ public class TabControlTabPageCollectionTests
     [NormalizedStringData]
     public void TabPageCollection_Insert_InvokeIntString_Success(string text, string expectedText)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
         collection.Insert(0, text);
@@ -2684,7 +2722,7 @@ public class TabControlTabPageCollectionTests
     [InlineData("name", "text", "name", "text")]
     public void TabPageCollection_Insert_InvokeIntStringString_Success(string key, string text, string expectedName, string expectedText)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
         collection.Insert(0, key, text);
@@ -2704,7 +2742,7 @@ public class TabControlTabPageCollectionTests
     [InlineData("name", "text", 1, "name", "text")]
     public void TabPageCollection_Insert_InvokeIntStringStringInt_Success(string key, string text, int imageIndex, string expectedName, string expectedText)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
         collection.Insert(0, key, text, imageIndex);
@@ -2724,7 +2762,7 @@ public class TabControlTabPageCollectionTests
     [InlineData("name", "text", "imageKey", "name", "text", "imageKey")]
     public void TabPageCollection_Insert_InvokeIntStringStringString_Success(string key, string text, string imageKey, string expectedName, string expectedText, string expectedImageKey)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
         collection.Insert(0, key, text, imageKey);
@@ -2745,21 +2783,21 @@ public class TabControlTabPageCollectionTests
     [InlineData("&Text", "&&Text")]
     public unsafe void TabPageCollection_Insert_GetItemsWithHandle_Success(string text, string expectedText)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var page1 = new TabPage();
-        using var page2 = new TabPage
+        using TabPage page1 = new();
+        using TabPage page2 = new()
         {
             Text = text,
             ImageIndex = 1
         };
-        using var page3 = new NullTextTabPage();
+        using NullTextTabPage page3 = new();
         var collection = new TabControl.TabPageCollection(owner);
         collection.Insert(0, page3);
         collection.Insert(0, page2);
         collection.Insert(0, page1);
-        Assert.Equal(3, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
+        Assert.Equal(3, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
 
         char* buffer = stackalloc char[256];
         TCITEMW item = default;
@@ -2769,7 +2807,7 @@ public class TabControlTabPageCollectionTests
         item.mask = (TCITEMHEADERA_MASK)uint.MaxValue;
 
         // Get item 0.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -2777,7 +2815,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(-1, item.iImage);
 
         // Get item 1.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -2785,7 +2823,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(1, item.iImage);
 
         // Get item 2.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
         Assert.Equal(TAB_CONTROL_ITEM_STATE.TCIS_BUTTONPRESSED, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -2800,7 +2838,7 @@ public class TabControlTabPageCollectionTests
     [InlineData("&Text", "&&Text")]
     public unsafe void TabPageCollection_Insert_GetItemsDesignModeWithHandle_Success(string text, string expectedText)
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
@@ -2810,24 +2848,24 @@ public class TabControlTabPageCollectionTests
         mockSite
             .Setup(s => s.Container)
             .Returns((IContainer)null);
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var page1 = new TabPage();
-        using var page2 = new TabPage
+        using TabPage page1 = new();
+        using TabPage page2 = new()
         {
             Text = text,
             ImageIndex = 1
         };
-        using var page3 = new NullTextTabPage();
+        using NullTextTabPage page3 = new();
         var collection = new TabControl.TabPageCollection(owner);
         collection.Insert(0, page3);
         collection.Insert(0, page2);
         collection.Insert(0, page1);
-        Assert.Equal(3, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
+        Assert.Equal(3, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
 
         char* buffer = stackalloc char[256];
         TCITEMW item = default;
@@ -2837,7 +2875,7 @@ public class TabControlTabPageCollectionTests
         item.mask = (TCITEMHEADERA_MASK)uint.MaxValue;
 
         // Get item 0.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -2845,7 +2883,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(-1, item.iImage);
 
         // Get item 1.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -2853,7 +2891,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(1, item.iImage);
 
         // Get item 2.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
         Assert.Equal(TAB_CONTROL_ITEM_STATE.TCIS_BUTTONPRESSED, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -2864,7 +2902,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Insert_NullTabPage_ThrowsArgumentNullException()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.Throws<ArgumentNullException>("tabPage", () => collection.Insert(0, (TabPage)null));
     }
@@ -2872,9 +2910,9 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Insert_NegativeIndexEmpty_ThrowsArgumentOutOfRangeException()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
-        using var value = new TabPage();
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(-1, value));
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(-1, "text"));
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(-1, "key", "text"));
@@ -2886,11 +2924,11 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Insert_NegativeIndexEmptyWithHandle_ThrowsArgumentOutOfRangeException()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var value = new TabPage();
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(-1, value));
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(-1, "text"));
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(-1, "key", "text"));
@@ -2904,9 +2942,9 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_Insert_InvalidIndexEmpty_Nop(int index)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
-        using var value = new TabPage();
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(index, value));
     }
 
@@ -2915,11 +2953,11 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_Insert_InvalidIndexEmptyWithHandle_Nop(int index)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var value = new TabPage();
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(index, value));
     }
 
@@ -2929,11 +2967,13 @@ public class TabControlTabPageCollectionTests
     [InlineData(3)]
     public void TabPageCollection_Insert_InvalidIndexNotEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
-        using var child = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child);
-        using var value = new TabPage();
+        using TabControl owner = new();
+        using TabPage child = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child
+        };
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(index, value));
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(index, "text"));
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(index, "key", "text"));
@@ -2948,13 +2988,15 @@ public class TabControlTabPageCollectionTests
     [InlineData(3)]
     public void TabPageCollection_Insert_InvalidIndexNotEmptyWithHandle_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
-        using var child = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child);
+        using TabControl owner = new();
+        using TabPage child = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child
+        };
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var value = new TabPage();
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(index, value));
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(index, "text"));
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(index, "key", "text"));
@@ -2967,13 +3009,13 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(Add_TestData))]
     public void TabPageCollection_IListInsert_InvokeValueWithoutHandleOwnerWithoutHandle_Success(TabAppearance appearance)
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Appearance = appearance,
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
 
@@ -2982,7 +3024,7 @@ public class TabControlTabPageCollectionTests
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -3095,7 +3137,7 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(IListInsert_InvalidValue_TestData))]
     public void TabPageCollection_IListInsert_NotTabPage_ThrowsArgumentException(object value)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         Assert.Throws<ArgumentException>(() => iList.Insert(0, value));
@@ -3104,10 +3146,10 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_IListInsert_NegativeIndexEmpty_ThrowsArgumentOutOfRangeException()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
-        using var value = new TabPage();
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>("index", () => iList.Insert(-1, value));
         Assert.Empty(collection);
     }
@@ -3115,12 +3157,12 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_IListInsert_NegativeIndexEmptyWithHandle_ThrowsArgumentOutOfRangeException()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var value = new TabPage();
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>("index", () => iList.Insert(-1, value));
         Assert.Empty(collection);
     }
@@ -3130,10 +3172,10 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_IListInsert_InvalidIndexEmpty_Nop(int index)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
-        using var value = new TabPage();
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>(() => iList.Insert(index, value));
     }
 
@@ -3142,12 +3184,12 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_IListInsert_InvalidIndexEmptyWithHandle_Nop(int index)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var value = new TabPage();
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>(() => iList.Insert(index, value));
     }
 
@@ -3157,12 +3199,12 @@ public class TabControlTabPageCollectionTests
     [InlineData(3)]
     public void TabPageCollection_IListInsert_InvalidIndexNotEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
-        using var child = new TabPage();
+        using TabControl owner = new();
+        using TabPage child = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         collection.Add(child);
-        using var value = new TabPage();
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>("index", () => iList.Insert(index, value));
         Assert.Same(child, Assert.Single(collection));
     }
@@ -3173,14 +3215,14 @@ public class TabControlTabPageCollectionTests
     [InlineData(3)]
     public void TabPageCollection_IListInsert_InvalidIndexNotEmptyWithHandle_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
-        using var child = new TabPage();
+        using TabControl owner = new();
+        using TabPage child = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         collection.Add(child);
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var value = new TabPage();
+        using TabPage value = new();
         Assert.Throws<ArgumentOutOfRangeException>("index", () => iList.Insert(index, value));
         Assert.Same(child, Assert.Single(collection));
     }
@@ -3191,23 +3233,25 @@ public class TabControlTabPageCollectionTests
     [InlineData("name2", 1)]
     public void TabPageCollection_Item_GetStringValidKey_ReturnsExpected(string key, int expectedIndex)
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage
+        using TabControl owner = new();
+        using TabPage child1 = new()
         {
             Name = "name1"
         };
-        using var child2 = new TabPage
+        using TabPage child2 = new()
         {
             Name = "name2"
         };
-        using var child3 = new TabPage
+        using TabPage child3 = new()
         {
             Name = "name2"
         };
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
 
         Assert.Equal(collection[expectedIndex], collection[key]);
 
@@ -3225,23 +3269,25 @@ public class TabControlTabPageCollectionTests
     [InlineData("abcdef")]
     public void TabPageCollection_Item_GetStringNoSuchKey_ReturnsNull(string key)
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage
+        using TabControl owner = new();
+        using TabPage child1 = new()
         {
             Name = "name1"
         };
-        using var child2 = new TabPage
+        using TabPage child2 = new()
         {
             Name = "name2"
         };
-        using var child3 = new TabPage
+        using TabPage child3 = new()
         {
             Name = "name2"
         };
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
 
         Assert.Null(collection[key]);
 
@@ -3254,7 +3300,7 @@ public class TabControlTabPageCollectionTests
     [StringWithNullData]
     public void TabPageCollection_Item_GetStringEmpty_ReturnsNull(string key)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
 
         Assert.Null(collection[key]);
@@ -3267,12 +3313,14 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Item_GetIntValidIndex_ReturnsExpected()
     {
-        using var owner = new TabControl();
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page2);
+        using TabControl owner = new();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page2
+        };
         Assert.Same(page1, collection[0]);
         Assert.Same(page2, collection[1]);
     }
@@ -3283,7 +3331,7 @@ public class TabControlTabPageCollectionTests
     [InlineData(1)]
     public void TabPageCollection_Item_GetIntInvalidIndexEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[index]);
     }
@@ -3294,10 +3342,12 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_Item_GetIntInvalidIndexNotEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
-        using var page = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page);
+        using TabControl owner = new();
+        using TabPage page = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page
+        };
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[index]);
     }
 
@@ -3307,16 +3357,18 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_Item_SetValidIndex_ReturnsExpected(int index)
     {
-        using var owner = new TabControl();
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page2);
-        collection.Add(page3);
+        using TabControl owner = new();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using TabPage page3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page2,
+            page3
+        };
 
-        using var newPage = new TabPage();
+        using TabPage newPage = new();
         collection[index] = newPage;
         Assert.Same(newPage, collection[index]);
         Assert.Same(owner, page1.Parent);
@@ -3337,7 +3389,7 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_Item_SetValidIndexDesignMode_ReturnsExpected(int index)
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
@@ -3347,19 +3399,21 @@ public class TabControlTabPageCollectionTests
         mockSite
             .Setup(s => s.DesignMode)
             .Returns(true);
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page2);
-        collection.Add(page3);
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using TabPage page3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page2,
+            page3
+        };
 
-        using var newPage = new TabPage();
+        using TabPage newPage = new();
         collection[index] = newPage;
         Assert.Same(newPage, collection[index]);
         Assert.Same(owner, page1.Parent);
@@ -3380,14 +3434,16 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_Item_SetValidIndexWithHandle_ReturnsExpected(int index)
     {
-        using var owner = new TabControl();
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page2);
-        collection.Add(page3);
+        using TabControl owner = new();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using TabPage page3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page2,
+            page3
+        };
 
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
         int parentInvalidatedCallCount = 0;
@@ -3397,7 +3453,7 @@ public class TabControlTabPageCollectionTests
         int parentCreatedCallCount = 0;
         owner.HandleCreated += (sender, e) => parentCreatedCallCount++;
 
-        using var newPage = new TabPage();
+        using TabPage newPage = new();
         collection[index] = newPage;
         Assert.Same(newPage, collection[index]);
         Assert.Same(owner, page1.Parent);
@@ -3421,7 +3477,7 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_Item_SetValidIndexDesignModeWithHandle_ReturnsExpected(int index)
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
@@ -3431,17 +3487,19 @@ public class TabControlTabPageCollectionTests
         mockSite
             .Setup(s => s.DesignMode)
             .Returns(true);
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page2);
-        collection.Add(page3);
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using TabPage page3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page2,
+            page3
+        };
 
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
         int parentInvalidatedCallCount = 0;
@@ -3451,7 +3509,7 @@ public class TabControlTabPageCollectionTests
         int parentCreatedCallCount = 0;
         owner.HandleCreated += (sender, e) => parentCreatedCallCount++;
 
-        using var newPage = new TabPage();
+        using TabPage newPage = new();
         collection[index] = newPage;
         Assert.Same(newPage, collection[index]);
         Assert.Same(owner, page1.Parent);
@@ -3476,23 +3534,25 @@ public class TabControlTabPageCollectionTests
     [InlineData("&Text", "&&Text")]
     public unsafe void TabPageCollection_Item_SetGetItemsWithHandle_Success(string text, string expectedText)
     {
-        using var owner = new TabControl();
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new NullTextTabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page2);
-        collection.Add(page3);
+        using TabControl owner = new();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using NullTextTabPage page3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page2,
+            page3
+        };
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var value = new TabPage
+        using TabPage value = new()
         {
             Text = text,
             ImageIndex = 1
         };
         collection[1] = value;
-        Assert.Equal(3, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
+        Assert.Equal(3, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
 
         char* buffer = stackalloc char[256];
         TCITEMW item = default;
@@ -3502,7 +3562,7 @@ public class TabControlTabPageCollectionTests
         item.mask = (TCITEMHEADERA_MASK)uint.MaxValue;
 
         // Get item 0.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
         Assert.Equal(TAB_CONTROL_ITEM_STATE.TCIS_BUTTONPRESSED, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -3510,7 +3570,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(-1, item.iImage);
 
         // Get item 1.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -3518,7 +3578,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(1, item.iImage);
 
         // Get item 2.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -3533,7 +3593,7 @@ public class TabControlTabPageCollectionTests
     [InlineData("&Text", "&&Text")]
     public unsafe void TabPageCollection_Item_SetGetItemsDesignModeWithHandle_Success(string text, string expectedText)
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
@@ -3543,26 +3603,28 @@ public class TabControlTabPageCollectionTests
         mockSite
             .Setup(s => s.Container)
             .Returns((IContainer)null);
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new NullTextTabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page2);
-        collection.Add(page3);
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using NullTextTabPage page3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page2,
+            page3
+        };
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
 
-        using var value = new TabPage
+        using TabPage value = new()
         {
             Text = text,
             ImageIndex = 1
         };
         collection[1] = value;
-        Assert.Equal(3, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
+        Assert.Equal(3, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
 
         char* buffer = stackalloc char[256];
         TCITEMW item = default;
@@ -3572,7 +3634,7 @@ public class TabControlTabPageCollectionTests
         item.mask = (TCITEMHEADERA_MASK)uint.MaxValue;
 
         // Get item 0.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -3580,7 +3642,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(-1, item.iImage);
 
         // Get item 1.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
         Assert.Equal(TAB_CONTROL_ITEM_STATE.TCIS_BUTTONPRESSED, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -3588,7 +3650,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(1, item.iImage);
 
         // Get item 2.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 2, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -3599,10 +3661,12 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Item_SetNull_ThrowsArgumentNullException()
     {
-        using var owner = new TabControl();
-        using var page = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page);
+        using TabControl owner = new();
+        using TabPage page = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page
+        };
 
         Assert.Throws<ArgumentNullException>("value", () => collection[0] = null);
     }
@@ -3610,8 +3674,8 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Item_SetNullWithHandle_ThrowsArgumentNullException()
     {
-        using var owner = new TabControl();
-        using var page = new TabPage();
+        using TabControl owner = new();
+        using TabPage page = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
         collection.Add(page);
@@ -3625,8 +3689,8 @@ public class TabControlTabPageCollectionTests
     [InlineData(1)]
     public void TabPageCollection_Item_SetInvalidIndexEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
-        using var page = new TabPage();
+        using TabControl owner = new();
+        using TabPage page = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[index] = page);
     }
@@ -3637,20 +3701,22 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_Item_SetInvalidIndexNotEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
+        using TabControl owner = new();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1
+        };
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[index] = page2);
     }
 
     [WinFormsFact]
     public void TabPageCollection_IListItem_GetValidIndex_ReturnsExpected()
     {
-        using var owner = new TabControl();
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
+        using TabControl owner = new();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(page1);
@@ -3665,7 +3731,7 @@ public class TabControlTabPageCollectionTests
     [InlineData(1)]
     public void TabPageCollection_IListItem_GetInvalidIndexEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[index]);
@@ -3677,8 +3743,8 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_IListItem_GetInvalidIndexNotEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
-        using var page = new TabPage();
+        using TabControl owner = new();
+        using TabPage page = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(page);
@@ -3691,17 +3757,17 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_IListItem_SetValidIndex_ReturnsExpected(int index)
     {
-        using var owner = new TabControl();
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new TabPage();
+        using TabControl owner = new();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using TabPage page3 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(page1);
         iList.Add(page2);
         iList.Add(page3);
 
-        using var newPage = new TabPage();
+        using TabPage newPage = new();
         iList[index] = newPage;
         Assert.Same(newPage, iList[index]);
         Assert.Same(owner, page1.Parent);
@@ -3722,7 +3788,7 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_IListItem_SetValidIndexDesignMode_ReturnsExpected(int index)
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
@@ -3732,20 +3798,20 @@ public class TabControlTabPageCollectionTests
         mockSite
             .Setup(s => s.DesignMode)
             .Returns(true);
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new TabPage();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using TabPage page3 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(page1);
         iList.Add(page2);
         iList.Add(page3);
 
-        using var newPage = new TabPage();
+        using TabPage newPage = new();
         iList[index] = newPage;
         Assert.Same(newPage, iList[index]);
         Assert.Same(owner, page1.Parent);
@@ -3766,10 +3832,10 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_IListItem_SetValidIndexWithHandle_ReturnsExpected(int index)
     {
-        using var owner = new TabControl();
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new TabPage();
+        using TabControl owner = new();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using TabPage page3 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(page1);
@@ -3784,7 +3850,7 @@ public class TabControlTabPageCollectionTests
         int parentCreatedCallCount = 0;
         owner.HandleCreated += (sender, e) => parentCreatedCallCount++;
 
-        using var newPage = new TabPage();
+        using TabPage newPage = new();
         iList[index] = newPage;
         Assert.Same(newPage, iList[index]);
         Assert.Same(owner, page1.Parent);
@@ -3808,7 +3874,7 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_IListItem_SetValidIndexDesignModeWithHandle_ReturnsExpected(int index)
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
@@ -3818,13 +3884,13 @@ public class TabControlTabPageCollectionTests
         mockSite
             .Setup(s => s.DesignMode)
             .Returns(true);
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new TabPage();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using TabPage page3 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(page1);
@@ -3839,7 +3905,7 @@ public class TabControlTabPageCollectionTests
         int parentCreatedCallCount = 0;
         owner.HandleCreated += (sender, e) => parentCreatedCallCount++;
 
-        using var newPage = new TabPage();
+        using TabPage newPage = new();
         iList[index] = newPage;
         Assert.Same(newPage, iList[index]);
         Assert.Same(owner, page1.Parent);
@@ -3868,8 +3934,8 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(IListItem_InvalidValue_TestData))]
     public void TabPageCollection_IListItem_SetInvalidValue_ThrowsArgumentException(object value)
     {
-        using var owner = new TabControl();
-        using var page = new TabPage();
+        using TabControl owner = new();
+        using TabPage page = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(page);
@@ -3882,8 +3948,8 @@ public class TabControlTabPageCollectionTests
     [InlineData(1)]
     public void TabPageCollection_IListItem_SetInvalidIndexEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
-        using var page = new TabPage();
+        using TabControl owner = new();
+        using TabPage page = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[index] = page);
@@ -3895,9 +3961,9 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_IListItem_SetInvalidIndexNotEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
+        using TabControl owner = new();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(page1);
@@ -3907,22 +3973,24 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Remove_InvokeValueWithoutHandleOwnerWithoutHandle_Success()
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(value1);
-        collection.Add(value2);
+        using TabPage value1 = new();
+        using TabPage value2 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            value1,
+            value2
+        };
 
         int layoutCallCount1 = 0;
         value1.Layout += (sender, e) => layoutCallCount1++;
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -4006,22 +4074,24 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Remove_InvokeValueWithHandleOwnerWithoutHandle_Success()
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(value1);
-        collection.Add(value2);
+        using TabPage value1 = new();
+        using TabPage value2 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            value1,
+            value2
+        };
 
         int layoutCallCount1 = 0;
         value1.Layout += (sender, e) => layoutCallCount1++;
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -4134,22 +4204,24 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Remove_InvokeValueWithoutHandleOwnerWithHandle_Success()
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(value1);
-        collection.Add(value2);
+        using TabPage value1 = new();
+        using TabPage value2 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            value1,
+            value2
+        };
 
         int layoutCallCount1 = 0;
         value1.Layout += (sender, e) => layoutCallCount1++;
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -4249,22 +4321,24 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Remove_InvokeValueWithHandleOwnerWithHandle_Success()
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(value1);
-        collection.Add(value2);
+        using TabPage value1 = new();
+        using TabPage value2 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            value1,
+            value2
+        };
 
         int layoutCallCount1 = 0;
         value1.Layout += (sender, e) => layoutCallCount1++;
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -4377,16 +4451,18 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Remove_SelectedTabWithoutHandle_ThrowsArgumentOutOfRangeException()
     {
-        using var owner = new TabControl();
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
-        using var value3 = new TabPage();
-        using var value4 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(value1);
-        collection.Add(value2);
-        collection.Add(value3);
-        collection.Add(value4);
+        using TabControl owner = new();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
+        using TabPage value3 = new();
+        using TabPage value4 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            value1,
+            value2,
+            value3,
+            value4
+        };
         owner.SelectedTab = value4;
         Assert.Same(value4, owner.SelectedTab);
 
@@ -4414,16 +4490,18 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Remove_SelectedTabWithHandle_SetsSelectedToZero()
     {
-        using var owner = new TabControl();
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
-        using var value3 = new TabPage();
-        using var value4 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(value1);
-        collection.Add(value2);
-        collection.Add(value3);
-        collection.Add(value4);
+        using TabControl owner = new();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
+        using TabPage value3 = new();
+        using TabPage value4 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            value1,
+            value2,
+            value3,
+            value4
+        };
         owner.SelectedTab = value4;
         Assert.Same(value4, owner.SelectedTab);
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
@@ -4452,13 +4530,13 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Remove_ManyControls_Success()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
 
-        var items = new List<TabPage>();
+        List<TabPage> items = [];
         for (int i = 0; i < 24; i++)
         {
-            var value = new TabPage();
+            TabPage value = new();
             items.Add(value);
             collection.Add(value);
             Assert.Equal(items, collection.Cast<TabPage>());
@@ -4478,44 +4556,48 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Remove_NoSuchValueEmpty_Nop()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
-        using var value = new TabPage();
+        using TabPage value = new();
         collection.Remove(value);
     }
 
     [WinFormsFact]
     public void TabPageCollection_Remove_NoSuchValueNotEmpty_Nop()
     {
-        using var owner = new TabControl();
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page1);
-        using var value = new TabPage();
+        using TabControl owner = new();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page1
+        };
+        using TabPage value = new();
         collection.Remove(value);
     }
 
     [WinFormsFact]
     public unsafe void TabControlControlCollection_Remove_GetItemsWithHandle_Success()
     {
-        using var owner = new TabControl();
-        using var page1 = new TabPage();
-        using var page2 = new TabPage
+        using TabControl owner = new();
+        using TabPage page1 = new();
+        using TabPage page2 = new()
         {
             Text = "Text",
             ImageIndex = 1
         };
-        using var page3 = new NullTextTabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page2);
-        collection.Add(page3);
+        using NullTextTabPage page3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page2,
+            page3
+        };
 
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
         collection.Remove(page2);
-        Assert.Equal(2, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
+        Assert.Equal(2, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
 
         char* buffer = stackalloc char[256];
         TCITEMW item = default;
@@ -4525,7 +4607,7 @@ public class TabControlTabPageCollectionTests
         item.mask = (TCITEMHEADERA_MASK)uint.MaxValue;
 
         // Get item 0.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
         Assert.Equal(TAB_CONTROL_ITEM_STATE.TCIS_BUTTONPRESSED, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -4533,7 +4615,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(-1, item.iImage);
 
         // Get item 2.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -4544,7 +4626,7 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public unsafe void TabControlControlCollection_Remove_GetItemsDesignModeWithHandle_Success()
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.GetService(typeof(AmbientProperties)))
             .Returns(null);
@@ -4554,26 +4636,28 @@ public class TabControlTabPageCollectionTests
         mockSite
             .Setup(s => s.Container)
             .Returns((IContainer)null);
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Site = mockSite.Object
         };
 
-        using var page1 = new TabPage();
-        using var page2 = new TabPage
+        using TabPage page1 = new();
+        using TabPage page2 = new()
         {
             Text = "Text",
             ImageIndex = 1
         };
-        using var page3 = new NullTextTabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(page1);
-        collection.Add(page2);
-        collection.Add(page3);
+        using NullTextTabPage page3 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            page1,
+            page2,
+            page3
+        };
 
         Assert.NotEqual(IntPtr.Zero, owner.Handle);
         collection.Remove(page2);
-        Assert.Equal(2, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
+        Assert.Equal(2, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMCOUNT));
 
         char* buffer = stackalloc char[256];
         TCITEMW item = default;
@@ -4583,7 +4667,7 @@ public class TabControlTabPageCollectionTests
         item.mask = (TCITEMHEADERA_MASK)uint.MaxValue;
 
         // Get item 0.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 0, ref item));
         Assert.Equal(TAB_CONTROL_ITEM_STATE.TCIS_BUTTONPRESSED, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -4591,7 +4675,7 @@ public class TabControlTabPageCollectionTests
         Assert.Equal(-1, item.iImage);
 
         // Get item 1.
-        Assert.Equal(1, (int)PInvoke.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(owner, PInvoke.TCM_GETITEMW, 1, ref item));
         Assert.Equal((TAB_CONTROL_ITEM_STATE)0, item.dwState);
         Assert.Equal(IntPtr.Zero, (nint)item.lParam);
         Assert.Equal(int.MaxValue, item.cchTextMax);
@@ -4602,20 +4686,20 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Remove_NullValue_ThrowsArgumentNullException()
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
-        Assert.Throws<ArgumentNullException>("value", () => collection.Remove((TabPage)null));
+        Assert.Throws<ArgumentNullException>("value", () => collection.Remove(null));
     }
 
     [WinFormsFact]
     public void TabPageCollection_IListRemove_InvokeValueWithoutHandleOwnerWithoutHandle_Success()
     {
-        using var owner = new TabControl
+        using TabControl owner = new()
         {
             Bounds = new Rectangle(0, 0, 400, 300)
         };
-        using var value1 = new TabPage();
-        using var value2 = new TabPage();
+        using TabPage value1 = new();
+        using TabPage value2 = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Add(value1);
@@ -4626,7 +4710,7 @@ public class TabControlTabPageCollectionTests
         int layoutCallCount2 = 0;
         value2.Layout += (sender, e) => layoutCallCount2++;
         int parentLayoutCallCount = 0;
-        var events = new List<LayoutEventArgs>();
+        List<LayoutEventArgs> events = [];
         void parentHandler(object sender, LayoutEventArgs e)
         {
             Assert.Same(owner, sender);
@@ -4715,7 +4799,7 @@ public class TabControlTabPageCollectionTests
     [MemberData(nameof(IListRemove_InvalidValue_TestData))]
     public void TabPageCollection_IListRemove_InvalidValue_Nop(object value)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         IList iList = collection;
         iList.Remove(value);
@@ -4724,12 +4808,14 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_RemoveAt_Invoke_Success()
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage();
-        using var child2 = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
+        using TabControl owner = new();
+        using TabPage child1 = new();
+        using TabPage child2 = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2
+        };
 
         int layoutCallCount = 0;
         child1.Layout += (sender, e) => layoutCallCount++;
@@ -4780,7 +4866,7 @@ public class TabControlTabPageCollectionTests
     [InlineData(1)]
     public void TabPageCollection_RemoveAt_InvalidIndexEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
+        using TabControl owner = new();
         var collection = new TabControl.TabPageCollection(owner);
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(index));
     }
@@ -4791,10 +4877,12 @@ public class TabControlTabPageCollectionTests
     [InlineData(2)]
     public void TabPageCollection_RemoveAtInvalidIndexNotEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var owner = new TabControl();
-        using var child = new TabPage();
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child);
+        using TabControl owner = new();
+        using TabPage child = new();
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child
+        };
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(index));
     }
 
@@ -4803,23 +4891,25 @@ public class TabControlTabPageCollectionTests
     [InlineData("NAME2")]
     public void TabPageCollection_RemoveByKey_InvokeValidKey_ReturnsExpected(string key)
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage
+        using TabControl owner = new();
+        using TabPage child1 = new()
         {
             Name = "name1"
         };
-        using var child2 = new TabPage
+        using TabPage child2 = new()
         {
             Name = "name2"
         };
-        using var child3 = new TabPage
+        using TabPage child3 = new()
         {
             Name = "name2"
         };
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
 
         int layoutCallCount = 0;
         child2.Layout += (sender, e) => layoutCallCount++;
@@ -4877,23 +4967,25 @@ public class TabControlTabPageCollectionTests
     [InlineData("abcdef")]
     public void TabPageCollection_RemoveByKey_InvokeNoSuchKey_ReturnsNull(string key)
     {
-        using var owner = new TabControl();
-        using var child1 = new TabPage
+        using TabControl owner = new();
+        using TabPage child1 = new()
         {
             Name = "name1"
         };
-        using var child2 = new TabPage
+        using TabPage child2 = new()
         {
             Name = "name2"
         };
-        using var child3 = new TabPage
+        using TabPage child3 = new()
         {
             Name = "name2"
         };
-        var collection = new TabControl.TabPageCollection(owner);
-        collection.Add(child1);
-        collection.Add(child2);
-        collection.Add(child3);
+        var collection = new TabControl.TabPageCollection(owner)
+        {
+            child1,
+            child2,
+            child3
+        };
 
         collection.RemoveByKey(key);
         Assert.Equal(new TabPage[] { child1, child2, child3 }, collection.Cast<TabPage>());
@@ -4906,11 +4998,11 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Insert_By_Index()
     {
-        using var TabControl = new TabControl();
+        using TabControl TabControl = new();
 
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new TabPage();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using TabPage page3 = new();
 
         page1.Text = "First works";
         TabControl.TabPages.Add(page1);
@@ -4933,15 +5025,15 @@ public class TabControlTabPageCollectionTests
     [WinFormsFact]
     public void TabPageCollection_Insert_First_item()
     {
-        using var TabControl = new TabControl();
+        using TabControl TabControl = new();
 
-        using var page1 = new TabPage();
-        using var page2 = new TabPage();
-        using var page3 = new TabPage();
+        using TabPage page1 = new();
+        using TabPage page2 = new();
+        using TabPage page3 = new();
 
         page1.Text = "First works";
         TabControl.TabPages.Insert(0, page1);
-        Assert.Equal(1, TabControl.TabPages.Count);
+        Assert.Single(TabControl.TabPages);
         Assert.Equal(page1, TabControl.TabPages[0]);
         Assert.Equal(page1, TabControl.Controls[0]);
 
@@ -4967,7 +5059,7 @@ public class TabControlTabPageCollectionTests
 
     private class InvalidGetItemsTabControl : TabControl
     {
-        protected override object[] GetItems() => new object[] { 1 };
+        protected override object[] GetItems() => [1];
     }
 
     private class NullTextTabPage : TabPage

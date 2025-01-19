@@ -122,7 +122,7 @@ public partial class ListView
         ///  We use an index here rather than control so that we don't have lifetime
         ///  issues by holding on to extra references.
         ///  Note this is not Thread Safe - but WinForms has to be run in a STA anyways.
-        private int lastAccessedIndex = -1;
+        private int _lastAccessedIndex = -1;
 
         /// <summary>
         ///  The zero-based index of the first occurrence of value within the entire CollectionBase, if found; otherwise, -1.
@@ -136,11 +136,11 @@ public partial class ListView
             }
 
             // step 1 - check the last cached item
-            if (IsValidIndex(lastAccessedIndex))
+            if (IsValidIndex(_lastAccessedIndex))
             {
-                if (WindowsFormsUtils.SafeCompareStrings(this[lastAccessedIndex].Name, key, /* ignoreCase = */ true))
+                if (WindowsFormsUtils.SafeCompareStrings(this[_lastAccessedIndex].Name, key, /* ignoreCase = */ true))
                 {
-                    return lastAccessedIndex;
+                    return _lastAccessedIndex;
                 }
             }
 
@@ -149,13 +149,13 @@ public partial class ListView
             {
                 if (WindowsFormsUtils.SafeCompareStrings(this[i].Name, key, /* ignoreCase = */ true))
                 {
-                    lastAccessedIndex = i;
+                    _lastAccessedIndex = i;
                     return i;
                 }
             }
 
-            // step 3 - we didn't find it.  Invalidate the last accessed index and return -1.
-            lastAccessedIndex = -1;
+            // step 3 - we didn't find it. Invalidate the last accessed index and return -1.
+            _lastAccessedIndex = -1;
             return -1;
         }
 
@@ -232,7 +232,7 @@ public partial class ListView
 
         public virtual ColumnHeader Add(string? key, string? text, int width, HorizontalAlignment textAlign, string imageKey)
         {
-            ColumnHeader columnHeader = new ColumnHeader(imageKey)
+            ColumnHeader columnHeader = new(imageKey)
             {
                 Name = key,
                 Text = text,
@@ -244,7 +244,7 @@ public partial class ListView
 
         public virtual ColumnHeader Add(string? key, string? text, int width, HorizontalAlignment textAlign, int imageIndex)
         {
-            ColumnHeader columnHeader = new ColumnHeader(imageIndex)
+            ColumnHeader columnHeader = new(imageIndex)
             {
                 Name = key,
                 Text = text,
@@ -260,7 +260,7 @@ public partial class ListView
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            HashSet<int> usedIndices = new();
+            HashSet<int> usedIndices = [];
             int[] indices = new int[values.Length];
 
             for (int i = 0; i < values.Length; i++)
@@ -313,7 +313,7 @@ public partial class ListView
                     // in Tile view our ListView uses the column header collection to update the Tile Information
                     for (int colIdx = _owner._columnHeaders.Length - 1; colIdx >= 0; colIdx--)
                     {
-                        int w = _owner._columnHeaders[colIdx].Width; // Update width before detaching from ListView
+                        _ = _owner._columnHeaders[colIdx].Width; // Update width before detaching from ListView
                         _owner._columnHeaders[colIdx].OwnerListview = null;
                         _owner._columnHeaders[colIdx].ReleaseUiaProvider();
                     }
@@ -328,10 +328,10 @@ public partial class ListView
                 {
                     for (int colIdx = _owner._columnHeaders.Length - 1; colIdx >= 0; colIdx--)
                     {
-                        int w = _owner._columnHeaders[colIdx].Width; // Update width before detaching from ListView
+                        _ = _owner._columnHeaders[colIdx].Width; // Update width before detaching from ListView
                         if (_owner.IsHandleCreated)
                         {
-                            PInvoke.SendMessage(_owner, PInvoke.LVM_DELETECOLUMN, (WPARAM)colIdx);
+                            PInvokeCore.SendMessage(_owner, PInvoke.LVM_DELETECOLUMN, (WPARAM)colIdx);
                         }
 
                         _owner._columnHeaders[colIdx].OwnerListview = null;
@@ -468,7 +468,7 @@ public partial class ListView
 
         public void Insert(int index, string? key, string? text, int width, HorizontalAlignment textAlign, string imageKey)
         {
-            ColumnHeader columnHeader = new ColumnHeader(imageKey)
+            ColumnHeader columnHeader = new(imageKey)
             {
                 Name = key,
                 Text = text,
@@ -480,7 +480,7 @@ public partial class ListView
 
         public void Insert(int index, string? key, string? text, int width, HorizontalAlignment textAlign, int imageIndex)
         {
-            ColumnHeader columnHeader = new ColumnHeader(imageIndex)
+            ColumnHeader columnHeader = new(imageIndex)
             {
                 Name = key,
                 Text = text,
@@ -499,12 +499,12 @@ public partial class ListView
         {
             ColumnHeader columnHeader = _owner.GetColumnHeader(index);
 
-            int w = columnHeader.Width; // Update width before detaching from ListView
+            _ = columnHeader.Width; // Update width before detaching from ListView
 
             // in Tile view our ListView uses the column header collection to update the Tile Information
             if (_owner.IsHandleCreated && _owner.View != View.Tile)
             {
-                int retval = (int)PInvoke.SendMessage(_owner, PInvoke.LVM_DELETECOLUMN, (WPARAM)index);
+                int retval = (int)PInvokeCore.SendMessage(_owner, PInvoke.LVM_DELETECOLUMN, (WPARAM)index);
                 if (retval == 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index, string.Format(SR.InvalidArgument, nameof(index), index));

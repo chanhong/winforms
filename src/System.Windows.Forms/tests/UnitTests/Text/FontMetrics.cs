@@ -15,14 +15,14 @@ public class FontMetrics
     [InlineData("MS Gothic", 10.0f, 14)]
     public void Font_GetHeight(string family, float size, int height)
     {
-        using Font font = new Font(family, size);
+        using Font font = new(family, size);
         if (font.Name != family)
         {
             // Not installed on this machine
             return;
         }
 
-        using var hfont = GdiCache.GetHFONT(font, FONT_QUALITY.CLEARTYPE_QUALITY);
+        using var hfont = GdiCache.GetHFONTScope(font, FONT_QUALITY.CLEARTYPE_QUALITY);
         Assert.Equal(height, hfont.Data.Height);
     }
 
@@ -34,14 +34,14 @@ public class FontMetrics
     [InlineData("MS Gothic", 10.0f, 3, 4)]
     public void Font_GetTextMargins(string family, float size, int left, int right)
     {
-        using Font font = new Font(family, size);
+        using Font font = new(family, size);
         if (font.Name != family)
         {
             // Not installed on this machine
             return;
         }
 
-        using var hfont = GdiCache.GetHFONT(font, FONT_QUALITY.CLEARTYPE_QUALITY);
+        using var hfont = GdiCache.GetHFONTScope(font, FONT_QUALITY.CLEARTYPE_QUALITY);
         DRAWTEXTPARAMS margins = hfont.GetTextMargins();
         Assert.Equal(left, margins.iLeftMargin);
         Assert.Equal(right, margins.iRightMargin);
@@ -55,14 +55,14 @@ public class FontMetrics
     [InlineData("MS Gothic", 10.0f, 91, 14)]
     public void Font_GetTextExtent(string family, float size, int width, int height)
     {
-        using Font font = new Font(family, size);
+        using Font font = new(family, size);
         if (font.Name != family)
         {
             // Not installed on this machine
             return;
         }
 
-        using var hfont = GdiCache.GetHFONT(font, FONT_QUALITY.CLEARTYPE_QUALITY);
+        using var hfont = GdiCache.GetHFONTScope(font, FONT_QUALITY.CLEARTYPE_QUALITY);
         using var screen = GdiCache.GetScreenHdc();
         Size extent = screen.HDC.GetTextExtent("Whizzo Butter", hfont);
         Assert.Equal(width, extent.Width);
@@ -73,14 +73,14 @@ public class FontMetrics
     [MemberData(nameof(MeasureTextData))]
     public void Font_MeasureText(string family, float size, Size proposedSize, uint dt, Size expected)
     {
-        using Font font = new Font(family, size);
+        using Font font = new(family, size);
         if (font.Name != family)
         {
             // Not installed on this machine
             return;
         }
 
-        using var hfont = GdiCache.GetHFONT(font, FONT_QUALITY.CLEARTYPE_QUALITY);
+        using var hfont = GdiCache.GetHFONTScope(font, FONT_QUALITY.CLEARTYPE_QUALITY);
         using var screen = GdiCache.GetScreenHdc();
         Size measure = screen.HDC.MeasureText("Windows Foundation Classes", hfont, proposedSize, (TextFormatFlags)dt);
         Assert.Equal(expected, measure);
@@ -130,16 +130,16 @@ public class FontMetrics
     [MemberData(nameof(AdjustData))]
     public unsafe void Font_AdjustForVerticalAlignment(string family, float size, Rectangle bounds, uint dt, Rectangle expected)
     {
-        using Font font = new Font(family, size);
+        using Font font = new(family, size);
         if (font.Name != family)
         {
             // Not installed on this machine
             return;
         }
 
-        using var hfont = GdiCache.GetHFONT(font, FONT_QUALITY.CLEARTYPE_QUALITY);
+        using var hfont = GdiCache.GetHFONTScope(font, FONT_QUALITY.CLEARTYPE_QUALITY);
         using var screen = GdiCache.GetScreenHdc();
-        using PInvoke.SelectObjectScope fontSelection = new(screen, hfont.Object);
+        using SelectObjectScope fontSelection = new(screen, hfont.Object);
 
         DRAWTEXTPARAMS param = default;
         Rectangle result = screen.HDC.AdjustForVerticalAlignment(

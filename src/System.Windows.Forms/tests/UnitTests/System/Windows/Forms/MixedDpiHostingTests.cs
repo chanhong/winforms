@@ -14,14 +14,15 @@ public class MixedDpiHostingTests
             return;
         }
 
-        // Set thread awareness context to PermonitorV2(PMv2). If process/thread is not in PMv2, calling 'EnterDpiAwarenessScope' is a no-op and that is by design.
+        // Set thread awareness context to PerMonitorV2(PMv2).
+        // If process/thread is not in PMv2, calling 'EnterDpiAwarenessScope' is a no-op and that is by design.
         // In this case, we will be setting thread to PMv2 mode and then scope to UNAWARE
         DPI_AWARENESS_CONTEXT originalAwarenessContext = PInvoke.SetThreadDpiAwarenessContextInternal(DPI_AWARENESS_CONTEXT.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
         try
         {
-            using Form form = new Form();
-            using (DpiHelper.EnterDpiAwarenessScope(DPI_AWARENESS_CONTEXT.DPI_AWARENESS_CONTEXT_SYSTEM_AWARE))
+            using Form form = new();
+            using (ScaleHelper.EnterDpiAwarenessScope(DPI_AWARENESS_CONTEXT.DPI_AWARENESS_CONTEXT_SYSTEM_AWARE))
             {
                 using Control control = new();
                 form.Controls.Add(control);
@@ -34,8 +35,8 @@ public class MixedDpiHostingTests
 
                 DPI_AWARENESS_CONTEXT controlDpiContext = PInvoke.GetWindowDpiAwarenessContext(control.HWND);
                 DPI_AWARENESS_CONTEXT formDpiContext = PInvoke.GetWindowDpiAwarenessContext(form.HWND);
-                Assert.True(PInvoke.AreDpiAwarenessContextsEqualInternal(DPI_AWARENESS_CONTEXT.DPI_AWARENESS_CONTEXT_SYSTEM_AWARE, controlDpiContext));
-                Assert.True(PInvoke.AreDpiAwarenessContextsEqualInternal(DPI_AWARENESS_CONTEXT.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, formDpiContext));
+                Assert.True(controlDpiContext.IsEquivalent(DPI_AWARENESS_CONTEXT.DPI_AWARENESS_CONTEXT_SYSTEM_AWARE));
+                Assert.True(formDpiContext.IsEquivalent(DPI_AWARENESS_CONTEXT.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2));
             }
         }
         finally

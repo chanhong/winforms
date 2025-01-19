@@ -38,6 +38,10 @@ public partial class ProgressBar : Control
     public ProgressBar() : base()
     {
         SetStyle(ControlStyles.UserPaint | ControlStyles.UseTextForAccessibility | ControlStyles.Selectable, false);
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
+
         ForeColor = s_defaultForeColor;
     }
 
@@ -60,12 +64,29 @@ public partial class ProgressBar : Control
             {
                 // We want to turn on mirroring for Form explicitly.
                 cp.ExStyle |= (int)WINDOW_EX_STYLE.WS_EX_LAYOUTRTL;
+
                 // Don't need these styles when mirroring is turned on.
                 cp.ExStyle &= ~(int)(WINDOW_EX_STYLE.WS_EX_RTLREADING | WINDOW_EX_STYLE.WS_EX_RIGHT | WINDOW_EX_STYLE.WS_EX_LEFTSCROLLBAR);
             }
 
             return cp;
         }
+    }
+
+    protected override void OnCreateControl()
+    {
+        base.OnCreateControl();
+
+        // If SystemColorMode is enabled, we need to disable the Visual Styles
+        // so Windows allows setting Fore- and Background color.
+        // There are more ideal ways imaginable, but this does the trick for now.
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        if (Application.IsDarkModeEnabled)
+        {
+            // Disables Visual Styles for the ProgressBar.
+            PInvoke.SetWindowTheme(HWND, " ", " ");
+        }
+#pragma warning restore WFO5001
     }
 
     [Browsable(false)]
@@ -212,10 +233,7 @@ public partial class ProgressBar : Control
         get => _marqueeAnimationSpeed;
         set
         {
-            if (value < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(MarqueeAnimationSpeed), value, 0));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
             _marqueeAnimationSpeed = value;
             if (!DesignMode)
@@ -234,11 +252,11 @@ public partial class ProgressBar : Control
         {
             if (_marqueeAnimationSpeed == 0)
             {
-                PInvoke.SendMessage(this, PInvoke.PBM_SETMARQUEE, (WPARAM)(BOOL)false, (LPARAM)_marqueeAnimationSpeed);
+                PInvokeCore.SendMessage(this, PInvoke.PBM_SETMARQUEE, (WPARAM)(BOOL)false, (LPARAM)_marqueeAnimationSpeed);
             }
             else
             {
-                PInvoke.SendMessage(this, PInvoke.PBM_SETMARQUEE, (WPARAM)(BOOL)true, (LPARAM)_marqueeAnimationSpeed);
+                PInvokeCore.SendMessage(this, PInvoke.PBM_SETMARQUEE, (WPARAM)(BOOL)true, (LPARAM)_marqueeAnimationSpeed);
             }
         }
     }
@@ -258,10 +276,7 @@ public partial class ProgressBar : Control
             if (_maximum != value)
             {
                 // Ensure that value is in the Win32 control's acceptable range
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(Maximum), value, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 if (_minimum > value)
                 {
@@ -277,7 +292,7 @@ public partial class ProgressBar : Control
 
                 if (IsHandleCreated)
                 {
-                    PInvoke.SendMessage(this, PInvoke.PBM_SETRANGE32, (WPARAM)_minimum, (LPARAM)_maximum);
+                    PInvokeCore.SendMessage(this, PInvoke.PBM_SETRANGE32, (WPARAM)_minimum, (LPARAM)_maximum);
                     UpdatePos();
                 }
             }
@@ -299,10 +314,7 @@ public partial class ProgressBar : Control
             if (_minimum != value)
             {
                 // Ensure that value is in the Win32 control's acceptable range
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(Minimum), value, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 if (_maximum < value)
                 {
@@ -318,7 +330,7 @@ public partial class ProgressBar : Control
 
                 if (IsHandleCreated)
                 {
-                    PInvoke.SendMessage(this, PInvoke.PBM_SETRANGE32, (WPARAM)_minimum, (LPARAM)_maximum);
+                    PInvokeCore.SendMessage(this, PInvoke.PBM_SETRANGE32, (WPARAM)_minimum, (LPARAM)_maximum);
                     UpdatePos();
                 }
             }
@@ -330,7 +342,7 @@ public partial class ProgressBar : Control
         base.OnBackColorChanged(e);
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.PBM_SETBKCOLOR, 0, BackColor.ToWin32());
+            PInvokeCore.SendMessage(this, PInvoke.PBM_SETBKCOLOR, 0, BackColor.ToWin32());
         }
     }
 
@@ -339,7 +351,7 @@ public partial class ProgressBar : Control
         base.OnForeColorChanged(e);
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.PBM_SETBARCOLOR, 0, ForeColor.ToWin32());
+            PInvokeCore.SendMessage(this, PInvoke.PBM_SETBARCOLOR, 0, ForeColor.ToWin32());
         }
     }
 
@@ -408,7 +420,7 @@ public partial class ProgressBar : Control
             _step = value;
             if (IsHandleCreated)
             {
-                PInvoke.SendMessage(this, PInvoke.PBM_SETSTEP, (WPARAM)_step);
+                PInvokeCore.SendMessage(this, PInvoke.PBM_SETSTEP, (WPARAM)_step);
             }
         }
     }
@@ -463,7 +475,7 @@ public partial class ProgressBar : Control
             {
                 if (value < _minimum || value > _maximum)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidBoundArgument, nameof(Value), value, "'minimum'", "'maximum'"));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidBoundArgument, nameof(Value), value, nameof(Minimum), nameof(Maximum)));
                 }
 
                 _value = value;
@@ -586,15 +598,15 @@ public partial class ProgressBar : Control
         base.OnHandleCreated(e);
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.PBM_SETRANGE32, (WPARAM)_minimum, (LPARAM)_maximum);
-            PInvoke.SendMessage(this, PInvoke.PBM_SETSTEP, (WPARAM)_step);
-            PInvoke.SendMessage(this, PInvoke.PBM_SETPOS, (WPARAM)_value);
-            PInvoke.SendMessage(this, PInvoke.PBM_SETBKCOLOR, (WPARAM)0, (LPARAM)BackColor);
-            PInvoke.SendMessage(this, PInvoke.PBM_SETBARCOLOR, (WPARAM)0, (LPARAM)ForeColor);
+            PInvokeCore.SendMessage(this, PInvoke.PBM_SETRANGE32, (WPARAM)_minimum, (LPARAM)_maximum);
+            PInvokeCore.SendMessage(this, PInvoke.PBM_SETSTEP, (WPARAM)_step);
+            PInvokeCore.SendMessage(this, PInvoke.PBM_SETPOS, (WPARAM)_value);
+            PInvokeCore.SendMessage(this, PInvoke.PBM_SETBKCOLOR, (WPARAM)0, (LPARAM)BackColor);
+            PInvokeCore.SendMessage(this, PInvoke.PBM_SETBARCOLOR, (WPARAM)0, (LPARAM)ForeColor);
         }
 
         StartMarquee();
-        SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(UserPreferenceChangedHandler);
+        SystemEvents.UserPreferenceChanged += UserPreferenceChangedHandler;
     }
 
     /// <summary>
@@ -602,7 +614,7 @@ public partial class ProgressBar : Control
     /// </summary>
     protected override void OnHandleDestroyed(EventArgs e)
     {
-        SystemEvents.UserPreferenceChanged -= new UserPreferenceChangedEventHandler(UserPreferenceChangedHandler);
+        SystemEvents.UserPreferenceChanged -= UserPreferenceChangedHandler;
         base.OnHandleDestroyed(e);
     }
 
@@ -670,20 +682,22 @@ public partial class ProgressBar : Control
     {
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.PBM_SETPOS, (WPARAM)_value);
+            PInvokeCore.SendMessage(this, PInvoke.PBM_SETPOS, (WPARAM)_value);
         }
     }
 
     /// <remarks>
-    ///  Note: <see cref="ProgressBar"/> doesn't work like other controls as far as setting ForeColor/BackColor.
-    ///  You need to send messages to update the colors.
+    ///  <para>
+    ///   Note: <see cref="ProgressBar"/> doesn't work like other controls as far as setting ForeColor/BackColor.
+    ///   You need to send messages to update the colors.
+    ///  </para>
     /// </remarks>
     private void UserPreferenceChangedHandler(object o, UserPreferenceChangedEventArgs e)
     {
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.PBM_SETBARCOLOR, 0, ForeColor.ToWin32());
-            PInvoke.SendMessage(this, PInvoke.PBM_SETBKCOLOR, 0, BackColor.ToWin32());
+            PInvokeCore.SendMessage(this, PInvoke.PBM_SETBARCOLOR, 0, ForeColor.ToWin32());
+            PInvokeCore.SendMessage(this, PInvoke.PBM_SETBKCOLOR, 0, BackColor.ToWin32());
         }
     }
 

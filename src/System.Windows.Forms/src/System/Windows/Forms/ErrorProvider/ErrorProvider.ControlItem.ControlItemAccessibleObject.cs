@@ -106,13 +106,13 @@ public partial class ErrorProvider
             internal override bool IsReadOnly => true;
 
             [AllowNull]
-            public override string Name
-            {
-                get => string.IsNullOrEmpty(base.Name) ? _controlItem.Error : base.Name;
-                set => base.Name = value;
-            }
+            public override string Name => string.IsNullOrEmpty(base.Name) ? _controlItem.Error : base.Name;
+
+            internal override bool CanGetNameInternal => false;
 
             public override AccessibleObject? Parent => _window?.AccessibilityObject;
+
+            private protected override bool IsInternal => true;
 
             public override AccessibleRole Role => AccessibleRole.Alert;
 
@@ -125,21 +125,13 @@ public partial class ErrorProvider
                 {
                     if (_window is null)
                     {
-                        return new int[]
-                        {
-                            _controlItem.GetHashCode()
-                        };
+                        return [_controlItem.GetHashCode()];
                     }
 
-                    Debug.Assert(_window.AccessibilityObject.RuntimeId.Length >= 3);
+                    int[] id = _window.AccessibilityObject.RuntimeId;
+                    Debug.Assert(id.Length >= 3);
 
-                    return new int[]
-                    {
-                        _window.AccessibilityObject.RuntimeId[0],
-                        _window.AccessibilityObject.RuntimeId[1],
-                        _window.AccessibilityObject.RuntimeId[2],
-                        _controlItem.GetHashCode()
-                    };
+                    return [id[0], id[1], id[2], _controlItem.GetHashCode()];
                 }
             }
 

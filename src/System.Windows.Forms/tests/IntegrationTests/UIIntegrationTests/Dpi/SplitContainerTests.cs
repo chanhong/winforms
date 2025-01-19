@@ -17,7 +17,7 @@ public class SplitContainerTests : ControlTestBase
     [WinFormsFact]
     public void SplitContainer_Constructor()
     {
-        using var sc = new SplitContainer();
+        using SplitContainer sc = new();
 
         Assert.NotNull(sc);
         Assert.NotNull(sc.Panel1);
@@ -39,10 +39,10 @@ public class SplitContainerTests : ControlTestBase
 
         DPI_AWARENESS_CONTEXT originalAwarenessContext = PInvoke.SetThreadDpiAwarenessContextInternal(DPI_AWARENESS_CONTEXT.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-        typeof(DpiHelper).TestAccessor().Dynamic.Initialize();
+        typeof(ScaleHelper).TestAccessor().Dynamic.InitializeStatics();
         try
         {
-            using var form = new Form();
+            using Form form = new();
             using SplitContainer splitContainer = new()
             {
                 FixedPanel = FixedPanel.Panel1,
@@ -59,8 +59,8 @@ public class SplitContainerTests : ControlTestBase
             form.Controls.Add(splitContainer);
             form.Show();
 
-            DpiMessageHelper.TriggerDpiMessage(PInvoke.WM_DPICHANGED_BEFOREPARENT, splitContainer, newDpi);
-            DpiMessageHelper.TriggerDpiMessage(PInvoke.WM_DPICHANGED, form, newDpi);
+            DpiMessageHelper.TriggerDpiMessage(PInvokeCore.WM_DPICHANGED_BEFOREPARENT, splitContainer, newDpi);
+            DpiMessageHelper.TriggerDpiMessage(PInvokeCore.WM_DPICHANGED, form, newDpi);
 
             Assert.NotEqual(90, splitContainer.SplitterDistance);
             Assert.NotEqual(2, splitContainer.SplitterWidth);

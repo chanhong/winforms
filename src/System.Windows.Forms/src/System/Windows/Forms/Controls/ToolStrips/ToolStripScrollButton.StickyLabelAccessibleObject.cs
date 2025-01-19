@@ -8,9 +8,9 @@ namespace System.Windows.Forms;
 
 internal partial class ToolStripScrollButton
 {
-    internal class StickyLabelAccessibleObject : Label.LabelAccessibleObject
+    internal sealed class StickyLabelAccessibleObject : Label.LabelAccessibleObject
     {
-        private StickyLabel _owner;
+        private readonly StickyLabel _owner;
 
         public StickyLabelAccessibleObject(StickyLabel owner) : base(owner)
         {
@@ -47,7 +47,13 @@ internal partial class ToolStripScrollButton
                 ? SR.ToolStripScrollButtonUpAccessibleName
                 : SR.ToolStripScrollButtonDownAccessibleName;
 
+        internal override bool CanGetNameInternal => false;
+
         public override string? DefaultAction => SR.AccessibleActionPress;
+
+        private protected override bool IsInternal => true;
+
+        internal override bool CanGetDefaultActionInternal => false;
 
         internal override VARIANT GetPropertyValue(UIA_PROPERTY_ID propertyID) => propertyID switch
         {

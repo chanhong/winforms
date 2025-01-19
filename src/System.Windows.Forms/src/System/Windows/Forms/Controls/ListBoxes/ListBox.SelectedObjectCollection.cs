@@ -12,7 +12,7 @@ public partial class ListBox
     public class SelectedObjectCollection : IList
     {
         // This is the bitmask used within ItemArray to identify selected objects.
-        internal static int SelectedObjectMask = ItemArray.CreateMask();
+        internal static int SelectedObjectMask { get; } = ItemArray.CreateMask();
 
         private readonly ListBox _owner;
         private bool _stateDirty;
@@ -52,7 +52,7 @@ public partial class ListBox
 
                         case SelectionMode.MultiSimple:
                         case SelectionMode.MultiExtended:
-                            return (int)PInvoke.SendMessage(_owner, PInvoke.LB_GETSELCOUNT);
+                            return (int)PInvokeCore.SendMessage(_owner, PInvoke.LB_GETSELCOUNT);
                     }
 
                     return 0;
@@ -103,7 +103,7 @@ public partial class ListBox
         }
 
         /// <summary>
-        ///  This is the item array that stores our data.  We share this backing store
+        ///  This is the item array that stores our data. We share this backing store
         ///  with the main object collection.
         /// </summary>
         private ItemArray InnerArray
@@ -216,7 +216,7 @@ public partial class ListBox
         }
 
         /// <summary>
-        ///  This method returns if the actual item index is selected.  The index is the index to the MAIN
+        ///  This method returns if the actual item index is selected. The index is the index to the MAIN
         ///  collection, not this one.
         /// </summary>
         internal bool GetSelected(int index)
@@ -224,8 +224,9 @@ public partial class ListBox
             return InnerArray.GetState(index, SelectedObjectMask);
         }
 
-        // when SelectedObjectsCollection::ItemArray is accessed we push the selection from Native ListBox into our .Net ListBox - see EnsureUpToDate()
-        // when we create the handle we need to be able to do the opposite : push the selection from .Net ListBox into Native ListBox
+        // when SelectedObjectsCollection::ItemArray is accessed we push the selection from Native ListBox
+        // into our .Net ListBox - see EnsureUpToDate() when we create the handle we need to be able
+        // to do the opposite : push the selection from .Net ListBox into Native ListBox
         internal void PushSelectionIntoNativeListBox(int index)
         {
             // we can't use ItemArray accessor because this will wipe out our Selection collection

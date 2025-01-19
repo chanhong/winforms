@@ -40,7 +40,7 @@ internal partial class PropertyGridView
         private static readonly Size s_minDropDownSize =
             new(SystemInformation.VerticalScrollBarWidth * 4, SystemInformation.HorizontalScrollBarHeight * 4);
 
-        // Our cached size grip glyph.  Control paint only does right bottom glyphs, so we cache a mirrored one.
+        // Our cached size grip glyph. Control paint only does right bottom glyphs, so we cache a mirrored one.
         private Bitmap? _sizeGripGlyph;
 
         private const int DropDownHolderBorder = 1;
@@ -103,7 +103,7 @@ internal partial class PropertyGridView
 
         /// <summary>
         ///  This gets set to true if there isn't enough space below the currently selected
-        ///  row for the drop down, so it appears above the row.  In this case, we make the resize
+        ///  row for the drop down, so it appears above the row. In this case, we make the resize
         ///  grip appear at the top left.
         /// </summary>
         public bool ResizeUp
@@ -178,7 +178,7 @@ internal partial class PropertyGridView
         private static InstanceCreationEditor? GetInstanceCreationEditor(PropertyDescriptorGridEntry? entry)
         {
             // First we look on the property type, and if we don't find that we'll go up to the editor type
-            // itself.  That way people can associate the InstanceCreationEditor with the type of DropDown
+            // itself. That way people can associate the InstanceCreationEditor with the type of DropDown
             // UIType Editor.
 
             if (entry is null)
@@ -224,7 +224,7 @@ internal partial class PropertyGridView
                 // Mirror the image around the x-axis to get a gripper handle that works for the lower left.
                 Matrix m = new();
 
-                // Mirroring is just scaling by -1 on the X-axis.  So any point that's like (10, 10) goes to (-10, 10).
+                // Mirroring is just scaling by -1 on the X-axis. So any point that's like (10, 10) goes to (-10, 10).
                 // That mirrors it, but also moves everything to the negative axis, so we just bump the whole thing
                 // over by it's width.
                 //
@@ -249,7 +249,6 @@ internal partial class PropertyGridView
 
         public void FocusComponent()
         {
-            CompModSwitches.DebugGridView.TraceVerbose("DropDownHolder:FocusComponent()");
             if (_currentControl is not null && Visible)
             {
                 _currentControl.Focus();
@@ -266,7 +265,7 @@ internal partial class PropertyGridView
         {
             while (!hWnd.IsNull)
             {
-                hWnd = (HWND)PInvoke.GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT);
+                hWnd = (HWND)PInvokeCore.GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT);
                 if (hWnd.IsNull)
                 {
                     return false;
@@ -336,7 +335,7 @@ internal partial class PropertyGridView
             Debug.Assert(editor is not null, "How do we have a link without the InstanceCreationEditor?");
             if (editor is not null && _gridView?.SelectedGridEntry is not null)
             {
-                Type createType = _gridView.SelectedGridEntry.PropertyType;
+                Type? createType = _gridView.SelectedGridEntry.PropertyType;
                 if (createType is not null)
                 {
                     _gridView.CloseDropDown();
@@ -582,9 +581,6 @@ internal partial class PropertyGridView
             }
 
             _currentControl = control;
-            CompModSwitches.DebugGridView.TraceVerbose(
-                $"DropDownHolder:SetComponent({control.GetType().Name})");
-
             DockPadding.All = 0;
 
             // First handle the control. If it's a listbox, make sure it's got some height to it.
@@ -597,9 +593,8 @@ internal partial class PropertyGridView
             }
 
             // Parent the control now. That way it can inherit our font and scale itself if it wants to.
-            try
+            using (SuspendLayoutScope scope = new(this, performLayout: true))
             {
-                SuspendLayout();
                 Controls.Add(control);
 
                 Size size = new(2 * DropDownHolderBorder + control.Width, 2 * DropDownHolderBorder + control.Height);
@@ -657,10 +652,6 @@ internal partial class PropertyGridView
                     Controls.Add(CreateNewLink);
                 }
             }
-            finally
-            {
-                ResumeLayout(true);
-            }
 
             // Hook the resize event.
             _currentControl.Resize += OnCurrentControlResize;
@@ -670,10 +661,9 @@ internal partial class PropertyGridView
 
         protected override void WndProc(ref Message m)
         {
-            if (m.MsgInternal == PInvoke.WM_ACTIVATE)
+            if (m.MsgInternal == PInvokeCore.WM_ACTIVATE)
             {
                 SetState(States.Modal, true);
-                CompModSwitches.DebugGridView.TraceVerbose("DropDownHolder:WM_ACTIVATE()");
                 HWND activatedWindow = (HWND)m.LParamInternal;
                 if (Visible && m.WParamInternal.LOWORD == PInvoke.WA_INACTIVE && !OwnsWindow(activatedWindow))
                 {
@@ -681,7 +671,7 @@ internal partial class PropertyGridView
                     return;
                 }
             }
-            else if (m.MsgInternal == PInvoke.WM_CLOSE)
+            else if (m.MsgInternal == PInvokeCore.WM_CLOSE)
             {
                 // Don't let an ALT-F4 get you down.
                 if (Visible)
@@ -691,7 +681,7 @@ internal partial class PropertyGridView
 
                 return;
             }
-            else if (m.MsgInternal == PInvoke.WM_DPICHANGED)
+            else if (m.MsgInternal == PInvokeCore.WM_DPICHANGED)
             {
                 // Dropdownholder in PropertyGridView is already scaled based on the parent font and other
                 // properties that were already set for the new DPI. This case is to avoid rescaling

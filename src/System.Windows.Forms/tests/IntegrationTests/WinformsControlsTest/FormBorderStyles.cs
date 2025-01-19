@@ -3,6 +3,7 @@
 
 namespace WindowsFormsApp1;
 
+[DesignerCategory("Default")]
 public partial class FormBorderStyles : Form
 {
     public FormBorderStyles()
@@ -18,7 +19,7 @@ public partial class FormBorderStyles : Form
 
     private void btnChangeFormBorderStyle_Click(object sender, EventArgs e)
     {
-        var currentBorderStyle = (int)FormBorderStyle;
+        int currentBorderStyle = (int)FormBorderStyle;
         currentBorderStyle++;
         if (currentBorderStyle > (int)FormBorderStyle.SizableToolWindow)
         {

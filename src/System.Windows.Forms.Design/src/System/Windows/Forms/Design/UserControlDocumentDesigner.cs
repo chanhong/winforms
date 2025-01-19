@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
-
 using System.ComponentModel;
 using System.Collections;
 using System.Drawing;
@@ -21,26 +19,20 @@ internal class UserControlDocumentDesigner : DocumentDesigner
     }
 
     /// <summary>
-    ///  On user controls, size == client size.  We do this so we can mess around
+    ///  On user controls, size == client size. We do this so we can mess around
     ///  with the non-client area of the user control when editing menus and not
     ///  mess up the size property.
     /// </summary>
     private Size Size
     {
-        get
-        {
-            return Control.ClientSize;
-        }
-        set
-        {
-            Control.ClientSize = value;
-        }
+        get => Control.ClientSize;
+        set => Control.ClientSize = value;
     }
 
     /// <summary>
     ///  Allows a designer to filter the set of properties
     ///  the component it is designing will expose through the
-    ///  TypeDescriptor object.  This method is called
+    ///  TypeDescriptor object. This method is called
     ///  immediately before its corresponding "Post" method.
     ///  If you are overriding this method you should call
     ///  the base implementation before you perform your own
@@ -48,25 +40,18 @@ internal class UserControlDocumentDesigner : DocumentDesigner
     /// </summary>
     protected override void PreFilterProperties(IDictionary properties)
     {
-        PropertyDescriptor prop;
-
         base.PreFilterProperties(properties);
 
         // Handle shadowed properties
-        //
-        string[] shadowProps = new string[]
-        {
-            "Size"
-        };
+        string[] shadowProps = ["Size"];
 
-        Attribute[] empty = Array.Empty<Attribute>();
-
+        PropertyDescriptor? prop;
         for (int i = 0; i < shadowProps.Length; i++)
         {
-            prop = (PropertyDescriptor)properties[shadowProps[i]];
+            prop = (PropertyDescriptor?)properties[shadowProps[i]];
             if (prop is not null)
             {
-                properties[shadowProps[i]] = TypeDescriptor.CreateProperty(typeof(UserControlDocumentDesigner), prop, empty);
+                properties[shadowProps[i]] = TypeDescriptor.CreateProperty(typeof(UserControlDocumentDesigner), prop, []);
             }
         }
     }

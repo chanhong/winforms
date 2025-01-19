@@ -9,7 +9,7 @@ using System.Windows.Forms.Design;
 namespace System.ComponentModel.Design;
 
 /// <summary>
-///  Generic editor for editing binary data.  This presents a hex editing window to the user.
+///  Generic editor for editing binary data. This presents a hex editing window to the user.
 /// </summary>
 public sealed partial class BinaryEditor : UITypeEditor
 {
@@ -46,7 +46,7 @@ public sealed partial class BinaryEditor : UITypeEditor
             stream.Position = 0;
             int byteCount = (int)(stream.Length - stream.Position);
             byte[] bytes = new byte[byteCount];
-            stream.Read(bytes, 0, byteCount);
+            stream.ReadExactly(bytes, 0, byteCount);
             return bytes;
         }
 
@@ -107,7 +107,7 @@ public sealed partial class BinaryEditor : UITypeEditor
         }
 
         // Child modal dialog- launching in SystemAware mode.
-        _binaryUI ??= DpiHelper.CreateInstanceInSystemAwareContext(() => new BinaryUI(this));
+        _binaryUI ??= ScaleHelper.InvokeInSystemAwareContext(() => new BinaryUI(this));
 
         _binaryUI.Value = value;
         if (editorService.ShowDialog(_binaryUI) == DialogResult.OK)

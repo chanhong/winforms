@@ -4,7 +4,7 @@
 namespace Microsoft.Office;
 
 /// <summary>
-///  State IDs passed to <see cref="IMsoComponent.OnEnterState" /> and
+///  State IDs passed to <see cref="IMsoComponent.OnEnterState(msocstate, BOOL)" /> and
 ///  <see cref="IMsoComponentManager.OnComponentEnterState" />
 ///
 ///  When the host or a component is notified through one of these methods that another
@@ -16,7 +16,7 @@ internal enum msocstate : uint
     /// <summary>
     ///  If app is entering modal state, host/component should disable
     ///  its toplevel windows, and reenable them when app exits this
-    ///  state.  Also, when this state is entered or exited, host/component
+    ///  state. Also, when this state is entered or exited, host/component
     ///  should notify appropriate inplace objects via
     ///  IOleInPlaceActiveObject::EnableModeless.
     /// </summary>

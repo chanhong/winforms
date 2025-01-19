@@ -141,16 +141,23 @@ public class ToolStripItemCollection : ArrangedElementCollection, IList
             throw new NotSupportedException(SR.ToolStripItemCollectionIsReadOnly);
         }
 
+        // Return early if the collection is empty.
+        if (toolStripItems.Count == 0)
+        {
+            return;
+        }
+
         // ToolStripDropDown will look for PropertyNames.Items to determine if it needs
         // to resize itself.
         using (new LayoutTransaction(_owner, _owner!, PropertyNames.Items))
         {
-            for (int i = 0; i < toolStripItems.Count; i++)
+            // Create a temporary array to avoid modifying the original collection during iteration.
+            // Items will be removed from toolStripsItems collection when they are added to this collection
+            // if they had a different owner control.
+            var itemsToAdd = toolStripItems.InnerList.ToArray();
+            foreach (ToolStripItem item in itemsToAdd)
             {
-                // Items are removed from their origin when added to a different owner.
-                // Decrement the index to always add the items from index 0 which will preserve
-                // the original order and avoid a pesky ArgumentOutOfRangeException.
-                Add(toolStripItems[i--]);
+                Add(item);
             }
         }
     }
@@ -236,9 +243,9 @@ public class ToolStripItemCollection : ArrangedElementCollection, IList
     {
         key.ThrowIfNullOrEmptyWithMessage(SR.FindKeyMayNotBeEmptyOrNull);
 
-        List<ToolStripItem> foundItems = new();
+        List<ToolStripItem> foundItems = [];
         FindInternal(key, searchAllChildren, this, foundItems);
-        return foundItems.ToArray();
+        return [.. foundItems];
     }
 
     /// <summary>
@@ -359,7 +366,7 @@ public class ToolStripItemCollection : ArrangedElementCollection, IList
             }
         }
 
-        // step 3 - we didn't find it.  Invalidate the last accessed index and return -1.
+        // step 3 - we didn't find it. Invalidate the last accessed index and return -1.
         _lastAccessedIndex = -1;
         return -1;
     }
@@ -388,7 +395,7 @@ public class ToolStripItemCollection : ArrangedElementCollection, IList
 
                 if (!_owner.IsDisposingItems)
                 {
-                    ToolStripItemEventArgs e = new ToolStripItemEventArgs(item);
+                    ToolStripItemEventArgs e = new(item);
                     _owner.OnItemRemoved(e);
 
                     // don't fire the ItemRemoved event for Overflow
@@ -425,15 +432,9 @@ public class ToolStripItemCollection : ArrangedElementCollection, IList
             throw new NotSupportedException(SR.ToolStripItemCollectionIsReadOnly);
         }
 
-        ToolStripItem? item = null;
-        if (index < Count && index >= 0)
-        {
-            item = (ToolStripItem)(InnerList[index]);
-        }
-        else
-        {
-            throw new IndexOutOfRangeException();
-        }
+        ToolStripItem item = index >= Count || index < 0
+            ? throw new IndexOutOfRangeException()
+            : (ToolStripItem)InnerList[index];
 
         InnerList.RemoveAt(index);
         OnAfterRemove(item);

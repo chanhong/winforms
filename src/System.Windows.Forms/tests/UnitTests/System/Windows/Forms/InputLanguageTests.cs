@@ -3,7 +3,6 @@
 
 using System.Globalization;
 using System.Reflection;
-using static Interop;
 
 namespace System.Windows.Forms.Tests;
 
@@ -63,14 +62,14 @@ public class InputLanguageTests
     [Fact]
     public void InputLanguage_CurrentInputLanguage_SetInvalidValue_ThrowsArgumentException()
     {
-        InputLanguage language = Assert.IsType<InputLanguage>(Activator.CreateInstance(typeof(InputLanguage), BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { (IntPtr)250 }, null));
+        InputLanguage language = Assert.IsType<InputLanguage>(Activator.CreateInstance(typeof(InputLanguage), BindingFlags.Instance | BindingFlags.NonPublic, null, [(IntPtr)250], null));
         Assert.Throws<ArgumentException>("value", () => InputLanguage.CurrentInputLanguage = language);
     }
 
     public static IEnumerable<object[]> Equals_TestData()
     {
         yield return new object[] { InputLanguage.DefaultInputLanguage, InputLanguage.DefaultInputLanguage, true };
-        yield return new object[] { InputLanguage.DefaultInputLanguage, new object(), false };
+        yield return new object[] { InputLanguage.DefaultInputLanguage, new(), false };
         yield return new object[] { InputLanguage.DefaultInputLanguage, null, false };
     }
 

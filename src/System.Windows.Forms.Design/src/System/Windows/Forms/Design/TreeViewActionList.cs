@@ -18,28 +18,27 @@ internal class TreeViewActionList : DesignerActionList
         _treeView = (TreeView)designer.Component;
     }
 
-    public void InvokeNodesDialog()
-    {
-        EditorServiceContext.EditValue(_designer, Component!, "Nodes");
-    }
+    public void InvokeNodesDialog() => EditorServiceContext.EditValue(_designer, Component!, nameof(TreeView.Nodes));
 
     public ImageList? ImageList
     {
-        get
-        {
-            return _treeView.ImageList;
-        }
-        set
-        {
-            TypeDescriptor.GetProperties(_treeView)["ImageList"]!.SetValue(Component, value);
-        }
+        get => _treeView.ImageList;
+        set => TypeDescriptor.GetProperties(_treeView)[nameof(TreeView.ImageList)]!.SetValue(Component, value);
     }
 
-    public override DesignerActionItemCollection GetSortedActionItems()
-    {
-        DesignerActionItemCollection items = new DesignerActionItemCollection();
-        items.Add(new DesignerActionMethodItem(this, "InvokeNodesDialog", SR.InvokeNodesDialogDisplayName, SR.PropertiesCategoryName, SR.InvokeNodesDialogDescription, true));
-        items.Add(new DesignerActionPropertyItem("ImageList", SR.ImageListDisplayName, SR.PropertiesCategoryName, SR.ImageListDescription));
-        return items;
-    }
+    public override DesignerActionItemCollection GetSortedActionItems() =>
+    [
+        new DesignerActionMethodItem(
+            this,
+            nameof(InvokeNodesDialog),
+            SR.InvokeNodesDialogDisplayName,
+            SR.PropertiesCategoryName,
+            SR.InvokeNodesDialogDescription,
+            includeAsDesignerVerb: true),
+        new DesignerActionPropertyItem(
+            nameof(ImageList),
+            SR.ImageListDisplayName,
+            SR.PropertiesCategoryName,
+            SR.ImageListDescription),
+    ];
 }

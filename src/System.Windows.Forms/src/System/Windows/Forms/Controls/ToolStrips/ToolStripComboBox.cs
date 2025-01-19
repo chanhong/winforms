@@ -22,20 +22,11 @@ public partial class ToolStripComboBox : ToolStripControlHost
     private static readonly Padding s_dropDownPadding = new(2);
     private static readonly Padding s_padding = new(1, 0, 1, 0);
 
-    private Padding _scaledDropDownPadding = s_dropDownPadding;
-    private Padding _scaledPadding = s_padding;
-
     public ToolStripComboBox()
         : base(CreateControlInstance())
     {
         ToolStripComboBoxControl combo = (ToolStripComboBoxControl)Control;
         combo.Owner = this;
-
-        if (DpiHelper.IsScalingRequirementMet)
-        {
-            _scaledPadding = DpiHelper.LogicalToDeviceUnits(s_padding);
-            _scaledDropDownPadding = DpiHelper.LogicalToDeviceUnits(s_dropDownPadding);
-        }
     }
 
     public ToolStripComboBox(string? name)
@@ -51,15 +42,11 @@ public partial class ToolStripComboBox : ToolStripControlHost
         throw new NotSupportedException(SR.ToolStripMustSupplyItsOwnComboBox);
     }
 
-    private static Control CreateControlInstance()
+    private static ToolStripComboBoxControl CreateControlInstance() => new()
     {
-        ComboBox comboBox = new ToolStripComboBoxControl
-        {
-            FlatStyle = FlatStyle.Popup,
-            Font = ToolStripManager.DefaultFont
-        };
-        return comboBox;
-    }
+        FlatStyle = FlatStyle.Popup,
+        Font = ToolStripManager.DefaultFont
+    };
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
     [Localizable(true)]
@@ -113,40 +100,13 @@ public partial class ToolStripComboBox : ToolStripControlHost
 
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public ComboBox ComboBox
-    {
-        get
-        {
-            return (ComboBox)Control;
-        }
-    }
+    public ComboBox ComboBox => (ComboBox)Control;
 
-    protected override Size DefaultSize
-    {
-        get
-        {
-            return new Size(100, 22);
-        }
-    }
+    protected override Size DefaultSize => new(100, 22);
 
-    /// <summary>
-    ///  Deriving classes can override this to configure a default size for their control.
-    ///  This is more efficient than setting the size in the control's constructor.
-    /// </summary>
-    protected internal override Padding DefaultMargin
-    {
-        get
-        {
-            if (IsOnDropDown)
-            {
-                return _scaledDropDownPadding;
-            }
-            else
-            {
-                return _scaledPadding;
-            }
-        }
-    }
+    protected internal override Padding DefaultMargin => IsOnDropDown
+        ? ScaleHelper.ScaleToDpi(s_dropDownPadding, ScaleHelper.InitialSystemDpi)
+        : ScaleHelper.ScaleToDpi(s_padding, ScaleHelper.InitialSystemDpi);
 
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -446,12 +406,12 @@ public partial class ToolStripComboBox : ToolStripControlHost
         if (control is ComboBox comboBox)
         {
             // Please keep this alphabetized and in sync with Unsubscribe.
-            comboBox.DropDown += new EventHandler(HandleDropDown);
-            comboBox.DropDownClosed += new EventHandler(HandleDropDownClosed);
-            comboBox.DropDownStyleChanged += new EventHandler(HandleDropDownStyleChanged);
-            comboBox.SelectedIndexChanged += new EventHandler(HandleSelectedIndexChanged);
-            comboBox.SelectionChangeCommitted += new EventHandler(HandleSelectionChangeCommitted);
-            comboBox.TextUpdate += new EventHandler(HandleTextUpdate);
+            comboBox.DropDown += HandleDropDown;
+            comboBox.DropDownClosed += HandleDropDownClosed;
+            comboBox.DropDownStyleChanged += HandleDropDownStyleChanged;
+            comboBox.SelectedIndexChanged += HandleSelectedIndexChanged;
+            comboBox.SelectionChangeCommitted += HandleSelectionChangeCommitted;
+            comboBox.TextUpdate += HandleTextUpdate;
         }
 
         base.OnSubscribeControlEvents(control);
@@ -462,12 +422,12 @@ public partial class ToolStripComboBox : ToolStripControlHost
         if (control is ComboBox comboBox)
         {
             // Please keep this alphabetized and in sync with Unsubscribe.
-            comboBox.DropDown -= new EventHandler(HandleDropDown);
-            comboBox.DropDownClosed -= new EventHandler(HandleDropDownClosed);
-            comboBox.DropDownStyleChanged -= new EventHandler(HandleDropDownStyleChanged);
-            comboBox.SelectedIndexChanged -= new EventHandler(HandleSelectedIndexChanged);
-            comboBox.SelectionChangeCommitted -= new EventHandler(HandleSelectionChangeCommitted);
-            comboBox.TextUpdate -= new EventHandler(HandleTextUpdate);
+            comboBox.DropDown -= HandleDropDown;
+            comboBox.DropDownClosed -= HandleDropDownClosed;
+            comboBox.DropDownStyleChanged -= HandleDropDownStyleChanged;
+            comboBox.SelectedIndexChanged -= HandleSelectedIndexChanged;
+            comboBox.SelectionChangeCommitted -= HandleSelectionChangeCommitted;
+            comboBox.TextUpdate -= HandleTextUpdate;
         }
 
         base.OnUnsubscribeControlEvents(control);

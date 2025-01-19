@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Drawing;
 using Windows.Win32.UI.Accessibility;
 
@@ -94,7 +93,7 @@ internal partial class PropertyGridView
             {
                 Focus();
                 SelectAll();
-                PInvoke.PostMessage(this, PInvoke.WM_CHAR, (WPARAM)keyChar);
+                PInvokeCore.PostMessage(this, PInvokeCore.WM_CHAR, (WPARAM)keyChar);
             }
         }
 
@@ -134,6 +133,9 @@ internal partial class PropertyGridView
             {
                 AccessibilityObject.RaiseAutomationEvent(UIA_EVENT_ID.UIA_AutomationFocusChangedEventId);
             }
+
+            // MSAA Event:
+            AccessibilityNotifyClients(AccessibleEvents.Focus, childID: -1);
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
@@ -226,7 +228,7 @@ internal partial class PropertyGridView
                             && !PropertyGridView.SelectedGridEntry.IsTextEditable
                             && PropertyGridView.SelectedGridEntry.CanResetPropertyValue())
                         {
-                            object oldValue = PropertyGridView.SelectedGridEntry.PropertyValue;
+                            object? oldValue = PropertyGridView.SelectedGridEntry.PropertyValue;
                             PropertyGridView.SelectedGridEntry.ResetPropertyValue();
                             PropertyGridView.UnfocusSelection();
                             PropertyGridView.OwnerGrid.OnPropertyValueSet(PropertyGridView.SelectedGridEntry, oldValue);
@@ -274,10 +276,8 @@ internal partial class PropertyGridView
 
         protected override void SetVisibleCore(bool value)
         {
-            CompModSwitches.DebugGridView.TraceVerbose($"DropDownHolder:Visible({value})");
-
             // Make sure we don't have the mouse captured if we're going invisible.
-            if (value == false && HookMouseDown)
+            if (!value && HookMouseDown)
             {
                 _mouseHook.HookMouseDown = false;
             }
@@ -318,14 +318,14 @@ internal partial class PropertyGridView
 
             switch (m.MsgInternal)
             {
-                case PInvoke.WM_STYLECHANGED:
+                case PInvokeCore.WM_STYLECHANGED:
                     if ((WINDOW_LONG_PTR_INDEX)(int)m.WParamInternal == WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE)
                     {
                         PropertyGridView.Invalidate();
                     }
 
                     break;
-                case PInvoke.WM_MOUSEMOVE:
+                case PInvokeCore.WM_MOUSEMOVE:
                     if (m.LParamInternal == _lastMove)
                     {
                         return;
@@ -333,17 +333,17 @@ internal partial class PropertyGridView
 
                     _lastMove = (int)m.LParamInternal;
                     break;
-                case PInvoke.WM_DESTROY:
+                case PInvokeCore.WM_DESTROY:
                     _mouseHook.HookMouseDown = false;
                     break;
-                case PInvoke.WM_SHOWWINDOW:
+                case PInvokeCore.WM_SHOWWINDOW:
                     if (m.WParamInternal == 0u)
                     {
                         _mouseHook.HookMouseDown = false;
                     }
 
                     break;
-                case PInvoke.WM_PASTE:
+                case PInvokeCore.WM_PASTE:
                     if (ReadOnly)
                     {
                         return;
@@ -351,7 +351,7 @@ internal partial class PropertyGridView
 
                     break;
 
-                case PInvoke.WM_GETDLGCODE:
+                case PInvokeCore.WM_GETDLGCODE:
 
                     m.ResultInternal = (LRESULT)(m.ResultInternal | (nint)(PInvoke.DLGC_WANTARROWS | PInvoke.DLGC_WANTCHARS));
                     if (PropertyGridView.EditTextBoxNeedsCommit || PropertyGridView.WantsTab(forward: (ModifierKeys & Keys.Shift) == 0))
@@ -361,7 +361,7 @@ internal partial class PropertyGridView
 
                     return;
 
-                case PInvoke.WM_NOTIFY:
+                case PInvokeCore.WM_NOTIFY:
                     if (WmNotify(ref m))
                     {
                         return;

@@ -9,40 +9,28 @@ using System.ComponentModel.Design;
 using System.Drawing.Design;
 using System.Drawing;
 using System.Windows.Forms.Design.Behavior;
-using static Interop;
 
 namespace System.Windows.Forms.Design;
 
 internal class TabControlDesigner : ParentControlDesigner
 {
-    private bool tabControlSelected;
-    private DesignerVerbCollection verbs;
-    private DesignerVerb removeVerb;
-    private bool disableDrawGrid;
-    private int persistedSelectedIndex;
-    private bool addingOnInitialize;
-    private bool forwardOnDrag;
+    private bool _tabControlSelected;
+    private DesignerVerbCollection _verbs;
+    private DesignerVerb _removeVerb;
+    private bool _disableDrawGrid;
+    private int _persistedSelectedIndex;
+    private bool _addingOnInitialize;
+    private bool _forwardOnDrag;
 
     protected override bool AllowControlLasso => false;
 
-    protected override bool DrawGrid
-    {
-        get
-        {
-            if (disableDrawGrid)
-            {
-                return false;
-            }
-
-            return base.DrawGrid;
-        }
-    }
+    protected override bool DrawGrid => !_disableDrawGrid && base.DrawGrid;
 
     public override bool ParticipatesWithSnapLines
     {
         get
         {
-            if (!forwardOnDrag)
+            if (!_forwardOnDrag)
             {
                 return false;
             }
@@ -61,14 +49,11 @@ internal class TabControlDesigner : ParentControlDesigner
 
     private int SelectedIndex
     {
-        get
-        {
-            return persistedSelectedIndex;
-        }
+        get => _persistedSelectedIndex;
         set
         {
             // TabBase.SelectedIndex has no validation logic, so neither do we
-            persistedSelectedIndex = value;
+            _persistedSelectedIndex = value;
         }
     }
 
@@ -76,21 +61,21 @@ internal class TabControlDesigner : ParentControlDesigner
     {
         get
         {
-            if (verbs is null)
+            if (_verbs is null)
             {
-                removeVerb = new DesignerVerb(SR.TabControlRemove, new EventHandler(OnRemove));
+                _removeVerb = new DesignerVerb(SR.TabControlRemove, new EventHandler(OnRemove));
 
-                verbs = new DesignerVerbCollection();
-                verbs.Add(new DesignerVerb(SR.TabControlAdd, new EventHandler(OnAdd)));
-                verbs.Add(removeVerb);
+                _verbs = new DesignerVerbCollection();
+                _verbs.Add(new DesignerVerb(SR.TabControlAdd, new EventHandler(OnAdd)));
+                _verbs.Add(_removeVerb);
             }
 
             if (Control is not null)
             {
-                removeVerb.Enabled = Control.Controls.Count > 0;
+                _removeVerb.Enabled = Control.Controls.Count > 0;
             }
 
-            return verbs;
+            return _verbs;
         }
     }
 
@@ -102,13 +87,13 @@ internal class TabControlDesigner : ParentControlDesigner
         // member is OK to be null...
         try
         {
-            addingOnInitialize = true;
+            _addingOnInitialize = true;
             OnAdd(this, EventArgs.Empty);
             OnAdd(this, EventArgs.Empty);
         }
         finally
         {
-            addingOnInitialize = false;
+            _addingOnInitialize = false;
         }
 
         MemberDescriptor member = TypeDescriptor.GetProperties(component: Component)["Controls"];
@@ -117,20 +102,20 @@ internal class TabControlDesigner : ParentControlDesigner
 
         TabControl tc = (TabControl)Component;
         if (tc is not null)
-        { // always Select the First Tab on Initialising the component...
+        { // always Select the First Tab on Initializing the component...
             tc.SelectedIndex = 0;
         }
     }
 
-    // If the tabcontrol already contains the control we are dropping then don't allow the drop.
-    // I.e. we don't want to allow local drag-drop for tabcontrols.
+    // If the TabControl already contains the control we are dropping then don't allow the drop.
+    // I.e. we don't want to allow local drag-drop for TabControls.
     public override bool CanParent(Control control) => (control is TabPage && !Control.Contains(control));
 
     private void CheckVerbStatus()
     {
-        if (removeVerb is not null)
+        if (_removeVerb is not null)
         {
-            removeVerb.Enabled = Control.Controls.Count > 0;
+            _removeVerb.Enabled = Control.Controls.Count > 0;
         }
     }
 
@@ -161,22 +146,21 @@ internal class TabControlDesigner : ParentControlDesigner
             ISelectionService svc = (ISelectionService)GetService(typeof(ISelectionService));
             if (svc is not null)
             {
-                svc.SelectionChanged -= new EventHandler(OnSelectionChanged);
+                svc.SelectionChanged -= OnSelectionChanged;
             }
 
             IComponentChangeService cs = (IComponentChangeService)GetService(typeof(IComponentChangeService));
             if (cs is not null)
             {
-                cs.ComponentChanged -= new ComponentChangedEventHandler(OnComponentChanged);
+                cs.ComponentChanged -= OnComponentChanged;
             }
 
-            TabControl tabControl = Control as TabControl;
-            if (tabControl is not null)
+            if (HasComponent && Control is TabControl tabControl)
             {
-                tabControl.SelectedIndexChanged -= new EventHandler(OnTabSelectedIndexChanged);
-                tabControl.GotFocus -= new EventHandler(OnGotFocus);
-                tabControl.RightToLeftLayoutChanged -= new EventHandler(OnRightToLeftLayoutChanged);
-                tabControl.ControlAdded -= new ControlEventHandler(OnControlAdded);
+                tabControl.SelectedIndexChanged -= OnTabSelectedIndexChanged;
+                tabControl.GotFocus -= OnGotFocus;
+                tabControl.RightToLeftLayoutChanged -= OnRightToLeftLayoutChanged;
+                tabControl.ControlAdded -= OnControlAdded;
             }
         }
 
@@ -189,9 +173,9 @@ internal class TabControlDesigner : ParentControlDesigner
 
         // tabControlSelected tells us if a tab page or the tab control itself is selected.
         // If the tab control is selected, then we need to return true from here - so we can switch back and forth
-        // between tabs.  If we're not currently selected, we want to select the tab control
+        // between tabs. If we're not currently selected, we want to select the tab control
         // so return false.
-        if (tabControlSelected)
+        if (_tabControlSelected)
         {
             Point hitTest = Control.PointToClient(point);
             return !tc.DisplayRectangle.Contains(hitTest);
@@ -233,21 +217,21 @@ internal class TabControlDesigner : ParentControlDesigner
         ISelectionService svc = (ISelectionService)GetService(typeof(ISelectionService));
         if (svc is not null)
         {
-            svc.SelectionChanged += new EventHandler(OnSelectionChanged);
+            svc.SelectionChanged += OnSelectionChanged;
         }
 
         IComponentChangeService cs = (IComponentChangeService)GetService(typeof(IComponentChangeService));
         if (cs is not null)
         {
-            cs.ComponentChanged += new ComponentChangedEventHandler(OnComponentChanged);
+            cs.ComponentChanged += OnComponentChanged;
         }
 
         if (control is not null)
         {
-            control.SelectedIndexChanged += new EventHandler(OnTabSelectedIndexChanged);
-            control.GotFocus += new EventHandler(OnGotFocus);
-            control.RightToLeftLayoutChanged += new EventHandler(OnRightToLeftLayoutChanged);
-            control.ControlAdded += new ControlEventHandler(OnControlAdded);
+            control.SelectedIndexChanged += OnTabSelectedIndexChanged;
+            control.GotFocus += OnGotFocus;
+            control.RightToLeftLayoutChanged += OnRightToLeftLayoutChanged;
+            control.ControlAdded += OnControlAdded;
         }
     }
 
@@ -277,7 +261,7 @@ internal class TabControlDesigner : ParentControlDesigner
 
                 MemberDescriptor member = TypeDescriptor.GetProperties(tc)["Controls"];
                 TabPage page = (TabPage)host.CreateComponent(typeof(TabPage));
-                if (!addingOnInitialize)
+                if (!_addingOnInitialize)
                 {
                     RaiseComponentChanging(member);
                 }
@@ -310,7 +294,7 @@ internal class TabControlDesigner : ParentControlDesigner
                 tc.Controls.Add(page);
                 // Make sure that the last tab is selected.
                 tc.SelectedIndex = tc.TabCount - 1;
-                if (!addingOnInitialize)
+                if (!_addingOnInitialize)
                 {
                     RaiseComponentChanged(member, null, null);
                 }
@@ -389,14 +373,14 @@ internal class TabControlDesigner : ParentControlDesigner
     {
         try
         {
-            disableDrawGrid = true;
+            _disableDrawGrid = true;
             // we don't want to do this for the tab control designer because you can't drag anything onto it anyway.
             // so we will always return false for draw grid.
             base.OnPaintAdornments(pe);
         }
         finally
         {
-            disableDrawGrid = false;
+            _disableDrawGrid = false;
         }
     }
 
@@ -404,7 +388,8 @@ internal class TabControlDesigner : ParentControlDesigner
     {
         if (e.Control is not null && !e.Control.IsHandleCreated)
         {
-            IntPtr hwnd = e.Control.Handle;
+            // Force handle creation.
+            _ = e.Control.Handle;
         }
     }
 
@@ -414,7 +399,7 @@ internal class TabControlDesigner : ParentControlDesigner
     {
         ISelectionService svc = (ISelectionService)GetService(typeof(ISelectionService));
 
-        tabControlSelected = false;// this is for HitTest purposes
+        _tabControlSelected = false;// this is for HitTest purposes
 
         if (svc is not null)
         {
@@ -426,14 +411,14 @@ internal class TabControlDesigner : ParentControlDesigner
             {
                 if (comp == tabControl)
                 {
-                    tabControlSelected = true;// this is for HitTest purposes
+                    _tabControlSelected = true;// this is for HitTest purposes
                 }
 
                 TabPage page = GetTabPageOfComponent(tabControl, comp);
 
                 if (page is not null && page.Parent == tabControl)
                 {
-                    tabControlSelected = false; // this is for HitTest purposes
+                    _tabControlSelected = false; // this is for HitTest purposes
                     tabControl.SelectedTab = page;
                     SelectionManager selMgr = (SelectionManager)GetService(typeof(SelectionManager));
                     selMgr.Refresh();
@@ -477,12 +462,12 @@ internal class TabControlDesigner : ParentControlDesigner
         base.PreFilterProperties(properties);
 
         // Handle shadowed properties
-        string[] shadowProps = new string[]
-            {
+        string[] shadowProps =
+            [
                 "SelectedIndex",
-            };
+            ];
 
-        Attribute[] empty = Array.Empty<Attribute>();
+        Attribute[] empty = [];
 
         for (int i = 0; i < shadowProps.Length; i++)
         {
@@ -513,20 +498,19 @@ internal class TabControlDesigner : ParentControlDesigner
     protected override void OnDragEnter(DragEventArgs de)
     {
         // Check what we are dragging... If we are just dragging tab pages, then we do not want to forward the OnDragXXX
-        forwardOnDrag = false;
+        _forwardOnDrag = false;
 
         DropSourceBehavior.BehaviorDataObject data = de.Data as DropSourceBehavior.BehaviorDataObject;
         if (data is not null)
         {
-            ArrayList dragControls;
-            dragControls = new ArrayList(data.GetSortedDragControls(out _));
+            List<IComponent> dragControls = data.GetSortedDragControls(out _);
             if (dragControls is not null)
             {
                 for (int i = 0; i < dragControls.Count; i++)
                 {
                     if (!(dragControls[i] is Control) || (dragControls[i] is Control && !(dragControls[i] is TabPage)))
                     {
-                        forwardOnDrag = true;
+                        _forwardOnDrag = true;
                         break;
                     }
                 }
@@ -534,11 +518,11 @@ internal class TabControlDesigner : ParentControlDesigner
         }
         else
         {
-            // We must be dragging something off the toolbox, so forward the drag to the right tabpage.
-            forwardOnDrag = true;
+            // We must be dragging something off the toolbox, so forward the drag to the right TabPage.
+            _forwardOnDrag = true;
         }
 
-        if (forwardOnDrag)
+        if (_forwardOnDrag)
         {
             TabPageDesigner pageDesigner = GetSelectedTabPageDesigner();
             pageDesigner?.OnDragEnterInternal(de);
@@ -551,7 +535,7 @@ internal class TabControlDesigner : ParentControlDesigner
 
     protected override void OnDragDrop(DragEventArgs de)
     {
-        if (forwardOnDrag)
+        if (_forwardOnDrag)
         {
             TabPageDesigner pageDesigner = GetSelectedTabPageDesigner();
             pageDesigner?.OnDragDropInternal(de);
@@ -561,12 +545,12 @@ internal class TabControlDesigner : ParentControlDesigner
             base.OnDragDrop(de);
         }
 
-        forwardOnDrag = false;
+        _forwardOnDrag = false;
     }
 
     protected override void OnDragLeave(EventArgs e)
     {
-        if (forwardOnDrag)
+        if (_forwardOnDrag)
         {
             TabPageDesigner pageDesigner = GetSelectedTabPageDesigner();
             pageDesigner?.OnDragLeaveInternal(e);
@@ -576,12 +560,12 @@ internal class TabControlDesigner : ParentControlDesigner
             base.OnDragLeave(e);
         }
 
-        forwardOnDrag = false;
+        _forwardOnDrag = false;
     }
 
     protected override void OnDragOver(DragEventArgs de)
     {
-        if (forwardOnDrag)
+        if (_forwardOnDrag)
         {
             // Need to make sure that we are over a valid area. VSWhidbey# 354139. Now that all dragging/dropping is done via
             // the behavior service and adorner window, we have to do our own validation, and cannot rely on the OS to do it for us.
@@ -604,7 +588,7 @@ internal class TabControlDesigner : ParentControlDesigner
 
     protected override void OnGiveFeedback(GiveFeedbackEventArgs e)
     {
-        if (forwardOnDrag)
+        if (_forwardOnDrag)
         {
             TabPageDesigner pageDesigner = GetSelectedTabPageDesigner();
             pageDesigner?.OnGiveFeedbackInternal(e);
@@ -619,7 +603,7 @@ internal class TabControlDesigner : ParentControlDesigner
     {
         switch (m.MsgInternal)
         {
-            case PInvoke.WM_NCHITTEST:
+            case PInvokeCore.WM_NCHITTEST:
                 // The tab control always fires HTTRANSPARENT in empty areas, which causes the message to go to our parent. We want
                 // the tab control's designer to get these messages, however, so change this.
                 base.WndProc(ref m);
@@ -629,7 +613,7 @@ internal class TabControlDesigner : ParentControlDesigner
                 }
 
                 break;
-            case PInvoke.WM_CONTEXTMENU:
+            case PInvokeCore.WM_CONTEXTMENU:
                 // We handle this in addition to a right mouse button.
                 // Why?  Because we often eat the right mouse button, so
                 // it may never generate a WM_CONTEXTMENU.  However, the
@@ -646,10 +630,10 @@ internal class TabControlDesigner : ParentControlDesigner
 
                 OnContextMenu(x, y);
                 break;
-            case PInvoke.WM_HSCROLL:
-            case PInvoke.WM_VSCROLL:
+            case PInvokeCore.WM_HSCROLL:
+            case PInvokeCore.WM_VSCROLL:
                 // We do this so that we can update the areas covered by glyphs correctly. VSWhidbey# 187405.
-                // We just invalidate the area corresponding to the ClientRectangle in the adornerwindow.
+                // We just invalidate the area corresponding to the ClientRectangle in the AdornerWindow.
                 BehaviorService.Invalidate(BehaviorService.ControlRectInAdornerWindow(Control));
                 base.WndProc(ref m);
                 break;

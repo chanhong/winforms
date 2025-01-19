@@ -114,7 +114,7 @@ public class SystemInformationTests
     public void SystemInformation_CursorSize_Get_ReturnsExpected()
     {
         Size size = SystemInformation.CursorSize;
-        Assert.Contains(size, new Size[] { new Size(32, 32), new Size(48, 48), new Size(64, 64) });
+        Assert.Contains(size, new Size[] { new(32, 32), new(48, 48), new(64, 64) });
         Assert.Equal(size, SystemInformation.CursorSize);
     }
 
@@ -789,8 +789,8 @@ public class SystemInformationTests
     public void SystemInformation_VirtualScreen_Get_ReturnsExpected()
     {
         Rectangle screen = SystemInformation.VirtualScreen;
-        Assert.True(screen.Width != 0);
-        Assert.True(screen.Height != 0);
+        Assert.NotEqual(0, screen.Width);
+        Assert.NotEqual(0, screen.Height);
         Assert.Equal(screen, SystemInformation.VirtualScreen);
     }
 

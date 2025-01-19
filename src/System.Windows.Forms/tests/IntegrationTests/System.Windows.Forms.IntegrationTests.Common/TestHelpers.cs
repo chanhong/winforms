@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using Newtonsoft.Json.Linq;
+using Windows.Win32;
 
 namespace System.Windows.Forms.IntegrationTests.Common;
 
@@ -36,9 +37,9 @@ public static class TestHelpers
                 .GetCustomAttributes(typeof(Runtime.Versioning.TargetFrameworkAttribute), false)
                 .SingleOrDefault();
 
-            string[] etractedTokens = frameworkAttribute.FrameworkName.Split("=v"); // "NetcoreApp, Version=v7.0"
+            string[] extractedTokens = frameworkAttribute.FrameworkName.Split("=v"); // "NetCoreApp, Version=v7.0"
 
-            return $"net{etractedTokens[1]}";
+            return $"net{extractedTokens[1]}";
         }
     }
 
@@ -53,8 +54,10 @@ public static class TestHelpers
         if (string.IsNullOrEmpty(projectName))
             throw new ArgumentNullException(nameof(projectName));
 
-        var repoRoot = GetRepoRoot();
-        var exePath = Path.Combine(repoRoot, $"artifacts\\bin\\{projectName}\\{Config}\\{TargetFramework}\\{projectName}.exe");
+        string repoRoot = GetRepoRoot();
+        string exePath = Path.Combine(
+            repoRoot,
+            $"artifacts\\bin\\{projectName}\\{Config}\\{TargetFramework}\\{projectName}.exe");
 
         if (!File.Exists(exePath))
             throw new FileNotFoundException("File does not exist", exePath);
@@ -79,7 +82,7 @@ public static class TestHelpers
         if (!File.Exists(path))
             throw new FileNotFoundException("File does not exist", path);
 
-        var startInfo = new ProcessStartInfo
+        ProcessStartInfo startInfo = new()
         {
             FileName = path
         };
@@ -101,11 +104,11 @@ public static class TestHelpers
     /// <returns>The new Process</returns>
     public static Process StartProcess(ProcessStartInfo startInfo)
     {
-        var dotnetPath = GetDotNetPath();
+        string dotnetPath = GetDotNetPath();
         if (!Directory.Exists(dotnetPath))
             throw new DirectoryNotFoundException($"{dotnetPath} directory cannot be found.");
 
-        var process = new Process();
+        Process process = new();
 
         // Set the dotnet_root for the exe being launched
         // This allows the exe to look for runtime dependencies (like the shared framework (NetCore.App))
@@ -170,20 +173,22 @@ public static class TestHelpers
     ///
     ///  All we care about is the dotnet entry under tools
     /// </summary>
-    /// <returns>The path to the globally installed dotnet that matches the version specified in the global.json.</returns>
+    /// <returns>
+    ///  The path to the globally installed dotnet that matches the version specified in the global.json.
+    /// </returns>
     private static string GetGlobalDotNetPath()
     {
         // find the repo root
-        var repoRoot = GetRepoRoot();
+        string repoRoot = GetRepoRoot();
 
         // make sure there's a global.json
-        var jsonFile = Path.Combine(repoRoot, "global.json");
+        string jsonFile = Path.Combine(repoRoot, "global.json");
         if (!File.Exists(jsonFile))
             throw new FileNotFoundException("global.json does not exist");
 
         // parse the file into a json object
-        var jsonContents = File.ReadAllText(jsonFile);
-        var jsonObject = JObject.Parse(jsonContents);
+        string jsonContents = File.ReadAllText(jsonFile);
+        JObject jsonObject = JObject.Parse(jsonContents);
 
         string dotnetVersion;
         try
@@ -194,13 +199,13 @@ public static class TestHelpers
         catch
         {
             // no version was found, so we're done
-            throw new Exception("global.json does not contain a tools:dotnet version");
+            throw new InvalidOperationException("global.json does not contain a tools:dotnet version");
         }
 
         // Check to see if the matching version is installed
         // The default install location is C:\Program Files\dotnet\sdk
-        var defaultSdkRoot = @"C:\Program Files\dotnet\sdk";
-        var sdkPath = Path.Combine(defaultSdkRoot, dotnetVersion);
+        string defaultSdkRoot = @"C:\Program Files\dotnet\sdk";
+        string sdkPath = Path.Combine(defaultSdkRoot, dotnetVersion);
         if (!Directory.Exists(sdkPath))
             throw new DirectoryNotFoundException($"dotnet sdk {dotnetVersion} is not installed globally");
 
@@ -214,16 +219,19 @@ public static class TestHelpers
     /// <returns>The repo root</returns>
     private static string GetRepoRoot()
     {
-        var gitPath = RelativePathBackwardsUntilFind(".git");
-        var repoRoot = Directory.GetParent(gitPath).FullName;
+        string gitPath = RelativePathBackwardsUntilFind(".git");
+        string repoRoot = Directory.GetParent(gitPath).FullName;
         return repoRoot;
     }
 
     /// <summary>
-    ///  Looks backwards form the current executing directory until it finds a sibling directory seek, then returns the full path of that sibling
+    ///  Looks backwards form the current executing directory until it finds a sibling directory seek,
+    ///  then returns the full path of that sibling.
     /// </summary>
     /// <param name="seek">The sibling directory to look for</param>
-    /// <returns>The full path of the first sibling directory by the current executing directory, away from the root</returns>
+    /// <returns>
+    ///  The full path of the first sibling directory by the current executing directory, away from the root.
+    /// </returns>
     private static string RelativePathBackwardsUntilFind(string seek)
     {
         if (string.IsNullOrEmpty(seek))
@@ -231,15 +239,15 @@ public static class TestHelpers
             throw new ArgumentNullException(nameof(seek));
         }
 
-        var codeBaseUrl = new Uri(Assembly.GetExecutingAssembly().Location);
-        var codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
-        var currentDirectory = Path.GetDirectoryName(codeBasePath);
-        var root = Directory.GetDirectoryRoot(currentDirectory);
+        Uri codeBaseUrl = new(Assembly.GetExecutingAssembly().Location);
+        string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
+        string currentDirectory = Path.GetDirectoryName(codeBasePath);
+        string root = Directory.GetDirectoryRoot(currentDirectory);
         while (!currentDirectory.Equals(root, StringComparison.CurrentCultureIgnoreCase))
         {
             if (Directory.GetDirectories(currentDirectory, seek, SearchOption.TopDirectoryOnly).Length == 1)
             {
-                var ret = Path.Combine(currentDirectory, seek);
+                string ret = Path.Combine(currentDirectory, seek);
                 return ret;
             }
 
@@ -327,7 +335,7 @@ public static class TestHelpers
     }
 
     /// <summary>
-    ///  Presses Alt plus choosen letter on the given process if it can be made the foreground process
+    ///  Presses Alt plus chosen letter on the given process if it can be made the foreground process
     /// </summary>
     /// <param name="process">The process to send the Alt and key to</param>
     /// <param name="letter">Letter in addition to Alt to send to process.</param>
@@ -343,7 +351,6 @@ public static class TestHelpers
     /// </summary>
     /// <param name="process">The process to send the Tab key(s) to</param>
     /// <param name="times">The number of times to press tab in a row</param>
-    /// <remarks>Throws an ArgumentException if number of times is zero; this is unlikely to be intended.</remarks>
     /// <returns>Whether or not the Tab key(s) were pressed on the process</returns>
     /// <seealso cref="SendKeysToProcess(Process, string, bool)"/>
     public static bool SendTabKeysToProcess(Process process, MainFormControlsTabOrder times, bool switchToMainWindow = true)
@@ -373,8 +380,7 @@ public static class TestHelpers
     /// <param name="form">The form</param>
     public static void BringToForeground(this Form form)
     {
-        if (form is null)
-            throw new ArgumentNullException(nameof(form));
+        ArgumentNullException.ThrowIfNull(form);
 
         form.WindowState = FormWindowState.Minimized;
         form.Show();
@@ -390,7 +396,7 @@ public static class TestHelpers
         if (string.IsNullOrEmpty(culture))
             throw new ArgumentNullException(nameof(culture));
 
-        var cultureInfo = new CultureInfo(culture);
+        CultureInfo cultureInfo = new(culture);
         Thread.CurrentThread.CurrentCulture = cultureInfo;
         Thread.CurrentThread.CurrentUICulture = cultureInfo;
     }
@@ -407,7 +413,7 @@ public static class TestHelpers
     /// <returns>Whether or not the key(s) were pressed on the process</returns>
     /// <seealso cref="Process.MainWindowHandle"/>
     /// <seealso cref="PInvoke.SetForegroundWindow{T}(T)"/>
-    /// <seealso cref="PInvoke.GetForegroundWindow()"/>
+    /// <seealso cref="PInvokeCore.GetForegroundWindow()"/>
     /// <seealso cref="SendKeys.SendWait(string)"/>
     /// <seealso cref="Thread.Sleep(int)"/>
     internal static bool SendKeysToProcess(Process process, string keys, bool switchToMainWindow = true)
@@ -434,9 +440,9 @@ public static class TestHelpers
             PInvoke.SetForegroundWindow(mainWindowHandle);
         }
 
-        HWND foregroundWindow = PInvoke.GetForegroundWindow();
+        HWND foregroundWindow = PInvokeCore.GetForegroundWindow();
 
-        string windowTitle = PInvoke.GetWindowText(foregroundWindow);
+        string windowTitle = PInvokeCore.GetWindowText(foregroundWindow);
 
         if (PInvoke.GetWindowThreadProcessId(foregroundWindow, out uint processId) == 0 ||
             processId != process.Id)

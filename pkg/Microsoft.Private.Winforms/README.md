@@ -5,10 +5,10 @@ This is a transport package consumed by [WPF](https://github.com/dotnet/wpf/) an
 
 ## `sdk\dotnet-windowsdesktop` folder
 
-This folder contains props and targets used to ingest our assemblies into the [Windows Desktop SDK](https://github.com/dotnet/windowsdesktop/) for purpose of bundling of our analyzers into Microsoft.WindowsDesktop.App.Ref pack.
+This folder contains props and targets used to ingest our assemblies into the [Windows Desktop SDK](https://github.com/dotnet/windowsdesktop/), bundling the correct set of assemblies into either the Microsoft.WindowsDesktop.App.Ref pack or Microsoft.WindowsDesktop.App.Runtime pack.
 
 * [`System.Windows.Forms.FileClassification.props`](sdk\dotnet-windowsdesktop\System.Windows.Forms.FileClassification.props) contains a manifest for the "WindowsForms" SDK[&#x00B9;](#ref1), i.e. a list of our assemblies that form it.
-The file is imported by [Microsoft.WindowsDesktop.App.Ref project](https://github.com/dotnet/windowsdesktop/blob/main/pkg/windowsdesktop/sfx/Microsoft.WindowsDesktop.App.Ref.sfxproj).<br/>
+The file is imported by [Microsoft.WindowsDesktop.App.Ref project](https://github.com/dotnet/windowsdesktop/blob/main/src/windowsdesktop/src/sfx/Microsoft.WindowsDesktop.App.Ref.sfxproj).<br/>
 The manifest will need to be rebuilt if there are changes in the solution with respect to the SDK assemblies, e.g. a new assembly is added or an existing assembly is removed.
 
 ### How to update System.Windows.Forms.FileClassification.props
@@ -22,13 +22,13 @@ If the content of these files differ - the build will fail.
 To update the manifest run the following command and check in the updated files manifest:
 
 ```
-.\build.cmd -pack /p:GenerateManifest=true
+.\build.cmd -pack /p:_GenerateManifest=true
 ```
 
 To debug the script run the following command:
 
 ```
-dotnet build .\pkg\Microsoft.Private.Winforms\Microsoft.Private.Winforms.csproj /t:UpdateTransportPackage /p:GenerateManifest=true /v:m /bl /p:CommonLibrary_NativeInstallDir=$env:UserProfile\.netcoreeng\native\
+dotnet build .\pkg\Microsoft.Private.Winforms\Microsoft.Private.Winforms.csproj /t:UpdateTransportPackage /p:_GenerateManifest=true /v:m /bl /p:CommonLibrary_NativeInstallDir=$env:UserProfile\.netcoreeng\native\
 ```
 
 

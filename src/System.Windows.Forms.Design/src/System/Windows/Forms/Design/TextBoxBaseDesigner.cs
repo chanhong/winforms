@@ -27,13 +27,12 @@ internal class TextBoxBaseDesigner : ControlDesigner
         get
         {
             int baseline = DesignerUtils.GetTextBaseline(Control, Drawing.ContentAlignment.TopLeft);
-
             BorderStyle borderStyle = BorderStyle.Fixed3D;
-            PropertyDescriptor? prop = TypeDescriptor.GetProperties(Component)["BorderStyle"];
-            if (prop is not null)
-            {
-                borderStyle = (BorderStyle)prop.GetValue(Component)!;
-            }
+            PropertyDescriptorCollection props = TypeDescriptor.GetProperties(Component);
+            props.TryGetPropertyDescriptorValue(
+                "BorderStyle",
+                Component,
+                ref borderStyle);
 
             if (borderStyle == BorderStyle.None)
             {
@@ -53,20 +52,15 @@ internal class TextBoxBaseDesigner : ControlDesigner
                 baseline += 0;
             }
 
-            IList snapLines = base.SnapLines;
-
+            IList<SnapLine> snapLines = SnapLinesInternal;
             snapLines.Add(new SnapLine(SnapLineType.Baseline, baseline, SnapLinePriority.Medium));
-
-            return snapLines;
+            return snapLines.Unwrap();
         }
     }
 
     private string Text
     {
-        get
-        {
-            return Control.Text;
-        }
+        get => Control.Text;
         set
         {
             Control.Text = value;
@@ -92,7 +86,7 @@ internal class TextBoxBaseDesigner : ControlDesigner
     /// We override this so we can clear the text field set by controldesigner.
     /// </summary>
     /// <param name="defaultValues">The default values.</param>
-    public override void InitializeNewComponent(IDictionary defaultValues)
+    public override void InitializeNewComponent(IDictionary? defaultValues)
     {
         base.InitializeNewComponent(defaultValues);
 
@@ -108,26 +102,23 @@ internal class TextBoxBaseDesigner : ControlDesigner
         base.PreFilterProperties(properties);
 
         // Handle shadowed properties
-        string[] shadowProps = new string[]
-        {
+        string[] shadowProps =
+        [
             "Text",
-        };
-
-        Attribute[] empty = Array.Empty<Attribute>();
+        ];
 
         for (int i = 0; i < shadowProps.Length; i++)
         {
-            PropertyDescriptor? prop = (PropertyDescriptor?)properties[shadowProps[i]];
-            if (prop is not null)
+            if (properties[shadowProps[i]] is PropertyDescriptor prop)
             {
-                properties[shadowProps[i]] = TypeDescriptor.CreateProperty(typeof(TextBoxBaseDesigner), prop, empty);
+                properties[shadowProps[i]] = TypeDescriptor.CreateProperty(typeof(TextBoxBaseDesigner), prop, []);
             }
         }
     }
 
     /// <summary>
     /// Retrieves a set of rules concerning the movement capabilities of a component.
-    /// This should be one or more flags from the SelectionRules class.  If no designer
+    /// This should be one or more flags from the SelectionRules class. If no designer
     /// provides rules for a component, the component will not get any UI services.
     /// </summary>
     public override SelectionRules SelectionRules

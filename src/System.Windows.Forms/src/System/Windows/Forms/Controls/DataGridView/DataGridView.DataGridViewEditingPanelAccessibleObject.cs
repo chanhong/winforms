@@ -10,7 +10,7 @@ namespace System.Windows.Forms;
 
 public partial class DataGridView
 {
-    internal class DataGridViewEditingPanelAccessibleObject : ControlAccessibleObject
+    internal sealed class DataGridViewEditingPanelAccessibleObject : ControlAccessibleObject
     {
         private readonly WeakReference<DataGridView> _ownerDataGridView;
         private int[]? _runtimeId;
@@ -28,8 +28,9 @@ public partial class DataGridView
                 ? owner.AccessibilityObject
                 : UiaCore.StubFragmentRoot.Instance;
 
-        internal override int[] RuntimeId
-            => _runtimeId ??= this.TryGetOwnerAs(out Panel? owner) ? owner.AccessibilityObject.RuntimeId : base.RuntimeId;
+        internal override int[] RuntimeId => _runtimeId ??= this.TryGetOwnerAs(out Panel? owner)
+            ? owner.AccessibilityObject.RuntimeId
+            : base.RuntimeId;
 
         internal override IRawElementProviderFragment.Interface? FragmentNavigate(NavigateDirection direction)
         {
@@ -57,6 +58,10 @@ public partial class DataGridView
         }
 
         public override string? Name => SR.DataGridView_AccEditingPanelAccName;
+
+        private protected override bool IsInternal => true;
+
+        internal override bool CanGetNameInternal => false;
 
         internal override void SetFocus()
         {

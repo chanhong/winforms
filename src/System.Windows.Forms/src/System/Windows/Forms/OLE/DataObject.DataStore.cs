@@ -2,148 +2,119 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Drawing;
+using System.Private.Windows;
+using System.Reflection.Metadata;
 using System.Runtime.Serialization;
 
 namespace System.Windows.Forms;
 
 public partial class DataObject
 {
-    private class DataStore : IDataObject
+    private sealed partial class DataStore : ITypedDataObject
     {
-        private class DataStoreEntry
+        private readonly Dictionary<string, DataStoreEntry> _mappedData = new(BackCompatibleStringComparer.Default);
+
+        private bool TryGetDataInternal<T>(
+            string format,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data)
         {
-            public object? Data { get; }
-            public bool AutoConvert { get; }
-
-            public DataStoreEntry(object? data, bool autoConvert)
-            {
-                Data = data;
-                AutoConvert = autoConvert;
-            }
-        }
-
-        private readonly Dictionary<string, DataStoreEntry> _data = new(BackCompatibleStringComparer.Default);
-
-        public DataStore()
-        {
-            CompModSwitches.DataObject.TraceVerbose("DataStore: Constructed DataStore");
-        }
-
-        public virtual object? GetData(string format, bool autoConvert)
-        {
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: GetData: {format}, {autoConvert}");
+            data = default;
             if (string.IsNullOrWhiteSpace(format))
             {
-                return null;
+                return false;
             }
 
-            object? baseVar = null;
-            if (_data.TryGetValue(format, out DataStoreEntry? dse))
+            if (_mappedData.TryGetValue(format, out DataStoreEntry? dse))
             {
-                baseVar = dse.Data;
-            }
-
-            object? original = baseVar;
-
-            if (autoConvert
-                && (dse is null || dse.AutoConvert)
-                && (baseVar is null || baseVar is MemoryStream))
-            {
-                string[]? mappedFormats = GetMappedFormats(format);
-                if (mappedFormats is not null)
+                if (dse.Data is T t)
                 {
-                    for (int i = 0; i < mappedFormats.Length; i++)
-                    {
-                        if (!format.Equals(mappedFormats[i]))
-                        {
-                            if (_data.TryGetValue(mappedFormats[i], out DataStoreEntry? found))
-                            {
-                                baseVar = found.Data;
-                            }
+                    data = t;
+                    return true;
+                }
+                else if (dse.Data is JsonData<T> jsonData)
+                {
+                    data = (T)jsonData.Deserialize();
+                    return true;
+                }
+            }
 
-                            if (baseVar is not null && baseVar is not MemoryStream)
-                            {
-                                original = null;
-                                break;
-                            }
-                        }
+            if (!autoConvert
+                || (dse is not null && !dse.AutoConvert)
+                || GetMappedFormats(format) is not { } mappedFormats)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < mappedFormats.Length; i++)
+            {
+                if (format.Equals(mappedFormats[i]))
+                {
+                    continue;
+                }
+
+                if (_mappedData.TryGetValue(mappedFormats[i], out DataStoreEntry? found))
+                {
+                    if (found.Data is T value)
+                    {
+                        data = value;
+                        return true;
+                    }
+                    else if (found.Data is JsonData<T> jsonData)
+                    {
+                        data = (T)jsonData.Deserialize();
+                        return true;
                     }
                 }
             }
 
-            if (original is not null)
-            {
-                return original;
-            }
-            else
-            {
-                return baseVar;
-            }
+            return false;
         }
 
-        public virtual object? GetData(string format)
+        public object? GetData(string format, bool autoConvert)
         {
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: GetData: {format}");
-            return GetData(format, true);
+            TryGetDataInternal(format, autoConvert, out object? data);
+            return data;
         }
 
-        public virtual object? GetData(Type format)
-        {
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: GetData: {format.FullName}");
-            return GetData(format.FullName!);
-        }
+        public object? GetData(string format) => GetData(format, autoConvert: true);
 
-        public virtual void SetData(string format, bool autoConvert, object? data)
+        public object? GetData(Type format) => GetData(format.FullName!);
+
+        public void SetData(string format, bool autoConvert, object? data)
         {
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: SetData: {format}, {autoConvert}, {data?.ToString() ?? "(null)"}");
             if (string.IsNullOrWhiteSpace(format))
             {
                 ArgumentNullException.ThrowIfNull(format);
-
                 throw new ArgumentException(SR.DataObjectWhitespaceEmptyFormatNotAllowed, nameof(format));
             }
 
             // We do not have proper support for Dibs, so if the user explicitly asked
-            // for Dib and provided a Bitmap object we can't convert.  Instead, publish as an HBITMAP
+            // for Dib and provided a Bitmap object we can't convert. Instead, publish as an HBITMAP
             // and let the system provide the conversion for us.
             if (data is Bitmap && format.Equals(DataFormats.Dib))
             {
-                if (autoConvert)
-                {
-                    format = DataFormats.Bitmap;
-                }
-                else
-                {
-                    throw new NotSupportedException(SR.DataObjectDibNotSupported);
-                }
+                format = autoConvert ? DataFormats.Bitmap : throw new NotSupportedException(SR.DataObjectDibNotSupported);
             }
 
-            _data[format] = new DataStoreEntry(data, autoConvert);
+            _mappedData[format] = new DataStoreEntry(data, autoConvert);
         }
 
-        public virtual void SetData(string format, object? data)
-        {
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: SetData: {format}, {data?.ToString() ?? "(null)"}");
-            SetData(format, true, data);
-        }
+        public void SetData(string format, object? data) => SetData(format, autoConvert: true, data);
 
-        public virtual void SetData(Type format, object? data)
+        public void SetData(Type format, object? data)
         {
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: SetData: {format?.FullName ?? "(null)"}, {data?.ToString() ?? "(null)"}");
             ArgumentNullException.ThrowIfNull(format);
-
             SetData(format.FullName!, data);
         }
 
-        public virtual void SetData(object? data)
+        public void SetData(object? data)
         {
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: SetData: {data?.ToString() ?? "(null)"}");
             ArgumentNullException.ThrowIfNull(data);
 
             if (data is ISerializable
-                && !_data.ContainsKey(DataFormats.Serializable))
+                && !_mappedData.ContainsKey(DataFormats.Serializable))
             {
                 SetData(DataFormats.Serializable, data);
             }
@@ -151,15 +122,10 @@ public partial class DataObject
             SetData(data.GetType(), data);
         }
 
-        public virtual bool GetDataPresent(Type format)
-        {
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: GetDataPresent: {format.FullName}");
-            return GetDataPresent(format.FullName!);
-        }
+        public bool GetDataPresent(Type format) => GetDataPresent(format.FullName!);
 
-        public virtual bool GetDataPresent(string format, bool autoConvert)
+        public bool GetDataPresent(string format, bool autoConvert)
         {
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: GetDataPresent: {format}, {autoConvert}");
             if (string.IsNullOrWhiteSpace(format))
             {
                 return false;
@@ -167,55 +133,47 @@ public partial class DataObject
 
             if (!autoConvert)
             {
-                Debug.Assert(_data is not null, "data must be non-null");
-                return _data.ContainsKey(format);
+                Debug.Assert(_mappedData is not null, "data must be non-null");
+                return _mappedData.ContainsKey(format);
             }
             else
             {
                 string[] formats = GetFormats(autoConvert);
-                CompModSwitches.DataObject.TraceVerbose($"DataStore:  got {formats.Length} formats from get formats");
                 Debug.Assert(formats is not null, "Null returned from GetFormats");
+
                 for (int i = 0; i < formats.Length; i++)
                 {
                     Debug.Assert(formats[i] is not null, $"Null format inside of formats at index {i}");
                     if (format.Equals(formats[i]))
                     {
-                        CompModSwitches.DataObject.TraceVerbose("DataStore: GetDataPresent: returning true");
                         return true;
                     }
                 }
 
-                CompModSwitches.DataObject.TraceVerbose("DataStore: GetDataPresent: returning false");
                 return false;
             }
         }
 
-        public virtual bool GetDataPresent(string format)
-        {
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: GetDataPresent: {format}");
-            return GetDataPresent(format, true);
-        }
+        public bool GetDataPresent(string format) => GetDataPresent(format, autoConvert: true);
 
-        public virtual string[] GetFormats(bool autoConvert)
+        public string[] GetFormats(bool autoConvert)
         {
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: GetFormats: {autoConvert}");
-            Debug.Assert(_data is not null, "data collection can't be null");
-            Debug.Assert(_data.Keys is not null, "data Keys collection can't be null");
+            Debug.Assert(_mappedData is not null, "data collection can't be null");
+            Debug.Assert(_mappedData.Keys is not null, "data Keys collection can't be null");
 
-            string[] baseVar = new string[_data.Keys.Count];
-            _data.Keys.CopyTo(baseVar, 0);
+            string[] baseVar = new string[_mappedData.Keys.Count];
+            _mappedData.Keys.CopyTo(baseVar, 0);
             Debug.Assert(baseVar is not null, "Collections should never return NULL arrays!!!");
+
             if (autoConvert)
             {
-                CompModSwitches.DataObject.TraceVerbose("DataStore: applying autoConvert");
-
                 // Since we are only adding elements to the HashSet, the order will be preserved.
                 int baseVarLength = baseVar.Length;
-                HashSet<string> distinctFormats = new HashSet<string>(baseVarLength);
+                HashSet<string> distinctFormats = new(baseVarLength);
                 for (int i = 0; i < baseVarLength; i++)
                 {
-                    Debug.Assert(_data[baseVar[i]] is not null, $"Null item in data collection with key '{baseVar[i]}'");
-                    if (_data[baseVar[i]]!.AutoConvert)
+                    Debug.Assert(_mappedData[baseVar[i]] is not null, $"Null item in data collection with key '{baseVar[i]}'");
+                    if (_mappedData[baseVar[i]]!.AutoConvert)
                     {
                         string[] cur = GetMappedFormats(baseVar[i])!;
                         Debug.Assert(cur is not null, $"GetMappedFormats returned null for '{baseVar[i]}'");
@@ -230,17 +188,34 @@ public partial class DataObject
                     }
                 }
 
-                baseVar = distinctFormats.ToArray();
+                baseVar = [.. distinctFormats];
             }
 
-            CompModSwitches.DataObject.TraceVerbose($"DataStore: returning {baseVar.Length} formats from GetFormats");
             return baseVar;
         }
 
-        public virtual string[] GetFormats()
-        {
-            CompModSwitches.DataObject.TraceVerbose("DataStore: GetFormats");
-            return GetFormats(true);
-        }
+        public string[] GetFormats() => GetFormats(autoConvert: true);
+
+        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            Func<TypeName, Type> resolver,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+                TryGetDataInternal(format, autoConvert, out data);
+
+        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            bool autoConvert,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+                TryGetDataInternal(format, autoConvert, out data);
+
+        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            string format,
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+                TryGetDataInternal(format, autoConvert: false, out data);
+
+        public bool TryGetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+            [NotNullWhen(true), MaybeNullWhen(false)] out T data) =>
+                TryGetDataInternal(typeof(T).FullName!, autoConvert: false, out data);
     }
 }

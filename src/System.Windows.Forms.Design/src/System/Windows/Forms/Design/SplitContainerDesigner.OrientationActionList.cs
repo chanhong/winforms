@@ -53,13 +53,13 @@ internal partial class SplitContainerDesigner
                 orientationProp.SetValue(_ownerComponent, orientation);
             }
 
-            var actionUIService = (DesignerActionUIService)_owner.GetService(typeof(DesignerActionUIService));
+            DesignerActionUIService actionUIService = _owner.GetRequiredService<DesignerActionUIService>();
             actionUIService.Refresh(_ownerComponent);
         }
 
-        public override DesignerActionItemCollection GetSortedActionItems() => new()
-        {
+        public override DesignerActionItemCollection GetSortedActionItems() =>
+        [
             new DesignerActionVerbItem(new DesignerVerb(_actionName!, OnOrientationActionClick))
-        };
+        ];
     }
 }

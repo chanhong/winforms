@@ -8,7 +8,7 @@ namespace System.ComponentModel.Design;
 
 /// <summary>
 ///  The menu command service allows designers to add and respond to
-///  menu and toolbar items.  It is based on two interfaces.  Designers
+///  menu and toolbar items. It is based on two interfaces. Designers
 ///  request IMenuCommandService to add menu command handlers, while
 ///  the document or tool window forwards IOleCommandTarget requests
 ///  to this object.
@@ -17,24 +17,19 @@ public class MenuCommandService : IMenuCommandService, IDisposable
 {
     private IServiceProvider? _serviceProvider;
     private readonly Dictionary<Guid, List<MenuCommand>> _commandGroups;
-    private readonly object _commandGroupsLock;
+    private readonly Lock _commandGroupsLock = new();
     private readonly EventHandler _commandChangedHandler;
     private MenuCommandsChangedEventHandler? _commandsChangedHandler;
     private List<DesignerVerb>? _globalVerbs;
     private ISelectionService? _selectionService;
 
-    internal static TraceSwitch MENUSERVICE = new("MENUSERVICE", "MenuCommandService: Track menu command routing");
-
     // This is the set of verbs we offer through the Verbs property.
     // It consists of the global verbs + any verbs that the currently
-    // selected designer wants to offer.  This collection changes with the
+    // selected designer wants to offer. This collection changes with the
     // current selection.
-    //
     private DesignerVerbCollection? _currentVerbs;
 
-    // this is the type that we last picked up verbs from
-    // so we know when we need to refresh
-    //
+    // This is the type that we last picked up verbs from so we know when we need to refresh.
     private Type? _verbSourceType;
 
     /// <summary>
@@ -43,31 +38,23 @@ public class MenuCommandService : IMenuCommandService, IDisposable
     public MenuCommandService(IServiceProvider? serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        _commandGroupsLock = new object();
-        _commandGroups = new();
-        _commandChangedHandler = new EventHandler(OnCommandChanged);
-        TypeDescriptor.Refreshed += new RefreshEventHandler(OnTypeRefreshed);
+        _commandGroups = [];
+        _commandChangedHandler = OnCommandChanged;
+        TypeDescriptor.Refreshed += OnTypeRefreshed;
     }
 
     /// <summary>
-    ///  This event is thrown whenever a MenuCommand is removed
-    ///  or added
+    ///  This event is thrown whenever a MenuCommand is removed or added
     /// </summary>
     public event MenuCommandsChangedEventHandler? MenuCommandsChanged
     {
-        add
-        {
-            _commandsChangedHandler += value;
-        }
-        remove
-        {
-            _commandsChangedHandler -= value;
-        }
+        add => _commandsChangedHandler += value;
+        remove => _commandsChangedHandler -= value;
     }
 
     /// <summary>
     ///  Retrieves a set of verbs that are global to all objects on the design
-    ///  surface.  This set of verbs will be merged with individual component verbs.
+    ///  surface. This set of verbs will be merged with individual component verbs.
     ///  In the case of a name conflict, the component verb will NativeMethods.
     /// </summary>
     public virtual DesignerVerbCollection Verbs
@@ -80,7 +67,7 @@ public class MenuCommandService : IMenuCommandService, IDisposable
     }
 
     /// <summary>
-    ///  Adds a menu command to the document.  The menu command must already exist
+    ///  Adds a menu command to the document. The menu command must already exist
     ///  on a menu; this merely adds a handler for it.
     /// </summary>
     public virtual void AddCommand(MenuCommand command)
@@ -101,10 +88,10 @@ public class MenuCommandService : IMenuCommandService, IDisposable
         {
             if (!_commandGroups.TryGetValue(commandId.Guid, out List<MenuCommand>? commandsList))
             {
-                commandsList = new()
-                {
+                commandsList =
+                [
                     command
-                };
+                ];
                 _commandGroups.Add(commandId.Guid, commandsList);
             }
             else
@@ -114,14 +101,13 @@ public class MenuCommandService : IMenuCommandService, IDisposable
         }
 
         command.CommandChanged += _commandChangedHandler;
-        Debug.WriteLineIf(MENUSERVICE.TraceVerbose, $"Command added: {command}");
 
-        // raise event
+        // Raise event
         OnCommandsChanged(new MenuCommandsChangedEventArgs(MenuCommandsChangedType.CommandAdded, command));
     }
 
     /// <summary>
-    ///  Adds a verb to the set of global verbs.  Individual components should
+    ///  Adds a verb to the set of global verbs. Individual components should
     ///  use the Verbs property of their designer, rather than call this method.
     ///  This method is intended for objects that want to offer a verb that is
     ///  available regardless of what components are selected.
@@ -131,7 +117,7 @@ public class MenuCommandService : IMenuCommandService, IDisposable
     {
         ArgumentNullException.ThrowIfNull(verb);
 
-        _globalVerbs ??= new();
+        _globalVerbs ??= [];
         _globalVerbs.Add(verb);
         OnCommandsChanged(new MenuCommandsChangedEventArgs(MenuCommandsChangedType.CommandAdded, verb));
         EnsureVerbs();
@@ -158,14 +144,14 @@ public class MenuCommandService : IMenuCommandService, IDisposable
         {
             if (_selectionService is not null)
             {
-                _selectionService.SelectionChanging -= new EventHandler(OnSelectionChanging);
+                _selectionService.SelectionChanging -= OnSelectionChanging;
                 _selectionService = null;
             }
 
             if (_serviceProvider is not null)
             {
                 _serviceProvider = null!;
-                TypeDescriptor.Refreshed -= new RefreshEventHandler(OnTypeRefreshed);
+                TypeDescriptor.Refreshed -= OnTypeRefreshed;
             }
 
             lock (_commandGroupsLock)
@@ -200,13 +186,13 @@ public class MenuCommandService : IMenuCommandService, IDisposable
             {
                 if (TryGetService(out _selectionService))
                 {
-                    _selectionService.SelectionChanging += new EventHandler(OnSelectionChanging);
+                    _selectionService.SelectionChanging += OnSelectionChanging;
                 }
             }
 
             int verbCount = 0;
             DesignerVerbCollection? localVerbs = null;
-            List<DesignerVerb> designerActionVerbs = new(); // we instantiate this one here...
+            List<DesignerVerb> designerActionVerbs = []; // we instantiate this one here...
 
             if (_selectionService?.SelectionCount == 1 && TryGetService(out IDesignerHost? designerHost))
             {
@@ -246,8 +232,8 @@ public class MenuCommandService : IMenuCommandService, IDisposable
                                     {
                                         if (dai[i] is DesignerActionMethodItem dami && dami.IncludeAsDesignerVerb)
                                         {
-                                            EventHandler handler = new EventHandler(dami.Invoke);
-                                            DesignerVerb verb = new DesignerVerb(dami.DisplayName!, handler);
+                                            EventHandler handler = new(dami.Invoke);
+                                            DesignerVerb verb = new(dami.DisplayName!, handler);
                                             designerActionVerbs.Add(verb);
                                             verbCount++;
                                         }
@@ -271,7 +257,7 @@ public class MenuCommandService : IMenuCommandService, IDisposable
 
             // merge all
             Dictionary<string, int> buildVerbs = new(verbCount, StringComparer.OrdinalIgnoreCase);
-            List<DesignerVerb> verbsOrder = new();
+            List<DesignerVerb> verbsOrder = [];
 
             // PRIORITY ORDER FROM HIGH TO LOW: LOCAL VERBS - DESIGNERACTION VERBS - GLOBAL VERBS
             if (useGlobalVerbs)
@@ -337,8 +323,6 @@ public class MenuCommandService : IMenuCommandService, IDisposable
     /// </summary>
     protected MenuCommand? FindCommand(Guid guid, int id)
     {
-        Debug.WriteLineIf(MENUSERVICE.TraceVerbose, $"MCS Searching for command: {guid} : {id}");
-
         // Search in the list of commands only if the command group is known
         List<MenuCommand>? commands;
         lock (_commandGroupsLock)
@@ -348,19 +332,16 @@ public class MenuCommandService : IMenuCommandService, IDisposable
 
         if (commands is not null)
         {
-            Debug.WriteLineIf(MENUSERVICE.TraceVerbose, "\t...MCS Found group");
             foreach (MenuCommand command in commands)
             {
                 if (command.CommandID!.ID == id)
                 {
-                    Debug.WriteLineIf(MENUSERVICE.TraceVerbose, "\t... MCS Found Command");
                     return command;
                 }
             }
         }
 
         // Next, search the verb list as well.
-        //
         EnsureVerbs();
         if (_currentVerbs is not null)
         {
@@ -371,27 +352,17 @@ public class MenuCommandService : IMenuCommandService, IDisposable
 
                 if (cid.ID == id)
                 {
-                    Debug.WriteLineIf(MENUSERVICE.TraceVerbose, "\t...MCS Found verb");
-
                     if (cid.Guid.Equals(guid))
                     {
-                        Debug.WriteLineIf(MENUSERVICE.TraceVerbose, "\t...MCS Found group");
                         return verb;
                     }
                 }
 
                 // We assign virtual sequential IDs to verbs we get from the component. This allows users
                 // to not worry about assigning these IDs themselves.
-                //
-                if (currentID == id)
+                if (currentID == id && cid.Guid.Equals(guid))
                 {
-                    Debug.WriteLineIf(MENUSERVICE.TraceVerbose, "\t...MCS Found verb");
-
-                    if (cid.Guid.Equals(guid))
-                    {
-                        Debug.WriteLineIf(MENUSERVICE.TraceVerbose, "\t...MCS Found group");
-                        return verb;
-                    }
+                    return verb;
                 }
 
                 if (cid.Equals(StandardCommands.VerbFirst))
@@ -418,8 +389,6 @@ public class MenuCommandService : IMenuCommandService, IDisposable
         return commands;
     }
 
-    /// <summary>
-    /// </summary>
     protected object? GetService(Type serviceType)
     {
         ArgumentNullException.ThrowIfNull(serviceType);
@@ -434,8 +403,8 @@ public class MenuCommandService : IMenuCommandService, IDisposable
 
     /// <summary>
     ///  Invokes a command on the local form or in the global environment.
-    ///  The local form is first searched for the given command ID.  If it is
-    ///  found, it is invoked.  Otherwise the command ID is passed to the
+    ///  The local form is first searched for the given command ID. If it is
+    ///  found, it is invoked. Otherwise the command ID is passed to the
     ///  global environment command handler, if one is available.
     /// </summary>
     public virtual bool GlobalInvoke(CommandID commandID)
@@ -453,8 +422,8 @@ public class MenuCommandService : IMenuCommandService, IDisposable
 
     /// <summary>
     ///  Invokes a command on the local form or in the global environment.
-    ///  The local form is first searched for the given command ID.  If it is
-    ///  found, it is invoked.  Otherwise the command ID is passed to the
+    ///  The local form is first searched for the given command ID. If it is
+    ///  found, it is invoked. Otherwise the command ID is passed to the
     ///  global environment command handler, if one is available.
     /// </summary>
     public virtual bool GlobalInvoke(CommandID commandId, object arg)
@@ -475,20 +444,16 @@ public class MenuCommandService : IMenuCommandService, IDisposable
     /// </summary>
     private void OnCommandChanged(object? sender, EventArgs e)
     {
-        Debug.WriteLineIf(MENUSERVICE.TraceVerbose, $"Command dirty: {((sender is not null) ? sender.ToString() : "(null sender)")}");
         OnCommandsChanged(new MenuCommandsChangedEventArgs(MenuCommandsChangedType.CommandChanged, (MenuCommand?)sender));
     }
 
-    /// <summary>
-    ///
-    /// </summary>
     protected virtual void OnCommandsChanged(MenuCommandsChangedEventArgs e)
     {
         _commandsChangedHandler?.Invoke(this, e);
     }
 
     /// <summary>
-    ///  Called by TypeDescriptor when a type changes.  If this type is currently holding
+    ///  Called by TypeDescriptor when a type changes. If this type is currently holding
     ///  our verb, invalidate the list.
     /// </summary>
     private void OnTypeRefreshed(RefreshEventArgs e)
@@ -500,7 +465,7 @@ public class MenuCommandService : IMenuCommandService, IDisposable
     }
 
     /// <summary>
-    ///  This is called by the selection service when the selection has changed.  Here
+    ///  This is called by the selection service when the selection has changed. Here
     ///  we invalidate our verb list.
     /// </summary>
     private void OnSelectionChanging(object? sender, EventArgs e)
@@ -533,17 +498,12 @@ public class MenuCommandService : IMenuCommandService, IDisposable
 
                     command.CommandChanged -= _commandChangedHandler;
 
-                    Debug.WriteLineIf(MENUSERVICE.TraceVerbose, $"Command removed: {command}");
-
-                    // raise event
                     OnCommandsChanged(new MenuCommandsChangedEventArgs(MenuCommandsChangedType.CommandRemoved, command));
                 }
 
                 return;
             }
         }
-
-        Debug.WriteLineIf(MENUSERVICE.TraceVerbose, $"Unable to remove command: {command}");
     }
 
     /// <summary>
@@ -569,8 +529,7 @@ public class MenuCommandService : IMenuCommandService, IDisposable
     }
 
     /// <summary>
-    ///  Shows the context menu with the given command ID at the given
-    ///  location.
+    ///  Shows the context menu with the given command ID at the given location.
     /// </summary>
     public virtual void ShowContextMenu(CommandID menuID, int x, int y)
     {

@@ -19,8 +19,8 @@ internal sealed class ToolStripPanelSelectionGlyph : ControlBodyGlyph
     private const int ImageWidthOriginal = 50;
     private const int ImageHeightOriginal = 6;
 
-    private int _imageWidth = ImageWidthOriginal;
-    private int _imageHeight = ImageHeightOriginal;
+    private readonly int _imageWidth = ImageWidthOriginal;
+    private readonly int _imageHeight = ImageHeightOriginal;
 
     internal ToolStripPanelSelectionGlyph(Rectangle bounds, Cursor cursor, IComponent relatedComponent, IServiceProvider? _provider, ToolStripPanelSelectionBehavior behavior) : base(bounds, cursor, relatedComponent, behavior)
     {
@@ -92,36 +92,14 @@ internal sealed class ToolStripPanelSelectionGlyph : ControlBodyGlyph
     {
         _image = new Bitmap(typeof(ToolStripPanelSelectionGlyph), fileName);
         _image.MakeTransparent(Color.Magenta);
-
-        if (DpiHelper.IsScalingRequired)
-        {
-            Bitmap? deviceImage = null;
-            if (_image.Width > _image.Height)
-            {
-                _imageWidth = DpiHelper.LogicalToDeviceUnitsX(ImageWidthOriginal);
-                _imageHeight = DpiHelper.LogicalToDeviceUnitsY(ImageHeightOriginal);
-                deviceImage = DpiHelper.CreateResizedBitmap(_image, new Size(_imageWidth, _imageHeight));
-            }
-            else
-            {
-                _imageHeight = DpiHelper.LogicalToDeviceUnitsX(ImageHeightOriginal);
-                _imageWidth = DpiHelper.LogicalToDeviceUnitsY(ImageWidthOriginal);
-                deviceImage = DpiHelper.CreateResizedBitmap(_image, new Size(_imageHeight, _imageWidth));
-            }
-
-            if (deviceImage is not null)
-            {
-                _image.Dispose();
-                _image = deviceImage;
-            }
-        }
+        _image = ScaleHelper.ScaleToDpi(_image, ScaleHelper.InitialSystemDpi, disposeBitmap: true);
     }
 
     private void CollapseGlyph(Rectangle bounds)
     {
         DockStyle? dock = _relatedPanel?.Dock;
-        int x = 0;
-        int y = 0;
+        int x;
+        int y;
 
         switch (dock)
         {
@@ -169,8 +147,8 @@ internal sealed class ToolStripPanelSelectionGlyph : ControlBodyGlyph
     private void ExpandGlyph(Rectangle bounds)
     {
         DockStyle? dock = _relatedPanel?.Dock;
-        int x = 0;
-        int y = 0;
+        int x;
+        int y;
 
         switch (dock)
         {
@@ -211,7 +189,7 @@ internal sealed class ToolStripPanelSelectionGlyph : ControlBodyGlyph
 
                 break;
             default:
-                throw new Exception(SR.ToolStripPanelGlyphUnsupportedDock);
+                throw new InvalidOperationException(SR.ToolStripPanelGlyphUnsupportedDock);
         }
     }
 

@@ -29,7 +29,7 @@ partial class DataControls
     private void InitializeComponent()
     {
         this.components = new System.ComponentModel.Container();
-        System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DataControls));
+        System.ComponentModel.ComponentResourceManager resources = new(typeof(DataControls));
         this.bindingNavigator1 = new System.Windows.Forms.BindingNavigator(this.components);
         this.bindingNavigatorAddNewItem = new System.Windows.Forms.ToolStripButton();
         this.bindingNavigatorCountItem = new System.Windows.Forms.ToolStripLabel();
@@ -115,7 +115,7 @@ partial class DataControls
         this.bindingNavigatorAddNewItem.RightToLeftAutoMirrorImage = true;
         this.bindingNavigatorAddNewItem.Size = new System.Drawing.Size(23, 25);
         this.bindingNavigatorAddNewItem.Text = "Add new";
-        this.bindingNavigatorAddNewItem.Click += new System.EventHandler(this.bindingNavigatorAddNewItem_Click);
+        this.bindingNavigatorAddNewItem.Click += this.bindingNavigatorAddNewItem_Click;
         // 
         // bindingNavigatorCountItem
         // 
@@ -356,7 +356,7 @@ partial class DataControls
         this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
         this.Name = "DataControls";
         this.Text = "DataControls";
-        this.Load += new System.EventHandler(this.DataControls_Load);
+        this.Load += this.DataControls_Load;
         ((System.ComponentModel.ISupportInitialize)(this.bindingNavigator1)).EndInit();
         this.bindingNavigator1.ResumeLayout(false);
         this.bindingNavigator1.PerformLayout();

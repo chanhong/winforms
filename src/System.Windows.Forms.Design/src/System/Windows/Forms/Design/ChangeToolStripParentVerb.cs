@@ -16,25 +16,19 @@ internal class ChangeToolStripParentVerb
 {
     private readonly ToolStripDesigner _designer;
     private readonly IDesignerHost _host;
-    private readonly IComponentChangeService _componentChangeService;
     private readonly IServiceProvider _provider;
 
-    /// <summary>
-    ///  Create one of these things...
-    /// </summary>
-    internal ChangeToolStripParentVerb(string text, ToolStripDesigner designer)
+    internal ChangeToolStripParentVerb(ToolStripDesigner designer)
     {
         Debug.Assert(designer is not null, "Can't have a StandardMenuStripVerb without an associated designer");
         _designer = designer;
         _provider = designer.Component.Site;
         _host = _provider.GetService<IDesignerHost>();
-        _componentChangeService = (IComponentChangeService)_provider.GetService(typeof(IComponentChangeService));
     }
 
     /// <summary>
     ///  When the verb is invoked, change the parent of the ToolStrip.
     /// </summary>
-    // This is actually called...
     public void ChangeParent()
     {
         Cursor current = Cursor.Current;
@@ -57,7 +51,7 @@ internal class ChangeToolStripParentVerb
                 }
 
                 // Get OleDragHandler ...
-                ToolboxItem toolboxItem = new ToolboxItem(typeof(ToolStripContainer));
+                ToolboxItem toolboxItem = new(typeof(ToolStripContainer));
                 OleDragDropHandler oleDragDropHandler = rootDesigner.GetOleDragHandler();
                 if (oleDragDropHandler is not null)
                 {
@@ -123,7 +117,7 @@ internal class ChangeToolStripParentVerb
         }
     }
 
-    private static Control GetParent(ToolStripContainer container, Control c)
+    private static Control GetParent(ToolStripContainer container, ToolStrip c)
     {
         Control newParent = container.ContentPanel;
         DockStyle dock = c.Dock;

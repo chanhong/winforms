@@ -1,7 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-using Gdip = System.Drawing.SafeNativeMethods.Gdip;
-
 namespace System.Drawing;
 
 public static class Pens
@@ -317,7 +315,7 @@ public static class Pens
             return Pen;
         }
 
-        Pen newPen = new Pen(color, true);
+        Pen newPen = new(color, true);
         Gdip.ThreadData[key] = newPen;
         return newPen;
     }

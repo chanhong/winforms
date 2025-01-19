@@ -11,43 +11,47 @@ using Windows.Win32.UI.Accessibility;
 namespace System.Windows.Forms;
 
 /// <summary>
-///  This control is an encapsulation of the Windows month calendar control.
-///  A month calendar control implements a calendar-like user interface, that
-///  provides the user with a very intuitive and recognizable method of entering
-///  or selecting a date.
-///  Users can also select which days bold. The most efficient way to add the
-///  bolded dates is via an array all at once. (The below descriptions can be applied
-///  equally to annually and monthly bolded dates as well)
-///  The following is an example of this:
-/// <code>
-///  MonthCalendar mc = new MonthCalendar();
-///  //     add specific dates to bold
-///  DateTime[] time = new DateTime[3];
-///  time[0] = DateTime.Now;
-///  time[1] = time[0].addDays(2);
-///  time[2] = time[1].addDays(2);
-///  mc.setBoldedDates(time);
-/// </code>
-///  Removal of all bolded dates is accomplished with:
-/// <code>
-///  mc.removeAllBoldedDates();
-/// </code>
-///  Although less efficient, the user may need to add or remove bolded dates one at
-///  a time. To improve the performance of this, neither addBoldedDate nor
-///  removeBoldedDate repaints the monthcalendar. The user must call UpdateBoldedDates
-///  to force the repaint of the bolded dates, otherwise the monthCalendar will not
-///  paint properly.
-///  The following is an example of this:
-/// <code>
-///  DateTime time1 = new DateTime("3/5/98");
-///  DateTime time2 = new DateTime("4/19/98");
-///  mc.addBoldedDate(time1);
-///  mc.addBoldedDate(time2);
-///  mc.removeBoldedDate(time1);
-///  mc.UpdateBoldedDates();
-/// </code>
-///  The same applies to addition and removal of annual and monthly bolded dates.
+///  This control is an encapsulation of the Windows month calendar control. A month calendar control implements a
+///  calendar-like user interface that provides the user with a intuitive and recognizable method of entering or
+///  selecting a date.
 /// </summary>
+/// <remarks>
+///  <para>
+///   Users can also select which days to bold. The most efficient way to add the bolded dates is via an array.
+///   The following is an example of this:
+///  </para>
+///  <code>
+///   MonthCalendar mc = new MonthCalendar();
+///   DateTime[] time = new DateTime[3];
+///   time[0] = DateTime.Now;
+///   time[1] = time[0].AddDays(2);
+///   time[2] = time[1].AddDays(2);
+///   mc.BoldedDates = time;
+///  </code>
+///  <para>
+///   Removal of all bolded dates is accomplished with:
+///  </para>
+///  <code>
+///   mc.RemoveAllBoldedDates();
+///  </code>
+///  <para>
+///   Although less efficient, the user may need to add or remove bolded dates one at a time. To improve the performance
+///   of this, neither <see cref="AddBoldedDate(DateTime)"/> nor <see cref="RemoveBoldedDate(DateTime)"/> repaints the
+///   <see cref="MonthCalendar"/>. The user must call <see cref="UpdateBoldedDates"/> to force the repaint of the bolded
+///   dates, otherwise the <see cref="MonthCalendar"/> will not paint properly. The following is an example of this:
+///  </para>
+///  <code>
+///   DateTime time1 = new DateTime("3/5/98");
+///   DateTime time2 = new DateTime("4/19/98");
+///   mc.AddBoldedDate(time1);
+///   mc.AddBoldedDate(time2);
+///   mc.RemoveBoldedDate(time1);
+///   mc.UpdateBoldedDates();
+///  </code>
+///  <para>
+///   The same applies to addition and removal of annual and monthly bolded dates.
+///  </para>
+/// </remarks>
 [DefaultProperty(nameof(SelectionRange))]
 [DefaultEvent(nameof(DateChanged))]
 [DefaultBindingProperty(nameof(SelectionRange))]
@@ -81,8 +85,7 @@ public partial class MonthCalendar : Control
 
     private const int MaxScrollChange = 20000;
 
-    private const int ExtraPadding = 2;
-    private int _scaledExtraPadding = ExtraPadding;
+    private int _extraPadding;
 
     private Color _titleBackColor = s_defaultTitleBackColor;
     private Color _titleForeColor = s_defaultTitleForeColor;
@@ -117,9 +120,9 @@ public partial class MonthCalendar : Control
     /// </summary>
     private int _datesToBoldMonthly;
 
-    private readonly List<DateTime> _boldDates = new();
-    private readonly List<DateTime> _annualBoldDates = new();
-    private readonly List<DateTime> _monthlyBoldDates = new();
+    private readonly List<DateTime> _boldDates = [];
+    private readonly List<DateTime> _annualBoldDates = [];
+    private readonly List<DateTime> _monthlyBoldDates = [];
 
     private DateRangeEventHandler? _onDateChanged;
     private DateRangeEventHandler? _onDateSelected;
@@ -127,19 +130,16 @@ public partial class MonthCalendar : Control
     private EventHandler? _onCalendarViewChanged;
     private EventHandler? _onDisplayRangeChanged;
 
-    /// <summary>
-    ///  Creates a new MonthCalendar object. Styles are the default for a regular
-    ///  month calendar control.
-    /// </summary>
     public MonthCalendar() : base()
     {
-        PrepareForDrawing();
-
         _selectionStart = _todaysDate;
         _selectionEnd = _todaysDate;
         _focusedDate = _todaysDate;
         SetStyle(ControlStyles.UserPaint, false);
         SetStyle(ControlStyles.StandardClick, false);
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
 
         TabStop = true;
     }
@@ -150,27 +150,25 @@ public partial class MonthCalendar : Control
     protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew)
     {
         base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
-        PrepareForDrawing();
+        ScaleConstants();
     }
 
-    private void PrepareForDrawing()
+    private protected override void InitializeConstantsForInitialDpi(int initialDpi) => ScaleConstants();
+
+    private void ScaleConstants()
     {
-        if (DpiHelper.IsScalingRequirementMet)
-        {
-            _scaledExtraPadding = LogicalToDeviceUnits(ExtraPadding);
-        }
+        const int LogicalExtraPadding = 2;
+        _extraPadding = LogicalToDeviceUnits(LogicalExtraPadding);
     }
 
     /// <summary>
-    ///  The array of DateTime objects that determines which annual days are shown
-    ///  in bold.
+    ///  The array of DateTime objects that determines which annual days are shown in bold.
     /// </summary>
     [Localizable(true)]
     [SRDescription(nameof(SR.MonthCalendarAnnuallyBoldedDatesDescr))]
     public DateTime[] AnnuallyBoldedDates
     {
-        get => _annualBoldDates.ToArray();
-
+        get => [.. _annualBoldDates];
         set
         {
             _annualBoldDates.Clear();
@@ -193,12 +191,13 @@ public partial class MonthCalendar : Control
         }
     }
 
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
     [SRDescription(nameof(SR.MonthCalendarMonthBackColorDescr))]
     public override Color BackColor
     {
         get
         {
-            if (ShouldSerializeBackColor())
+            if (ShouldSerializeBackColor() || Application.IsDarkModeEnabled)
             {
                 return base.BackColor;
             }
@@ -207,6 +206,7 @@ public partial class MonthCalendar : Control
         }
         set => base.BackColor = value;
     }
+#pragma warning restore WFO5001
 
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -247,7 +247,7 @@ public partial class MonthCalendar : Control
     [Localizable(true)]
     public DateTime[] BoldedDates
     {
-        get => _boldDates.ToArray();
+        get => [.. _boldDates];
 
         set
         {
@@ -377,7 +377,7 @@ public partial class MonthCalendar : Control
 
         set
         {
-            if (value < Day.Monday || value > Day.Default)
+            if (value is < Day.Monday or > Day.Default)
             {
                 throw new InvalidEnumArgumentException(nameof(FirstDayOfWeek), (int)value, typeof(Day));
             }
@@ -396,7 +396,7 @@ public partial class MonthCalendar : Control
                 }
                 else
                 {
-                    PInvoke.SendMessage(this, PInvoke.MCM_SETFIRSTDAYOFWEEK, 0, (nint)value);
+                    PInvokeCore.SendMessage(this, PInvoke.MCM_SETFIRSTDAYOFWEEK, 0, (nint)value);
                 }
 
                 UpdateDisplayRange();
@@ -407,12 +407,13 @@ public partial class MonthCalendar : Control
         }
     }
 
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
     [SRDescription(nameof(SR.MonthCalendarForeColorDescr))]
     public override Color ForeColor
     {
         get
         {
-            if (ShouldSerializeForeColor())
+            if (ShouldSerializeForeColor() || Application.IsDarkModeEnabled)
             {
                 return base.ForeColor;
             }
@@ -421,6 +422,7 @@ public partial class MonthCalendar : Control
         }
         set => base.ForeColor = value;
     }
+#pragma warning restore WFO5001
 
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -455,10 +457,7 @@ public partial class MonthCalendar : Control
                 return;
             }
 
-            if (value < DateTimePicker.EffectiveMinDate(_minDate))
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(MaxDate), FormatDate(value), nameof(MinDate)));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimePicker.EffectiveMinDate(_minDate));
 
             _maxDate = value;
             SetRange();
@@ -478,10 +477,7 @@ public partial class MonthCalendar : Control
         get => _maxSelectionCount;
         set
         {
-            if (value < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(MaxSelectionCount), value.ToString("D"), 1));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
             if (value == _maxSelectionCount)
             {
@@ -490,7 +486,7 @@ public partial class MonthCalendar : Control
 
             if (IsHandleCreated)
             {
-                if (PInvoke.SendMessage(this, PInvoke.MCM_SETMAXSELCOUNT, (WPARAM)value) == 0)
+                if (PInvokeCore.SendMessage(this, PInvoke.MCM_SETMAXSELCOUNT, (WPARAM)value) == 0)
                 {
                     throw new ArgumentException(string.Format(SR.MonthCalendarMaxSelCount, value.ToString("D")), nameof(value));
                 }
@@ -517,21 +513,8 @@ public partial class MonthCalendar : Control
                 return;
             }
 
-            if (value > DateTimePicker.EffectiveMaxDate(_maxDate))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidHighBoundArgument, nameof(MinDate), FormatDate(value), nameof(MaxDate)));
-            }
-
-            if (value < DateTimePicker.MinimumDateTime)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidLowBoundArgumentEx, nameof(MinDate), FormatDate(value), FormatDate(DateTimePicker.MinimumDateTime)));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, DateTimePicker.EffectiveMaxDate(_maxDate));
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimePicker.MinimumDateTime);
 
             _minDate = value;
             SetRange();
@@ -545,7 +528,7 @@ public partial class MonthCalendar : Control
     [SRDescription(nameof(SR.MonthCalendarMonthlyBoldedDatesDescr))]
     public DateTime[] MonthlyBoldedDates
     {
-        get => _monthlyBoldDates.ToArray();
+        get => [.. _monthlyBoldDates];
 
         set
         {
@@ -632,25 +615,12 @@ public partial class MonthCalendar : Control
                 return;
             }
 
-            if (value < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidLowBoundArgumentEx, nameof(ScrollChange), value.ToString("D"), 0));
-            }
-
-            if (value > MaxScrollChange)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidHighBoundArgumentEx, nameof(ScrollChange), value.ToString("D"), MaxScrollChange.ToString("D")));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxScrollChange);
 
             if (IsHandleCreated)
             {
-                PInvoke.SendMessage(this, PInvoke.MCM_SETMONTHDELTA, (WPARAM)value);
+                PInvokeCore.SendMessage(this, PInvoke.MCM_SETMONTHDELTA, (WPARAM)value);
             }
 
             _scrollChange = value;
@@ -674,21 +644,8 @@ public partial class MonthCalendar : Control
                 return;
             }
 
-            if (value < MinDate)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidLowBoundArgumentEx, nameof(SelectionEnd), FormatDate(value), nameof(MinDate)));
-            }
-
-            if (value > MaxDate)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidHighBoundArgumentEx, nameof(SelectionEnd), FormatDate(value), nameof(MaxDate)));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, MinDate);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxDate);
 
             // If we've moved SelectionEnd before SelectionStart, move SelectionStart back
             if (_selectionStart > value)
@@ -724,21 +681,8 @@ public partial class MonthCalendar : Control
                 return;
             }
 
-            if (value < _minDate)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidLowBoundArgumentEx, nameof(SelectionStart), FormatDate(value), nameof(MinDate)));
-            }
-
-            if (value > _maxDate)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidHighBoundArgumentEx, nameof(SelectionStart), FormatDate(value), nameof(MaxDate)));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, _minDate);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _maxDate);
 
             // If we've moved SelectionStart beyond SelectionEnd, move SelectionEnd forward
             if (_selectionEnd < value)
@@ -856,7 +800,7 @@ public partial class MonthCalendar : Control
             if (IsHandleCreated)
             {
                 RECT rect = default;
-                if (PInvoke.SendMessage(this, PInvoke.MCM_GETMINREQRECT, 0, ref rect) == 0)
+                if (PInvokeCore.SendMessage(this, PInvoke.MCM_GETMINREQRECT, 0, ref rect) == 0)
                 {
                     throw new InvalidOperationException(SR.InvalidSingleMonthSize);
                 }
@@ -920,7 +864,7 @@ public partial class MonthCalendar : Control
             if (IsHandleCreated)
             {
                 SYSTEMTIME systemTime = default;
-                int result = (int)PInvoke.SendMessage(this, PInvoke.MCM_GETTODAY, 0, ref systemTime);
+                int result = (int)PInvokeCore.SendMessage(this, PInvoke.MCM_GETTODAY, 0, ref systemTime);
                 Debug.Assert(result != 0, "MCM_GETTODAY failed");
                 return ((DateTime)systemTime).Date;
             }
@@ -932,22 +876,10 @@ public partial class MonthCalendar : Control
             if (!_todayDateSet || (DateTime.Compare(value, _todaysDate) != 0))
             {
                 // Throw if trying to set the TodayDate to a value greater than MaxDate.
-                if (DateTime.Compare(value, _maxDate) > 0)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        string.Format(SR.InvalidHighBoundArgumentEx, nameof(TodayDate), FormatDate(value), FormatDate(_maxDate)));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _maxDate);
 
                 // Throw if trying to set the TodayDate to a value less than MinDate.
-                if (DateTime.Compare(value, _minDate) < 0)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        string.Format(SR.InvalidLowBoundArgument, nameof(TodayDate), FormatDate(value), FormatDate(_minDate)));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, _minDate);
 
                 _todaysDate = value.Date;
                 _todayDateSet = true;
@@ -1222,38 +1154,22 @@ public partial class MonthCalendar : Control
     /// <summary>
     ///  Retrieves the enumeration value corresponding to the hit area.
     /// </summary>
-    private static HitArea GetHitArea(MCHITTESTINFO_HIT_FLAGS hit)
+    private static HitArea GetHitArea(MCHITTESTINFO_HIT_FLAGS hit) => hit switch
     {
-        switch (hit)
-        {
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_TITLEBK:
-                return HitArea.TitleBackground;
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_TITLEMONTH:
-                return HitArea.TitleMonth;
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_TITLEYEAR:
-                return HitArea.TitleYear;
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_TITLEBTNNEXT:
-                return HitArea.NextMonthButton;
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_TITLEBTNPREV:
-                return HitArea.PrevMonthButton;
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARBK:
-                return HitArea.CalendarBackground;
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARDATE:
-                return HitArea.Date;
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARDATENEXT:
-                return HitArea.NextMonthDate;
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARDATEPREV:
-                return HitArea.PrevMonthDate;
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARDAY:
-                return HitArea.DayOfWeek;
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARWEEKNUM:
-                return HitArea.WeekNumbers;
-            case MCHITTESTINFO_HIT_FLAGS.MCHT_TODAYLINK:
-                return HitArea.TodayLink;
-            default:
-                return HitArea.Nowhere;
-        }
-    }
+        MCHITTESTINFO_HIT_FLAGS.MCHT_TITLEBK => HitArea.TitleBackground,
+        MCHITTESTINFO_HIT_FLAGS.MCHT_TITLEMONTH => HitArea.TitleMonth,
+        MCHITTESTINFO_HIT_FLAGS.MCHT_TITLEYEAR => HitArea.TitleYear,
+        MCHITTESTINFO_HIT_FLAGS.MCHT_TITLEBTNNEXT => HitArea.NextMonthButton,
+        MCHITTESTINFO_HIT_FLAGS.MCHT_TITLEBTNPREV => HitArea.PrevMonthButton,
+        MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARBK => HitArea.CalendarBackground,
+        MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARDATE => HitArea.Date,
+        MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARDATENEXT => HitArea.NextMonthDate,
+        MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARDATEPREV => HitArea.PrevMonthDate,
+        MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARDAY => HitArea.DayOfWeek,
+        MCHITTESTINFO_HIT_FLAGS.MCHT_CALENDARWEEKNUM => HitArea.WeekNumbers,
+        MCHITTESTINFO_HIT_FLAGS.MCHT_TODAYLINK => HitArea.TodayLink,
+        _ => HitArea.Nowhere,
+    };
 
     private static int GetIndexInMonths(DateTime startDate, DateTime currentDate)
         => (currentDate.Year - startDate.Year) * MonthsInYear + currentDate.Month - startDate.Month;
@@ -1273,7 +1189,7 @@ public partial class MonthCalendar : Control
         // Calculate calendar height
         Size textExtent;
 
-        using (var hfont = GdiCache.GetHFONT(Font))
+        using (var hfont = GdiCache.GetHFONTScope(Font))
         using (var screen = GdiCache.GetScreenHdc())
         {
             // this is the string that Windows uses to determine the extent of the today string
@@ -1310,7 +1226,7 @@ public partial class MonthCalendar : Control
             }
             else
             {
-                int nCols = (newDimensionLength - _scaledExtraPadding) / minSize.Width;
+                int nCols = (newDimensionLength - _extraPadding) / minSize.Width;
                 _dimensions.Width = (nCols < 1) ? 1 : nCols;
             }
         }
@@ -1321,7 +1237,7 @@ public partial class MonthCalendar : Control
         // If the width we've calculated is too small to fit the Today string, enlarge the width to fit
         if (IsHandleCreated)
         {
-            int maxTodayWidth = (int)PInvoke.SendMessage(this, PInvoke.MCM_GETMAXTODAYWIDTH);
+            int maxTodayWidth = (int)PInvokeCore.SendMessage(this, PInvoke.MCM_GETMAXTODAYWIDTH);
             if (maxTodayWidth > minSize.Width)
             {
                 minSize.Width = maxTodayWidth;
@@ -1329,15 +1245,15 @@ public partial class MonthCalendar : Control
         }
 
         // Fudge factor
-        minSize.Width += _scaledExtraPadding;
-        minSize.Height += _scaledExtraPadding;
+        minSize.Width += _extraPadding;
+        minSize.Height += _extraPadding;
         return minSize;
     }
 
     private SelectionRange GetMonthRange(uint flag)
     {
         Span<SYSTEMTIME> times = stackalloc SYSTEMTIME[2];
-        PInvoke.SendMessage(this, PInvoke.MCM_GETMONTHRANGE, (WPARAM)(int)flag, ref times[0]);
+        PInvokeCore.SendMessage(this, PInvoke.MCM_GETMONTHRANGE, (WPARAM)(int)flag, ref times[0]);
         return new SelectionRange
         {
             Start = (DateTime)times[0],
@@ -1385,7 +1301,7 @@ public partial class MonthCalendar : Control
             st = default
         };
 
-        PInvoke.SendMessage(this, PInvoke.MCM_HITTEST, 0, ref mchi);
+        PInvokeCore.SendMessage(this, PInvoke.MCM_HITTEST, 0, ref mchi);
 
         // If the hit area has an associated valid date, get it.
         HitArea hitArea = GetHitArea(mchi.uHit);
@@ -1424,16 +1340,11 @@ public partial class MonthCalendar : Control
             return false;
         }
 
-        switch (keyData & Keys.KeyCode)
+        return (keyData & Keys.KeyCode) switch
         {
-            case Keys.PageUp:
-            case Keys.PageDown:
-            case Keys.Home:
-            case Keys.End:
-                return true;
-        }
-
-        return base.IsInputKey(keyData);
+            Keys.PageUp or Keys.PageDown or Keys.Home or Keys.End => true,
+            _ => base.IsInputKey(keyData),
+        };
     }
 
     protected override void OnHandleCreated(EventArgs e)
@@ -1448,7 +1359,7 @@ public partial class MonthCalendar : Control
         SetSelRange(_selectionStart, _selectionEnd);
         if (_maxSelectionCount != DefaultMaxSelectionCount)
         {
-            PInvoke.SendMessage(this, PInvoke.MCM_SETMAXSELCOUNT, (WPARAM)_maxSelectionCount);
+            PInvokeCore.SendMessage(this, PInvoke.MCM_SETMAXSELCOUNT, (WPARAM)_maxSelectionCount);
         }
 
         AdjustSize();
@@ -1456,7 +1367,7 @@ public partial class MonthCalendar : Control
         if (_todayDateSet)
         {
             SYSTEMTIME systemTime = (SYSTEMTIME)_todaysDate;
-            PInvoke.SendMessage(this, PInvoke.MCM_SETTODAY, (WPARAM)0, ref systemTime);
+            PInvokeCore.SendMessage(this, PInvoke.MCM_SETTODAY, (WPARAM)0, ref systemTime);
         }
 
         SetControlColor(PInvoke.MCSC_TEXT, ForeColor);
@@ -1475,12 +1386,12 @@ public partial class MonthCalendar : Control
             firstDay = (int)_firstDayOfWeek;
         }
 
-        PInvoke.SendMessage(this, PInvoke.MCM_SETFIRSTDAYOFWEEK, (WPARAM)0, (LPARAM)firstDay);
+        PInvokeCore.SendMessage(this, PInvoke.MCM_SETFIRSTDAYOFWEEK, (WPARAM)0, (LPARAM)firstDay);
 
         SetRange();
         if (_scrollChange != DefaultScrollChange)
         {
-            PInvoke.SendMessage(this, PInvoke.MCM_SETMONTHDELTA, (WPARAM)_scrollChange);
+            PInvokeCore.SendMessage(this, PInvoke.MCM_SETMONTHDELTA, (WPARAM)_scrollChange);
         }
 
         SystemEvents.UserPreferenceChanged += MarshaledUserPreferenceChanged;
@@ -1742,9 +1653,10 @@ public partial class MonthCalendar : Control
         Rectangle oldBounds = Bounds;
         Size max = SystemInformation.MaxWindowTrackSize;
 
-        // Second argument to GetPreferredWidth and GetPreferredHeight is a boolean specifying if we should update the number of rows/columns.
+        // Second argument to GetPreferredWidth and GetPreferredHeight is a boolean specifying
+        // if we should update the number of rows/columns.
         // We only want to update the number of rows/columns if we are not currently being scaled.
-        bool updateRowsAndColumns = !DpiHelper.IsScalingRequirementMet || !ScalingInProgress;
+        bool updateRowsAndColumns = !ScaleHelper.IsScalingRequirementMet || !ScalingInProgress;
 
         if (width != oldBounds.Width)
         {
@@ -1776,7 +1688,7 @@ public partial class MonthCalendar : Control
     {
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.MCM_SETCOLOR, (WPARAM)(int)colorIndex, (LPARAM)value);
+            PInvokeCore.SendMessage(this, PInvoke.MCM_SETCOLOR, (WPARAM)(int)colorIndex, (LPARAM)value);
         }
     }
 
@@ -1828,7 +1740,7 @@ public partial class MonthCalendar : Control
         {
             Span<SYSTEMTIME> times = [(SYSTEMTIME)minDate, (SYSTEMTIME)maxDate];
             uint flags = PInvoke.GDTR_MIN | PInvoke.GDTR_MAX;
-            if (PInvoke.SendMessage(this, PInvoke.MCM_SETRANGE, (WPARAM)(uint)flags, ref times[0]) == 0)
+            if (PInvokeCore.SendMessage(this, PInvoke.MCM_SETRANGE, (WPARAM)flags, ref times[0]) == 0)
             {
                 throw new InvalidOperationException(
                     string.Format(SR.MonthCalendarRange, minDate.ToShortDateString(), maxDate.ToShortDateString()));
@@ -1884,15 +1796,8 @@ public partial class MonthCalendar : Control
     /// </summary>
     public void SetDate(DateTime date)
     {
-        if (date.Ticks < _minDate.Ticks)
-        {
-            throw new ArgumentOutOfRangeException(nameof(date), date, string.Format(SR.InvalidLowBoundArgumentEx, nameof(date), FormatDate(date), nameof(MinDate)));
-        }
-
-        if (date.Ticks > _maxDate.Ticks)
-        {
-            throw new ArgumentOutOfRangeException(nameof(date), date, string.Format(SR.InvalidHighBoundArgumentEx, nameof(date), FormatDate(date), nameof(MaxDate)));
-        }
+        ArgumentOutOfRangeException.ThrowIfLessThan(date, _minDate);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(date, _maxDate);
 
         SetSelectionRange(date, date);
     }
@@ -1918,7 +1823,7 @@ public partial class MonthCalendar : Control
         {
             // Update display dates states.
             // For more info see docs: https://docs.microsoft.com/windows/win32/controls/mcm-setdaystate
-            PInvoke.SendMessage(HWND, PInvoke.MCM_SETDAYSTATE, (WPARAM)monthsCount, (LPARAM)arr);
+            PInvokeCore.SendMessage(HWND, PInvoke.MCM_SETDAYSTATE, (WPARAM)monthsCount, (LPARAM)arr);
         }
     }
 
@@ -1930,25 +1835,10 @@ public partial class MonthCalendar : Control
     public void SetSelectionRange(DateTime date1, DateTime date2)
     {
         // Keep the dates within the min and max dates
-        if (date1.Ticks < _minDate.Ticks)
-        {
-            throw new ArgumentOutOfRangeException(nameof(date1), date1, string.Format(SR.InvalidLowBoundArgumentEx, nameof(SelectionStart), FormatDate(date1), nameof(MinDate)));
-        }
-
-        if (date1.Ticks > _maxDate.Ticks)
-        {
-            throw new ArgumentOutOfRangeException(nameof(date1), date1, string.Format(SR.InvalidHighBoundArgumentEx, nameof(SelectionEnd), FormatDate(date1), nameof(MaxDate)));
-        }
-
-        if (date2.Ticks < _minDate.Ticks)
-        {
-            throw new ArgumentOutOfRangeException(nameof(date2), date2, string.Format(SR.InvalidLowBoundArgumentEx, nameof(SelectionStart), FormatDate(date2), nameof(MinDate)));
-        }
-
-        if (date2.Ticks > _maxDate.Ticks)
-        {
-            throw new ArgumentOutOfRangeException(nameof(date2), date2, string.Format(SR.InvalidHighBoundArgumentEx, nameof(SelectionEnd), FormatDate(date2), nameof(MaxDate)));
-        }
+        ArgumentOutOfRangeException.ThrowIfLessThan(date1, _minDate);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(date1, _maxDate);
+        ArgumentOutOfRangeException.ThrowIfLessThan(date2, _minDate);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(date2, _maxDate);
 
         // If date1 > date2, we just select date2 (compat)
         if (date1 > date2)
@@ -1995,7 +1885,7 @@ public partial class MonthCalendar : Control
         if (IsHandleCreated)
         {
             Span<SYSTEMTIME> times = [(SYSTEMTIME)lower, (SYSTEMTIME)upper];
-            PInvoke.SendMessage(this, PInvoke.MCM_SETSELRANGE, 0, ref times[0]);
+            PInvokeCore.SendMessage(this, PInvoke.MCM_SETSELRANGE, 0, ref times[0]);
         }
 
         if (changed)
@@ -2113,11 +2003,11 @@ public partial class MonthCalendar : Control
             if (_todayDateSet)
             {
                 SYSTEMTIME systemTime = (SYSTEMTIME)_todaysDate;
-                PInvoke.SendMessage(this, PInvoke.MCM_SETTODAY, 0, ref systemTime);
+                PInvokeCore.SendMessage(this, PInvoke.MCM_SETTODAY, 0, ref systemTime);
             }
             else
             {
-                PInvoke.SendMessage(this, PInvoke.MCM_SETTODAY, 0, 0);
+                PInvokeCore.SendMessage(this, PInvoke.MCM_SETTODAY, 0, 0);
             }
         }
     }
@@ -2127,7 +2017,7 @@ public partial class MonthCalendar : Control
         try
         {
             // Use BeginInvoke instead of Invoke in case the destination thread is not processing messages.
-            BeginInvoke(new UserPreferenceChangedEventHandler(UserPreferenceChanged), new object[] { sender, pref });
+            BeginInvoke(new UserPreferenceChangedEventHandler(UserPreferenceChanged), [sender, pref]);
         }
         catch (InvalidOperationException)
         {
@@ -2210,7 +2100,7 @@ public partial class MonthCalendar : Control
     private unsafe void WmDateBold(ref Message m)
     {
         NMDAYSTATE* nmmcds = (NMDAYSTATE*)(nint)m.LParamInternal;
-        Span<int> boldDates = new Span<int>((int*)nmmcds->prgDayState, nmmcds->cDayState);
+        Span<int> boldDates = new((int*)nmmcds->prgDayState, nmmcds->cDayState);
         WriteBoldDates(boldDates);
     }
 
@@ -2302,7 +2192,7 @@ public partial class MonthCalendar : Control
     {
         switch (m.MsgInternal)
         {
-            case PInvoke.WM_LBUTTONDOWN:
+            case PInvokeCore.WM_LBUTTONDOWN:
                 Focus();
                 if (!ValidationCancelled)
                 {
@@ -2310,21 +2200,21 @@ public partial class MonthCalendar : Control
                 }
 
                 break;
-            case PInvoke.WM_GETDLGCODE:
+            case PInvokeCore.WM_GETDLGCODE:
                 WmGetDlgCode(ref m);
                 break;
             case MessageId.WM_REFLECT_NOTIFY:
                 WmReflectCommand(ref m);
                 base.WndProc(ref m);
                 break;
-            case PInvoke.WM_PAINT:
+            case PInvokeCore.WM_PAINT:
                 base.WndProc(ref m);
 
                 if (_mcCurView != MONTH_CALDENDAR_MESSAGES_VIEW.MCMV_MONTH)
                 {
                     // Check if the display range is changed and update it.
                     // Win32 doesn't provide a notification about the display range is changed,
-                    // so we have to use PInvoke.WM_PAINT and check it manually in the Year, Decade and Century views.
+                    // so we have to use PInvokeCore.WM_PAINT and check it manually in the Year, Decade and Century views.
                     // MCN.GETDAYSTATE handles the display range changes in the Month view.
                     UpdateDisplayRange();
                 }

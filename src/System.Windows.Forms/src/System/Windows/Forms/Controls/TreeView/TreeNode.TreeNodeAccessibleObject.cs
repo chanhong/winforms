@@ -4,13 +4,12 @@
 using System.Drawing;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
-using static Interop;
 
 namespace System.Windows.Forms;
 
 public partial class TreeNode
 {
-    internal class TreeNodeAccessibleObject : AccessibleObject
+    internal sealed class TreeNodeAccessibleObject : AccessibleObject
     {
         private readonly TreeNode _owningTreeNode;
         private readonly TreeView _owningTreeView;
@@ -56,6 +55,8 @@ public partial class TreeNode
                     : SR.AccessibleActionExpand;
             }
         }
+
+        internal override bool CanGetDefaultActionInternal => false;
 
         public override void DoDefaultAction()
         {
@@ -112,18 +113,18 @@ public partial class TreeNode
                 UIA_PROPERTY_ID.UIA_HasKeyboardFocusPropertyId => (VARIANT)State.HasFlag(AccessibleStates.Focused),
                 UIA_PROPERTY_ID.UIA_IsEnabledPropertyId => (VARIANT)_owningTreeView.Enabled,
                 UIA_PROPERTY_ID.UIA_IsKeyboardFocusablePropertyId => (VARIANT)State.HasFlag(AccessibleStates.Focusable),
+                UIA_PROPERTY_ID.UIA_LevelPropertyId => (VARIANT)(_owningTreeNode.Level + 1),
                 _ => base.GetPropertyValue(propertyID)
             };
 
-        public override AccessibleObject? HitTest(int x, int y)
-            => _owningTreeView.AccessibilityObject.HitTest(x, y);
+        public override AccessibleObject? HitTest(int x, int y) => _owningTreeView.AccessibilityObject.HitTest(x, y);
 
         internal int Index => _owningTreeView.Nodes.IndexOf(_owningTreeNode);
 
         internal override bool IsPatternSupported(UIA_PATTERN_ID patternId)
             => patternId switch
             {
-                UIA_PATTERN_ID.UIA_ExpandCollapsePatternId => _owningTreeNode._childNodes.Count > 0,
+                UIA_PATTERN_ID.UIA_ExpandCollapsePatternId => true,
                 UIA_PATTERN_ID.UIA_LegacyIAccessiblePatternId => true,
                 UIA_PATTERN_ID.UIA_ScrollItemPatternId => true,
                 UIA_PATTERN_ID.UIA_SelectionItemPatternId => true,
@@ -134,20 +135,23 @@ public partial class TreeNode
 
         public override string? Name => _owningTreeNode.Text;
 
+        internal override bool CanGetNameInternal => false;
+
         public override AccessibleObject? Parent => _owningTreeNode.Parent?.AccessibilityObject;
+
+        private protected override bool IsInternal => true;
 
         public override AccessibleRole Role
             => _owningTreeView.CheckBoxes
                 ? AccessibleRole.CheckButton
                 : AccessibleRole.OutlineItem;
 
-        internal override int[] RuntimeId
-            => new int[]
-            {
-                RuntimeIDFirstItem,
-                PARAM.ToInt(_owningTreeView.InternalHandle),
-                _owningTreeNode.GetHashCode()
-            };
+        internal override int[] RuntimeId =>
+        [
+            RuntimeIDFirstItem,
+            (int)_owningTreeView.InternalHandle,
+            _owningTreeNode.GetHashCode()
+        ];
 
         public override AccessibleStates State
         {
@@ -263,6 +267,8 @@ public partial class TreeNode
         #region Value Pattern
 
         public override string? Value => _owningTreeNode.Text;
+
+        internal override bool CanGetValueInternal => false;
 
         #endregion
     }

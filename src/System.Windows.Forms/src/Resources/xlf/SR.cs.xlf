@@ -287,6 +287,21 @@
         <target state="translated">Strukturovaný objekt DataBinding přijímá jako zdroj dat objekt IList nebo IListSource.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BinaryFormatterNotSupported">
+        <source>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</source>
+        <target state="translated">Serializace a deserializace BinaryFormatter jsou v této aplikaci zakázané. Další informace najdete na https://aka.ms/binaryformatter.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BinaryFormatter_NotSupported_InClipboardOrDragDrop">
+        <source>BinaryFormatter is not supported in clipboard or drag-and-drop operations.</source>
+        <target state="translated">Binární formátovací modul není podporován ve schránce nebo operacích přetažení.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BinaryFormatter_NotSupported_InClipboardOrDragDrop_UseTypedAPI">
+        <source>BinaryFormatter is not supported in clipboard or drag-and-drop operations. Please enable it and use 'TryGetData&lt;T&gt;' APIs with a 'resolver' function that defines a set of allowed types to deserialize '{0}'.</source>
+        <target state="translated">Binární formátovací modul není podporován ve schránce nebo operacích přetažení. Povolte ho prosím a použijte rozhraní API TryGetData&lt;T&gt; s funkcí resolver, která definuje sadu povolených typů pro deserializaci '{0}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="BindableComponentBindingContextChangedDescr">
         <source>Occurs when the binding context has changed.</source>
         <target state="translated">Vyvolá se při změně kontextu vazby.</target>
@@ -410,6 +425,11 @@
       <trans-unit id="BindingNavigatorToolStripName">
         <source>Binding Navigator</source>
         <target state="translated">Navigátor vazby</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BindingNotSupported">
+        <source>Binding operations are not supported when application trimming is enabled.</source>
+        <target state="translated">Operace vytvoření vazby nejsou podporovány, pokud je povolen trimming aplikací.</target>
         <note />
       </trans-unit>
       <trans-unit id="BindingSourceAddingNewEventHandlerDescr">
@@ -945,6 +965,36 @@
       <trans-unit id="ClipboardOperationFailed">
         <source>Requested Clipboard operation did not succeed.</source>
         <target state="translated">Požadovaná operace se schránkou se nezdařila.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_CannotJsonSerializeDataObject">
+        <source>An object of type 'DataObject' will serialize as empty. Use 'DataObject.SetDataAsJson' APIs on your object to JSON-serialize the data within your object, then use the '{0}' API with your object.</source>
+        <target state="translated">Objekt typu DataObject bude serializován jako prázdný. Pomocí rozhraní API DataObject.SetDataAsJson u objektu můžete serializovat data v rámci objektu json a pak s objektem použít rozhraní API '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_InvalidFormatTypeCombination">
+        <source>The specified type '{0}' is not compatible with the specified format '{1}'.</source>
+        <target state="translated">Zadaný typ '{0}' není kompatibilní se zadaným '{1}' formátu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_InvalidType">
+        <source>'{0}' is not a concrete type, and could result in an unbounded deserialization attempt. Please use a concrete type or alternatively define a 'resolver' function that supports types that you are expecting to retrieve from the clipboard or use in drag-and-drop operations.</source>
+        <target state="translated">'{0}' není konkrétní typ a může mít za následek nevázaný pokus o deserializaci. Použijte prosím konkrétní typ nebo alternativně definujte funkci resolver, která podporuje typy, které byste očekávali načíst ze schránky nebo použít při operacích přetažení myší.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_JsonDeserializationFailed">
+        <source>Failed to deserialize JSON data.</source>
+        <target state="translated">Nepovedlo se deserializovat data JSON.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_TypedAPI_InvalidResolver">
+        <source>Type {0} is not found. If this type is allowed, please ensure that the 'resolver' function provided in 'TryGetData&lt;T&gt;' APIs supports it.</source>
+        <target state="translated">Typ {0} nebyl nalezen. Pokud je tento typ povolený, ujistěte se prosím, že ji podporuje funkce resolver poskytnutá v rozhraních API TryGetData&lt;T&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClipboardOrDragDrop_UseTypedAPI">
+        <source>Please use 'TryGetData&lt;T&gt;' APIs with a 'resolver' function that defines a set of allowed types to deserialize '{0}'.</source>
+        <target state="translated">Použijte prosím rozhraní API TryGetData&lt;T&gt; s funkcí překladače, která definuje sadu povolených typů pro deserializaci '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="ClipboardSecurityException">
@@ -1517,6 +1567,11 @@
         <target state="translated">Ukazatel myši, který se zobrazí, pokud jej přesunete přes ovládací prvek.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ControlDarkModeDescr">
+        <source>Determines the dark mode setting for the control. This ambient property inherits its value from its parent control or from the Application class.</source>
+        <target state="translated">Určuje nastavení tmavého režimu ovládacího prvku. Tato ambientní vlastnost dědí svou hodnotu z nadřazeného ovládacího prvku nebo z třídy Application.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ControlDataContextChangedDescr">
         <source>Occurs when the value of the DataContext property changes.</source>
         <target state="translated">Vyvolá se při změně hodnoty vlastnosti DataContext.</target>
@@ -1650,6 +1705,11 @@
       <trans-unit id="ControlNotChild">
         <source>'child' is not a child control of this parent.</source>
         <target state="translated">Objekt child není podřízeným ovládacím prvkem tohoto nadřazeného objektu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ControlNotSupportedInTrimming">
+        <source>'{0}' is not supported in trimmed applications.</source>
+        <target state="translated">{0} se v aplikacích s pročištěným kódem nepodporuje.</target>
         <note />
       </trans-unit>
       <trans-unit id="ControlOnAutoSizeChangedDescr">
@@ -2165,6 +2225,11 @@
       <trans-unit id="CursorNonSerializableHandle">
         <source>Stock cursors cannot be serialized.</source>
         <target state="translated">Ukazatele zásobníku nelze serializovat.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DarkModeNotSupported">
+        <source>Dark mode cannot be activated, either because of an activated High-Contrast mode or because the underlying OS does not support it.</source>
+        <target state="translated">Tmavý režim nelze aktivovat, a to buď z důvodu aktivovaného režimu vysokého kontrastu, nebo proto, že ho nepodporuje příslušný operační systém.</target>
         <note />
       </trans-unit>
       <trans-unit id="DataBindingAddNewNotSupportedOnPropertyManager">
@@ -4135,8 +4200,8 @@ Chcete-li nahradit toto výchozí dialogové okno, nastavte popisovač události
         <note />
       </trans-unit>
       <trans-unit id="DataGridView_SortedDescr">
-        <source>Occurs when the DataGridView compares two cell values to perform a sort operation.</source>
-        <target state="translated">Vyvolá se v případě, že ovládací prvek DataGridView porovnává dvě hodnoty buňky za účelem provedení operace řazení.</target>
+        <source>Occurs when the DataGridView control completes a sorting operation.</source>
+        <target state="translated">Vyvolá se v případě, že kontrola DataGridView dokončí operaci řazení.</target>
         <note />
       </trans-unit>
       <trans-unit id="DataGridView_StandardTabDescr">
@@ -4627,6 +4692,11 @@ Chcete-li nahradit toto výchozí dialogové okno, nastavte popisovač události
       <trans-unit id="DescriptionWebBrowser">
         <source>Enables the user to browse Web pages inside your form.</source>
         <target state="translated">Umožňuje uživateli procházet webové stránky uvnitř formuláře.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DesignTimeFeaturesNotSupported">
+        <source>Design time features are not supported.</source>
+        <target state="translated">Funkce doby návrhu nejsou podporovány.</target>
         <note />
       </trans-unit>
       <trans-unit id="DispInvokeFailed">
@@ -5205,6 +5275,11 @@ Chcete jej nahradit?</target>
         <target state="translated">Řetězec zobrazený v dialogovém okně nad ovládacím prvkem zobrazení stromu. V řetězci můžete uvést pokyny pro uživatele.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FolderBrowserDialogMultiSelectDescr">
+        <source>Controls whether multiple folders can be selected in the dialog.</source>
+        <target state="translated">Určuje, zda v dialogovém okně lze vybrat více složek.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FolderBrowserDialogOkRequiresInteraction">
         <source>Controls whether the OK button of the dialog box is disabled until the user navigates the view or edits the filename (if applicable). Note: Disabling of the OK button does not prevent the dialog from being submitted by the Enter key.</source>
         <target state="translated">Určuje, jestli je tlačítko OK v dialogovém okně zakázané, dokud uživatel neprojde zobrazením nebo neupraví název souboru (pokud je to možné). Poznámka: Zakázání tlačítka OK nezabrání odeslání dialogového okna klávesou Enter.</target>
@@ -5218,6 +5293,11 @@ Chcete jej nahradit?</target>
       <trans-unit id="FolderBrowserDialogSelectedPath">
         <source>The path of the folder first selected in the dialog or the last one selected by the user.</source>
         <target state="translated">Cesta ke složce, která byla poprvé vybrána v dialogovém okně nebo naposledy označena uživatelem.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FolderBrowserDialogSelectedPathsDescr">
+        <source>Retrieves the paths of all selected folders in the dialog box.</source>
+        <target state="translated">Načte cesty všech vybraných složek v dialogovém okně.</target>
         <note />
       </trans-unit>
       <trans-unit id="FolderBrowserDialogShowHiddenFiles">
@@ -5275,6 +5355,16 @@ Chcete jej nahradit?</target>
         <target state="translated">Aktuální pozice posuvníku automatického posouvání.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FormBorderColorChangedDescr">
+        <source>Occurs whenever the FormBorderColor property is changed.</source>
+        <target state="translated">Vyvolá se vždy, když je změněna vlastnost FormBorderColor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormBorderColorDescr">
+        <source>The color of the Form's border.</source>
+        <target state="translated">Barva ohraničení formuláře</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormBorderStyleDescr">
         <source>Indicates the appearance and behavior of the border and title bar of the form.</source>
         <target state="translated">Určuje vzhled a chování ohraničení a záhlaví formuláře.</target>
@@ -5285,9 +5375,39 @@ Chcete jej nahradit?</target>
         <target state="translated">Stornovací tlačítko formuláře. Je-li tato vlastnost nastavena, dojde k aktivaci tohoto tlačítka vždy, když uživatel stiskne klávesu Esc.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FormCaptionBackColorChangedDescr">
+        <source>Occurs whenever the FormCaptionBackColor property is changed.</source>
+        <target state="translated">Vyvolá se vždy, když je změněna vlastnost FormCaptionBackColor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionBackColorDescr">
+        <source>The back color of the Form's caption (title bar).</source>
+        <target state="translated">Barva pozadí záhlaví formuláře</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionTextColorChangedDescr">
+        <source>Occurs whenever the FormCaptionTextColor property is changed.</source>
+        <target state="translated">Vyvolá se vždy, když je změněna vlastnost FormCaptionTextColor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCaptionTextColorDescr">
+        <source>The color of the Form's text caption (title bar text).</source>
+        <target state="translated">Barva textu záhlaví formuláře</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormControlBoxDescr">
         <source>Determines whether a form has a Control/System menu box.</source>
         <target state="translated">Určuje, zda má formulář systémovou a řídicí nabídku.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCornerPreferenceChangedDescr">
+        <source>Occurs whenever the FormCornerPreference property is changed.</source>
+        <target state="translated">Vyvolá se vždy, když je změněna vlastnost FormCornerPreference.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FormCornerPreferenceDescr">
+        <source>The rounding style of the Form's border.</source>
+        <target state="translated">Styl zaoblení okraje formuláře</target>
         <note />
       </trans-unit>
       <trans-unit id="FormDesktopBoundsDescr">
@@ -5490,6 +5610,11 @@ Chcete jej nahradit?</target>
         <target state="translated">Míra průhlednosti ovládacího prvku v procentech</target>
         <note />
       </trans-unit>
+      <trans-unit id="FormOrTaskDialog_NoSyncContextForShowAsync">
+        <source>Failed to retrieve the Synchronization Context for showing the Form asynchronously.</source>
+        <target state="translated">Načtení kontextu synchronizace pro asynchronní zobrazení formuláře se nezdařilo.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="FormOwnedFormsDescr">
         <source>Array of forms owned by this form.</source>
         <target state="translated">Pole formulářů vlastněných tímto formulářem.</target>
@@ -5533,6 +5658,11 @@ Chcete jej nahradit?</target>
       <trans-unit id="FormWindowStateDescr">
         <source>Determines the initial visual state of the form.</source>
         <target state="translated">Určuje počáteční stav viditelnosti formuláře.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Form_HasAlreadyBeenShownAsync">
+        <source>The form has already been shown asynchronously.</source>
+        <target state="translated">Formulář již byl zobrazen asynchronně.</target>
         <note />
       </trans-unit>
       <trans-unit id="FormatControlFormatDescr">
@@ -5683,6 +5813,11 @@ Chcete jej nahradit?</target>
       <trans-unit id="ISupportInitializeDescr">
         <source>Specifies support for transacted initialization. </source>
         <target state="translated">Určuje podporu pro provedenou inicializaci. </target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ITypeDataObject_Not_Implemented">
+        <source>Data object '{0}' doesn't implement the 'ITypedDataObject' interface and can't be read using 'TryGetData&lt;T&gt;(string, out T)' methods.</source>
+        <target state="translated">'{0}' datového objektu neimplementuje rozhraní ITypedDataObject a nedá se číst pomocí metod TryGetData&lt;T&gt;(string, out T).</target>
         <note />
       </trans-unit>
       <trans-unit id="IllegalCrossThreadCall">
@@ -5849,11 +5984,6 @@ Trasování zásobníku, kde došlo k neplatné operaci:
         <target state="translated">Akce prováděná s tímto ovládacím prvkem je volána z nesprávného vlákna. Chcete-li tuto akci provést, přejděte pomocí funkce Control.Invoke nebo Control.BeginInvoke ke správnému vláknu.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidExBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than {2} and less than {3}.</source>
-        <target state="translated">Hodnota {1} není platnou hodnotou argumentu {0}. Hodnota {0} by měla být větší než {2} a menší než {3}.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidFileFormat">
         <source>File format is not valid.</source>
         <target state="translated">Formát souboru není platný.</target>
@@ -5872,26 +6002,6 @@ Trasování zásobníku, kde došlo k neplatné operaci:
       <trans-unit id="InvalidHdcType">
         <source>Invalid HDC type: {0}</source>
         <target state="translated">Neplatný typ HDC: {0}</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidHighBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be less than {2}.</source>
-        <target state="translated">Hodnota {1} není platnou hodnotou argumentu {0}. Hodnota {0} musí být menší než {2}.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidHighBoundArgumentEx">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be less than or equal to {2}.</source>
-        <target state="translated">Hodnota {1} není platnou hodnotou argumentu {0}. Hodnota {0} musí být menší nebo rovna {2}.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLowBoundArgument">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be greater than {2}.</source>
-        <target state="translated">Hodnota {1} není platnou hodnotou argumentu {0}. Hodnota {0} musí být větší než {2}.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLowBoundArgumentEx">
-        <source>Value of '{1}' is not valid for '{0}'. '{0}' must be greater than or equal to {2}.</source>
-        <target state="translated">Hodnota {1} není platnou hodnotou argumentu {0}. Hodnota {0} musí být větší nebo rovna {2}.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidNullArgument">
@@ -6850,8 +6960,8 @@ Trasování zásobníku, kde došlo k neplatné operaci:
         <note />
       </trans-unit>
       <trans-unit id="ListViewVirtualListSizeDescr">
-        <source>Sets the count of the item collection when the ListView is in virtual mode.</source>
-        <target state="translated">Nastaví počet pro kolekci položek v případě, že je vlastnost ListView ve virtuálním režimu.</target>
+        <source>Sets the count of the item collection when the ListView is in virtual mode. If VirtualMode is set to true, and the VirtualListSize property is greater than 0, you must handle the RetrieveVirtualItem event providing valid items.</source>
+        <target state="translated">Nastaví počet pro kolekci položek v případě, že je vlastnost ListView ve virtuálním režimu. Pokud je vlastnost VirtualMode nastavena na hodnotu true a vlastnost VirtualListSize je větší než 0, je nutné zpracovat událost RetrieveVirtualItem tak, že poskytnete platné položky.</target>
         <note />
       </trans-unit>
       <trans-unit id="ListViewVirtualListSizeInvalidArgument">
@@ -7312,6 +7422,11 @@ Trasování zásobníku, kde došlo k neplatné operaci:
       <trans-unit id="NotSupported">
         <source>The type {0} on line {1}, position {2} threw the following exception while being converted: {3}</source>
         <target state="translated">Typ {0} na řádku {1} na pozici {2} vyvolal při převodu následující výjimku: {3}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotSupportedExceptionOnClipboard">
+        <source>Clipboard contains a 'NotSupportedException' that indicates that write operation failed. '{0}'.</source>
+        <target state="new">Clipboard contains a 'NotSupportedException' that indicates that write operation failed. '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotifyIconBalloonTipIconDescr">
@@ -8599,11 +8714,6 @@ Trasování zásobníku, kde došlo k neplatné operaci:
         <target state="translated">Kolekce je jen pro čtení.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegisterCFFailed">
-        <source>Clipboard format registration did not succeed.</source>
-        <target state="translated">Registrace formátu schránky se nezdařila.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="RelatedListManagerChild">
         <source>Child list for field {0} cannot be created.</source>
         <target state="translated">Nelze vytvořit podřízený seznam pro pole {0}.</target>
@@ -9699,6 +9809,11 @@ Trasování zásobníku, kde došlo k neplatné operaci:
         <target state="translated">Příliš mnoho volání ResumeUpdateMenuHandles.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ToolStripAllowClickThrough">
+        <source>Allows the control to be interacted when window does not have focus.</source>
+        <target state="translated">Umožňuje interakci s ovládacím prvkem, pokud okno nemá fokus.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ToolStripAllowItemReorderAndAllowDropCannotBeSetToTrue">
         <source>AllowItemReorder and AllowDrop cannot both be true.</source>
         <target state="translated">Vlastnosti AllowItemReorder a AllowDrop nemohou být současně nastaveny na hodnotu True.</target>
@@ -10227,6 +10342,11 @@ Trasování zásobníku, kde došlo k neplatné operaci:
       <trans-unit id="ToolStripItemRightToLeftDescr">
         <source>Indicates whether the item should draw right-to-left for RTL languages.</source>
         <target state="translated">Označuje, zda by se měla položka pro jazyky čtené zprava doleva (RTL) překreslovat zprava doleva.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToolStripItemSelectedChangedDescr">
+        <source>Occurs when the Selected property value changes.</source>
+        <target state="translated">Nastane, když se změní hodnota vybrané vlastnosti.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToolStripItemSize">

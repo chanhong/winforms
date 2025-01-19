@@ -37,16 +37,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
 
     private ButtonState ButtonState
     {
-        get
-        {
-            int buttonState = Properties.GetInteger(s_propButtonCellState, out bool found);
-            if (found)
-            {
-                return (ButtonState)buttonState;
-            }
-
-            return ButtonState.Normal;
-        }
+        get => Properties.GetValueOrDefault(s_propButtonCellState, ButtonState.Normal);
         set
         {
             // ButtonState.Pushed is used for mouse interaction
@@ -54,41 +45,25 @@ public partial class DataGridViewButtonCell : DataGridViewCell
             Debug.Assert((value & ~(ButtonState.Normal | ButtonState.Pushed | ButtonState.Checked)) == 0);
             if (ButtonState != value)
             {
-                Properties.SetInteger(s_propButtonCellState, (int)value);
+                Properties.AddOrRemoveValue(s_propButtonCellState, value, defaultValue: ButtonState.Normal);
             }
         }
     }
 
+    // Buttons can't switch to edit mode
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.Interfaces)]
-    public override Type? EditType
-    {
-        get
-        {
-            // Buttons can't switch to edit mode
-            return null;
-        }
-    }
+    public override Type? EditType => null;
 
     [DefaultValue(FlatStyle.Standard)]
     public FlatStyle FlatStyle
     {
-        get
-        {
-            int flatStyle = Properties.GetInteger(s_propButtonCellFlatStyle, out bool found);
-            if (found)
-            {
-                return (FlatStyle)flatStyle;
-            }
-
-            return FlatStyle.Standard;
-        }
+        get => Properties.GetValueOrDefault(s_propButtonCellFlatStyle, FlatStyle.Standard);
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x3
             SourceGenerated.EnumValidator.Validate(value);
             if (value != FlatStyle)
             {
-                Properties.SetInteger(s_propButtonCellFlatStyle, (int)value);
+                Properties.AddOrRemoveValue(s_propButtonCellFlatStyle, value, defaultValue: FlatStyle.Standard);
                 OnCommonChange();
             }
         }
@@ -98,10 +73,10 @@ public partial class DataGridViewButtonCell : DataGridViewCell
     {
         set
         {
-            Debug.Assert(value >= FlatStyle.Flat && value <= FlatStyle.System);
+            Debug.Assert(value is >= FlatStyle.Flat and <= FlatStyle.System);
             if (value != FlatStyle)
             {
-                Properties.SetInteger(s_propButtonCellFlatStyle, (int)value);
+                Properties.AddValue(s_propButtonCellFlatStyle, value);
             }
         }
     }
@@ -113,21 +88,12 @@ public partial class DataGridViewButtonCell : DataGridViewCell
     [DefaultValue(false)]
     public bool UseColumnTextForButtonValue
     {
-        get
-        {
-            int useColumnTextForButtonValue = Properties.GetInteger(s_propButtonCellUseColumnTextForButtonValue, out bool found);
-            if (found)
-            {
-                return useColumnTextForButtonValue == 0 ? false : true;
-            }
-
-            return false;
-        }
+        get => Properties.GetValueOrDefault<bool>(s_propButtonCellUseColumnTextForButtonValue);
         set
         {
             if (value != UseColumnTextForButtonValue)
             {
-                Properties.SetInteger(s_propButtonCellUseColumnTextForButtonValue, value ? 1 : 0);
+                Properties.AddValue(s_propButtonCellUseColumnTextForButtonValue, value);
                 OnCommonChange();
             }
         }
@@ -139,7 +105,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
         {
             if (value != UseColumnTextForButtonValue)
             {
-                Properties.SetInteger(s_propButtonCellUseColumnTextForButtonValue, value ? 1 : 0);
+                Properties.AddValue(s_propButtonCellUseColumnTextForButtonValue, value);
             }
         }
     }
@@ -172,7 +138,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
             dataGridViewCell = (DataGridViewButtonCell)Activator.CreateInstance(thisType)!;
         }
 
-        base.CloneInternal(dataGridViewCell);
+        CloneInternal(dataGridViewCell);
         dataGridViewCell.FlatStyleInternal = FlatStyle;
         dataGridViewCell.UseColumnTextForButtonValueInternal = UseColumnTextForButtonValue;
         return dataGridViewCell;
@@ -327,7 +293,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
         Rectangle borderWidthsRect = StdBorderWidths;
         int borderAndPaddingWidths = borderWidthsRect.Left + borderWidthsRect.Width + cellStyle.Padding.Horizontal;
         int borderAndPaddingHeights = borderWidthsRect.Top + borderWidthsRect.Height + cellStyle.Padding.Vertical;
-        DataGridViewFreeDimension freeDimension = DataGridViewCell.GetFreeDimensionFromConstraint(constraintSize);
+        DataGridViewFreeDimension freeDimension = GetFreeDimensionFromConstraint(constraintSize);
         int marginWidths, marginHeights;
         string? formattedString = GetFormattedValue(rowIndex, ref cellStyle, DataGridViewDataErrorContexts.Formatting | DataGridViewDataErrorContexts.PreferredSize) as string;
         if (string.IsNullOrEmpty(formattedString))
@@ -340,7 +306,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
         // Adding space for text padding.
         if (DataGridView.ApplyVisualStylesToInnerCells)
         {
-            Rectangle rectThemeMargins = DataGridViewButtonCell.GetThemeMargins(graphics);
+            Rectangle rectThemeMargins = GetThemeMargins(graphics);
             marginWidths = rectThemeMargins.X + rectThemeMargins.Width;
             marginHeights = rectThemeMargins.Y + rectThemeMargins.Height;
         }
@@ -361,7 +327,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                             MeasureTextWidth(
                                 graphics,
                                 formattedString,
-                                cellStyle.Font,
+                                cellStyle.Font!,
                                 constraintSize.Height - borderAndPaddingHeights - marginHeights - 2 * DATAGRIDVIEWBUTTONCELL_verticalTextMargin,
                                 flags),
                             0);
@@ -369,7 +335,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                     else
                     {
                         preferredSize = new Size(
-                            MeasureTextSize(graphics, formattedString, cellStyle.Font, flags).Width,
+                            MeasureTextSize(graphics, formattedString, cellStyle.Font!, flags).Width,
                             0);
                     }
 
@@ -386,7 +352,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                             MeasureTextHeight(
                                 graphics,
                                 formattedString,
-                                cellStyle.Font,
+                                cellStyle.Font!,
                                 constraintSize.Width - borderAndPaddingWidths - marginWidths - 2 * DATAGRIDVIEWBUTTONCELL_horizontalTextMargin,
                                 flags));
                     }
@@ -397,7 +363,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                             MeasureTextSize(
                                 graphics,
                                 formattedString,
-                                cellStyle.Font,
+                                cellStyle.Font!,
                                 flags).Height);
                     }
 
@@ -408,11 +374,11 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                 {
                     if (cellStyle.WrapMode == DataGridViewTriState.True && formattedString.Length > 1)
                     {
-                        preferredSize = MeasureTextPreferredSize(graphics, formattedString, cellStyle.Font, 5.0F, flags);
+                        preferredSize = MeasureTextPreferredSize(graphics, formattedString, cellStyle.Font!, 5.0F, flags);
                     }
                     else
                     {
-                        preferredSize = MeasureTextSize(graphics, formattedString, cellStyle.Font, flags);
+                        preferredSize = MeasureTextSize(graphics, formattedString, cellStyle.Font!, flags);
                     }
 
                     break;
@@ -446,7 +412,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
     {
         if (s_rectThemeMargins.X == -1)
         {
-            Rectangle rectCell = new Rectangle(0, 0, DATAGRIDVIEWBUTTONCELL_themeMargin, DATAGRIDVIEWBUTTONCELL_themeMargin);
+            Rectangle rectCell = new(0, 0, DATAGRIDVIEWBUTTONCELL_themeMargin, DATAGRIDVIEWBUTTONCELL_themeMargin);
             Rectangle rectContent = DataGridViewButtonCellRenderer.DataGridViewButtonRenderer.GetBackgroundContentRectangle(g, rectCell);
             s_rectThemeMargins.X = rectContent.X;
             s_rectThemeMargins.Y = rectContent.Y;
@@ -754,7 +720,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                     {
                         if (paint && PaintContentBackground(paintParts))
                         {
-                            PushButtonState pbState = VisualStyles.PushButtonState.Normal;
+                            PushButtonState pbState = PushButtonState.Normal;
                             if ((ButtonState & (ButtonState.Pushed | ButtonState.Checked)) != 0)
                             {
                                 pbState = PushButtonState.Pressed;
@@ -811,7 +777,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                                     DataGridView.Enabled).Calculate();
 
                                 using DeviceContextHdcScope hdc = new(g);
-                                using PInvoke.CreateBrushScope hbrush = new (
+                                using CreateBrushScope hbrush = new(
                                     colors.Options.HighContrast ? colors.ButtonShadow : colors.LowHighlight);
                                 hdc.FillRectangle(valBounds, hbrush);
                             }
@@ -819,7 +785,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                                 DataGridView.MouseEnteredCellAddress.X == ColumnIndex && s_mouseInContentBounds)
                             {
                                 using DeviceContextHdcScope hdc = new(g);
-                                using PInvoke.CreateBrushScope hbrush = new(SystemColors.ControlDark);
+                                using CreateBrushScope hbrush = new(SystemColors.ControlDark);
                                 hdc.FillRectangle(valBounds, hbrush);
                             }
                         }
@@ -919,7 +885,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
             valBounds.Height > 2 * SystemInformation.Border3DSize.Height + 1)
         {
             // Draw focus rectangle
-            if (FlatStyle == FlatStyle.System || FlatStyle == FlatStyle.Standard)
+            if (FlatStyle is FlatStyle.System or FlatStyle.Standard)
             {
                 ControlPaint.DrawFocusRectangle(g, Rectangle.Inflate(valBounds, -1, -1), Color.Empty, cellStyle.ForeColor);
             }
@@ -943,7 +909,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                         valBounds,
                         Padding.Empty,
                         false,
-                        cellStyle.Font,
+                        cellStyle.Font!,
                         text,
                         DataGridView.Enabled,
                         DataGridViewUtilities.ComputeDrawingContentAlignmentForCellStyleAlignment(cellStyle.Alignment),
@@ -954,7 +920,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                     ButtonBaseAdapter.DrawFlatFocus(
                         g,
                         layout.Focus,
-                        colors.Options.HighContrast ? colors.WindowText : colors.ConstrastButtonShadow);
+                        colors.Options.HighContrast ? colors.WindowText : colors.ContrastButtonShadow);
                 }
             }
             else
@@ -973,7 +939,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                         valBounds,
                         Padding.Empty,
                         false,
-                        cellStyle.Font,
+                        cellStyle.Font!,
                         text,
                         DataGridView.Enabled,
                         DataGridViewUtilities.ComputeDrawingContentAlignmentForCellStyleAlignment(cellStyle.Alignment),

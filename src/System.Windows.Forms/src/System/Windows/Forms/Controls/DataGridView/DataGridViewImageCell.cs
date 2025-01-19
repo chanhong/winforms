@@ -20,7 +20,7 @@ public partial class DataGridViewImageCell : DataGridViewCell
 
     private const byte CellValueIsIcon = 0x01;
 
-    private byte _flags;  // see DATAGRIDVIEWIMAGECELL_ consts above
+    private byte _flags;  // see DATAGRIDVIEWIMAGECELL_ constants above
 
     public DataGridViewImageCell()
         : this(valueIsIcon: false)
@@ -58,24 +58,8 @@ public partial class DataGridViewImageCell : DataGridViewCell
     [AllowNull]
     public string Description
     {
-        get
-        {
-            object? description = Properties.GetObject(s_propImageCellDescription);
-            if (description is not null)
-            {
-                return (string)description;
-            }
-
-            return string.Empty;
-        }
-
-        set
-        {
-            if (!string.IsNullOrEmpty(value) || Properties.ContainsObject(s_propImageCellDescription))
-            {
-                Properties.SetObject(s_propImageCellDescription, value);
-            }
-        }
+        get => Properties.GetStringOrEmptyString(s_propImageCellDescription);
+        set => Properties.AddOrRemoveString(s_propImageCellDescription, value);
     }
 
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.Interfaces)]
@@ -88,7 +72,8 @@ public partial class DataGridViewImageCell : DataGridViewCell
         }
     }
 
-    internal static Bitmap ErrorBitmap => s_errorBitmap ??= DpiHelper.GetBitmapFromIcon(typeof(DataGridView), "ImageInError");
+    internal static Bitmap ErrorBitmap =>
+        s_errorBitmap ??= ScaleHelper.GetIconResourceAsDefaultSizeBitmap(typeof(DataGridView), "ImageInError");
 
     internal static Icon ErrorIcon => s_errorIcon ??= new Icon(typeof(DataGridView), "IconInError");
 
@@ -110,23 +95,14 @@ public partial class DataGridViewImageCell : DataGridViewCell
     [DefaultValue(DataGridViewImageCellLayout.NotSet)]
     public DataGridViewImageCellLayout ImageLayout
     {
-        get
-        {
-            int imageLayout = Properties.GetInteger(s_propImageCellLayout, out bool found);
-            if (found)
-            {
-                return (DataGridViewImageCellLayout)imageLayout;
-            }
-
-            return DataGridViewImageCellLayout.Normal;
-        }
+        get => Properties.GetValueOrDefault(s_propImageCellLayout, DataGridViewImageCellLayout.Normal);
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x3
+            // Sequential enum. Valid values are 0x0 to 0x3
             SourceGenerated.EnumValidator.Validate(value);
             if (ImageLayout != value)
             {
-                Properties.SetInteger(s_propImageCellLayout, (int)value);
+                Properties.AddOrRemoveValue(s_propImageCellLayout, value, defaultValue: DataGridViewImageCellLayout.Normal);
                 OnCommonChange();
             }
         }
@@ -136,11 +112,8 @@ public partial class DataGridViewImageCell : DataGridViewCell
     {
         set
         {
-            Debug.Assert(value >= DataGridViewImageCellLayout.NotSet && value <= DataGridViewImageCellLayout.Zoom);
-            if (ImageLayout != value)
-            {
-                Properties.SetInteger(s_propImageCellLayout, (int)value);
-            }
+            Debug.Assert(value is >= DataGridViewImageCellLayout.NotSet and <= DataGridViewImageCellLayout.Zoom);
+            Properties.AddOrRemoveValue(s_propImageCellLayout, value, defaultValue: DataGridViewImageCellLayout.Normal);
         }
     }
 
@@ -176,7 +149,7 @@ public partial class DataGridViewImageCell : DataGridViewCell
             {
                 if (value)
                 {
-                    _flags |= (byte)CellValueIsIcon;
+                    _flags |= CellValueIsIcon;
                 }
                 else
                 {
@@ -237,10 +210,10 @@ public partial class DataGridViewImageCell : DataGridViewCell
         }
         else
         {
-            dataGridViewCell = (DataGridViewImageCell)System.Activator.CreateInstance(thisType)!;
+            dataGridViewCell = (DataGridViewImageCell)Activator.CreateInstance(thisType)!;
         }
 
-        base.CloneInternal(dataGridViewCell);
+        CloneInternal(dataGridViewCell);
         dataGridViewCell.ValueIsIconInternal = ValueIsIcon;
         dataGridViewCell.Description = Description;
         dataGridViewCell.ImageLayoutInternal = ImageLayout;
@@ -365,9 +338,9 @@ public partial class DataGridViewImageCell : DataGridViewCell
             cellStyle,
             dgvabsEffective,
             DataGridViewPaintParts.ContentForeground,
-            false /*computeContentBounds*/,
-            true  /*computeErrorIconBounds*/,
-            false /*paint*/);
+            computeContentBounds: false,
+            computeErrorIconBounds: true,
+            paint: false);
         Debug.Assert(errBoundsDebug.Equals(errBounds));
 #endif
 
@@ -436,7 +409,7 @@ public partial class DataGridViewImageCell : DataGridViewCell
         Rectangle borderWidthsRect = StdBorderWidths;
         int borderAndPaddingWidths = borderWidthsRect.Left + borderWidthsRect.Width + cellStyle.Padding.Horizontal;
         int borderAndPaddingHeights = borderWidthsRect.Top + borderWidthsRect.Height + cellStyle.Padding.Vertical;
-        DataGridViewFreeDimension freeDimension = DataGridViewCell.GetFreeDimensionFromConstraint(constraintSize);
+        DataGridViewFreeDimension freeDimension = GetFreeDimensionFromConstraint(constraintSize);
         object? formattedValue = GetFormattedValue(rowIndex, ref cellStyle, DataGridViewDataErrorContexts.Formatting | DataGridViewDataErrorContexts.PreferredSize);
         Image? img = formattedValue as Image;
         Icon? ico = null;
@@ -854,7 +827,7 @@ public partial class DataGridViewImageCell : DataGridViewCell
                 {
                     if (image is not null)
                     {
-                        using ImageAttributes attr = new ImageAttributes();
+                        using ImageAttributes attr = new();
                         attr.SetWrapMode(WrapMode.TileFlipXY);
                         g.DrawImage(image, imageBounds, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, attr);
                     }

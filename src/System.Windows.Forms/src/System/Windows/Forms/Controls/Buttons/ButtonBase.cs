@@ -48,7 +48,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     private FlatStyle _cachedAdapterType;
 
     // Backing fields for the infrastructure to make ToolStripItem bindable and introduce (bindable) ICommand.
-    private System.Windows.Input.ICommand? _command;
+    private Input.ICommand? _command;
     private object? _commandParameter;
 
     internal static readonly object s_commandChangedEvent = new();
@@ -63,25 +63,32 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
         // If Button doesn't want double-clicks, we should introduce a StandardDoubleClick style.
         // Checkboxes probably want double-click's, and RadioButtons certainly do
         // (useful e.g. on a Wizard).
-        SetStyle(ControlStyles.SupportsTransparentBackColor |
-                  ControlStyles.Opaque |
-                  ControlStyles.ResizeRedraw |
-                  ControlStyles.OptimizedDoubleBuffer |
-                  ControlStyles.CacheText | // We gain about 2% in painting by avoiding extra GetWindowText calls
-                  ControlStyles.StandardClick,
-                  true);
-        // this class overrides GetPreferredSizeCore, let Control automatically cache the result
+        SetStyle(
+            ControlStyles.SupportsTransparentBackColor
+                | ControlStyles.Opaque
+                | ControlStyles.ResizeRedraw
+                | ControlStyles.OptimizedDoubleBuffer
+                // We gain about 2% in painting by avoiding extra GetWindowText calls
+                | ControlStyles.CacheText
+                | ControlStyles.StandardClick,
+            true);
+
+        // This class overrides GetPreferredSizeCore, let Control automatically cache the result
         SetExtendedState(ExtendedStates.UserPreferredSizeCache, true);
 
-        SetStyle(ControlStyles.UserMouse |
-                 ControlStyles.UserPaint, OwnerDraw);
+        SetStyle(ControlStyles.UserMouse | ControlStyles.UserPaint, OwnerDraw);
+
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
+
         SetFlag(FlagUseMnemonic, true);
         SetFlag(FlagShowToolTip, false);
     }
 
     /// <summary>
-    ///  This property controls the activation handling of bleedover for the text that
-    ///  extends beyond the width of the button.
+    ///  Gets or sets a value indicating whether the ellipsis character (...) appears at the right edge of the control,
+    ///  denoting that the control text extends beyond the specified length of the control.
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
     [DefaultValue(false)]
@@ -90,11 +97,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     [SRDescription(nameof(SR.ButtonAutoEllipsisDescr))]
     public bool AutoEllipsis
     {
-        get
-        {
-            return GetFlag(FlagAutoEllipsis);
-        }
-
+        get => GetFlag(FlagAutoEllipsis);
         set
         {
             if (value == AutoEllipsis)
@@ -113,7 +116,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     }
 
     /// <summary>
-    ///  Indicates whether the control is automatically resized to fit its contents
+    ///  Indicates whether the control is automatically resized to fit its contents.
     /// </summary>
     [Browsable(true)]
     [EditorBrowsable(EditorBrowsableState.Always)]
@@ -124,7 +127,8 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
         set
         {
             base.AutoSize = value;
-            // don't show ellipsis if the control is autosized
+
+            // Don't show ellipsis if the control is auto sized.
             if (value)
             {
                 AutoEllipsis = false;
@@ -143,8 +147,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     }
 
     /// <summary>
-    ///  The background color of this control. This is an ambient property and
-    ///  will always return a non-null value.
+    ///  The background color of this control. This is an ambient property and will always return a non-null value.
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
     [SRDescription(nameof(SR.ControlBackColorDescr))]
@@ -157,6 +160,11 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
             {
                 if (value != Color.Empty)
                 {
+                    if (!AreDesignTimeFeaturesSupported)
+                    {
+                        throw new NotSupportedException(SR.DesignTimeFeaturesNotSupported);
+                    }
+
                     PropertyDescriptor? pd = TypeDescriptor.GetProperties(this)["UseVisualStyleBackColor"];
                     pd?.SetValue(this, false);
                 }
@@ -171,7 +179,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     }
 
     /// <summary>
-    ///  Gets or sets the <see cref="System.Windows.Input.ICommand"/> whose <see cref="System.Windows.Input.ICommand.Execute(object?)"/>
+    ///  Gets or sets the <see cref="Input.ICommand"/> whose <see cref="Input.ICommand.Execute(object?)"/>
     ///  method will be called when the <see cref="Control.Click"/> event gets invoked.
     /// </summary>
     [Bindable(true)]
@@ -179,15 +187,15 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     [SRCategory(nameof(SR.CatData))]
     [SRDescription(nameof(SR.CommandComponentCommandDescr))]
-    public System.Windows.Input.ICommand? Command
+    public Input.ICommand? Command
     {
         get => _command;
         set => ICommandBindingTargetProvider.CommandSetter(this, value, ref _command);
     }
 
     /// <summary>
-    ///  Occurs when the <see cref="System.Windows.Input.ICommand.CanExecute(object?)"/> status of the
-    ///  <see cref="System.Windows.Input.ICommand"/> which is assigned to the <see cref="Command"/> property has changed.
+    ///  Occurs when the <see cref="Input.ICommand.CanExecute(object?)"/> status of the
+    ///  <see cref="Input.ICommand"/> which is assigned to the <see cref="Command"/> property has changed.
     /// </summary>
     [SRCategory(nameof(SR.CatData))]
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -199,7 +207,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     }
 
     /// <summary>
-    ///  Occurs when the assigned <see cref="System.Windows.Input.ICommand"/> of the <see cref="Command"/> property has changed.
+    ///  Occurs when the assigned <see cref="Input.ICommand"/> of the <see cref="Command"/> property has changed.
     /// </summary>
     [SRCategory(nameof(SR.CatData))]
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -211,7 +219,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     }
 
     /// <summary>
-    ///  Gets or sets the parameter that is passed to the <see cref="System.Windows.Input.ICommand"/>
+    ///  Gets or sets the parameter that is passed to the <see cref="Input.ICommand"/>
     ///  which is assigned to the <see cref="Command"/> property.
     /// </summary>
     [Bindable(true)]
@@ -222,7 +230,6 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     public object? CommandParameter
     {
         get => _commandParameter;
-
         set
         {
             if (!Equals(_commandParameter, value))
@@ -254,7 +261,8 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
             CreateParams cp = base.CreateParams;
             if (!OwnerDraw)
             {
-                cp.ExStyle &= ~(int)WINDOW_EX_STYLE.WS_EX_RIGHT;   // WS_EX_RIGHT overrides the BS_XXXX alignment styles
+                // WS_EX_RIGHT overrides the BS_XXXX alignment styles
+                cp.ExStyle &= ~(int)WINDOW_EX_STYLE.WS_EX_RIGHT;
 
                 cp.Style |= PInvoke.BS_MULTILINE;
 
@@ -300,10 +308,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
 
     protected internal bool IsDefault
     {
-        get
-        {
-            return GetFlag(FlagIsDefault);
-        }
+        get => GetFlag(FlagIsDefault);
         set
         {
             if (value == IsDefault)
@@ -327,9 +332,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     }
 
     /// <summary>
-    ///  Gets or
-    ///  sets
-    ///  the flat style appearance of the button control.
+    ///  Gets or sets the flat style appearance of the button control.
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
     [DefaultValue(FlatStyle.Standard)]
@@ -337,10 +340,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     [SRDescription(nameof(SR.ButtonFlatStyleDescr))]
     public FlatStyle FlatStyle
     {
-        get
-        {
-            return _flatStyle;
-        }
+        get => _flatStyle;
         set
         {
             if (value == FlatStyle)
@@ -361,19 +361,10 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     [SRCategory(nameof(SR.CatAppearance))]
     [SRDescription(nameof(SR.ButtonFlatAppearance))]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
-    public FlatButtonAppearance FlatAppearance
-    {
-        get
-        {
-            _flatAppearance ??= new FlatButtonAppearance(this);
-
-            return _flatAppearance;
-        }
-    }
+    public FlatButtonAppearance FlatAppearance => _flatAppearance ??= new FlatButtonAppearance(this);
 
     /// <summary>
-    ///  Gets or sets the image
-    ///  that is displayed on a button control.
+    ///  Gets or sets the image that is displayed on a button control.
     /// </summary>
     [SRDescription(nameof(SR.ButtonImageDescr))]
     [Localizable(true)]
@@ -386,10 +377,9 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
             {
                 int actualIndex = _imageIndex.ActualIndex;
 
-                // Pre-whidbey we used to use ImageIndex rather than ImageIndexer.ActualIndex.
-                // ImageIndex clamps to the length of the image list.  We need to replicate
-                // this logic here for backwards compatibility.
-                // We do not bake this into ImageIndexer because different controls
+                // Before VS 2005 (Whidbey) we used to use ImageIndex rather than ImageIndexer.ActualIndex.
+                // ImageIndex clamps to the length of the image list. We need to replicate this logic here for
+                // backwards compatibility. We do not bake this into ImageIndexer because different controls
                 // treat this scenario differently.
                 if (actualIndex >= _imageList.Images.Count)
                 {
@@ -437,10 +427,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     [SRCategory(nameof(SR.CatAppearance))]
     public ContentAlignment ImageAlign
     {
-        get
-        {
-            return _imageAlign;
-        }
+        get => _imageAlign;
         set
         {
             SourceGenerated.EnumValidator.Validate(value);
@@ -455,9 +442,9 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     }
 
     /// <summary>
-    ///  Gets or sets the image list index value of the image
-    ///  displayed on the button control.
+    ///  Gets or sets the image list index value of the image displayed on the button control.
     /// </summary>
+    /// <inheritdoc cref="ImageKey"/>
     [TypeConverter(typeof(ImageIndexConverter))]
     [Editor($"System.Windows.Forms.Design.ImageIndexEditor, {AssemblyRef.SystemDesign}", typeof(UITypeEditor))]
     [Localizable(true)]
@@ -467,21 +454,12 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     [SRCategory(nameof(SR.CatAppearance))]
     public int ImageIndex
     {
-        get
-        {
-            if (_imageIndex.Index != ImageList.Indexer.DefaultIndex && _imageList is not null && _imageIndex.Index >= _imageList.Images.Count)
-            {
-                return _imageList.Images.Count - 1;
-            }
-
-            return _imageIndex.Index;
-        }
+        get => _imageIndex.Index != ImageList.Indexer.DefaultIndex && _imageList is not null && _imageIndex.Index >= _imageList.Images.Count
+            ? _imageList.Images.Count - 1
+            : _imageIndex.Index;
         set
         {
-            if (value < ImageList.Indexer.DefaultIndex)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(ImageIndex), value, ImageList.Indexer.DefaultIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, ImageList.Indexer.DefaultIndex);
 
             if (value == _imageIndex.Index && value != ImageList.Indexer.DefaultIndex)
             {
@@ -501,9 +479,19 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     }
 
     /// <summary>
-    ///  Gets or sets the image list index key of the image
-    ///  displayed on the button control.  Note - setting this unsets the ImageIndex
+    ///  Gets or sets the key accessor for the image in the <see cref="ImageList"/>.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   The <see cref="ImageKey"/> property specifies the image from the image list to display on the control.
+    ///  </para>
+    ///  <para>
+    ///   <see cref="ImageKey"/> and <see cref="ImageIndex"/> are mutually exclusive, meaning if one is set, the other
+    ///   is set to an invalid value and ignored. If you set the <see cref="ImageKey"/> property, the
+    ///   <see cref="ImageIndex"/> property is automatically set to -1. Alternatively, if you set the
+    ///   <see cref="ImageIndex"/> property, the <see cref="ImageKey"/> is automatically set to an empty string ("").
+    ///  </para>
+    /// </remarks>
     [TypeConverter(typeof(ImageKeyConverter))]
     [Editor($"System.Windows.Forms.Design.ImageIndexEditor, {AssemblyRef.SystemDesign}", typeof(UITypeEditor))]
     [Localizable(true)]
@@ -513,10 +501,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     [SRCategory(nameof(SR.CatAppearance))]
     public string ImageKey
     {
-        get
-        {
-            return _imageIndex.Key;
-        }
+        get => _imageIndex.Key;
         set
         {
             if (value == _imageIndex.Key && !string.Equals(value, ImageList.Indexer.DefaultKey))
@@ -537,7 +522,8 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     }
 
     /// <summary>
-    ///  Gets or sets the <see cref="Forms.ImageList"/> that contains the <see cref="Drawing.Image"/> displayed on a button control.
+    ///  Gets or sets the <see cref="Forms.ImageList"/> that contains the <see cref="Drawing.Image"/>
+    ///  displayed on a button control.
     /// </summary>
     [DefaultValue(null)]
     [SRDescription(nameof(SR.ButtonImageListDescr))]
@@ -545,10 +531,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     [SRCategory(nameof(SR.CatAppearance))]
     public ImageList? ImageList
     {
-        get
-        {
-            return _imageList;
-        }
+        get => _imageList;
         set
         {
             if (value == _imageList)
@@ -556,8 +539,8 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
                 return;
             }
 
-            EventHandler recreateHandler = new EventHandler(ImageListRecreateHandle);
-            EventHandler disposedHandler = new EventHandler(DetachImageList);
+            EventHandler recreateHandler = ImageListRecreateHandle;
+            EventHandler disposedHandler = DetachImageList;
 
             // Detach old event handlers
             if (_imageList is not null)
@@ -605,29 +588,26 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     /// <summary>
     ///  Specifies whether the control is willing to process mnemonics when hosted in an container ActiveX (Ax Sourcing).
     /// </summary>
-    internal override bool IsMnemonicsListenerAxSourced
-    {
-        get
-        {
-            return true;
-        }
-    }
+    internal override bool IsMnemonicsListenerAxSourced => true;
 
     /// <summary>
-    ///  The area of the button encompassing any changes between the button's
-    ///  resting appearance and its appearance when the mouse is over it.
-    ///  Consider overriding this property if you override any painting methods,
-    ///  or your button may not paint correctly or may have flicker. Returning
-    ///  ClientRectangle is safe for correct painting but may still cause flicker.
+    ///  The area of the button encompassing any changes between the button's resting appearance and its appearance
+    ///  when the mouse is over it.
     /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Consider overriding this property if you override any painting methods, or your button may not paint correctly
+    ///   or may have flicker. Returning <see cref="Control.ClientRectangle"/> is safe for correct painting but may
+    ///   still cause flicker.
+    ///  </para>
+    /// </remarks>
     internal virtual Rectangle OverChangeRectangle
     {
         get
         {
             if (FlatStyle == FlatStyle.Standard)
             {
-                // this Rectangle will cause no Invalidation
-                // can't use Rectangle.Empty because it will cause Invalidate(ClientRectangle)
+                // Return an out of bounds rectangle to avoid invalidation.
                 return new Rectangle(-1, -1, 1, 1);
             }
             else
@@ -637,75 +617,45 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
         }
     }
 
-    internal bool OwnerDraw
-    {
-        get
-        {
-            return FlatStyle != FlatStyle.System;
-        }
-    }
+    internal bool OwnerDraw => FlatStyle != FlatStyle.System;
 
     bool? ICommandBindingTargetProvider.PreviousEnabledStatus { get; set; }
 
     /// <summary>
-    ///  The area of the button encompassing any changes between the button's
-    ///  appearance when the mouse is over it but not pressed and when it is pressed.
-    ///  Consider overriding this property if you override any painting methods,
-    ///  or your button may not paint correctly or may have flicker. Returning
-    ///  ClientRectangle is safe for correct painting but may still cause flicker.
+    ///  The area of the button encompassing any changes between the button's appearance when the mouse is over it
+    ///  but not pressed and when it is pressed.
     /// </summary>
-    internal virtual Rectangle DownChangeRectangle
-    {
-        get
-        {
-            return ClientRectangle;
-        }
-    }
+    /// <remarks>
+    ///  <para>
+    ///   Consider overriding this property if you override any painting methods, or your button may not paint correctly
+    ///   or may have flicker. Returning <see cref="Control.ClientRectangle"/> is safe for correct painting but may
+    ///   still cause flicker.
+    ///  </para>
+    /// </remarks>
+    internal virtual Rectangle DownChangeRectangle => ClientRectangle;
 
-    internal bool MouseIsPressed
-    {
-        get
-        {
-            return GetFlag(FlagMousePressed);
-        }
-    }
+    internal bool MouseIsPressed => GetFlag(FlagMousePressed);
 
     // a "smart" version of mouseDown for Appearance.Button CheckBoxes & RadioButtons
     // for these, instead of being based on the actual mouse state, it's based on the appropriate button state
-    internal bool MouseIsDown
-    {
-        get
-        {
-            return GetFlag(FlagMouseDown);
-        }
-    }
+    internal bool MouseIsDown => GetFlag(FlagMouseDown);
 
     // a "smart" version of mouseOver for Appearance.Button CheckBoxes & RadioButtons
     // for these, instead of being based on the actual mouse state, it's based on the appropriate button state
-    internal bool MouseIsOver
-    {
-        get
-        {
-            return GetFlag(FlagMouseOver);
-        }
-    }
+    internal bool MouseIsOver => GetFlag(FlagMouseOver);
 
     /// <summary>
     ///  Indicates whether the tooltip should be shown
     /// </summary>
     internal bool ShowToolTip
     {
-        get
-        {
-            return GetFlag(FlagShowToolTip);
-        }
-        set
-        {
-            SetFlag(FlagShowToolTip, value);
-        }
+        get => GetFlag(FlagShowToolTip);
+        set => SetFlag(FlagShowToolTip, value);
     }
 
-    [Editor($"System.ComponentModel.Design.MultilineStringEditor, {AssemblyRef.SystemDesign}", typeof(UITypeEditor)),
+    [Editor(
+        $"System.ComponentModel.Design.MultilineStringEditor, {AssemblyRef.SystemDesign}",
+        typeof(UITypeEditor)),
         SettingsBindable(true)]
     [AllowNull]
     public override string Text
@@ -723,10 +673,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     [SRCategory(nameof(SR.CatAppearance))]
     public virtual ContentAlignment TextAlign
     {
-        get
-        {
-            return _textAlign;
-        }
+        get => _textAlign;
         set
         {
             SourceGenerated.EnumValidator.Validate(value);
@@ -780,11 +727,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     [SRCategory(nameof(SR.CatAppearance))]
     public bool UseMnemonic
     {
-        get
-        {
-            return GetFlag(FlagUseMnemonic);
-        }
-
+        get => GetFlag(FlagUseMnemonic);
         set
         {
             if (value == UseMnemonic)
@@ -798,15 +741,9 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
         }
     }
 
-    private void Animate()
-    {
-        Animate(!DesignMode && Visible && Enabled && ParentInternal is not null);
-    }
+    private void Animate() => Animate(!DesignMode && Visible && Enabled && ParentInternal is not null);
 
-    private void StopAnimate()
-    {
-        Animate(false);
-    }
+    private void StopAnimate() => Animate(animate: false);
 
     private void Animate(bool animate)
     {
@@ -816,7 +753,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
             {
                 if (_image is not null)
                 {
-                    ImageAnimator.Animate(_image, new EventHandler(OnFrameChanged));
+                    ImageAnimator.Animate(_image, OnFrameChanged);
                     SetFlag(FlagCurrentlyAnimating, animate);
                 }
             }
@@ -824,22 +761,16 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
             {
                 if (_image is not null)
                 {
-                    ImageAnimator.StopAnimate(_image, new EventHandler(OnFrameChanged));
+                    ImageAnimator.StopAnimate(_image, OnFrameChanged);
                     SetFlag(FlagCurrentlyAnimating, animate);
                 }
             }
         }
     }
 
-    protected override AccessibleObject CreateAccessibilityInstance()
-    {
-        return new ButtonBaseAccessibleObject(this);
-    }
+    protected override AccessibleObject CreateAccessibilityInstance() => new ButtonBaseAccessibleObject(this);
 
-    private void DetachImageList(object? sender, EventArgs e)
-    {
-        ImageList = null;
-    }
+    private void DetachImageList(object? sender, EventArgs e) => ImageList = null;
 
     protected override void Dispose(bool disposing)
     {
@@ -848,15 +779,11 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
             StopAnimate();
             if (_imageList is not null)
             {
-                _imageList.Disposed -= new EventHandler(DetachImageList);
+                _imageList.Disposed -= DetachImageList;
             }
 
-            // Dispose the tooltip if one present..
-            if (_textToolTip is not null)
-            {
-                _textToolTip.Dispose();
-                _textToolTip = null;
-            }
+            _textToolTip?.Dispose();
+            _textToolTip = null;
         }
 
         base.Dispose(disposing);
@@ -916,8 +843,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
             _textToolTip.Show(WindowsFormsUtils.TextWithoutMnemonics(Text), this);
         }
 
-        // call base last, so if it invokes any listeners that disable the button, we
-        // don't have to recheck
+        // Call base last, so if it invokes any listeners that disable the button, we don't have to recheck.
         base.OnMouseEnter(eventargs);
     }
 
@@ -1013,10 +939,9 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
 
     public override Size GetPreferredSize(Size proposedSize)
     {
-        // TableLayoutPanel passes width = 1 to get the minimum autosize width, since Buttons word-break text
-        // that width would be the size of the widest caracter in the text.  We need to make the proposed size
-        // unbounded.
-        // This is the same as what Label does.
+        // TableLayoutPanel passes width = 1 to get the minimum auto size width, since Buttons word-break text
+        // that width would be the size of the widest character in the text. We need to make the proposed size
+        // unbounded. This is the same as what Label does.
         if (proposedSize.Width == 1)
         {
             proposedSize.Width = 0;
@@ -1032,8 +957,8 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
 
     internal override Size GetPreferredSizeCore(Size proposedConstraints)
     {
-        Size prefSize = Adapter.GetPreferredSizeCore(proposedConstraints);
-        return LayoutUtils.UnionSizes(prefSize + Padding.Size, MinimumSize);
+        Size preferedSize = Adapter.GetPreferredSizeCore(proposedConstraints);
+        return LayoutUtils.UnionSizes(preferedSize + Padding.Size, MinimumSize);
     }
 
     internal ButtonBaseAdapter Adapter
@@ -1107,42 +1032,40 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     }
 
     /// <summary>
-    ///  Raises the <see cref="ButtonBase.CommandChanged"/> event.
+    ///  Raises the <see cref="CommandChanged"/> event.
     /// </summary>
     /// <param name="e">An empty <see cref="EventArgs"/> instance.</param>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
-    protected virtual void OnCommandChanged(EventArgs e)
-        => RaiseEvent(s_commandChangedEvent, e);
+    protected virtual void OnCommandChanged(EventArgs e) => RaiseEvent(s_commandChangedEvent, e);
 
     /// <summary>
-    ///  Raises the <see cref="ButtonBase.CommandCanExecuteChanged"/> event.
+    ///  Raises the <see cref="CommandCanExecuteChanged"/> event.
     /// </summary>
     /// <param name="e">An empty <see cref="EventArgs"/> instance.</param>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
-    protected virtual void OnCommandCanExecuteChanged(EventArgs e)
-        => ((EventHandler?)Events[s_commandCanExecuteChangedEvent])?.Invoke(this, e);
+    protected virtual void OnCommandCanExecuteChanged(EventArgs e) =>
+        ((EventHandler?)Events[s_commandCanExecuteChangedEvent])?.Invoke(this, e);
 
     /// <summary>
-    ///  Raises the <see cref="ButtonBase.CommandParameterChanged"/> event.
+    ///  Raises the <see cref="CommandParameterChanged"/> event.
     /// </summary>
     /// <param name="e">An empty <see cref="EventArgs"/> instance.</param>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     protected virtual void OnCommandParameterChanged(EventArgs e) => RaiseEvent(s_commandParameterChangedEvent, e);
 
     /// <summary>
-    ///  Called in the context of <see cref="OnClick(EventArgs)"/> to invoke <see cref="System.Windows.Input.ICommand.Execute(object?)"/> if the context allows.
+    ///  Called in the context of <see cref="OnClick(EventArgs)"/> to invoke
+    ///  <see cref="Input.ICommand.Execute(object?)"/> if the context allows.
     /// </summary>
     /// <param name="e">An empty <see cref="EventArgs"/> instance.</param>
-    protected virtual void OnRequestCommandExecute(EventArgs e)
-        => ICommandBindingTargetProvider.RequestCommandExecute(this);
+    protected virtual void OnRequestCommandExecute(EventArgs e) =>
+        ICommandBindingTargetProvider.RequestCommandExecute(this);
 
     // Called by the CommandProviderManager's command handling logic.
-    void ICommandBindingTargetProvider.RaiseCommandChanged(EventArgs e)
-        => OnCommandChanged(e);
+    void ICommandBindingTargetProvider.RaiseCommandChanged(EventArgs e) => OnCommandChanged(e);
 
     // Called by the CommandProviderManager's command handling logic.
-    void ICommandBindingTargetProvider.RaiseCommandCanExecuteChanged(EventArgs e)
-        => OnCommandCanExecuteChanged(e);
+    void ICommandBindingTargetProvider.RaiseCommandCanExecuteChanged(EventArgs e) => OnCommandCanExecuteChanged(e);
 
     private void OnFrameChanged(object? o, EventArgs e)
     {
@@ -1153,7 +1076,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
 
         if (IsHandleCreated && InvokeRequired)
         {
-            BeginInvoke(new EventHandler(OnFrameChanged), new object?[] { o, e });
+            BeginInvoke(OnFrameChanged, [o, e]);
             return;
         }
 
@@ -1164,6 +1087,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     {
         base.OnEnabledChanged(e);
         Animate();
+
         if (!Enabled)
         {
             // disabled button is always "up"
@@ -1203,7 +1127,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
                 // not paint the button as "un-depressed".
                 if (!OwnerDraw)
                 {
-                    PInvoke.SendMessage(this, PInvoke.BM_SETSTATE, (WPARAM)(BOOL)true);
+                    PInvokeCore.SendMessage(this, PInvoke.BM_SETSTATE, (WPARAM)(BOOL)true);
                 }
 
                 Invalidate(DownChangeRectangle);
@@ -1212,8 +1136,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
             kevent.Handled = true;
         }
 
-        // call base last, so if it invokes any listeners that disable the button, we
-        // don't have to recheck
+        // Call base last, so if it invokes any listeners that disable the button, we don't have to recheck.
         base.OnKeyDown(kevent);
     }
 
@@ -1232,12 +1155,12 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
             {
                 SetFlag(FlagMousePressed, false);
                 SetFlag(FlagMouseDown, false);
-                PInvoke.SendMessage(this, PInvoke.BM_SETSTATE, (WPARAM)(BOOL)false);
+                PInvokeCore.SendMessage(this, PInvoke.BM_SETSTATE, (WPARAM)(BOOL)false);
             }
 
             // Breaking change: specifically filter out Keys.Enter and Keys.Space as the only
             // two keystrokes to execute OnClick.
-            if (kevent.KeyCode == Keys.Enter || kevent.KeyCode == Keys.Space)
+            if (kevent.KeyCode is Keys.Enter or Keys.Space)
             {
                 OnClick(EventArgs.Empty);
             }
@@ -1245,8 +1168,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
             kevent.Handled = true;
         }
 
-        // call base last, so if it invokes any listeners that disable the button, we
-        // don't have to recheck
+        // Call base last, so if it invokes any listeners that disable the button, we don't have to recheck.
         base.OnKeyUp(kevent);
     }
 
@@ -1288,13 +1210,9 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
         Animate();
     }
 
-    private void RaiseEvent(object key, EventArgs e)
-        => ((EventHandler?)Events[key])?.Invoke(this, e);
+    private void RaiseEvent(object key, EventArgs e) => ((EventHandler?)Events[key])?.Invoke(this, e);
 
-    private void ResetImage()
-    {
-        Image = null;
-    }
+    private void ResetImage() => Image = null;
 
     private void SetFlag(int flag, bool value)
     {
@@ -1315,10 +1233,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
         }
     }
 
-    private bool ShouldSerializeImage()
-    {
-        return _image is not null;
-    }
+    private bool ShouldSerializeImage() => _image is not null;
 
     private void UpdateOwnerDraw()
     {
@@ -1337,38 +1252,18 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     [SRDescription(nameof(SR.UseCompatibleTextRenderingDescr))]
     public bool UseCompatibleTextRendering
     {
-        get => base.UseCompatibleTextRenderingInt;
-        set => base.UseCompatibleTextRenderingInt = value;
+        get => UseCompatibleTextRenderingInternal;
+        set => UseCompatibleTextRenderingInternal = value;
     }
 
-    /// <summary>
-    ///  Determines whether the control supports rendering text using GDI+ and GDI.
-    ///  This is provided for container controls to iterate through its children to set UseCompatibleTextRendering to the same
-    ///  value if the child control supports it.
-    /// </summary>
-    internal override bool SupportsUseCompatibleTextRendering
-    {
-        get
-        {
-            return true;
-        }
-    }
+    internal override bool SupportsUseCompatibleTextRendering => true;
 
     [SRCategory(nameof(SR.CatAppearance))]
     [SRDescription(nameof(SR.ButtonUseVisualStyleBackColorDescr))]
     public bool UseVisualStyleBackColor
     {
-        get
-        {
-            if (_isEnableVisualStyleBackgroundSet || ((RawBackColor.IsEmpty) && (BackColor == SystemColors.Control)))
-            {
-                return _enableVisualStyleBackground;
-            }
-            else
-            {
-                return false;
-            }
-        }
+        get => (_isEnableVisualStyleBackgroundSet || (RawBackColor.IsEmpty && (BackColor == SystemColors.Control)))
+            && _enableVisualStyleBackground;
         set
         {
             if (_isEnableVisualStyleBackgroundSet && value == _enableVisualStyleBackground)
@@ -1389,10 +1284,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
         Invalidate();
     }
 
-    private bool ShouldSerializeUseVisualStyleBackColor()
-    {
-        return _isEnableVisualStyleBackgroundSet;
-    }
+    private bool ShouldSerializeUseVisualStyleBackColor() => _isEnableVisualStyleBackgroundSet;
 
     protected override void WndProc(ref Message m)
     {
@@ -1419,12 +1311,12 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
             {
                 case PInvoke.BM_SETSTATE:
                     // Ignore BM_SETSTATE - Windows gets confused and paints things,
-                    // even though we are ownerdraw.
+                    // even though we are owner draw.
                     break;
 
-                case PInvoke.WM_KILLFOCUS:
-                case PInvoke.WM_CANCELMODE:
-                case PInvoke.WM_CAPTURECHANGED:
+                case PInvokeCore.WM_KILLFOCUS:
+                case PInvokeCore.WM_CANCELMODE:
+                case PInvokeCore.WM_CAPTURECHANGED:
                     if (!GetFlag(FlagInButtonUp) && GetFlag(FlagMousePressed))
                     {
                         SetFlag(FlagMousePressed, false);
@@ -1439,9 +1331,9 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
                     base.WndProc(ref m);
                     break;
 
-                case PInvoke.WM_LBUTTONUP:
-                case PInvoke.WM_MBUTTONUP:
-                case PInvoke.WM_RBUTTONUP:
+                case PInvokeCore.WM_LBUTTONUP:
+                case PInvokeCore.WM_MBUTTONUP:
+                case PInvokeCore.WM_RBUTTONUP:
                     try
                     {
                         SetFlag(FlagInButtonUp, true);

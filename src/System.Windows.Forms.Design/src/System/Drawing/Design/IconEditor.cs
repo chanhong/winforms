@@ -15,8 +15,8 @@ namespace System.Drawing.Design;
 /// </summary>
 public class IconEditor : UITypeEditor
 {
-    private static readonly List<string> s_iconExtensions = new() { "ico" };
-    private static readonly Type[] s_imageExtenders = Array.Empty<Type>();
+    private static readonly List<string> s_iconExtensions = ["ico"];
+    private static readonly Type[] s_imageExtenders = [];
     private FileDialog? _fileDialog;
 
     protected static string? CreateExtensionsString(string?[]? extensions, string sep)
@@ -63,7 +63,7 @@ public class IconEditor : UITypeEditor
         if (_fileDialog is null)
         {
             _fileDialog = new OpenFileDialog();
-            var filter = CreateFilterEntry(this);
+            string filter = CreateFilterEntry(this);
 
             Debug.Assert(s_imageExtenders.Length <= 0, "Why does IconEditor have subclasses if Icon doesn't?");
 
@@ -91,7 +91,7 @@ public class IconEditor : UITypeEditor
     }
 
     /// <summary>
-    /// Retrieves the editing style of the Edit method.  If the method
+    /// Retrieves the editing style of the Edit method. If the method
     /// is not supported, this will return None.
     /// </summary>
     public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext? context)
@@ -99,7 +99,7 @@ public class IconEditor : UITypeEditor
 
     protected virtual string GetFileDialogDescription() => SR.iconFileDescription;
 
-    protected virtual string[] GetExtensions() => s_iconExtensions.ToArray();
+    protected virtual string[] GetExtensions() => [.. s_iconExtensions];
 
     /// <inheritdoc />
     public override bool GetPaintValueSupported(ITypeDescriptorContext? context) => true;
@@ -116,6 +116,7 @@ public class IconEditor : UITypeEditor
 
         // If icon is smaller than rectangle, just center it unscaled in the rectangle.
         Rectangle rectangle = e.Bounds;
+
         if (icon.Width < rectangle.Width)
         {
             rectangle.X += (rectangle.Width - icon.Width) / 2;

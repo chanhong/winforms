@@ -8,7 +8,7 @@ public class KeyboardTests
     [Fact]
     public void Properties()
     {
-        var keyboard = new Keyboard();
+        Keyboard keyboard = new();
         _ = keyboard.ShiftKeyDown;
         _ = keyboard.AltKeyDown;
         _ = keyboard.CtrlKeyDown;
@@ -18,6 +18,6 @@ public class KeyboardTests
     }
 
     // Not tested:
-    //    Public Sub SendKeys(ByVal keys As String)
-    //    Public Sub SendKeys(ByVal keys As String, ByVal wait As Boolean)
+    //    Public Sub SendKeys(keys As String)
+    //    Public Sub SendKeys(keys As String, wait As Boolean)
 }

@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Drawing;
+namespace WinFormsControlsTest;
 
-namespace WinformsControlsTest;
-
+[DesignerCategory("Default")]
 public partial class ListViewTest : Form
 {
     public ListViewTest()
@@ -15,7 +15,7 @@ public partial class ListViewTest : Form
         listView1.LabelEdit = true;
         listView1.View = View.Tile;
 
-        var random = new Random();
+        Random random = new();
         int i = random.Next(100, 300);
 
         listView1.TileSize = new Size(200, 50);
@@ -28,12 +28,25 @@ public partial class ListViewTest : Form
 
             Point pos = Cursor.Position;
             pos = PointToClient(pos);
-            var index = listView1.InsertionMark.NearestIndex(pos);
+            int index = listView1.InsertionMark.NearestIndex(pos);
             Console.WriteLine($"nearest index: {index}");
         };
 
         AddCollapsibleGroupToListView();
         AddGroupTasks();
+
+        // Manual test for https://github.com/dotnet/winforms/issues/11658
+        string[] TestItems = ["Item 1", "Item 2", "Item 3"];
+        listView3.RetrieveVirtualItem += (s, e) =>
+        {
+            e.Item = e.ItemIndex switch
+            {
+                0 => new ListViewItem(TestItems[0]),
+                1 => new ListViewItem(TestItems[1]),
+                2 => new ListViewItem(TestItems[2]),
+                _ => throw new ArgumentOutOfRangeException(),
+            };
+        };
     }
 
     private void CreateMyListView()
@@ -97,7 +110,7 @@ public partial class ListViewTest : Form
                 0 => item1,
                 1 => item2,
                 2 => item3,
-                _ => throw new IndexOutOfRangeException(),
+                _ => throw new ArgumentOutOfRangeException(),
             };
         };
 
@@ -114,10 +127,10 @@ public partial class ListViewTest : Form
         ImageList imageListLarge = new(components);
 
         // Initialize the ImageList objects with bitmaps.
-        imageListSmall.Images.Add(Bitmap.FromFile("Images\\SmallA.bmp"));
-        imageListSmall.Images.Add(Bitmap.FromFile("Images\\SmallABlue.bmp"));
-        imageListLarge.Images.Add(Bitmap.FromFile("Images\\LargeA.bmp"));
-        imageListLarge.Images.Add(Bitmap.FromFile("Images\\LargeABlue.bmp"));
+        imageListSmall.Images.Add(Image.FromFile("Images\\SmallA.bmp"));
+        imageListSmall.Images.Add(Image.FromFile("Images\\SmallABlue.bmp"));
+        imageListLarge.Images.Add(Image.FromFile("Images\\LargeA.bmp"));
+        imageListLarge.Images.Add(Image.FromFile("Images\\LargeABlue.bmp"));
 
         // Assign the ImageList objects to the ListView.
         listView2.LargeImageList = imageListLarge;
@@ -130,7 +143,7 @@ public partial class ListViewTest : Form
 
     private void AddCollapsibleGroupToListView()
     {
-        var lvgroup1 = new ListViewGroup
+        ListViewGroup lvgroup1 = new()
         {
             Header = "CollapsibleGroup1",
             CollapsedState = ListViewGroupCollapsedState.Expanded
@@ -143,7 +156,7 @@ public partial class ListViewTest : Form
             Group = lvgroup1
         });
 
-        var lvgroup2 = new ListViewGroup
+        ListViewGroup lvgroup2 = new()
         {
             Header = "CollapsibleGroup2",
             CollapsedState = ListViewGroupCollapsedState.Collapsed
@@ -170,7 +183,7 @@ public partial class ListViewTest : Form
         listView1.Groups[0].Subtitle = "Subtitle";
         listView1.GroupTaskLinkClick += listView1_GroupTaskLinkClick;
 
-        var lvgroup1 = new ListViewGroup
+        ListViewGroup lvgroup1 = new()
         {
             Header = "TaskGroup",
             TaskLink = "Task2"
@@ -189,23 +202,29 @@ public partial class ListViewTest : Form
         MessageBox.Show(this, $"Task at group index {e.GroupIndex} was clicked", "GroupClick Event");
     }
 
-    private void listView2_Click(object sender, System.EventArgs e)
+    private void listView2_Click(object sender, EventArgs e)
     {
         Debug.WriteLine(listView1.TileSize);
         MessageBox.Show(this, "listView2_Click", "event");
     }
 
-    private void listView2_SelectedIndexChanged(object sender, System.EventArgs e)
+    private void listView3_Click(object sender, EventArgs e)
     {
-        // MessageBox.Show(this, "listView2_SelectedIndexChanged", "event");
+        var item = ((ListView)sender).FocusedItem;
+        var clone = (ListViewItem)item.Clone();
+        clone.Checked = true;
+        listView3.InvokeOnItemChecked(new ItemCheckedEventArgs(clone));
+        MessageBox.Show(this, $"Click {clone.Text} in ListView3", "Click Event");
+    }
 
-        var listView2 = sender as ListView;
-        if (listView2 is null)
+    private void listView2_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (sender is not ListView listView2)
         {
             return;
         }
 
-        var random = new Random();
+        Random random = new();
         listView2.Columns[random.Next(0, listView2.Columns.Count)].ImageIndex = random.Next(0, 2);
     }
 
@@ -227,7 +246,7 @@ public partial class ListViewTest : Form
 
         foreach (string file in openFileDialog1.FileNames)
         {
-            Bitmap bitmap = (Bitmap)Bitmap.FromFile(file);
+            Bitmap bitmap = (Bitmap)Image.FromFile(file);
             LargeImageList.Images.Add(file, bitmap);
 
             ListViewItem item = new ListViewItem
@@ -258,7 +277,7 @@ public partial class ListViewTest : Form
         }
 
         string file = openFileDialog1.FileName;
-        Bitmap bitmap = (Bitmap)Bitmap.FromFile(file);
+        Bitmap bitmap = (Bitmap)Image.FromFile(file);
         LargeImageList.Images[listView1.SelectedIndices[0]] = bitmap;
 
         listView1.Refresh();

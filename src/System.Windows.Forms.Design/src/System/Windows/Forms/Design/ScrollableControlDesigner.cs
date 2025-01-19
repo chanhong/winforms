@@ -1,11 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
-
 using System.Drawing;
 using System.Windows.Forms.Design.Behavior;
-using static Interop;
 
 namespace System.Windows.Forms.Design;
 
@@ -15,11 +12,11 @@ namespace System.Windows.Forms.Design;
 /// </summary>
 public class ScrollableControlDesigner : ParentControlDesigner
 {
-    private SelectionManager selManager;
+    private SelectionManager? _selectionManager;
 
     /// <summary>
     ///  Overrides the base class's GetHitTest method to determine regions of the
-    ///  control that should always be UI-Active.  For a form, if it has autoscroll
+    ///  control that should always be UI-Active. For a form, if it has autoscroll
     ///  set the scroll bars are always UI active.
     /// </summary>
     protected override bool GetHitTest(Point pt)
@@ -33,8 +30,8 @@ public class ScrollableControlDesigner : ParentControlDesigner
         ScrollableControl f = (ScrollableControl)Control;
         if (f.IsHandleCreated && f.AutoScroll)
         {
-            int hitTest = (int)PInvoke.SendMessage(f, PInvoke.WM_NCHITTEST, 0, PARAM.FromLowHigh(pt.X, pt.Y));
-            if (hitTest == (int)PInvoke.HTVSCROLL || hitTest == (int)PInvoke.HTHSCROLL)
+            int hitTest = (int)PInvokeCore.SendMessage(f, PInvokeCore.WM_NCHITTEST, 0, PARAM.FromLowHigh(pt.X, pt.Y));
+            if (hitTest is ((int)PInvoke.HTVSCROLL) or ((int)PInvoke.HTHSCROLL))
             {
                 return true;
             }
@@ -52,15 +49,15 @@ public class ScrollableControlDesigner : ParentControlDesigner
 
         switch (m.Msg)
         {
-            case (int)PInvoke.WM_HSCROLL:
-            case (int)PInvoke.WM_VSCROLL:
+            case (int)PInvokeCore.WM_HSCROLL:
+            case (int)PInvokeCore.WM_VSCROLL:
 
                 // When we scroll, we reposition a control without causing a
-                // property change event.  Therefore, we must tell the
+                // property change event. Therefore, we must tell the
                 // SelectionManager to refresh its glyphs.
-                selManager ??= GetService(typeof(SelectionManager)) as SelectionManager;
+                _selectionManager ??= GetService<SelectionManager>();
 
-                selManager?.Refresh();
+                _selectionManager?.Refresh();
 
                 // Now we must paint our adornments, since the scroll does not
                 // trigger a paint event

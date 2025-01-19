@@ -4,7 +4,6 @@
 using System.ComponentModel.Design.Serialization;
 using System.Drawing;
 using System.Reflection;
-using System.Windows.Forms.TestUtilities;
 
 namespace System.Windows.Forms.Tests;
 
@@ -18,7 +17,7 @@ public class CursorConverterTests
     [InlineData(typeof(Cursor), false)]
     public void CursorConverter_CanConvertFrom_Invoke_ReturnsExpected(Type sourceType, bool expected)
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Equal(expected, converter.CanConvertFrom(sourceType));
     }
 
@@ -27,14 +26,14 @@ public class CursorConverterTests
     [InlineData("appstarting")]
     public void CursorConverter_ConvertFrom_KnownCursor_ReturnsExpected(string value)
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Same(Cursors.AppStarting, converter.ConvertFrom(value));
     }
 
     [Fact]
     public void CursorConverter_ConvertFrom_ByteArray_ReturnsExpected()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         byte[] data = File.ReadAllBytes(Path.Combine("bitmaps", "10x16_one_entry_32bit.ico"));
         using Cursor cursor = Assert.IsType<Cursor>(converter.ConvertFrom(data));
         Assert.NotEqual(IntPtr.Zero, cursor.Handle);
@@ -49,14 +48,14 @@ public class CursorConverterTests
     [InlineData(null)]
     public void CursorConverter_ConvertFrom_InvalidValue_ThrowsNotSupportedException(object value)
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Throws<NotSupportedException>(() => converter.ConvertFrom(value));
     }
 
     [Fact]
     public void CursorConverter_ConvertFrom_InvalidByteArray_ThrowsArgumentException()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Throws<ArgumentException>("stream", () => converter.ConvertFrom(Array.Empty<byte>()));
     }
 
@@ -68,22 +67,22 @@ public class CursorConverterTests
     [InlineData(null, false)]
     public void CursorConverter_CanConvertTo_Invoke_ReturnsExpected(Type destinationType, bool expected)
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Equal(expected, converter.CanConvertTo(destinationType));
     }
 
     [Fact]
     public void CursorConverter_ConvertTo_KnownToString_ReturnsExpected()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Equal("AppStarting", converter.ConvertTo(Cursors.AppStarting, typeof(string)));
     }
 
     [Fact]
     public void CursorConverter_ConvertTo_UnknownToString_ThrowsFormatException()
     {
-        var converter = new CursorConverter();
-        Assert.Throws<FormatException>(() => converter.ConvertTo(new Cursor((IntPtr)2), typeof(string)));
+        CursorConverter converter = new();
+        Assert.Throws<FormatException>(() => converter.ConvertTo(new Cursor(2), typeof(string)));
     }
 
     [Theory]
@@ -91,14 +90,14 @@ public class CursorConverterTests
     [InlineData(1, "1")]
     public void CursorConverter_ConvertTo_ValueNotCursorToString_ReturnsExpected(object value, string expected)
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Equal(expected, converter.ConvertTo(value, typeof(string)));
     }
 
     [Fact]
     public void CursorConverter_ConvertTo_KnownToInstanceDescriptor_ReturnsExpected()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         InstanceDescriptor descriptor = Assert.IsType<InstanceDescriptor>(converter.ConvertTo(Cursors.AppStarting, typeof(InstanceDescriptor)));
         Assert.Empty(descriptor.Arguments);
         Assert.Equal(typeof(Cursors).GetProperty(nameof(Cursors.AppStarting), BindingFlags.Public | BindingFlags.Static), descriptor.MemberInfo);
@@ -110,41 +109,41 @@ public class CursorConverterTests
     [Fact]
     public void CursorConverter_ConvertTo_UnknownToInstanceDescriptor_ThrowsNotSupportedException()
     {
-        var converter = new CursorConverter();
-        Assert.Throws<NotSupportedException>(() => converter.ConvertTo(new Cursor((IntPtr)2), typeof(InstanceDescriptor)));
+        CursorConverter converter = new();
+        Assert.Throws<NotSupportedException>(() => converter.ConvertTo(new Cursor(2), typeof(InstanceDescriptor)));
     }
 
     [Fact]
     public void CursorConverter_ConvertTo_NullToInstanceDescriptor_ThrowsNotSupportedException()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Throws<NotSupportedException>(() => converter.ConvertTo(null, typeof(InstanceDescriptor)));
     }
 
     [Fact]
     public void CursorConverter_ConvertTo_StreamToByteArray_ReturnsExpected()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         byte[] data = File.ReadAllBytes(Path.Combine("bitmaps", "10x16_one_entry_32bit.ico"));
-        using var stream = new MemoryStream(data);
-        using var sourceCursor = new Cursor(stream);
+        using MemoryStream stream = new(data);
+        using Cursor sourceCursor = new(stream);
         Assert.Equal(data, converter.ConvertTo(sourceCursor, typeof(byte[])));
     }
 
     [Fact]
     public void CursorConverter_ConvertTo_FileToByteArray_ReturnsExpected()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         string fileName = Path.Combine("bitmaps", "10x16_one_entry_32bit.ico");
         byte[] data = File.ReadAllBytes(fileName);
-        using var sourceCursor = new Cursor(fileName);
+        using Cursor sourceCursor = new(fileName);
         Assert.Equal(data, converter.ConvertTo(sourceCursor, typeof(byte[])));
     }
 
     [Fact]
     public void CursorConverter_ConvertTo_KnownToByteArray_ThrowsFormatException()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Throws<FormatException>(() => converter.ConvertTo(Cursors.AppStarting, typeof(byte[])));
         Assert.Throws<InvalidOperationException>(() => converter.ConvertTo(new Cursor(Cursors.AppStarting.Handle), typeof(byte[])));
     }
@@ -152,21 +151,21 @@ public class CursorConverterTests
     [Fact]
     public void CursorConverter_ConvertTo_UnknownToByteArray_ThrowsFormatException()
     {
-        var converter = new CursorConverter();
-        Assert.Throws<InvalidOperationException>(() => converter.ConvertTo(new Cursor((IntPtr)2), typeof(byte[])));
+        CursorConverter converter = new();
+        Assert.Throws<InvalidOperationException>(() => converter.ConvertTo(new Cursor(2), typeof(byte[])));
     }
 
     [Fact]
     public void CursorConverter_ConvertTo_NullToByteArray_ReturnsExpected()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Empty(Assert.IsType<byte[]>(converter.ConvertTo(null, typeof(byte[]))));
     }
 
     [Fact]
     public void CursorConverter_ConvertTo_NullDestinationType_ThrowsArgumentNullException()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Throws<ArgumentNullException>("destinationType", () => converter.ConvertTo(new object(), null));
     }
 
@@ -175,14 +174,14 @@ public class CursorConverterTests
     [InlineData(typeof(byte[]))]
     public void CursorConverter_ConvertTo_ValueNotCursor_ThrowsNotSupportedException(Type destinationType)
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.Throws<NotSupportedException>(() => converter.ConvertTo(1, destinationType));
     }
 
     [Fact]
     public void CursorConverter_GetStandardValues_Invoke_ReturnsExpected()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
 
         // The static accessors only provide a weak guarantee about their return values, when multiple threads
         // are involved it is possible that return values differ between calls. We need a dry run and memory barrier
@@ -190,7 +189,7 @@ public class CursorConverterTests
         // failing to do so means that the very first call to a static cursor accessor may return a different
         // cursor instance than subsequent calls.
         converter.GetStandardValues();
-        Threading.Thread.MemoryBarrier();
+        Thread.MemoryBarrier();
 
         ICollection<Cursor> values = converter.GetStandardValues().Cast<Cursor>().ToArray();
         Assert.Equal(28, values.Count);
@@ -228,7 +227,15 @@ public class CursorConverterTests
     [Fact]
     public void CursorConverter_GetStandardValuesSupported_Invoke_ReturnsTrue()
     {
-        var converter = new CursorConverter();
+        CursorConverter converter = new();
         Assert.True(converter.GetStandardValuesSupported());
+    }
+
+    [Fact]
+    public void CursorConverter_ConvertTo_FromKnownCursorHandle()
+    {
+        CursorConverter converter = new();
+        string converted = (string)converter.ConvertTo(new Cursor(Cursors.Default.Handle), typeof(string));
+        converted.Should().Be(nameof(Cursors.Default));
     }
 }

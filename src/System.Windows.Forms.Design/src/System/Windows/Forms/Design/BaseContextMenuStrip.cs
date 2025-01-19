@@ -8,16 +8,19 @@ using System.Drawing;
 namespace System.Windows.Forms.Design;
 
 /// <summary>
-///  This class is going to replace the shell contextMenu and uses the ContextMenuStrip. The ContextMenuStrip contains groups and groupOrder which it uses to add items to itself. ControlDesigners can add custom items to the contextMenu, using the new member to the  group and add the groupOrder to the ContextMenu.
+///  This class is going to replace the shell contextMenu and uses the ContextMenuStrip.
+///  The ContextMenuStrip contains groups and groupOrder which it uses to add items to itself.
+///  ControlDesigners can add custom items to the contextMenu, using the new member to the
+///  group and add the groupOrder to the ContextMenu.
 /// </summary>
 internal class BaseContextMenuStrip : GroupedContextMenuStrip
 {
-    private readonly IServiceProvider serviceProvider;
-    private ToolStripMenuItem? selectionMenuItem;
+    private readonly IServiceProvider _serviceProvider;
+    private ToolStripMenuItem? _selectionMenuItem;
 
     public BaseContextMenuStrip(IServiceProvider provider) : base()
     {
-        serviceProvider = provider;
+        _serviceProvider = provider;
         // Now initialize the contextMenu
         InitializeContextMenu();
     }
@@ -27,7 +30,7 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
     /// </summary>
     private void AddCodeMenuItem()
     {
-        StandardCommandToolStripMenuItem codeMenuItem = new StandardCommandToolStripMenuItem(StandardCommands.ViewCode, SR.ContextMenuViewCode, "viewcode", serviceProvider);
+        StandardCommandToolStripMenuItem codeMenuItem = new(StandardCommands.ViewCode, SR.ContextMenuViewCode, "viewcode", _serviceProvider);
         Groups[StandardGroups.Code].Items.Add(codeMenuItem);
     }
 
@@ -36,9 +39,9 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
     /// </summary>
     private void AddZorderMenuItem()
     {
-        StandardCommandToolStripMenuItem ZOrderMenuItem = new StandardCommandToolStripMenuItem(MenuCommands.BringToFront, SR.ContextMenuBringToFront, "bringToFront", serviceProvider);
+        StandardCommandToolStripMenuItem ZOrderMenuItem = new(StandardCommands.BringToFront, SR.ContextMenuBringToFront, "bringToFront", _serviceProvider);
         Groups[StandardGroups.ZORder].Items.Add(ZOrderMenuItem);
-        ZOrderMenuItem = new StandardCommandToolStripMenuItem(MenuCommands.SendToBack, SR.ContextMenuSendToBack, "sendToBack", serviceProvider);
+        ZOrderMenuItem = new StandardCommandToolStripMenuItem(StandardCommands.SendToBack, SR.ContextMenuSendToBack, "sendToBack", _serviceProvider);
         Groups[StandardGroups.ZORder].Items.Add(ZOrderMenuItem);
     }
 
@@ -47,7 +50,7 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
     /// </summary>
     private void AddGridMenuItem()
     {
-        StandardCommandToolStripMenuItem gridMenuItem = new StandardCommandToolStripMenuItem(MenuCommands.AlignToGrid, SR.ContextMenuAlignToGrid, "alignToGrid", serviceProvider);
+        StandardCommandToolStripMenuItem gridMenuItem = new(StandardCommands.AlignToGrid, SR.ContextMenuAlignToGrid, "alignToGrid", _serviceProvider);
         Groups[StandardGroups.Grid].Items.Add(gridMenuItem);
     }
 
@@ -56,7 +59,7 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
     /// </summary>
     private void AddLockMenuItem()
     {
-        StandardCommandToolStripMenuItem lockMenuItem = new StandardCommandToolStripMenuItem(MenuCommands.LockControls, SR.ContextMenuLockControls, "lockControls", serviceProvider);
+        StandardCommandToolStripMenuItem lockMenuItem = new(StandardCommands.LockControls, SR.ContextMenuLockControls, "lockControls", _serviceProvider);
         Groups[StandardGroups.Lock].Items.Add(lockMenuItem);
     }
 
@@ -66,18 +69,18 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
     private void RefreshSelectionMenuItem()
     {
         int index = -1;
-        if (selectionMenuItem is not null)
+        if (_selectionMenuItem is not null)
         {
-            index = Items.IndexOf(selectionMenuItem);
-            Groups[StandardGroups.Selection].Items.Remove(selectionMenuItem);
-            Items.Remove(selectionMenuItem);
+            index = Items.IndexOf(_selectionMenuItem);
+            Groups[StandardGroups.Selection].Items.Remove(_selectionMenuItem);
+            Items.Remove(_selectionMenuItem);
         }
 
-        List<Component> parentControls = new();
+        List<Component> parentControls = [];
         int nParentControls = 0;
 
         // Get the currently selected Control
-        if (serviceProvider.GetService(typeof(ISelectionService)) is ISelectionService selectionService && serviceProvider.GetService(typeof(IDesignerHost)) is IDesignerHost host)
+        if (_serviceProvider.GetService(typeof(ISelectionService)) is ISelectionService selectionService && _serviceProvider.GetService(typeof(IDesignerHost)) is IDesignerHost host)
         {
             IComponent root = host.RootComponent;
             Debug.Assert(root is not null, "Null root component. Will be unable to build selection menu");
@@ -112,34 +115,34 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
 
         if (nParentControls > 0)
         {
-            selectionMenuItem = new ToolStripMenuItem();
+            _selectionMenuItem = new ToolStripMenuItem();
 
-            if (serviceProvider.GetService(typeof(IUIService)) is IUIService uis)
+            if (_serviceProvider.GetService(typeof(IUIService)) is IUIService uis)
             {
-                selectionMenuItem.DropDown.Renderer = (ToolStripProfessionalRenderer)uis.Styles["VsRenderer"]!;
+                _selectionMenuItem.DropDown.Renderer = (ToolStripProfessionalRenderer)uis.Styles["VsRenderer"]!;
 
                 // Set the right Font
-                selectionMenuItem.DropDown.Font = (Font)uis.Styles["DialogFont"]!;
+                _selectionMenuItem.DropDown.Font = (Font)uis.Styles["DialogFont"]!;
 
                 if (uis.Styles["VsColorPanelText"] is Color color)
                 {
-                    selectionMenuItem.DropDown.ForeColor = color;
+                    _selectionMenuItem.DropDown.ForeColor = color;
                 }
             }
 
-            selectionMenuItem.Text = SR.ContextMenuSelect;
+            _selectionMenuItem.Text = SR.ContextMenuSelect;
             foreach (Component parent in parentControls)
             {
-                ToolStripMenuItem selectListItem = new SelectToolStripMenuItem(parent, serviceProvider);
-                selectionMenuItem.DropDownItems.Add(selectListItem);
+                ToolStripMenuItem selectListItem = new SelectToolStripMenuItem(parent, _serviceProvider);
+                _selectionMenuItem.DropDownItems.Add(selectListItem);
             }
 
-            Groups[StandardGroups.Selection].Items.Add(selectionMenuItem);
+            Groups[StandardGroups.Selection].Items.Add(_selectionMenuItem);
 
             // Re-add the newly refreshed item.
             if (index != -1)
             {
-                Items.Insert(index, selectionMenuItem);
+                Items.Insert(index, _selectionMenuItem);
             }
         }
     }
@@ -150,12 +153,12 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
     private void AddVerbMenuItem()
     {
         // Add Designer Verbs..
-        if (serviceProvider.TryGetService(out IMenuCommandService? menuCommandService))
+        if (_serviceProvider.TryGetService(out IMenuCommandService? menuCommandService))
         {
             DesignerVerbCollection verbCollection = menuCommandService.Verbs;
             foreach (DesignerVerb verb in verbCollection)
             {
-                DesignerVerbToolStripMenuItem verbItem = new DesignerVerbToolStripMenuItem(verb);
+                DesignerVerbToolStripMenuItem verbItem = new(verb);
                 Groups[StandardGroups.Verbs].Items.Add(verbItem);
             }
         }
@@ -166,13 +169,13 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
     /// </summary>
     private void AddEditMenuItem()
     {
-        StandardCommandToolStripMenuItem stdMenuItem = new StandardCommandToolStripMenuItem(StandardCommands.Cut, SR.ContextMenuCut, "cut", serviceProvider);
+        StandardCommandToolStripMenuItem stdMenuItem = new(StandardCommands.Cut, SR.ContextMenuCut, "cut", _serviceProvider);
         Groups[StandardGroups.Edit].Items.Add(stdMenuItem);
-        stdMenuItem = new StandardCommandToolStripMenuItem(StandardCommands.Copy, SR.ContextMenuCopy, "copy", serviceProvider);
+        stdMenuItem = new StandardCommandToolStripMenuItem(StandardCommands.Copy, SR.ContextMenuCopy, "copy", _serviceProvider);
         Groups[StandardGroups.Edit].Items.Add(stdMenuItem);
-        stdMenuItem = new StandardCommandToolStripMenuItem(StandardCommands.Paste, SR.ContextMenuPaste, "paste", serviceProvider);
+        stdMenuItem = new StandardCommandToolStripMenuItem(StandardCommands.Paste, SR.ContextMenuPaste, "paste", _serviceProvider);
         Groups[StandardGroups.Edit].Items.Add(stdMenuItem);
-        stdMenuItem = new StandardCommandToolStripMenuItem(StandardCommands.Delete, SR.ContextMenuDelete, "delete", serviceProvider);
+        stdMenuItem = new StandardCommandToolStripMenuItem(StandardCommands.Delete, SR.ContextMenuDelete, "delete", _serviceProvider);
         Groups[StandardGroups.Edit].Items.Add(stdMenuItem);
     }
 
@@ -181,9 +184,9 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
     /// </summary>
     private void AddPropertiesMenuItem()
     {
-        StandardCommandToolStripMenuItem stdMenuItem = new StandardCommandToolStripMenuItem(StandardCommands.DocumentOutline, SR.ContextMenuDocumentOutline, "", serviceProvider);
+        StandardCommandToolStripMenuItem stdMenuItem = new(StandardCommands.DocumentOutline, SR.ContextMenuDocumentOutline, "", _serviceProvider);
         Groups[StandardGroups.Properties].Items.Add(stdMenuItem);
-        stdMenuItem = new StandardCommandToolStripMenuItem(MenuCommands.DesignerProperties, SR.ContextMenuProperties, "properties", serviceProvider);
+        stdMenuItem = new StandardCommandToolStripMenuItem(MenuCommands.DesignerProperties, SR.ContextMenuProperties, "properties", _serviceProvider);
         Groups[StandardGroups.Properties].Items.Add(stdMenuItem);
     }
 
@@ -192,10 +195,9 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
     /// </summary>
     private void InitializeContextMenu()
     {
-        // this.Opening += new CancelEventHandler(OnContextMenuOpening);
         Name = "designerContextMenuStrip";
 
-        if (serviceProvider.TryGetService(out IUIService? uis))
+        if (_serviceProvider.TryGetService(out IUIService? uis))
         {
             Renderer = (ToolStripProfessionalRenderer)uis.Styles["VsRenderer"]!;
 
@@ -205,7 +207,17 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
             }
         }
 
-        GroupOrdering.AddRange(new string[] { StandardGroups.Code, StandardGroups.ZORder, StandardGroups.Grid, StandardGroups.Lock, StandardGroups.Verbs, StandardGroups.Custom, StandardGroups.Selection, StandardGroups.Edit, StandardGroups.Properties });
+        GroupOrdering.AddRange([
+            StandardGroups.Code,
+            StandardGroups.ZORder,
+            StandardGroups.Grid,
+            StandardGroups.Lock,
+            StandardGroups.Verbs,
+            StandardGroups.Custom,
+            StandardGroups.Selection,
+            StandardGroups.Edit,
+            StandardGroups.Properties]);
+
         // ADD MENUITEMS
         AddCodeMenuItem();
         AddZorderMenuItem();
@@ -222,7 +234,7 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
     /// </summary>
     public override void RefreshItems()
     {
-        if (serviceProvider.TryGetService(out IUIService? uis))
+        if (_serviceProvider.TryGetService(out IUIService? uis))
         {
             Font = (Font)uis.Styles["DialogFont"]!;
         }
@@ -280,7 +292,9 @@ internal class BaseContextMenuStrip : GroupedContextMenuStrip
                 if (!_cachedImage)
                 {
                     _cachedImage = true;
-                    // else attempt to get the resource from a known place in the manifest. if and only if the namespace of the type is System.Windows.Forms. else attempt to get the resource from a known place in the manifest
+                    // else attempt to get the resource from a known place in the manifest.
+                    // if and only if the namespace of the type is System.Windows.Forms.
+                    // else attempt to get the resource from a known place in the manifest
                     if (_itemType.Namespace == s_systemWindowsFormsNamespace)
                     {
                         _image = ToolboxBitmapAttribute.GetImageFromResource(_itemType, imageName: null, large: false);

@@ -3,17 +3,18 @@
 
 using System.Drawing;
 
-namespace WinformsControlsTest;
+namespace WinFormsControlsTest;
 
+[DesignerCategory("Default")]
 public partial class Buttons : Form
 {
     private readonly FlatStyle[] _styles =
-    {
+    [
         FlatStyle.Flat,
         FlatStyle.Popup,
         FlatStyle.Standard,
         FlatStyle.System
-    };
+    ];
 
     public Buttons()
     {
@@ -22,7 +23,7 @@ public partial class Buttons : Form
 
     protected override void OnLoad(EventArgs e)
     {
-        var table = new TableLayoutPanel
+        TableLayoutPanel table = new()
         {
             Dock = DockStyle.Fill,
             ColumnCount = 3,
@@ -36,7 +37,7 @@ public partial class Buttons : Form
         table.RowStyles.Add(new RowStyle(SizeType.Percent, 30.0f));
         Controls.Add(table);
 
-        var panel = new FlowLayoutPanel
+        FlowLayoutPanel panel = new()
         {
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.TopDown

@@ -13,7 +13,7 @@ public partial class StatusStripTests
     [WinFormsFact]
     public void StatusStrip_Ctor_Default()
     {
-        using var control = new SubStatusStrip();
+        using SubStatusStrip control = new();
         Assert.Null(control.AccessibleDefaultActionDescription);
         Assert.Null(control.AccessibleDescription);
         Assert.Null(control.AccessibleName);
@@ -121,8 +121,10 @@ public partial class StatusStripTests
         Assert.Null(control.Region);
         Assert.NotNull(control.Renderer);
         Assert.Same(control.Renderer, control.Renderer);
-        Assert.IsType<ToolStripSystemRenderer>(control.Renderer);
-        Assert.Equal(ToolStripRenderMode.System, control.RenderMode);
+
+        Assert.True(control.Renderer is ToolStripSystemRenderer or ToolStripProfessionalRenderer, "Renderer is not one of the expected types.");
+        Assert.True(control.RenderMode is ToolStripRenderMode.System or ToolStripRenderMode.ManagerRenderMode);
+
         Assert.True(control.ResizeRedraw);
         Assert.Equal(200, control.Right);
         Assert.Equal(RightToLeft.No, control.RightToLeft);
@@ -153,7 +155,7 @@ public partial class StatusStripTests
     [WinFormsFact]
     public void StatusStrip_CreateParams_GetDefault_ReturnsExpected()
     {
-        using var control = new SubStatusStrip();
+        using SubStatusStrip control = new();
         CreateParams createParams = control.CreateParams;
         Assert.Null(createParams.Caption);
         Assert.Null(createParams.ClassName);
@@ -174,7 +176,7 @@ public partial class StatusStripTests
     [BoolData]
     public void StatusStrip_CanOverflow_Set_GetReturnsExpected(bool value)
     {
-        using var control = new StatusStrip();
+        using StatusStrip control = new();
         int layoutCallCount = 0;
         control.Layout += (sender, e) => layoutCallCount++;
 
@@ -223,7 +225,7 @@ public partial class StatusStripTests
     [MemberData(nameof(DefaultPadding_Get_TestData))]
     public void StatusStrip_DefaultPadding_Get_ReturnsExpected(ToolStripLayoutStyle layoutStyle, RightToLeft rightToLeft, Padding expected)
     {
-        using var control = new SubStatusStrip
+        using SubStatusStrip control = new()
         {
             LayoutStyle = layoutStyle,
             RightToLeft = rightToLeft
@@ -274,7 +276,7 @@ public partial class StatusStripTests
     [MemberData(nameof(Dock_Set_TestData))]
     public void StatusStrip_Dock_Set_GetReturnsExpected(ToolStripLayoutStyle layoutStyle, DockStyle value, int expectedLayoutCallCount, Orientation expectedOrientation, int expectedLayoutStyleChangedCallCount)
     {
-        using var control = new StatusStrip
+        using StatusStrip control = new()
         {
             LayoutStyle = layoutStyle
         };
@@ -319,7 +321,7 @@ public partial class StatusStripTests
     [InlineData(ToolStripGripStyle.Visible, 1)]
     public void StatusStrip_GripStyle_Set_GetReturnsExpected(ToolStripGripStyle value, int expectedLayoutCallCount)
     {
-        using var control = new StatusStrip();
+        using StatusStrip control = new();
         int layoutCallCount = 0;
         control.Layout += (sender, e) =>
         {
@@ -366,7 +368,7 @@ public partial class StatusStripTests
     [MemberData(nameof(LayoutStyle_Set_TestData))]
     public void StatusStrip_LayoutStyle_Set_GetReturnsExpected(DockStyle dock, ToolStripLayoutStyle value, ToolStripLayoutStyle expected, Orientation expectedOrientation, ToolStripGripDisplayStyle expectedGripDisplayStyle, int expectedLayoutCallCount)
     {
-        using var control = new StatusStrip
+        using StatusStrip control = new()
         {
             Dock = dock
         };
@@ -391,7 +393,7 @@ public partial class StatusStripTests
 
     public static IEnumerable<object[]> Padding_Set_TestData()
     {
-        yield return new object[] { new Padding(), new Padding(), 1, 1 };
+        yield return new object[] { default(Padding), default(Padding), 1, 1 };
         yield return new object[] { new Padding(1, 0, 14, 0), new Padding(1, 0, 14, 0), 0, 0 };
         yield return new object[] { new Padding(1, 2, 3, 4), new Padding(1, 2, 3, 4), 1, 1 };
         yield return new object[] { new Padding(1), new Padding(1), 1, 1 };
@@ -402,7 +404,7 @@ public partial class StatusStripTests
     [MemberData(nameof(Padding_Set_TestData))]
     public void StatusStrip_Padding_Set_GetReturnsExpected(Padding value, Padding expected, int expectedLayoutCallCount1, int expectedLayoutCallCount2)
     {
-        using var control = new StatusStrip();
+        using StatusStrip control = new();
         int layoutCallCount = 0;
         control.Layout += (sender, e) =>
         {
@@ -427,7 +429,7 @@ public partial class StatusStripTests
     [WinFormsFact]
     public void StatusStrip_Padding_SetWithHandler_CallsPaddingChanged()
     {
-        using var control = new StatusStrip();
+        using StatusStrip control = new();
         int callCount = 0;
         EventHandler handler = (sender, e) =>
         {
@@ -438,7 +440,7 @@ public partial class StatusStripTests
         control.PaddingChanged += handler;
 
         // Set different.
-        var padding1 = new Padding(1);
+        Padding padding1 = new(1);
         control.Padding = padding1;
         Assert.Equal(padding1, control.Padding);
         Assert.Equal(1, callCount);
@@ -449,7 +451,7 @@ public partial class StatusStripTests
         Assert.Equal(1, callCount);
 
         // Set different.
-        var padding2 = new Padding(2);
+        Padding padding2 = new(2);
         control.Padding = padding2;
         Assert.Equal(padding2, control.Padding);
         Assert.Equal(2, callCount);
@@ -466,7 +468,7 @@ public partial class StatusStripTests
     [InlineData(ToolStripRenderMode.ManagerRenderMode, typeof(ToolStripProfessionalRenderer), 2)]
     public void StatusStrip_RenderMode_Set_ReturnsExpected(ToolStripRenderMode value, Type expectedRendererType, int expectedSameRendererChangedCallCount)
     {
-        using var control = new StatusStrip();
+        using StatusStrip control = new();
         int rendererChangedCallCount = 0;
         control.RendererChanged += (sender, e) =>
         {
@@ -509,7 +511,7 @@ public partial class StatusStripTests
     [InlineData(ToolStripRenderMode.ManagerRenderMode, typeof(ToolStripProfessionalRenderer), 1)]
     public void StatusStrip_RenderMode_SetWithCustomRenderer_ReturnsExpected(ToolStripRenderMode value, Type expectedRendererType, int expectedSameRendererChangedCallCount)
     {
-        using var control = new StatusStrip
+        using StatusStrip control = new()
         {
             Renderer = new SubToolStripRenderer()
         };
@@ -545,7 +547,7 @@ public partial class StatusStripTests
     public void StatusStrip_RenderMode_ResetValue_Success()
     {
         PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(StatusStrip))[nameof(ToolStrip.RenderMode)];
-        using var control = new StatusStrip();
+        using StatusStrip control = new();
         Assert.False(property.CanResetValue(control));
 
         control.RenderMode = ToolStripRenderMode.Professional;
@@ -573,7 +575,7 @@ public partial class StatusStripTests
     public void StatusStrip_RenderMode_ShouldSerializeValue_Success()
     {
         PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(StatusStrip))[nameof(ToolStrip.RenderMode)];
-        using var control = new StatusStrip();
+        using StatusStrip control = new();
         Assert.False(property.ShouldSerializeValue(control));
 
         control.RenderMode = ToolStripRenderMode.Professional;
@@ -601,14 +603,14 @@ public partial class StatusStripTests
     [InvalidEnumData<ToolStripRenderMode>]
     public void StatusStrip_RenderMode_SetInvalidValue_ThrowsInvalidEnumArgumentException(ToolStripRenderMode value)
     {
-        using var control = new StatusStrip();
+        using StatusStrip control = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => control.RenderMode = value);
     }
 
     [WinFormsFact]
     public void StatusStrip_RenderMode_SetCustomThrowsInvalidEnumArgumentException()
     {
-        using var control = new StatusStrip();
+        using StatusStrip control = new();
         Assert.Throws<NotSupportedException>(() => control.RenderMode = ToolStripRenderMode.Custom);
     }
 
@@ -629,7 +631,7 @@ public partial class StatusStripTests
     [MemberData(nameof(SizeGripBounds_Get_TestData))]
     public void StatusStrip_SizeGripBounds_Get_ReturnsExpected(bool sizingGrip, ToolStripLayoutStyle layoutStyle, RightToLeft rightToLeft, Rectangle expected)
     {
-        using var control = new SubStatusStrip
+        using SubStatusStrip control = new()
         {
             SizingGrip = sizingGrip,
             LayoutStyle = layoutStyle,
@@ -655,7 +657,7 @@ public partial class StatusStripTests
     [MemberData(nameof(SizeGripBounds_GetLargeSize_TestData))]
     public void StatusStrip_SizeGripBounds_GetLargeSize_ReturnsExpected(bool sizingGrip, ToolStripLayoutStyle layoutStyle, RightToLeft rightToLeft, Rectangle expected)
     {
-        using var control = new SubStatusStrip
+        using SubStatusStrip control = new()
         {
             SizingGrip = sizingGrip,
             LayoutStyle = layoutStyle,
@@ -682,7 +684,7 @@ public partial class StatusStripTests
     [MemberData(nameof(SizeGripBounds_GetSmallSize_TestData))]
     public void StatusStrip_SizeGripBounds_GetSmallSize_ReturnsExpected(bool sizingGrip, ToolStripLayoutStyle layoutStyle, RightToLeft rightToLeft, Rectangle expected)
     {
-        using var control = new SubStatusStrip
+        using SubStatusStrip control = new()
         {
             SizingGrip = sizingGrip,
             LayoutStyle = layoutStyle,
@@ -696,7 +698,7 @@ public partial class StatusStripTests
     [BoolData]
     public void StatusStrip_SizingGrip_Set_GetReturnsExpected(bool value)
     {
-        using var control = new StatusStrip
+        using StatusStrip control = new()
         {
             SizingGrip = value
         };
@@ -732,7 +734,7 @@ public partial class StatusStripTests
     [MemberData(nameof(SizingGrip_SetRightToLeft_TestData))]
     public void StatusStrip_SizingGrip_SetRightToLeft_GetReturnsExpected(RightToLeft rightToLeft, bool value, int expectedChildrenCallCount1, int expectedChildrenCallCount2)
     {
-        using var control = new StatusStrip
+        using StatusStrip control = new()
         {
             RightToLeft = rightToLeft,
             SizingGrip = value
@@ -767,7 +769,7 @@ public partial class StatusStripTests
     [MemberData(nameof(StatusStrip_SizingGrip_SetRightToLeftNonReadOnlyControls_TestData))]
     public void StatusStrip_SizingGrip_SetRightToLeftNonReadOnlyControls_GetReturnsExpected(RightToLeft rightToLeft, bool value)
     {
-        using var control = new NonReadOnlyControlsStatusStrip
+        using NonReadOnlyControlsStatusStrip control = new()
         {
             RightToLeft = rightToLeft,
             SizingGrip = value
@@ -794,7 +796,7 @@ public partial class StatusStripTests
     [InlineData(false, 1)]
     public void StatusStrip_SizingGrip_SetWithHandle_GetReturnsExpected(bool value, int expectedInvalidatedCallCount)
     {
-        using var control = new StatusStrip();
+        using StatusStrip control = new();
         Assert.NotEqual(IntPtr.Zero, control.Handle);
         int invalidatedCallCount = 0;
         control.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -834,7 +836,7 @@ public partial class StatusStripTests
     [BoolData]
     public void StatusStrip_ShowItemToolTips_Set_GetReturnsExpected(bool value)
     {
-        using var control = new StatusStrip
+        using StatusStrip control = new()
         {
             ShowItemToolTips = value
         };
@@ -856,7 +858,7 @@ public partial class StatusStripTests
     [WinFormsFact]
     public void StatusStrip_CreateAccessibilityInstance_Invoke_ReturnsExpected()
     {
-        using var control = new SubStatusStrip();
+        using SubStatusStrip control = new();
         Control.ControlAccessibleObject instance = Assert.IsAssignableFrom<Control.ControlAccessibleObject>(control.CreateAccessibilityInstance());
         Assert.NotNull(instance);
         Assert.NotSame(control.CreateAccessibilityInstance(), instance);
@@ -879,7 +881,7 @@ public partial class StatusStripTests
     [MemberData(nameof(CreateDefaultItem_Button_TestData))]
     public void StatusStrip_CreateDefaultItem_Invoke_Success(string text, Image image, EventHandler onClick)
     {
-        using var control = new SubStatusStrip();
+        using SubStatusStrip control = new();
         ToolStripStatusLabel button = Assert.IsType<ToolStripStatusLabel>(control.CreateDefaultItem(text, image, onClick));
         Assert.Equal(text, button.Text);
         Assert.Same(image, button.Image);
@@ -898,7 +900,7 @@ public partial class StatusStripTests
     [MemberData(nameof(Dispose_TestData))]
     public void StatusStrip_Dispose_Invoke_Success(RightToLeft rightToLeft, bool sizingGrip)
     {
-        using var control = new StatusStrip
+        using StatusStrip control = new()
         {
             RightToLeft = rightToLeft,
             SizingGrip = sizingGrip
@@ -951,7 +953,7 @@ public partial class StatusStripTests
     [MemberData(nameof(Dispose_TestData))]
     public void StatusStrip_Dispose_InvokeDisposing_Success(RightToLeft rightToLeft, bool sizingGrip)
     {
-        using var control = new SubStatusStrip
+        using SubStatusStrip control = new()
         {
             RightToLeft = rightToLeft,
             SizingGrip = sizingGrip
@@ -1015,7 +1017,7 @@ public partial class StatusStripTests
     [MemberData(nameof(Dispose_NotDisposing_TestData))]
     public void StatusStrip_Dispose_InvokeNotDisposing_Success(RightToLeft rightToLeft, bool sizingGrip, int expectedChildrenCallCount1)
     {
-        using var control = new SubStatusStrip
+        using SubStatusStrip control = new()
         {
             RightToLeft = rightToLeft,
             SizingGrip = sizingGrip
@@ -1062,7 +1064,7 @@ public partial class StatusStripTests
     {
         int callCount = 0;
         EventHandler onClick = (sender, e) => callCount++;
-        using var control = new SubStatusStrip();
+        using SubStatusStrip control = new();
         ToolStripItem button = Assert.IsAssignableFrom<ToolStripItem>(control.CreateDefaultItem(text, null, onClick));
         button.PerformClick();
         Assert.Equal(1, callCount);
@@ -1071,7 +1073,7 @@ public partial class StatusStripTests
     [WinFormsFact]
     public void StatusStrip_GetAutoSizeMode_Invoke_ReturnsExpected()
     {
-        using var control = new SubStatusStrip();
+        using SubStatusStrip control = new();
         Assert.Equal(AutoSizeMode.GrowAndShrink, control.GetAutoSizeMode());
     }
 
@@ -1086,7 +1088,7 @@ public partial class StatusStripTests
     [InlineData((-1), false)]
     public void StatusStrip_GetScrollState_Invoke_ReturnsExpected(int bit, bool expected)
     {
-        using var control = new SubStatusStrip();
+        using SubStatusStrip control = new();
         Assert.Equal(expected, control.GetScrollState(bit));
     }
 
@@ -1113,7 +1115,7 @@ public partial class StatusStripTests
     [InlineData((ControlStyles)(-1), false)]
     public void StatusStrip_GetStyle_Invoke_ReturnsExpected(ControlStyles flag, bool expected)
     {
-        using var control = new SubStatusStrip();
+        using SubStatusStrip control = new();
         Assert.Equal(expected, control.GetStyle(flag));
 
         // Call again to test caching.
@@ -1137,7 +1139,7 @@ public partial class StatusStripTests
     [MemberData(nameof(OnLayout_TestData))]
     public void Control_OnLayout_Invoke_CallsLayout(ToolStripLayoutStyle layoutStyle, DockStyle dock, LayoutEventArgs eventArgs)
     {
-        using var control = new SubStatusStrip
+        using SubStatusStrip control = new()
         {
             LayoutStyle = layoutStyle,
             Dock = dock
@@ -1164,9 +1166,9 @@ public partial class StatusStripTests
     [WinFormsFact]
     public void Control_OnLayout_Invoke_CreatesSizingGrip()
     {
-        var eventArgs = new LayoutEventArgs(null, null);
+        LayoutEventArgs eventArgs = new(null, null);
 
-        using var control = new SubStatusStrip
+        using SubStatusStrip control = new()
         {
             RightToLeft = RightToLeft.Yes
         };
@@ -1188,7 +1190,7 @@ public partial class StatusStripTests
     [WinFormsFact]
     public void StatusStrip_OnLayout_NullE_ThrowsNullReferenceException()
     {
-        using var control = new SubStatusStrip();
+        using SubStatusStrip control = new();
         Assert.Throws<NullReferenceException>(() => control.OnLayout(null));
     }
 
@@ -1205,11 +1207,11 @@ public partial class StatusStripTests
     [MemberData(nameof(OnPaintBackground_TestData))]
     public void StatusStrip_OnPaintBackground_Invoke_Success(RightToLeft rightToLeft, bool sizingGrip)
     {
-        using var image = new Bitmap(10, 10);
+        using Bitmap image = new(10, 10);
         using Graphics graphics = Graphics.FromImage(image);
-        using var eventArgs = new PaintEventArgs(graphics, new Rectangle(1, 2, 3, 4));
+        using PaintEventArgs eventArgs = new(graphics, new Rectangle(1, 2, 3, 4));
 
-        using var control = new SubStatusStrip
+        using SubStatusStrip control = new()
         {
             RightToLeft = rightToLeft,
             SizingGrip = sizingGrip
@@ -1238,7 +1240,7 @@ public partial class StatusStripTests
     [WinFormsFact]
     public void StatusStrip_OnPaintBackground_NullE_ThrowsArgumentNullException()
     {
-        using var control = new SubStatusStrip();
+        using SubStatusStrip control = new();
         Assert.Throws<ArgumentNullException>(() => control.OnPaintBackground(null));
     }
 
@@ -1257,15 +1259,15 @@ public partial class StatusStripTests
 
     private class SubStatusStrip : StatusStrip
     {
-        public new const int ScrollStateAutoScrolling = StatusStrip.ScrollStateAutoScrolling;
+        public new const int ScrollStateAutoScrolling = ScrollableControl.ScrollStateAutoScrolling;
 
-        public new const int ScrollStateHScrollVisible = StatusStrip.ScrollStateHScrollVisible;
+        public new const int ScrollStateHScrollVisible = ScrollableControl.ScrollStateHScrollVisible;
 
-        public new const int ScrollStateVScrollVisible = StatusStrip.ScrollStateVScrollVisible;
+        public new const int ScrollStateVScrollVisible = ScrollableControl.ScrollStateVScrollVisible;
 
-        public new const int ScrollStateUserHasScrolled = StatusStrip.ScrollStateUserHasScrolled;
+        public new const int ScrollStateUserHasScrolled = ScrollableControl.ScrollStateUserHasScrolled;
 
-        public new const int ScrollStateFullDrag = StatusStrip.ScrollStateFullDrag;
+        public new const int ScrollStateFullDrag = ScrollableControl.ScrollStateFullDrag;
 
         public new bool CanEnableIme => base.CanEnableIme;
 

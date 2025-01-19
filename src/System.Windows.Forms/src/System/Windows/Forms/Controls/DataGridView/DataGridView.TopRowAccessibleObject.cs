@@ -11,7 +11,7 @@ public partial class DataGridView
 {
     protected class DataGridViewTopRowAccessibleObject : AccessibleObject
     {
-        private int[]? runtimeId;
+        private int[]? _runtimeId;
         private DataGridView? _ownerDataGridView;
 
         public DataGridViewTopRowAccessibleObject()
@@ -42,13 +42,9 @@ public partial class DataGridView
             }
         }
 
-        public override string Name
-        {
-            get
-            {
-                return SR.DataGridView_AccTopRow;
-            }
-        }
+        public override string Name => SR.DataGridView_AccTopRow;
+
+        internal override bool CanGetNameInternal => false;
 
         public DataGridView? Owner
         {
@@ -88,21 +84,16 @@ public partial class DataGridView
             }
         }
 
-        internal override int[] RuntimeId
-            => runtimeId ??= new int[]
-            {
-                RuntimeIDFirstItem, // first item is static - 0x2a
-                Parent.GetHashCode(),
-                GetHashCode()
-            };
+        internal override int[] RuntimeId => _runtimeId ??=
+        [
+            RuntimeIDFirstItem,
+            Parent.GetHashCode(),
+            GetHashCode()
+        ];
 
-        public override string Value
-        {
-            get
-            {
-                return Name;
-            }
-        }
+        public override string Value => Name;
+
+        internal override bool CanGetValueInternal => false;
 
         public override AccessibleObject? GetChild(int index)
         {

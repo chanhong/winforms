@@ -26,7 +26,7 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
     private const byte ColumnIsBrowsableInternal = 0x08;
     private const byte DisplayIndexHasChangedInternal = 0x10;
 
-    private byte _flags;  // see DATAGRIDVIEWCOLUMN_ consts above
+    private byte _flags;  // see DATAGRIDVIEWCOLUMN_ constants above
     private string _name;
     private int _displayIndex;
     private float _fillWeight, _usedFillWeight;
@@ -65,7 +65,7 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
     /// <param name="value"> initial value</param>
     /// <returns> scaled metric</returns>
     private static int ScaleToCurrentDpi(int value) =>
-        DpiHelper.IsScalingRequirementMet ? DpiHelper.LogicalToDeviceUnits(value) : value;
+        ScaleHelper.IsScalingRequirementMet ? ScaleHelper.ScaleToDpi(value, ScaleHelper.InitialSystemDpi) : value;
 
     [SRCategory(nameof(SR.CatLayout))]
     [DefaultValue(DataGridViewAutoSizeColumnMode.NotSet)]
@@ -112,15 +112,15 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
                 }
 
                 DataGridViewAutoSizeColumnMode previousInheritedMode = InheritedAutoSizeMode;
-                bool previousInheritedModeAutoSized = previousInheritedMode != DataGridViewAutoSizeColumnMode.Fill &&
-                                                      previousInheritedMode != DataGridViewAutoSizeColumnMode.None &&
-                                                      previousInheritedMode != DataGridViewAutoSizeColumnMode.NotSet;
+                bool previousInheritedModeAutoSized = previousInheritedMode is not DataGridViewAutoSizeColumnMode.Fill
+                    and not DataGridViewAutoSizeColumnMode.None
+                    and not DataGridViewAutoSizeColumnMode.NotSet;
                 _autoSizeMode = value;
                 if (DataGridView is null)
                 {
-                    if (InheritedAutoSizeMode != DataGridViewAutoSizeColumnMode.Fill &&
-                        InheritedAutoSizeMode != DataGridViewAutoSizeColumnMode.None &&
-                        InheritedAutoSizeMode != DataGridViewAutoSizeColumnMode.NotSet)
+                    if (InheritedAutoSizeMode is not DataGridViewAutoSizeColumnMode.Fill
+                        and not DataGridViewAutoSizeColumnMode.None
+                        and not DataGridViewAutoSizeColumnMode.NotSet)
                     {
                         if (!previousInheritedModeAutoSized)
                         {
@@ -218,7 +218,7 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
                 !defaultCellStyle.IsNullValueDefault ||
                 !defaultCellStyle.IsDataSourceNullValueDefault ||
                 !string.IsNullOrEmpty(defaultCellStyle.Format) ||
-                !defaultCellStyle.FormatProvider.Equals(System.Globalization.CultureInfo.CurrentCulture) ||
+                !defaultCellStyle.FormatProvider.Equals(CultureInfo.CurrentCulture) ||
                 defaultCellStyle.Alignment != DataGridViewContentAlignment.NotSet ||
                 defaultCellStyle.WrapMode != DataGridViewTriState.NotSet ||
                 defaultCellStyle.Tag is not null ||
@@ -290,7 +290,7 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
         {
             if (value)
             {
-                _flags |= (byte)DisplayIndexHasChangedInternal;
+                _flags |= DisplayIndexHasChangedInternal;
             }
             else
             {
@@ -335,15 +335,8 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
         get => _fillWeight;
         set
         {
-            if (value <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgument, nameof(FillWeight), value, 0));
-            }
-
-            if (value > (float)ushort.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidHighBoundArgumentEx, nameof(FillWeight), value, ushort.MaxValue));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ushort.MaxValue);
 
             if (DataGridView is not null)
             {
@@ -382,8 +375,8 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
     [AllowNull]
     public DataGridViewColumnHeaderCell HeaderCell
     {
-        get => (DataGridViewColumnHeaderCell)base.HeaderCellCore;
-        set => base.HeaderCellCore = value;
+        get => (DataGridViewColumnHeaderCell)HeaderCellCore;
+        set => HeaderCellCore = value;
     }
 
     [SRCategory(nameof(SR.CatAppearance))]
@@ -421,8 +414,7 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
         }
     }
 
-    private bool ShouldSerializeHeaderText() =>
-        HasHeaderCell && ((DataGridViewColumnHeaderCell)HeaderCell).ContainsLocalValue;
+    private bool ShouldSerializeHeaderText() => HasHeaderCell && HeaderCell.ContainsLocalValue;
 
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -446,7 +438,7 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
                 return columnStyle;
             }
 
-            DataGridViewCellStyle inheritedCellStyleTmp = new DataGridViewCellStyle();
+            DataGridViewCellStyle inheritedCellStyleTmp = new();
             DataGridViewCellStyle dataGridViewStyle = DataGridView.DefaultCellStyle;
             Debug.Assert(dataGridViewStyle is not null);
 
@@ -580,7 +572,7 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
         {
             if (value)
             {
-                _flags |= (byte)ColumnIsBrowsableInternal;
+                _flags |= ColumnIsBrowsableInternal;
             }
             else
             {
@@ -600,7 +592,7 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
         {
             if (value)
             {
-                _flags |= (byte)ColumnIsDataBound;
+                _flags |= ColumnIsDataBound;
             }
             else
             {
@@ -637,8 +629,8 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
             // So while the Control can fall back to Site.Name if the user did not explicitly set Control::Name,
             // the DataGridViewColumn should always go first to the Site.Name to retrieve the name.
             //
-            // NOTE: one side effect of bringing together the design time and the run time "Name" properties is that DataGridViewColumn::Name changes.
-            // However, DataGridView does not fire ColumnNameChanged event.
+            // NOTE: one side effect of bringing together the design time and the run time "Name" properties is that
+            // DataGridViewColumn::Name changes. However, DataGridView does not fire ColumnNameChanged event.
             // We can't fix this because ISite does not provide Name change notification. So in effect
             // DataGridViewColumn does not know when its name changed.
             // I talked w/ MarkRi and he is perfectly fine w/ DataGridViewColumn::Name changing w/o ColumnNameChanged
@@ -741,12 +733,12 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
                     if (value == DataGridViewColumnSortMode.Automatic)
                     {
                         _flags = (byte)(_flags & ~ProgrammaticSort);
-                        _flags |= (byte)AutomaticSort;
+                        _flags |= AutomaticSort;
                     }
                     else
                     {
                         _flags = (byte)(_flags & ~AutomaticSort);
-                        _flags |= (byte)ProgrammaticSort;
+                        _flags |= ProgrammaticSort;
                     }
                 }
                 else
@@ -794,12 +786,8 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Type? ValueType
     {
-        get => (Type?)Properties.GetObject(s_propDataGridViewColumnValueType);
-        set
-        {
-            // what should we do when we modify the ValueType in the dataGridView column???
-            Properties.SetObject(s_propDataGridViewColumnValueType, value);
-        }
+        get => Properties.GetValueOrDefault<Type>(s_propDataGridViewColumnValueType);
+        set => Properties.AddOrRemoveValue(s_propDataGridViewColumnValueType, value);
     }
 
     [DefaultValue(true)]
@@ -863,8 +851,9 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
                 }
             }
 
-            // If you are adding releasing unmanaged resources code here (disposing == false), you need to remove this class type
-            // (and all of its subclasses) from check in DataGridViewElement() constructor and DataGridViewElement_Subclasses_SuppressFinalizeCall test!
+            // If you are adding releasing unmanaged resources code here (disposing == false), you need to remove this
+            // class type (and all of its subclasses) from check in DataGridViewElement()
+            // constructor and DataGridViewElement_Subclasses_SuppressFinalizeCall test!
             // Also consider to modify ~DataGridViewBand() description.
         }
         finally
@@ -877,29 +866,16 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
     {
         if (dataGridView is not null && _autoSizeMode == DataGridViewAutoSizeColumnMode.NotSet)
         {
-            switch (dataGridView.AutoSizeColumnsMode)
+            return dataGridView.AutoSizeColumnsMode switch
             {
-                case DataGridViewAutoSizeColumnsMode.AllCells:
-                    return DataGridViewAutoSizeColumnMode.AllCells;
-
-                case DataGridViewAutoSizeColumnsMode.AllCellsExceptHeader:
-                    return DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
-
-                case DataGridViewAutoSizeColumnsMode.DisplayedCells:
-                    return DataGridViewAutoSizeColumnMode.DisplayedCells;
-
-                case DataGridViewAutoSizeColumnsMode.DisplayedCellsExceptHeader:
-                    return DataGridViewAutoSizeColumnMode.DisplayedCellsExceptHeader;
-
-                case DataGridViewAutoSizeColumnsMode.ColumnHeader:
-                    return DataGridViewAutoSizeColumnMode.ColumnHeader;
-
-                case DataGridViewAutoSizeColumnsMode.Fill:
-                    return DataGridViewAutoSizeColumnMode.Fill;
-
-                default: // None
-                    return DataGridViewAutoSizeColumnMode.None;
-            }
+                DataGridViewAutoSizeColumnsMode.AllCells => DataGridViewAutoSizeColumnMode.AllCells,
+                DataGridViewAutoSizeColumnsMode.AllCellsExceptHeader => DataGridViewAutoSizeColumnMode.AllCellsExceptHeader,
+                DataGridViewAutoSizeColumnsMode.DisplayedCells => DataGridViewAutoSizeColumnMode.DisplayedCells,
+                DataGridViewAutoSizeColumnsMode.DisplayedCellsExceptHeader => DataGridViewAutoSizeColumnMode.DisplayedCellsExceptHeader,
+                DataGridViewAutoSizeColumnsMode.ColumnHeader => DataGridViewAutoSizeColumnMode.ColumnHeader,
+                DataGridViewAutoSizeColumnsMode.Fill => DataGridViewAutoSizeColumnMode.Fill,
+                _ => DataGridViewAutoSizeColumnMode.None,
+            };
         }
 
         return _autoSizeMode;
@@ -907,9 +883,9 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
 
     public virtual int GetPreferredWidth(DataGridViewAutoSizeColumnMode autoSizeColumnMode, bool fixedHeight)
     {
-        if (autoSizeColumnMode == DataGridViewAutoSizeColumnMode.NotSet ||
-            autoSizeColumnMode == DataGridViewAutoSizeColumnMode.None ||
-            autoSizeColumnMode == DataGridViewAutoSizeColumnMode.Fill)
+        if (autoSizeColumnMode is DataGridViewAutoSizeColumnMode.NotSet
+            or DataGridViewAutoSizeColumnMode.None
+            or DataGridViewAutoSizeColumnMode.Fill)
         {
             throw new ArgumentException(string.Format(SR.DataGridView_NeedColumnAutoSizingCriteria, "autoSizeColumnMode"));
         }
@@ -939,11 +915,11 @@ public class DataGridViewColumn : DataGridViewBand, IComponent
         }
 
         DataGridViewAutoSizeColumnCriteriaInternal autoSizeColumnCriteriaInternal = (DataGridViewAutoSizeColumnCriteriaInternal)autoSizeColumnMode;
-        Debug.Assert(autoSizeColumnCriteriaInternal == DataGridViewAutoSizeColumnCriteriaInternal.Header ||
-            autoSizeColumnCriteriaInternal == DataGridViewAutoSizeColumnCriteriaInternal.AllRows ||
-            autoSizeColumnCriteriaInternal == DataGridViewAutoSizeColumnCriteriaInternal.DisplayedRows ||
-            autoSizeColumnCriteriaInternal == (DataGridViewAutoSizeColumnCriteriaInternal.Header | DataGridViewAutoSizeColumnCriteriaInternal.AllRows) ||
-            autoSizeColumnCriteriaInternal == (DataGridViewAutoSizeColumnCriteriaInternal.Header | DataGridViewAutoSizeColumnCriteriaInternal.DisplayedRows));
+        Debug.Assert(autoSizeColumnCriteriaInternal is DataGridViewAutoSizeColumnCriteriaInternal.Header
+            or DataGridViewAutoSizeColumnCriteriaInternal.AllRows
+            or DataGridViewAutoSizeColumnCriteriaInternal.DisplayedRows
+            or (DataGridViewAutoSizeColumnCriteriaInternal.Header | DataGridViewAutoSizeColumnCriteriaInternal.AllRows)
+            or (DataGridViewAutoSizeColumnCriteriaInternal.Header | DataGridViewAutoSizeColumnCriteriaInternal.DisplayedRows));
 
         int preferredColumnThickness = 0, preferredCellThickness, rowIndex;
         DataGridViewRow dataGridViewRow;

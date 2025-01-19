@@ -10,7 +10,7 @@ namespace System.Windows.Forms;
 
 public partial class PrintPreviewControl
 {
-    internal class PrintPreviewControlAccessibleObject : ControlAccessibleObject, IScrollProvider.Interface
+    internal sealed class PrintPreviewControlAccessibleObject : ControlAccessibleObject, IScrollProvider.Interface
     {
         public PrintPreviewControlAccessibleObject(PrintPreviewControl owner) : base(owner)
         {
@@ -55,6 +55,8 @@ public partial class PrintPreviewControl
             };
         }
 
+        private protected override bool IsInternal => true;
+
         internal override bool IsPatternSupported(UIA_PATTERN_ID patternId)
             => patternId switch
             {
@@ -97,7 +99,7 @@ public partial class PrintPreviewControl
                 return HRESULT.E_FAIL;
             }
 
-            int scrollValue = 0;
+            int scrollValue;
             if (owner._hScrollBar.Visible && horizontalAmount != ScrollAmount.ScrollAmount_NoAmount)
             {
                 switch (horizontalAmount)
@@ -154,7 +156,7 @@ public partial class PrintPreviewControl
                 return HRESULT.E_FAIL;
             }
 
-            int scrollValue = 0;
+            int scrollValue;
             if (owner._hScrollBar.Visible && horizontalPercent >= 0 && horizontalPercent <= 100)
             {
                 scrollValue = owner._hScrollBar.Minimum + (int)((owner._hScrollBar.Maximum - owner._hScrollBar.Minimum) * horizontalPercent);

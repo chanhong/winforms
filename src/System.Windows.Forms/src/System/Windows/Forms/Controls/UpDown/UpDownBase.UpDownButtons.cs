@@ -35,6 +35,10 @@ public abstract partial class UpDownBase
             SetStyle(ControlStyles.Opaque | ControlStyles.FixedHeight | ControlStyles.FixedWidth, true);
             SetStyle(ControlStyles.Selectable, false);
 
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+            SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
+
             _parent = parent;
         }
 
@@ -48,7 +52,7 @@ public abstract partial class UpDownBase
         }
 
         /// <remarks>
-        ///  Called when the mouse button is pressed - we need to start spinning the value of the updown.
+        ///  <para>Called when the mouse button is pressed - we need to start spinning the value of the updown.</para>
         /// </remarks>
         private void BeginButtonPress(MouseEventArgs e)
         {
@@ -81,7 +85,7 @@ public abstract partial class UpDownBase
             => new UpDownButtonsAccessibleObject(this);
 
         /// <remarks>
-        ///  Called when the mouse button is released - we need to stop spinning the value of the updown.
+        ///  <para>Called when the mouse button is released - we need to stop spinning the value of the updown.</para>
         /// </remarks>
         private void EndButtonPress()
         {
@@ -313,15 +317,15 @@ public abstract partial class UpDownBase
 
             if (half_height != (ClientSize.Height + 1) / 2)
             {
-                // When control has odd height, a line needs to be drawn below the buttons with the backcolor.
+                // When control has odd height, a line needs to be drawn below the buttons with the BackColor.
                 Color color = _parent.BackColor;
 
                 Rectangle clientRect = ClientRectangle;
-                Point pt1 = new Point(clientRect.Left, clientRect.Bottom - 1);
-                Point pt2 = new Point(clientRect.Right, clientRect.Bottom - 1);
+                Point pt1 = new(clientRect.Left, clientRect.Bottom - 1);
+                Point pt2 = new(clientRect.Right, clientRect.Bottom - 1);
 
                 using DeviceContextHdcScope hdc = new(e);
-                using PInvoke.CreatePenScope hpen = new(color);
+                using CreatePenScope hpen = new(color);
                 hdc.DrawLine(hpen, pt1, pt2);
             }
 
@@ -359,7 +363,7 @@ public abstract partial class UpDownBase
                 _timer = new Timer();
 
                 // Add the timer handler
-                _timer.Tick += new EventHandler(TimerHandler);
+                _timer.Tick += TimerHandler;
             }
 
             _timerInterval = DefaultTimerInterval;

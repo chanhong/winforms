@@ -14,7 +14,8 @@ internal class DropSource : IDropSource.Interface, IDropSourceNotify.Interface, 
     private readonly ISupportOleDropSource _peer;
     private readonly IComDataObject _dataObject;
     private HWND _lastHwndTarget;
-    private GiveFeedbackEventArgs? _lastGiveFeedbacEventArgs;
+    private uint _lastHwndTargetThreadId;
+    private GiveFeedbackEventArgs? _lastGiveFeedbackEventArgs;
 
     public DropSource(ISupportOleDropSource peer, IComDataObject dataObject, Bitmap? dragImage, Point cursorOffset, bool useDefaultDragImage)
     {
@@ -23,8 +24,8 @@ internal class DropSource : IDropSource.Interface, IDropSourceNotify.Interface, 
 
         if (dragImage is not null)
         {
-            _lastGiveFeedbacEventArgs = new(DragDropEffects.None, useDefaultCursors: false, dragImage, cursorOffset, useDefaultDragImage);
-            DragDropHelper.SetDragImage(_dataObject, _lastGiveFeedbacEventArgs);
+            _lastGiveFeedbackEventArgs = new(DragDropEffects.None, useDefaultCursors: false, dragImage, cursorOffset, useDefaultDragImage);
+            DragDropHelper.SetDragImage(_dataObject, _lastGiveFeedbackEventArgs);
         }
     }
 
@@ -56,21 +57,21 @@ internal class DropSource : IDropSource.Interface, IDropSourceNotify.Interface, 
 
     public HRESULT GiveFeedback(DROPEFFECT dwEffect)
     {
-        GiveFeedbackEventArgs gfbEvent = _lastGiveFeedbacEventArgs is null
+        GiveFeedbackEventArgs gfbEvent = _lastGiveFeedbackEventArgs is null
             ? new((DragDropEffects)dwEffect, useDefaultCursors: true)
             : new(
                 (DragDropEffects)dwEffect,
                 useDefaultCursors: false,
-                _lastGiveFeedbacEventArgs.DragImage,
-                _lastGiveFeedbacEventArgs.CursorOffset,
-                _lastGiveFeedbacEventArgs.UseDefaultDragImage);
+                _lastGiveFeedbackEventArgs.DragImage,
+                _lastGiveFeedbackEventArgs.CursorOffset,
+                _lastGiveFeedbackEventArgs.UseDefaultDragImage);
 
         _peer.OnGiveFeedback(gfbEvent);
 
-        if (gfbEvent.DragImage is not null && !gfbEvent.Equals(_lastGiveFeedbacEventArgs))
+        if (IsDropTargetWindowInCurrentThread() && gfbEvent.DragImage is not null && !gfbEvent.Equals(_lastGiveFeedbackEventArgs))
         {
-            _lastGiveFeedbacEventArgs = gfbEvent.Clone();
-            UpdateDragImage(_lastGiveFeedbacEventArgs, _dataObject, _lastHwndTarget);
+            _lastGiveFeedbackEventArgs = gfbEvent.Clone();
+            UpdateDragImage(_lastGiveFeedbackEventArgs, _dataObject, _lastHwndTarget);
         }
 
         if (gfbEvent.UseDefaultCursors)
@@ -96,19 +97,24 @@ internal class DropSource : IDropSource.Interface, IDropSourceNotify.Interface, 
         }
     }
 
-    public HRESULT DragEnterTarget(HWND hwndTarget)
+    public unsafe HRESULT DragEnterTarget(HWND hwndTarget)
     {
         _lastHwndTarget = hwndTarget;
+        _lastHwndTargetThreadId = PInvoke.GetWindowThreadProcessId(hwndTarget, lpdwProcessId: null);
         return HRESULT.S_OK;
     }
 
     public HRESULT DragLeaveTarget()
     {
-        if (_lastGiveFeedbacEventArgs?.DragImage is not null)
+        if (IsDropTargetWindowInCurrentThread() && _lastGiveFeedbackEventArgs?.DragImage is not null)
         {
             DragDropHelper.DragLeave();
         }
 
+        _lastHwndTarget = default;
+        _lastHwndTargetThreadId = default;
         return HRESULT.S_OK;
     }
+
+    private bool IsDropTargetWindowInCurrentThread() => _lastHwndTargetThreadId == PInvokeCore.GetCurrentThreadId();
 }

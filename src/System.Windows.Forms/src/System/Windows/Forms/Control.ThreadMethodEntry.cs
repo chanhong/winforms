@@ -18,7 +18,7 @@ public partial class Control
         internal Exception? _exception;
         internal bool _synchronous;
         private ManualResetEvent? _resetEvent;
-        private readonly object _invokeSyncObject = new();
+        private readonly Lock _invokeSyncObject = new();
 
         // Store the execution context associated with the caller thread, and
         // information about which thread actually got the stack applied to it.
@@ -40,26 +40,11 @@ public partial class Control
             _marshaler = marshaler;
             _method = method;
             _args = args;
-            _exception = null;
-            _retVal = null;
             _synchronous = synchronous;
-            IsCompleted = false;
-            _resetEvent = null;
             _executionContext = executionContext;
         }
 
-        ~ThreadMethodEntry()
-        {
-            _resetEvent?.Close();
-        }
-
-        public object? AsyncState
-        {
-            get
-            {
-                return null;
-            }
-        }
+        public object? AsyncState => null;
 
         public WaitHandle AsyncWaitHandle
         {
@@ -67,39 +52,22 @@ public partial class Control
             {
                 if (_resetEvent is null)
                 {
-                    // Locking 'this' here is ok since this is an internal class.
                     lock (_invokeSyncObject)
                     {
-                        // BeginInvoke hangs on Multi-proc system:
-                        // taking the lock prevents a race condition between IsCompleted
-                        // boolean flag and resetEvent mutex in multiproc scenarios.
-                        if (_resetEvent is null)
+                        _resetEvent ??= new ManualResetEvent(false);
+
+                        if (IsCompleted)
                         {
-                            _resetEvent = new ManualResetEvent(false);
-                            if (IsCompleted)
-                            {
-                                _resetEvent.Set();
-                            }
+                            _resetEvent.Set();
                         }
                     }
                 }
 
-                return (WaitHandle)_resetEvent;
+                return _resetEvent;
             }
         }
 
-        public bool CompletedSynchronously
-        {
-            get
-            {
-                if (IsCompleted && _synchronous)
-                {
-                    return true;
-                }
-
-                return false;
-            }
-        }
+        public bool CompletedSynchronously => IsCompleted && _synchronous;
 
         public bool IsCompleted { get; private set; }
 

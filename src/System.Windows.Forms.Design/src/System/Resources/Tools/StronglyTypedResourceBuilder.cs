@@ -30,8 +30,11 @@ namespace System.Resources.Tools;
 ///   <see cref="ResourceManager.GetObject(string)"/> methods.
 ///  </para>
 ///  <para>
-///   The basic functionality for strongly typed resource support is provided by the <see cref="StronglyTypedResourceBuilder"/>
-///   class (as well as the /str command-line option in the <seealso href="https://docs.microsoft.com/dotnet/framework/tools/resgen-exe-resource-file-generator">Resgen.exe(Resource File Generator)</seealso>).
+///   The basic functionality for strongly typed resource support is provided by th
+///   <see cref="StronglyTypedResourceBuilder"/> class (as well as the /str command-line option in the
+///   <seealso href="https://docs.microsoft.com/dotnet/framework/tools/resgen-exe-resource-file-generator">
+///    Resgen.exe(Resource File Generator)
+///   </seealso>).
 ///   The output of the <see cref="Create(IDictionary, string, string, CodeDomProvider, bool, out string[])"/> method
 ///   is a class that contains strongly typed properties that match the resources that are referenced in the input
 ///   parameter. This class provides read-only access to the resources that are available in the file processed.
@@ -280,7 +283,7 @@ public static partial class StronglyTypedResourceBuilder
         }
 
         // Note we still need to verify the resource names are valid language
-        // keywords, etc.  So there's no point to duplicating the code above.
+        // keywords, etc. So there's no point to duplicating the code above.
 
         return InternalCreate(
             resourceList,
@@ -312,9 +315,9 @@ public static partial class StronglyTypedResourceBuilder
 
         // Keep a list of errors describing known strings that couldn't be fixed up (like "4"), as well as listing
         // all duplicate resources that were fixed up to the same name (like "A B" and "A-B" both going to "A_B").
-        List<string> errors = new();
+        List<string> errors = [];
 
-        // Verify the resource names are valid property names, and they don't conflict.  This includes checking for
+        // Verify the resource names are valid property names, and they don't conflict. This includes checking for
         // language-specific keywords, translating spaces to underscores, etc.
         var cleanedResourceList = VerifyResourceNames(resourceList, codeProvider, errors, out Dictionary<string, string> reverseFixupTable);
 
@@ -426,7 +429,7 @@ public static partial class StronglyTypedResourceBuilder
             }
         }
 
-        unmatchable = errors.ToArray();
+        unmatchable = [.. errors];
 
         // Validate the generated class now
         CodeGenerator.ValidateIdentifiers(codeCompileUnit);
@@ -590,7 +593,7 @@ public static partial class StronglyTypedResourceBuilder
             CodeMethodInvokeExpression getTypeInfo = new(
                 new CodeTypeOfExpression(new CodeTypeReference(classDeclaration.Name)),
                 "GetTypeInfo",
-                Array.Empty<CodeExpression>());
+                []);
             getAssemblyProperty = new(getTypeInfo, "Assembly");
         }
         else
@@ -609,11 +612,11 @@ public static partial class StronglyTypedResourceBuilder
             new CodePrimitiveExpression(resourceManagerConstructorParameter),
             getAssemblyProperty);
 
-        CodeStatement[] assignNewResourceManager = new CodeStatement[]
-        {
+        CodeStatement[] assignNewResourceManager =
+        [
             new CodeVariableDeclarationStatement(resourceManagerType, tempVariableName, newResourceManager),
             new CodeAssignStatement(resourceManagerField, new CodeVariableReferenceExpression(tempVariableName))
-        };
+        ];
 
         resourceManagerProperty.GetStatements.Add(new CodeConditionStatement(isResourceManagerNull, assignNewResourceManager));
         resourceManagerProperty.GetStatements.Add(new CodeMethodReturnStatement(resourceManagerField));
@@ -702,7 +705,7 @@ public static partial class StronglyTypedResourceBuilder
         // Ensure type is publicly visible. This is necessary to ensure uers can access classes via a base type.
         //
         // Imagine a class like Image or Stream as a publicly available base class, then an internal type like
-        // MyBitmap or __UnmanagedMemoryStream as an internal implementation for that base class.  For publicly
+        // MyBitmap or __UnmanagedMemoryStream as an internal implementation for that base class. For publicly
         // available strongly typed resource classes, we must return the public type. For simplicity, we'll do that
         // for internal strongly typed resource classes as well. Ideally we'd also like to check for interfaces
         // like IList, but it isn't clear how to do that without special casing collection interfaces & ignoring
@@ -848,7 +851,7 @@ public static partial class StronglyTypedResourceBuilder
             return key;
         }
 
-        // Make one last ditch effort by prepending _.  This fixes keys that start with a number.
+        // Make one last ditch effort by prepending _. This fixes keys that start with a number.
         key = $"_{key}";
         return provider.IsValidIdentifier(key) ? key : null;
     }

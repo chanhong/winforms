@@ -3,11 +3,9 @@
 
 using System.ComponentModel;
 using System.Drawing;
+using System.Windows.Forms.Automation;
 using Moq;
 using Moq.Protected;
-using System.Windows.Forms.Automation;
-using System.Windows.Forms.TestUtilities;
-using static Interop;
 
 namespace System.Windows.Forms.Tests;
 
@@ -16,7 +14,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_Ctor_Default()
     {
-        using var toolTip = new SubToolTip();
+        using SubToolTip toolTip = new();
         Assert.True(toolTip.Active);
         Assert.Equal(500, toolTip.AutomaticDelay);
         Assert.Equal(5000, toolTip.AutoPopDelay);
@@ -45,8 +43,8 @@ public class ToolTipTests
     [WinFormsFact]
     public void Ctor_IContainer_TestData()
     {
-        using var container = new Container();
-        using var toolTip = new SubToolTip(container);
+        using Container container = new();
+        using SubToolTip toolTip = new(container);
         Assert.True(toolTip.Active);
         Assert.Equal(500, toolTip.AutomaticDelay);
         Assert.Equal(5000, toolTip.AutoPopDelay);
@@ -81,7 +79,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_CreateParams_GetDefault_ReturnsExpected()
     {
-        using var toolTip = new SubToolTip();
+        using SubToolTip toolTip = new();
         CreateParams createParams = toolTip.CreateParams;
         Assert.Null(createParams.Caption);
         Assert.Equal("tooltips_class32", createParams.ClassName);
@@ -101,7 +99,7 @@ public class ToolTipTests
     [BoolData]
     public void ToolTip_Active_Set_GetReturnsExpected(bool value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             Active = value
         };
@@ -121,11 +119,11 @@ public class ToolTipTests
     [BoolData]
     public void ToolTip_Active_SetDesignMode_GetReturnsExpected(bool value)
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.DesignMode)
             .Returns(true);
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             Site = mockSite.Object,
             Active = value
@@ -156,7 +154,7 @@ public class ToolTipTests
     [InlineData(5000, 50000, 1000)]
     public void ToolTip_AutomaticDelay_Set_GetReturnsExpected(int value, int expectedAutoPopDelay, int expectedReshowDelay)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             InitialDelay = 80,
             AutoPopDelay = 70,
@@ -182,7 +180,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_AutomaticDelay_ShouldSerialize_ReturnsExpected()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
 
         var properties = TypeDescriptor.GetProperties(typeof(ToolTip));
         PropertyDescriptor automaticProperty = properties[nameof(ToolTip.AutomaticDelay)];
@@ -226,7 +224,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_AutomaticDelay_SetNegativeValue_ThrowsArgumentOutOfRangeException()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Throws<ArgumentOutOfRangeException>("value", () => toolTip.AutomaticDelay = -1);
     }
 
@@ -239,7 +237,7 @@ public class ToolTipTests
     [InlineData(5000)]
     public void ToolTip_AutoPopDelay_Set_GetReturnsExpected(int value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             AutoPopDelay = value
         };
@@ -259,7 +257,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_AutoPopDelay_ShouldSerialize_ReturnsExpected()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(ToolTip))[nameof(ToolTip.AutoPopDelay)];
         Assert.False(property.ShouldSerializeValue(toolTip));
 
@@ -273,7 +271,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_AutoPopDelay_SetNegativeValue_ThrowsArgumentOutOfRangeException()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Throws<ArgumentOutOfRangeException>("value", () => toolTip.AutoPopDelay = -1);
     }
 
@@ -281,7 +279,7 @@ public class ToolTipTests
     [CommonMemberData(typeof(CommonTestHelper), nameof(CommonTestHelper.GetColorWithEmptyTheoryData))]
     public void ToolTip_BackColor_Set_GetReturnsExpected(Color value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             BackColor = value
         };
@@ -297,7 +295,7 @@ public class ToolTipTests
     {
         bool persistentToolTipSupported = OsVersion.IsWindows11_OrGreater();
 
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Equal(persistentToolTipSupported, toolTip.IsPersistent);
 
         _ = toolTip.Handle;
@@ -320,7 +318,7 @@ public class ToolTipTests
     {
         bool persistentToolTipSupported = OsVersion.IsWindows11_OrGreater();
 
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         // IsPersistent is not set until the tooltip window is created.
         toolTip.AutoPopDelay = 30;
         Assert.Equal(persistentToolTipSupported, toolTip.IsPersistent);
@@ -337,7 +335,7 @@ public class ToolTipTests
     [CommonMemberData(typeof(CommonTestHelper), nameof(CommonTestHelper.GetColorTheoryData))]
     public void ToolTip_ForeColor_Set_GetReturnsExpected(Color value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             ForeColor = value
         };
@@ -351,7 +349,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_ForeColor_SetEmpty_ThrowsArgumentException()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Throws<ArgumentException>("value", () => toolTip.ForeColor = Color.Empty);
     }
 
@@ -364,7 +362,7 @@ public class ToolTipTests
     [InlineData(5000)]
     public void ToolTip_InitialDelay_Set_GetReturnsExpected(int value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             InitialDelay = value
         };
@@ -384,7 +382,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_InitialDelay_ShouldSerialize_ReturnsExpected()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(ToolTip))[nameof(ToolTip.InitialDelay)];
         Assert.False(property.ShouldSerializeValue(toolTip));
 
@@ -398,7 +396,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_InitialDelay_SetNegativeValue_ThrowsArgumentOutOfRangeException()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Throws<ArgumentOutOfRangeException>("value", () => toolTip.InitialDelay = -1);
     }
 
@@ -406,7 +404,7 @@ public class ToolTipTests
     [BoolData]
     public void ToolTip_IsBalloon_Set_GetReturnsExpected(bool value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             IsBalloon = value
         };
@@ -425,7 +423,7 @@ public class ToolTipTests
     [BoolData]
     public void ToolTip_OwnerDraw_Set_GetReturnsExpected(bool value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             OwnerDraw = value
         };
@@ -449,7 +447,7 @@ public class ToolTipTests
     [InlineData(5000)]
     public void ToolTip_ReshowDelay_Set_GetReturnsExpected(int value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             ReshowDelay = value
         };
@@ -469,7 +467,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_ReshowDelay_ShouldSerialize_ReturnsExpected()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(ToolTip))[nameof(ToolTip.ReshowDelay)];
         Assert.False(property.ShouldSerializeValue(toolTip));
 
@@ -483,7 +481,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_ReshowDelay_SetNegativeValue_ThrowsArgumentOutOfRangeException()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Throws<ArgumentOutOfRangeException>("value", () => toolTip.ReshowDelay = -1);
     }
 
@@ -491,7 +489,7 @@ public class ToolTipTests
     [BoolData]
     public void ToolTip_ShowAlways_Set_GetReturnsExpected(bool value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             ShowAlways = value
         };
@@ -510,7 +508,7 @@ public class ToolTipTests
     [BoolData]
     public void ToolTip_StripAmpersands_Set_GetReturnsExpected(bool value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             StripAmpersands = value
         };
@@ -529,7 +527,7 @@ public class ToolTipTests
     [StringWithNullData]
     public void ToolTip_Tag_Set_GetReturnsExpected(object value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             Tag = value
         };
@@ -544,7 +542,7 @@ public class ToolTipTests
     [EnumData<ToolTipIcon>]
     public void ToolTip_ToolTipIcon_Set_GetReturnsExpected(ToolTipIcon value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             ToolTipIcon = value
         };
@@ -559,7 +557,7 @@ public class ToolTipTests
     [InvalidEnumData<ToolTipIcon>]
     public void ToolTip_ToolTipIcon_SetInvalidValue_ThrowsInvalidEnumArgumentException(ToolTipIcon value)
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Throws<InvalidEnumArgumentException>("value", () => toolTip.ToolTipIcon = value);
     }
 
@@ -567,7 +565,7 @@ public class ToolTipTests
     [NormalizedStringData]
     public void ToolTip_ToolTipTitle_Set_GetReturnsExpected(string value, string expected)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             ToolTipTitle = value
         };
@@ -582,7 +580,7 @@ public class ToolTipTests
     [BoolData]
     public void ToolTip_UseAnimation_Set_GetReturnsExpected(bool value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             UseAnimation = value
         };
@@ -601,7 +599,7 @@ public class ToolTipTests
     [BoolData]
     public void ToolTip_UseFading_Set_GetReturnsExpected(bool value)
     {
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             UseFading = value
         };
@@ -628,7 +626,7 @@ public class ToolTipTests
     [MemberData(nameof(CanExtend_TestData))]
     public void ToolTip_CanExtend_Invoke_ReurnsExpected(object target, bool expected)
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Equal(expected, toolTip.CanExtend(target));
     }
 
@@ -642,15 +640,15 @@ public class ToolTipTests
     [MemberData(nameof(GetToolTip_NoSuchControl_TestData))]
     public void ToolTip_GetToolTip_NoSuchControl_ReturnsEmpty(Control control)
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Empty(toolTip.GetToolTip(control));
     }
 
     [WinFormsFact]
     public void ToolTip_RemoveAll_InvokeWithTools_GetToolTipReturnsEmpty()
     {
-        using var control = new Control();
-        using var toolTip = new ToolTip();
+        using Control control = new();
+        using ToolTip toolTip = new();
         toolTip.SetToolTip(control, "caption");
         toolTip.RemoveAll();
         Assert.Empty(toolTip.GetToolTip(control));
@@ -662,7 +660,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_RemoveAll_InvokeWithoutTools_Nop()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         toolTip.RemoveAll();
         toolTip.RemoveAll();
     }
@@ -671,8 +669,8 @@ public class ToolTipTests
     [NormalizedStringData]
     public void ToolTip_SetToolTip_Invoke_GetToolTipReturnsExpected(string caption, string expected)
     {
-        using var toolTip = new ToolTip();
-        using var control = new Control();
+        using ToolTip toolTip = new();
+        using Control control = new();
         toolTip.SetToolTip(control, caption);
         Assert.Equal(expected, toolTip.GetToolTip(control));
 
@@ -685,15 +683,15 @@ public class ToolTipTests
     [NormalizedStringData]
     public void ToolTip_SetToolTip_InvokeDesignMode_GetToolTipReturnsExpected(string caption, string expected)
     {
-        var mockSite = new Mock<ISite>(MockBehavior.Strict);
+        Mock<ISite> mockSite = new(MockBehavior.Strict);
         mockSite
             .Setup(s => s.DesignMode)
             .Returns(true);
-        using var toolTip = new ToolTip
+        using ToolTip toolTip = new()
         {
             Site = mockSite.Object
         };
-        using var control = new Control();
+        using Control control = new();
         toolTip.SetToolTip(control, caption);
         Assert.Equal(expected, toolTip.GetToolTip(control));
 
@@ -702,7 +700,8 @@ public class ToolTipTests
         Assert.Equal(expected, toolTip.GetToolTip(control));
 
         // NB: disposing the component with strictly mocked object causes tests to fail
-        // Moq.MockException : ISite.Container invocation failed with mock behavior Strict. All invocations on the mock must have a corresponding setup.
+        // Moq.MockException : ISite.Container invocation failed with mock behavior Strict.
+        // All invocations on the mock must have a corresponding setup.
         toolTip.Site = null;
     }
 
@@ -710,7 +709,7 @@ public class ToolTipTests
     [StringWithNullData]
     public void ToolTip_SetToolTip_NullControl_ThrowsArgumentNullException(string caption)
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Throws<ArgumentNullException>("control", () => toolTip.SetToolTip(null, caption));
     }
 
@@ -718,8 +717,8 @@ public class ToolTipTests
     [StringWithNullData]
     public void ToolTip_Show_InvokeStringIWin32WindowControlWindow_Nop(string text)
     {
-        using var toolTip = new ToolTip();
-        using var control = new Control();
+        using ToolTip toolTip = new();
+        using Control control = new();
         toolTip.Show(text, control);
     }
 
@@ -727,7 +726,7 @@ public class ToolTipTests
     [StringWithNullData]
     public void ToolTip_Show_InvokeStringIWin32WindowNonControlWindow_Nop(string text)
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         var mockWindow = new Mock<IWin32Window>(MockBehavior.Strict);
         toolTip.Show(text, mockWindow.Object);
     }
@@ -746,8 +745,8 @@ public class ToolTipTests
     [MemberData(nameof(Show_StringIWin32WindowInt_TestData))]
     public void ToolTip_Show_InvokeStringIWin32WindowIntControlWindow_Nop(string text, int duration)
     {
-        using var toolTip = new ToolTip();
-        using var control = new Control();
+        using ToolTip toolTip = new();
+        using Control control = new();
         toolTip.Show(text, control, duration);
     }
 
@@ -755,7 +754,7 @@ public class ToolTipTests
     [MemberData(nameof(Show_StringIWin32WindowInt_TestData))]
     public void ToolTip_Show_InvokeStringIWin32WindowIntNonControlWindow_Nop(string text, int duration)
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         var mockWindow = new Mock<IWin32Window>(MockBehavior.Strict);
         toolTip.Show(text, mockWindow.Object, duration);
     }
@@ -763,7 +762,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_Show_NullWindow_ThrowsArgumentNullException()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Throws<ArgumentNullException>("window", () => toolTip.Show("text", null));
         Assert.Throws<ArgumentNullException>("window", () => toolTip.Show("text", null, 1));
     }
@@ -771,7 +770,7 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_Show_NegativeDuration_ThrowsArgumentOutOfRangeException()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         var mockWindow = new Mock<IWin32Window>(MockBehavior.Strict);
         Assert.Throws<ArgumentOutOfRangeException>("duration", () => toolTip.Show("text", mockWindow.Object, -1));
     }
@@ -779,15 +778,15 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_ToString_Invoke_ReturnsExpected()
     {
-        using var toolTip = new ToolTip();
+        using ToolTip toolTip = new();
         Assert.Equal("System.Windows.Forms.ToolTip InitialDelay: 500, ShowAlways: False", toolTip.ToString());
     }
 
     [WinFormsFact]
     public void ToolTip_SetToolTipToControl_Invokes_SetToolTip_OfControl()
     {
-        using ToolTip toolTip = new ToolTip();
-        SubControl control = new SubControl();
+        using ToolTip toolTip = new();
+        SubControl control = new();
         control.CreateControl();
 
         Assert.NotEqual(IntPtr.Zero, toolTip.Handle); // A workaround to create the toolTip native window Handle
@@ -800,12 +799,12 @@ public class ToolTipTests
     [WinFormsFact]
     public void ToolTip_RemoveAll_Invokes_RemoveToolTip_OfControl()
     {
-        using ToolTip toolTip = new ToolTip();
-        using SubControl control = new SubControl();
+        using ToolTip toolTip = new();
+        using SubControl control = new();
 
         // Create a top level control to the toolTip consider
         // the tested control as created when destroying regions
-        using Control topLevelControl = new Control();
+        using Control topLevelControl = new();
         topLevelControl.Controls.Add(control);
         topLevelControl.CreateControl();
         control.CreateControl();
@@ -818,6 +817,7 @@ public class ToolTipTests
         Assert.Equal(1, control.InvokeRemoveCount);
     }
 
+    [ActiveIssue("https://github.com/dotnet/winforms/issues/11236")]
     [WinFormsFact]
     public unsafe void ToolTip_WmShow_Invokes_AnnounceText_WithExpectedText_ForTabControlTabs()
     {
@@ -851,21 +851,26 @@ public class ToolTipTests
 
         // Post MOUSEMOVE to the tooltip queue and then just remove it from the queue without handling.
         // This will update the point returned by GetMessagePos which is used by PInvoke.TTM_POPUP to determine the tool to display.
-        Assert.True(PInvoke.PostMessage(toolTip, PInvoke.WM_MOUSEMOVE, lParam: PARAM.FromPoint(tabPage.GetToolNativeScreenRectangle().Location)));
+        Assert.True(PInvokeCore.PostMessage(toolTip, PInvokeCore.WM_MOUSEMOVE, lParam: PARAM.FromPoint(tabPage.GetToolNativeScreenRectangle().Location)));
         MSG msg = default;
-        Assert.True(PInvoke.PeekMessage(&msg, toolTip, (uint)PInvoke.WM_MOUSEMOVE, (uint)PInvoke.WM_MOUSEMOVE, PEEK_MESSAGE_REMOVE_TYPE.PM_REMOVE));
+        Assert.True(PInvokeCore.PeekMessage(&msg, toolTip, PInvokeCore.WM_MOUSEMOVE, PInvokeCore.WM_MOUSEMOVE, PEEK_MESSAGE_REMOVE_TYPE.PM_REMOVE));
 
         // Show the tooltip.
-        PInvoke.SendMessage(toolTip, PInvoke.TTM_POPUP);
 
-        mockAccessibleObject.Verify(a => a.InternalRaiseAutomationNotification(
-            AutomationNotificationKind.ActionCompleted,
-            AutomationNotificationProcessing.All,
-            $" {tabPage.ToolTipText}"),
-            Times.Once);
+        // Comment out the validation here due to the active issue "https://github.com/dotnet/winforms/issues/11236"
+        // PInvokeCore.SendMessage(toolTip, PInvoke.TTM_POPUP);
+
+        // mockAccessibleObject.Verify(a => a.InternalRaiseAutomationNotification(
+        //     AutomationNotificationKind.ActionCompleted,
+        //     AutomationNotificationProcessing.All,
+        //     $" {tabPage.ToolTipText}"),
+        //     Times.Once);
     }
 
+    [ActiveIssue("https://github.com/dotnet/winforms/issues/11234")]
     [WinFormsFact]
+    [SkipOnArchitecture(TestArchitectures.X64,
+        "Flaky tests, see: https://github.com/dotnet/winforms/issues/11234")]
     public void ToolTip_SetToolTip_TabControl_DoesNotAddToolForTabControlItself()
     {
         // We need a Form because tooltips don't work on controls without a valid parent.
@@ -885,7 +890,16 @@ public class ToolTipTests
         Assert.True(toolTip.GetHandleCreated());
 
         // Only tools for TabPages were added.
-        Assert.Equal(tabControl.TabCount, (int)PInvoke.SendMessage(toolTip, PInvoke.TTM_GETTOOLCOUNT));
+        Assert.Equal(tabControl.TabCount, (int)PInvokeCore.SendMessage(toolTip, PInvoke.TTM_GETTOOLCOUNT));
+    }
+
+    [WinFormsFact]
+    public unsafe void ToolTip_TTTOOLINFOW_Struct_Size_IsExpected()
+    {
+        TTTOOLINFOW toolInfo = default;
+        int size = (int)&toolInfo.lParam - (int)&toolInfo + sizeof(LPARAM);
+        int expected = (int)default(ToolInfoWrapper<Control>).TestAccessor().Dynamic.TTTOOLINFO_V2_Size;
+        size.Should().Be(expected);
     }
 
     private class SubToolTip : ToolTip

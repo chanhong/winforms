@@ -21,7 +21,7 @@ public class ListBindingConverter : TypeConverter
     {
         get
         {
-            s_ctorTypes ??= new Type[] { typeof(string), typeof(object), typeof(string), typeof(bool), typeof(DataSourceUpdateMode), typeof(object), typeof(string), typeof(IFormatProvider) };
+            s_ctorTypes ??= [typeof(string), typeof(object), typeof(string), typeof(bool), typeof(DataSourceUpdateMode), typeof(object), typeof(string), typeof(IFormatProvider)];
 
             return s_ctorTypes;
         }
@@ -34,7 +34,7 @@ public class ListBindingConverter : TypeConverter
     {
         get
         {
-            s_ctorParamProps ??= new string?[] { null, null, null, "FormattingEnabled", "DataSourceUpdateMode", "NullValue", "FormatString", "FormatInfo", };
+            s_ctorParamProps ??= [null, null, null, "FormattingEnabled", "DataSourceUpdateMode", "NullValue", "FormatString", "FormatInfo",];
 
             return s_ctorParamProps;
         }
@@ -55,10 +55,10 @@ public class ListBindingConverter : TypeConverter
     }
 
     /// <summary>
-    ///  Converts the given object to another type.  The most common types to convert
-    ///  are to and from a string object.  The default implementation will make a call
+    ///  Converts the given object to another type. The most common types to convert
+    ///  are to and from a string object. The default implementation will make a call
     ///  to ToString on the object if the object is valid and if the destination
-    ///  type is string.  If this cannot convert to the destination type, this will
+    ///  type is string. If this cannot convert to the destination type, this will
     ///  throw a NotSupportedException.
     /// </summary>
     public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
@@ -76,8 +76,8 @@ public class ListBindingConverter : TypeConverter
 
     /// <summary>
     ///  Creates an instance of this type given a set of property values
-    ///  for the object.  This is useful for objects that are immutable, but still
-    ///  want to provide changable properties.
+    ///  for the object. This is useful for objects that are immutable, but still
+    ///  want to provide changeable properties.
     /// </summary>
     public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
     {
@@ -114,9 +114,10 @@ public class ListBindingConverter : TypeConverter
     private static InstanceDescriptor GetInstanceDescriptorFromValues(Binding b)
     {
         // The BindingFormattingDialog turns on Binding::FormattingEnabled property.
-        // however, when the user data binds a property using the PropertyBrowser, Binding::FormattingEnabled is set to false
-        // The Binding class is not a component class, so we don't have the ComponentInitialize method where we can set FormattingEnabled to true
-        // so we set it here.
+        // however, when the user data binds a property using the PropertyBrowser,
+        // Binding::FormattingEnabled is set to false.
+        // The Binding class is not a component class, so we don't have the ComponentInitialize
+        // method where we can set FormattingEnabled to true so we set it here.
         b.FormattingEnabled = true;
 
         bool isComplete = true;
@@ -131,7 +132,7 @@ public class ListBindingConverter : TypeConverter
             }
 
             // get the property and see if it needs to be serialized.
-            var constructorParameterProperty = ConstructorParameterProperties[lastItem];
+            string? constructorParameterProperty = ConstructorParameterProperties[lastItem];
             if (constructorParameterProperty is null)
             {
                 break;
@@ -154,12 +155,12 @@ public class ListBindingConverter : TypeConverter
         if (ctor is null)
         {
             isComplete = false;
-            ctor = typeof(Binding).GetConstructor(new Type[]
-            {
+            ctor = typeof(Binding).GetConstructor(
+            [
                 typeof(string),
                 typeof(object),
                 typeof(string)
-            });
+            ]);
         }
 
         // now fill in the values.
@@ -180,7 +181,7 @@ public class ListBindingConverter : TypeConverter
                     val = b.BindingMemberInfo.BindingMember;
                     break;
                 default:
-                    var constructorParameterProperty = ConstructorParameterProperties[i];
+                    string? constructorParameterProperty = ConstructorParameterProperties[i];
                     if (constructorParameterProperty is not null)
                     {
                         val = TypeDescriptor.GetProperties(b)[constructorParameterProperty]?.GetValue(b);

@@ -31,7 +31,7 @@ public class ListViewGroupCollection : IList
 
     bool IList.IsReadOnly => false;
 
-    private List<ListViewGroup> List => _list ??= new List<ListViewGroup>();
+    private List<ListViewGroup> List => _list ??= [];
 
     public ListViewGroup this[int index]
     {
@@ -133,7 +133,7 @@ public class ListViewGroupCollection : IList
 
     public ListViewGroup Add(string? key, string? headerText)
     {
-        ListViewGroup group = new ListViewGroup(key, headerText);
+        ListViewGroup group = new(key, headerText);
         Add(group);
         return group;
     }

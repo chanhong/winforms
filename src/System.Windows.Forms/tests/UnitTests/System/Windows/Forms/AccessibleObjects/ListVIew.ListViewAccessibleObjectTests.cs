@@ -13,7 +13,7 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_Ctor_Default()
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
 
         AccessibleObject accessibleObject = listView.AccessibilityObject;
         Assert.NotNull(accessibleObject);
@@ -23,7 +23,7 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_EmptyList_GetChildCount_ReturnsCorrectValue()
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         AccessibleObject accessibleObject = listView.AccessibilityObject;
         Assert.Equal(-1, accessibleObject.GetChildCount()); // listView doesn't have items
         Assert.False(listView.IsHandleCreated);
@@ -34,7 +34,7 @@ public class ListView_ListViewAccessibleObjectTests
     [InlineData(false, AccessibleRole.None)]
     public void ListViewAccessibleObject_DefaultRole_ReturnsCorrectValue(bool createControl, AccessibleRole expectedAccessibleRole)
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         if (createControl)
         {
             listView.CreateControl();
@@ -48,7 +48,7 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_GetMultiViewProviderCurrentView_ReturnsCorrectValue()
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         AccessibleObject accessibleObject = listView.AccessibilityObject;
         Assert.Equal((int)listView.View, accessibleObject.GetMultiViewProviderCurrentView());
         Assert.False(listView.IsHandleCreated);
@@ -57,7 +57,7 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_GetMultiViewProviderSupportedViews_ReturnsExpected()
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         AccessibleObject accessibleObject = listView.AccessibilityObject;
         Assert.Equal(new int[] { (int)View.Details }, accessibleObject.GetMultiViewProviderSupportedViews());
         Assert.False(listView.IsHandleCreated);
@@ -66,7 +66,7 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_GetMultiViewProviderViewName_ReturnsCorrectValue()
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         listView.View = View.Details;
         AccessibleObject accessibleObject = listView.AccessibilityObject;
         Assert.Equal(((int)(listView.View)).ToString(), accessibleObject.GetMultiViewProviderViewName((int)View.Details));
@@ -81,12 +81,12 @@ public class ListView_ListViewAccessibleObjectTests
             return;
         }
 
-        using ListView listView = new ListView();
+        using ListView listView = new();
         listView.CreateControl();
         listView.Items.Add(new ListViewItem());
-        ListViewItem item = new ListViewItem();
-        ListViewItem item2 = new ListViewItem();
-        ListViewGroup group = new ListViewGroup();
+        ListViewItem item = new();
+        ListViewItem item2 = new();
+        ListViewGroup group = new();
         item2.Group = group;
         item.Group = group;
         listView.Groups.Add(group);
@@ -111,12 +111,12 @@ public class ListView_ListViewAccessibleObjectTests
             return;
         }
 
-        using ListView listView = new ListView();
+        using ListView listView = new();
         listView.CreateControl();
         listView.Items.Add(new ListViewItem());
-        ListViewItem item = new ListViewItem();
-        ListViewItem item2 = new ListViewItem();
-        ListViewGroup group = new ListViewGroup();
+        ListViewItem item = new();
+        ListViewItem item2 = new();
+        ListViewGroup group = new();
         item2.Group = group;
         item.Group = group;
         listView.Groups.Add(group);
@@ -136,11 +136,11 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_ListWithTwoGroups_FragmentNavigateWorkCorrectly_IfHandleIsNotCreated()
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         listView.Items.Add(new ListViewItem());
-        ListViewItem item = new ListViewItem();
-        ListViewItem item2 = new ListViewItem();
-        ListViewGroup group = new ListViewGroup();
+        ListViewItem item = new();
+        ListViewItem item2 = new();
+        ListViewGroup group = new();
         item2.Group = group;
         item.Group = group;
         listView.Groups.Add(group);
@@ -159,7 +159,7 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_ListWithTwoItems_FragmentNavigateWorkCorrectly_IfHandleIsCreated()
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         listView.CreateControl();
         listView.Items.Add(new ListViewItem());
         listView.Items.Add(new ListViewItem());
@@ -177,7 +177,7 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_ListWithTwoItems_FragmentNavigateWorkCorrectly_IfHandleIsNotCreated()
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         listView.Items.Add(new ListViewItem());
         listView.Items.Add(new ListViewItem());
 
@@ -193,7 +193,7 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_EmptyList_GetChild_ReturnsCorrectValue()
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         AccessibleObject accessibleObject = listView.AccessibilityObject;
         Assert.Equal(-1, accessibleObject.GetChildCount()); // listView doesn't have items
         Assert.Null(accessibleObject.GetChild(0)); // GetChild method should not throw an exception
@@ -203,7 +203,7 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_GetPropertyValue_returns_correct_values()
     {
-        using var list = new ListView();
+        using ListView list = new();
         list.Name = "List";
         list.AccessibleName = "ListView";
         AccessibleObject listAccessibleObject = list.AccessibilityObject;
@@ -910,7 +910,7 @@ public class ListView_ListViewAccessibleObjectTests
     [MemberData(nameof(ListViewAccessibleObject_GetSelectionInvoke_TestData))]
     public void ListViewAccessibleObject_GetSelectionInvoke_ReturnsExpected(View view, bool showGroups)
     {
-        using var listView = new ListView
+        using ListView listView = new()
         {
             View = view,
             ShowGroups = showGroups
@@ -918,13 +918,13 @@ public class ListView_ListViewAccessibleObjectTests
 
         listView.CreateControl();
 
-        ListViewGroup listGroup1 = new ListViewGroup("Group1");
-        ListViewGroup listGroup2 = new ListViewGroup("Group2");
-        ListViewGroup listGroup3 = new ListViewGroup("Group2");
-        ListViewItem listItem1 = new ListViewItem(listGroup1);
-        ListViewItem listItem2 = new ListViewItem();
-        ListViewItem listItem3 = new ListViewItem(listGroup2);
-        ListViewItem listItem4 = new ListViewItem(listGroup2);
+        ListViewGroup listGroup1 = new("Group1");
+        ListViewGroup listGroup2 = new("Group2");
+        ListViewGroup listGroup3 = new("Group2");
+        ListViewItem listItem1 = new(listGroup1);
+        ListViewItem listItem2 = new();
+        ListViewItem listItem3 = new(listGroup2);
+        ListViewItem listItem4 = new(listGroup2);
         listView.Groups.Add(listGroup1);
         listView.Groups.Add(listGroup2);
         listView.Items.Add(listItem1);
@@ -947,18 +947,18 @@ public class ListView_ListViewAccessibleObjectTests
     [MemberData(nameof(ListViewAccessibleObject_GetSelectionInvoke_TestData))]
     public void ListViewAccessibleObject_GetSelectionInvoke_WithoutSelectedItems_ReturnsExpected(View view, bool showGroups)
     {
-        using var listView = new ListView
+        using ListView listView = new()
         {
             View = view,
             ShowGroups = showGroups
         };
 
         listView.CreateControl();
-        ListViewItem listItem1 = new ListViewItem();
+        ListViewItem listItem1 = new();
         listView.Items.Add(listItem1);
 
         var listSelection = listView.AccessibilityObject.GetSelection();
-        Assert.Equal(0, listSelection.Length);
+        Assert.Empty(listSelection);
         Assert.True(listView.IsHandleCreated);
     }
 
@@ -966,17 +966,17 @@ public class ListView_ListViewAccessibleObjectTests
     [MemberData(nameof(ListViewAccessibleObject_GetSelectionInvoke_TestData))]
     public void ListViewAccessibleObject_GetSelectionInvoke_ReturnsExpected_IfHandleNotCreated(View view, bool showGroups)
     {
-        using var listView = new ListView
+        using ListView listView = new()
         {
             View = view,
             ShowGroups = showGroups
         };
 
-        ListViewItem listItem1 = new ListViewItem();
+        ListViewItem listItem1 = new();
         listView.Items.Add(listItem1);
 
         var listSelection = listView.AccessibilityObject.GetSelection();
-        Assert.Equal(0, listSelection.Length);
+        Assert.Empty(listSelection);
 
         Assert.False(listView.IsHandleCreated);
     }
@@ -1010,10 +1010,10 @@ public class ListView_ListViewAccessibleObjectTests
             VirtualListSize = 4
         };
 
-        ListViewItem listItem1 = new ListViewItem(new string[] { "Item 1", "Item A" }, -1);
-        ListViewItem listItem2 = new ListViewItem("Group item 2");
-        ListViewItem listItem3 = new ListViewItem("Item 3");
-        ListViewItem listItem4 = new ListViewItem(new string[] { "Item 4", "Item B" }, -1);
+        ListViewItem listItem1 = new(["Item 1", "Item A"], -1);
+        ListViewItem listItem2 = new("Group item 2");
+        ListViewItem listItem3 = new("Item 3");
+        ListViewItem listItem4 = new(["Item 4", "Item B"], -1);
 
         listView.RetrieveVirtualItem += (s, e) =>
         {
@@ -1056,7 +1056,7 @@ public class ListView_ListViewAccessibleObjectTests
             VirtualListSize = 1
         };
 
-        ListViewItem listItem1 = new ListViewItem();
+        ListViewItem listItem1 = new();
 
         listView.RetrieveVirtualItem += (s, e) =>
         {
@@ -1071,7 +1071,7 @@ public class ListView_ListViewAccessibleObjectTests
         listItem1.SetItemIndex(listView, 0);
 
         var listSelection = listView.AccessibilityObject.GetSelection();
-        Assert.Equal(0, listSelection.Length);
+        Assert.Empty(listSelection);
         Assert.True(listView.IsHandleCreated);
     }
 
@@ -1087,7 +1087,7 @@ public class ListView_ListViewAccessibleObjectTests
             VirtualListSize = 1
         };
 
-        ListViewItem listItem1 = new ListViewItem();
+        ListViewItem listItem1 = new();
 
         listView.RetrieveVirtualItem += (s, e) =>
         {
@@ -1101,7 +1101,7 @@ public class ListView_ListViewAccessibleObjectTests
         listItem1.SetItemIndex(listView, 0);
 
         var listSelection = listView.AccessibilityObject.GetSelection();
-        Assert.Equal(0, listSelection.Length);
+        Assert.Empty(listSelection);
 
         Assert.False(listView.IsHandleCreated);
     }
@@ -1125,7 +1125,7 @@ public class ListView_ListViewAccessibleObjectTests
     [MemberData(nameof(ListViewAccessibleObject_GetPropertyValue_ControlType_IsExpected_ForCustomRole_TestData))]
     public void ListViewAccessibleObject_GetPropertyValue_ControlType_IsExpected_ForCustomRole(AccessibleRole role)
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         listView.AccessibleRole = role;
 
         var actual = (UIA_CONTROLTYPE_ID)(int)listView.AccessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ControlTypePropertyId);
@@ -1143,13 +1143,13 @@ public class ListView_ListViewAccessibleObjectTests
     [InlineData(View.Tile)]
     public void ListViewAccessibleObject_HitTest_DoesNotReturnNull_IfHandleIsCreated(View view)
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         listView.View = view;
         listView.CreateControl();
         listView.Columns.Add(new ColumnHeader("Column 1") { Width = 70 });
         listView.Columns.Add(new ColumnHeader("Column 2") { Width = 70 });
-        listView.Items.Add(new ListViewItem(new string[] { "Item 1", "SubItem 1" }));
-        listView.Items.Add(new ListViewItem(new string[] { "Item 1", "SubItem 1" }));
+        listView.Items.Add(new ListViewItem(["Item 1", "SubItem 1"]));
+        listView.Items.Add(new ListViewItem(["Item 1", "SubItem 1"]));
 
         Assert.NotNull(HitTest(listView, GetItemLocation(0)));
         Assert.NotNull(HitTest(listView, GetItemLocation(1)));
@@ -1167,14 +1167,14 @@ public class ListView_ListViewAccessibleObjectTests
     [InlineData(View.Tile)]
     public void ListViewAccessibleObject_HitTest_ReturnsNull_IfHandleIsNotCreated(View view)
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         listView.View = view;
         listView.Columns.Add(new ColumnHeader("Column 1") { Width = 70 });
         listView.Columns.Add(new ColumnHeader("Column 2") { Width = 70 });
-        listView.Items.Add(new ListViewItem(new string[] { "Item 1", "SubItem 1" }));
-        listView.Items.Add(new ListViewItem(new string[] { "Item 1", "SubItem 1" }));
+        listView.Items.Add(new ListViewItem(["Item 1", "SubItem 1"]));
+        listView.Items.Add(new ListViewItem(["Item 1", "SubItem 1"]));
 
-        Point point = new Point(15, 55);
+        Point point = new(15, 55);
 
         Assert.Null(listView.AccessibilityObject.HitTest(point.X, point.Y));
 
@@ -1184,15 +1184,15 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_HitTest_ReturnsSubItem_DetailsView()
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         listView.View = View.Details;
         listView.Size = new Size(200, 200);
         listView.CreateControl();
         listView.Columns.Add(new ColumnHeader("Column 1") { Width = 70 });
         listView.Columns.Add(new ColumnHeader("Column 2") { Width = 70 });
         listView.Columns.Add(new ColumnHeader("Column 3") { Width = 70 });
-        listView.Items.Add(new ListViewItem(new string[] { "Item 1", "SubItem 11", "SubItem 12" }));
-        listView.Items.Add(new ListViewItem(new string[] { "Item 2", "SubItem 21", "SubItem 22" }));
+        listView.Items.Add(new ListViewItem(["Item 1", "SubItem 11", "SubItem 12"]));
+        listView.Items.Add(new ListViewItem(["Item 2", "SubItem 21", "SubItem 22"]));
 
         AccessibleObject accessibleObject = listView.AccessibilityObject;
 
@@ -1210,15 +1210,15 @@ public class ListView_ListViewAccessibleObjectTests
     [WinFormsFact]
     public void ListViewAccessibleObject_HitTest_ReturnsFakeSubItem_DetailsView()
     {
-        using ListView listView = new ListView();
+        using ListView listView = new();
         listView.View = View.Details;
         listView.Size = new Size(200, 200);
         listView.CreateControl();
         listView.Columns.Add(new ColumnHeader("Column 1") { Width = 70 });
         listView.Columns.Add(new ColumnHeader("Column 2") { Width = 70 });
         listView.Columns.Add(new ColumnHeader("Column 3") { Width = 70 });
-        listView.Items.Add(new ListViewItem(new string[] { "Item 1" }));
-        listView.Items.Add(new ListViewItem(new string[] { "Item 2" }));
+        listView.Items.Add(new ListViewItem(["Item 1"]));
+        listView.Items.Add(new ListViewItem(["Item 2"]));
 
         Assert.Same(GetDetailsSubItemOrFake(0, 1), HitTest(listView, GetDetailsSubItemOrFake(0, 1).Bounds.Location));
         Assert.Same(GetDetailsSubItemOrFake(0, 2), HitTest(listView, GetDetailsSubItemOrFake(0, 2).Bounds.Location));
@@ -1304,10 +1304,10 @@ public class ListView_ListViewAccessibleObjectTests
 
     [WinFormsTheory]
     [MemberData(nameof(ListViewAccessibleObject_GetChild_TestData))]
-    public void ListViewAccessibleObject_GetChild_ReturnsExpected_DetailsView(View view,  bool showGroups, bool virtualMode)
+    public void ListViewAccessibleObject_GetChild_ReturnsExpected_DetailsView(View view, bool showGroups, bool virtualMode)
     {
         using ListView listView = GetListViewWithData(view, createControl: true, virtualMode, showGroups);
-        List<AccessibleObject> expectedValues = new List<AccessibleObject>();
+        List<AccessibleObject> expectedValues = [];
 
         if (listView.GroupsEnabled && view != View.List)
         {
@@ -1384,16 +1384,15 @@ public class ListView_ListViewAccessibleObjectTests
         {
             View = view,
             ShowGroups = showGroups,
-            VirtualListSize = 4
+            VirtualListSize = 4,
+            VirtualMode = virtualMode
         };
 
-        listView.VirtualMode = virtualMode;
-
         ListViewGroup listViewGroup = new("Test");
-        ListViewItem listItem1 = new(new string[] { "Test Item 1", "Item A" }, -1, listViewGroup);
+        ListViewItem listItem1 = new(["Test Item 1", "Item A"], -1, listViewGroup);
         ListViewItem listItem2 = new("Group item 2", listViewGroup);
         ListViewItem listItem3 = new("Item 3");
-        ListViewItem listItem4 = new(new string[] { "Test Item 4", "Item B", "Item C", "Item D" }, -1);
+        ListViewItem listItem4 = new(["Test Item 4", "Item B", "Item C", "Item D"], -1);
 
         if (!virtualMode)
         {
@@ -1718,7 +1717,7 @@ public class ListView_ListViewAccessibleObjectTests
 
     private ListView GetListViewItemWithEmptyGroups(View view)
     {
-        ListView listView = new ListView() { View = view };
+        ListView listView = new() { View = view };
         listView.CreateControl();
         ListViewGroup listViewGroupWithoutItems = new("Group without items");
         ListViewGroup listViewGroupWithItems1 = new("Group with item 1");
@@ -1769,8 +1768,8 @@ public class ListView_ListViewAccessibleObjectTests
         var actual = listViewAccessibleObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_SelectionCanSelectMultiplePropertyId);
         Assert.True((bool)actual);
 
-        Interop.UiaCore.ISelectionProvider provider = listViewAccessibleObject;
-        Assert.True((bool)provider.CanSelectMultiple);
+        ISelectionProvider.Interface provider = listViewAccessibleObject;
+        Assert.True(provider.get_CanSelectMultiple(out BOOL result).Succeeded);
+        Assert.True(result);
     }
 }
-

@@ -16,7 +16,7 @@ public sealed partial class Application
         // In .NET 2.0 we now aggressively tear down the parking window
         //   when the last control has been removed off of it.
 
-        private const int WM_CHECKDESTROY = (int)PInvoke.WM_USER + 0x01;
+        private const int WM_CHECKDESTROY = (int)PInvokeCore.WM_USER + 0x01;
 
         private int _childCount;
 
@@ -26,7 +26,6 @@ public sealed partial class Application
             SetState(States.TopLevel, true);
             Text = "WindowsFormsParkingWindow";
             Visible = false;
-            DpiHelper.FirstParkingWindowCreated = true;
         }
 
         protected override CreateParams CreateParams
@@ -69,7 +68,7 @@ public sealed partial class Application
             // If so, we can destroy immediately.
             //
             // This is important for scenarios where apps leak controls until after the
-            // messagepump is gone and then decide to clean them up.  We should clean
+            // messagepump is gone and then decide to clean them up. We should clean
             // up the parkingwindow in this case and a postmessage won't do it.
             uint id = PInvoke.GetWindowThreadProcessId(HWNDInternal, out _);
             ThreadContext? context = ThreadContext.FromId(id);
@@ -77,7 +76,7 @@ public sealed partial class Application
             // We only do this if the ThreadContext tells us that we are currently handling a window message.
             if (context is null || !ReferenceEquals(context, ThreadContext.FromCurrent()))
             {
-                PInvoke.PostMessage(HWNDInternal, WM_CHECKDESTROY);
+                PInvokeCore.PostMessage(HWNDInternal, WM_CHECKDESTROY);
             }
             else
             {
@@ -139,16 +138,16 @@ public sealed partial class Application
 
         protected override void WndProc(ref Message m)
         {
-            if (m.MsgInternal == PInvoke.WM_SHOWWINDOW)
+            if (m.MsgInternal == PInvokeCore.WM_SHOWWINDOW)
                 return;
 
             base.WndProc(ref m);
             switch (m.MsgInternal)
             {
-                case PInvoke.WM_PARENTNOTIFY:
-                    if (m.WParamInternal.LOWORD == PInvoke.WM_DESTROY)
+                case PInvokeCore.WM_PARENTNOTIFY:
+                    if (m.WParamInternal.LOWORD == PInvokeCore.WM_DESTROY)
                     {
-                        PInvoke.PostMessage(this, WM_CHECKDESTROY);
+                        PInvokeCore.PostMessage(this, WM_CHECKDESTROY);
                     }
 
                     break;

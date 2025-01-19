@@ -77,7 +77,7 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
                     startY += 4;
                 }
 
-                g.FillRectangles(SystemBrushes.ControlLight, shadowRects);
+                g.FillRectangles(SystemBrushes.ControlText, shadowRects);
             }
         }
         else
@@ -132,7 +132,7 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
 
     protected override void OnRenderSplitButtonBackground(ToolStripItemRenderEventArgs e)
     {
-        Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
+        Rectangle bounds = new(Point.Empty, e.Item.Size);
         Graphics g = e.Graphics;
 
         if (e.Item is ToolStripSplitButton item)
@@ -146,8 +146,9 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
             else if (item.Selected)
             {
                 g.FillRectangle(SystemBrushes.Highlight, bounds);
+                g.DrawRectangle(SystemPens.HighlightText, dropDownRect);
+
                 DrawHightContrastDashedBorder(g, e.Item);
-                g.DrawRectangle(SystemPens.ButtonHighlight, dropDownRect);
             }
 
             Color arrowColor = item.Selected && !item.Pressed ? SystemColors.HighlightText : SystemColors.ControlText;
@@ -180,10 +181,10 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
             e.Graphics.DrawRectangle(SystemPens.ButtonHighlight, 0, 0, e.Item.Width - 1, e.Item.Height - 1);
         }
 
-        if (e.Item is ToolStripMenuItem menuItem && (menuItem.Checked || menuItem.Selected))
+        if (e.Item is ToolStripMenuItem menuItem && !e.Item.IsOnDropDown && (menuItem.Checked || menuItem.Selected))
         {
             Graphics g = e.Graphics;
-            Rectangle bounds = new Rectangle(Point.Empty, menuItem.Size);
+            Rectangle bounds = new(Point.Empty, menuItem.Size);
 
             g.FillRectangle(SystemBrushes.Highlight, bounds);
             g.DrawRectangle(SystemPens.ControlLight, bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
@@ -233,12 +234,13 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
 
         // ToolstripButtons and ToolstripMenuItems that are checked are rendered with a highlight
         // background. In that case, set the text color to highlight as well.
-        if ((typeof(ToolStripButton).IsAssignableFrom(e.Item.GetType()) &&
-            ((ToolStripButton)e.Item).DisplayStyle != ToolStripItemDisplayStyle.Image &&
-            ((ToolStripButton)e.Item).Checked) ||
-            (typeof(ToolStripMenuItem).IsAssignableFrom(e.Item.GetType()) &&
-            ((ToolStripMenuItem)e.Item).DisplayStyle != ToolStripItemDisplayStyle.Image &&
-            ((ToolStripMenuItem)e.Item).Checked))
+        if ((typeof(ToolStripButton).IsAssignableFrom(e.Item.GetType())
+            && ((ToolStripButton)e.Item).DisplayStyle != ToolStripItemDisplayStyle.Image
+            && ((ToolStripButton)e.Item).Checked)
+            || (typeof(ToolStripMenuItem).IsAssignableFrom(e.Item.GetType())
+            && ((ToolStripMenuItem)e.Item).DisplayStyle != ToolStripItemDisplayStyle.Image
+            && !e.Item.IsOnDropDown
+            && ((ToolStripMenuItem)e.Item).Checked))
         {
             e.TextColor = SystemColors.HighlightText;
         }
@@ -253,14 +255,14 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
 
     protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
     {
-        Rectangle bounds = new Rectangle(Point.Empty, e.ToolStrip.Size);
+        Rectangle bounds = new(Point.Empty, e.ToolStrip.Size);
         Graphics g = e.Graphics;
 
         if (e.ToolStrip is ToolStripDropDown)
         {
             g.DrawRectangle(SystemPens.ButtonHighlight, bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
 
-            if (!(e.ToolStrip is ToolStripOverflow))
+            if (e.ToolStrip is not ToolStripOverflow)
             {
                 // make the neck connected.
                 g.FillRectangle(SystemBrushes.Control, e.ConnectedArea);
@@ -282,12 +284,12 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
 
     private void RenderToolStripBackgroundInternal(ToolStripRenderEventArgs e)
     {
-        Rectangle bounds = new Rectangle(Point.Empty, e.ToolStrip.Size);
+        Rectangle bounds = new(Point.Empty, e.ToolStrip.Size);
         Graphics g = e.Graphics;
 
         if (DottedBorder)
         {
-            using Pen p = new Pen(SystemColors.ButtonShadow)
+            using Pen p = new(SystemColors.ButtonShadow)
             {
                 DashStyle = DashStyle.Dot
             };
@@ -345,7 +347,7 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
         Pen foreColorPen = SystemPens.ButtonShadow;
 
         Graphics g = e.Graphics;
-        Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
+        Rectangle bounds = new(Point.Empty, e.Item.Size);
 
         if (e.Vertical)
         {
@@ -405,7 +407,7 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
             if (e.Item is ToolStripButton button && button.Checked)
             {
                 Graphics g = e.Graphics;
-                Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
+                Rectangle bounds = new(Point.Empty, e.Item.Size);
 
                 g.FillRectangle(SystemBrushes.Highlight, bounds);
 
@@ -437,7 +439,7 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
     private static void RenderItemInternalFilled(ToolStripItemRenderEventArgs e, bool pressFill)
     {
         Graphics g = e.Graphics;
-        Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
+        Rectangle bounds = new(Point.Empty, e.Item.Size);
 
         if (e.Item.Pressed)
         {
@@ -460,7 +462,7 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
     private static void DrawHightContrastDashedBorder(Graphics graphics, ToolStripItem item)
     {
         Rectangle bounds = item.ClientBounds;
-        float[] dashValues = { 2, 2 };
+        float[] dashValues = [2, 2];
         int penWidth = 2;
 
         Pen focusPen1 = new(SystemColors.ControlText, penWidth)
@@ -489,23 +491,17 @@ internal class ToolStripHighContrastRenderer : ToolStripSystemRenderer
 
         using ImageAttributes attrs = new();
 
-        if (IsHighContrastWhiteOnBlack() && !(FillWhenSelected && (item.Pressed || item. Selected)))
+        if (IsHighContrastWhiteOnBlack() && !(FillWhenSelected && (item.Pressed || item.Selected)))
         {
             // Translate white, black and blue to colors visible in high contrast mode.
-            ColorMap cm1 = new();
-            ColorMap cm2 = new();
-            ColorMap cm3 = new();
+            Span<(Color OldColor, Color NewColor)> map =
+            [
+                new(Color.Black, Color.White),
+                new(Color.White, Color.Black),
+                new(Color.FromArgb(0, 0, 128), Color.White)
+            ];
 
-            cm1.OldColor = Color.Black;
-            cm1.NewColor = Color.White;
-
-            cm2.OldColor = Color.White;
-            cm2.NewColor = Color.Black;
-
-            cm3.OldColor = Color.FromArgb(0, 0, 128);
-            cm3.NewColor = Color.White;
-
-            attrs.SetRemapTable(new ColorMap[3] { cm1, cm2, cm3 }, ColorAdjustType.Bitmap);
+            attrs.SetRemapTable(ColorAdjustType.Bitmap, map);
         }
 
         Graphics g = e.Graphics;

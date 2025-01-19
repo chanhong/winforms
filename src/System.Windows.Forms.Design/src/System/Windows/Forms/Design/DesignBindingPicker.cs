@@ -90,9 +90,9 @@ namespace System.Windows.Forms.Design
     {
         private BindingPickerTree? _treeViewCtrl;   // Tree view that shows the available data sources and data members
         private BindingPickerLink _addNewCtrl;     // Link that invokes the "Add Project Data Source" wizard
-        private Panel _addNewPanel;    // Panel containing the "Add Project Data Source" link
+        private readonly Panel _addNewPanel;    // Panel containing the "Add Project Data Source" link
         private HelpTextLabel _helpTextCtrl;   // Label that displays helpful text as user mouses over tree view nodes
-        private Panel _helpTextPanel;  // Panel containing the help text label
+        private readonly Panel _helpTextPanel;  // Panel containing the help text label
 
         private IServiceProvider? _serviceProvider; // Current VS service provider
         private IWindowsFormsEditorService? _windowsFormsEditorService; // Service used to invoke the picker inside a modal dropdown
@@ -109,7 +109,7 @@ namespace System.Windows.Forms.Design
 
         private DesignBinding? _selectedItem;      // Describes the initial selection on open, and the final selection on close
         private TreeNode? _selectedNode;      // Tree node that matches the initial selected item (selectedItem)
-        private bool _inSelectNode;      // Prevents processing of node expansion events when auot-selecting a tree node
+        private bool _inSelectNode;      // Prevents processing of node expansion events when auto-selecting a tree node
 
         private NoneNode? _noneNode;          // "None" tree node
         private OtherNode? _otherNode;         // "Other Data Sources" tree node
@@ -117,77 +117,92 @@ namespace System.Windows.Forms.Design
         private InstancesNode? _instancesNode;     // "Form List Instances" tree node
 
         private const int MinimumDimension = 250;
-        private static int _minimumHeight = MinimumDimension;
-        private static int _minimumWidth = MinimumDimension;
-        private static bool _isScalingInitialized;
+        private static int s_minimumHeight = MinimumDimension;
+        private static int s_minimumWidth = MinimumDimension;
+        private static bool s_isScalingInitialized;
         private ITypeDescriptorContext? _context;   // Context of the current 'pick' operation
 
-        private int _pixel_1 = 1;
         private Size _initialSize;
-        private BindingContext _bindingContext = new();
+        private readonly BindingContext _bindingContext = new();
 
         // The type of RuntimeType.
         // When binding to a business object, the DesignBindingPicker needs to create an instance of the business object.
         // However, Activator.CreateInstance works only with RuntimeType - it does not work w/ Virtual Types.
         // We use the runtimeType static to determine if the type of business object is a runtime type or not.
-        private static Type runtimeType = typeof(object).GetType().GetType();
+        private static readonly Type s_runtimeType = typeof(object).GetType().GetType();
 
         /// <summary>
         /// Rebuilding binding picker according to new dpi received.
         /// </summary>
         private void BuildBindingPicker(int newDpi, int oldDpi)
         {
-            var factor = ((double)newDpi) / oldDpi;
-            Label addNewDiv = new Label();
-            addNewDiv.Height = DpiHelper.ConvertToGivenDpiPixel(_pixel_1, factor);
-            addNewDiv.BackColor = SystemColors.ControlDark;
-            addNewDiv.Dock = DockStyle.Top;
+            double scalePercent = ((double)newDpi) / oldDpi;
+            Label addNewDiv = new()
+            {
+                Height = ScaleHelper.ScaleToDpi(1, newDpi),
+                BackColor = SystemColors.ControlDark,
+                Dock = DockStyle.Top
+            };
 
-            _addNewCtrl = new BindingPickerLink();
-            _addNewCtrl.Text = SR.DesignBindingPickerAddProjDataSourceLabel;
-            _addNewCtrl.TextAlign = ContentAlignment.MiddleLeft;
-            _addNewCtrl.BackColor = SystemColors.Window;
-            _addNewCtrl.ForeColor = SystemColors.WindowText;
-            _addNewCtrl.LinkBehavior = LinkBehavior.HoverUnderline;
+            _addNewCtrl = new BindingPickerLink
+            {
+                Text = SR.DesignBindingPickerAddProjDataSourceLabel,
+                TextAlign = ContentAlignment.MiddleLeft,
+                BackColor = SystemColors.Window,
+                ForeColor = SystemColors.WindowText,
+                LinkBehavior = LinkBehavior.HoverUnderline
+            };
+
             _addNewCtrl.LinkClicked += addNewCtrl_Click;
 
             // BindingPickerLink always initialize to primary monitor Dpi. Resizing to current Dpi.
-            _addNewCtrl.Height = DpiHelper.ConvertToGivenDpiPixel(_addNewCtrl.Height, factor);
+            _addNewCtrl.Height = ScaleHelper.ScaleToPercent(_addNewCtrl.Height, scalePercent);
 
-            Bitmap addNewBitmap = new Bitmap(BitmapSelector.GetResourceStream(typeof(DesignBindingPicker), "AddNewDataSource.bmp"));
+            Bitmap addNewBitmap = new(
+                BitmapSelector.GetResourceStream(typeof(DesignBindingPicker), "AddNewDataSource.bmp")
+                ?? throw new InvalidOperationException());
+
             addNewBitmap.MakeTransparent(Color.Magenta);
-            DpiHelper.ScaleBitmapLogicalToDevice(ref addNewBitmap, newDpi);
+            addNewBitmap = ScaleHelper.ScaleToDpi(addNewBitmap, newDpi, disposeBitmap: true);
 
-            PictureBox addNewIcon = new PictureBox();
-            addNewIcon.Image = addNewBitmap;
-            addNewIcon.BackColor = SystemColors.Window;
-            addNewIcon.ForeColor = SystemColors.WindowText;
-            addNewIcon.Width = _addNewCtrl.Height;
-            addNewIcon.Height = _addNewCtrl.Height;
-            addNewIcon.Dock = DockStyle.Left;
-            addNewIcon.SizeMode = PictureBoxSizeMode.CenterImage;
-            addNewIcon.AccessibleRole = AccessibleRole.Graphic;
+            PictureBox addNewIcon = new()
+            {
+                Image = addNewBitmap,
+                BackColor = SystemColors.Window,
+                ForeColor = SystemColors.WindowText,
+                Width = _addNewCtrl.Height,
+                Height = _addNewCtrl.Height,
+                Dock = DockStyle.Left,
+                SizeMode = PictureBoxSizeMode.CenterImage,
+                AccessibleRole = AccessibleRole.Graphic
+            };
 
-            Label helpTextDiv = new Label();
-            helpTextDiv.Height = DpiHelper.ConvertToGivenDpiPixel(_pixel_1, factor);
-            helpTextDiv.BackColor = SystemColors.ControlDark;
-            helpTextDiv.Dock = DockStyle.Top;
+            Label helpTextDiv = new()
+            {
+                Height = ScaleHelper.ScaleToDpi(1, newDpi),
+                BackColor = SystemColors.ControlDark,
+                Dock = DockStyle.Top
+            };
 
-            _helpTextCtrl = new HelpTextLabel();
-            _helpTextCtrl.TextAlign = ContentAlignment.TopLeft;
-            _helpTextCtrl.BackColor = SystemColors.Window;
-            _helpTextCtrl.ForeColor = SystemColors.WindowText;
+            _helpTextCtrl = new HelpTextLabel
+            {
+                TextAlign = ContentAlignment.TopLeft,
+                BackColor = SystemColors.Window,
+                ForeColor = SystemColors.WindowText
+            };
+
             _helpTextCtrl.Height *= 2;
-            int helpTextHeight = DpiHelper.ConvertToGivenDpiPixel(_helpTextCtrl.Height, factor);
 
-            _addNewPanel.Height = addNewIcon.Height + _pixel_1;
+            int helpTextHeight = ScaleHelper.ScaleToPercent(_helpTextCtrl.Height, scalePercent);
+
+            _addNewPanel.Height = addNewIcon.Height + 1;
             _addNewPanel.Controls.Add(_addNewCtrl);
             _addNewPanel.Controls.Add(addNewIcon);
             _addNewPanel.Controls.Add(addNewDiv);
 
             _helpTextPanel.Controls.Add(_helpTextCtrl);
             _helpTextPanel.Controls.Add(helpTextDiv);
-            _helpTextPanel.Height = helpTextHeight + _pixel_1;
+            _helpTextPanel.Height = helpTextHeight + 1;
             ResetStyles(false);
 
             Controls.Add(_addNewPanel);
@@ -216,11 +231,13 @@ namespace System.Windows.Forms.Design
 
         private void InitTreeViewCtl()
         {
-            _treeViewCtrl = new BindingPickerTree();
-            _treeViewCtrl.HotTracking = true;
-            _treeViewCtrl.BackColor = SystemColors.Window;
-            _treeViewCtrl.ForeColor = SystemColors.WindowText;
-            _treeViewCtrl.BorderStyle = BorderStyle.None;
+            _treeViewCtrl = new BindingPickerTree
+            {
+                HotTracking = true,
+                BackColor = SystemColors.Window,
+                ForeColor = SystemColors.WindowText,
+                BorderStyle = BorderStyle.None
+            };
             _initialSize = _treeViewCtrl.Size;
             _treeViewCtrl.Dock = DockStyle.Fill;
             _treeViewCtrl.MouseMove += treeViewCtrl_MouseMove;
@@ -238,30 +255,30 @@ namespace System.Windows.Forms.Design
         public DesignBindingPicker()
         {
             SuspendLayout();
-            if (!_isScalingInitialized)
+            if (!s_isScalingInitialized)
             {
-                if (DpiHelper.IsScalingRequired)
-                {
-                    _minimumHeight = DpiHelper.LogicalToDeviceUnitsY(MinimumDimension);
-                    _minimumWidth = DpiHelper.LogicalToDeviceUnitsX(MinimumDimension);
-                }
-
-                _isScalingInitialized = true;
+                s_minimumHeight = ScaleHelper.ScaleToInitialSystemDpi(MinimumDimension);
+                s_minimumWidth = ScaleHelper.ScaleToInitialSystemDpi(MinimumDimension);
+                s_isScalingInitialized = true;
             }
 
             InitTreeViewCtl();
 
-            Label addNewDiv = new Label();
-            addNewDiv.Height = 1;
-            addNewDiv.BackColor = SystemColors.ControlDark;
-            addNewDiv.Dock = DockStyle.Top;
+            Label addNewDiv = new()
+            {
+                Height = 1,
+                BackColor = SystemColors.ControlDark,
+                Dock = DockStyle.Top
+            };
 
-            _addNewCtrl = new BindingPickerLink();
-            _addNewCtrl.Text = (SR.DesignBindingPickerAddProjDataSourceLabel);
-            _addNewCtrl.TextAlign = ContentAlignment.MiddleLeft;
-            _addNewCtrl.BackColor = SystemColors.Window;
-            _addNewCtrl.ForeColor = SystemColors.WindowText;
-            _addNewCtrl.LinkBehavior = LinkBehavior.HoverUnderline;
+            _addNewCtrl = new BindingPickerLink
+            {
+                Text = (SR.DesignBindingPickerAddProjDataSourceLabel),
+                TextAlign = ContentAlignment.MiddleLeft,
+                BackColor = SystemColors.Window,
+                ForeColor = SystemColors.WindowText,
+                LinkBehavior = LinkBehavior.HoverUnderline
+            };
 
             // use height of text for both dimensions of the Icon
             int addNewHeight = _addNewCtrl.Height;
@@ -269,24 +286,21 @@ namespace System.Windows.Forms.Design
             _addNewCtrl.Dock = DockStyle.Fill;
             _addNewCtrl.LinkClicked += addNewCtrl_Click;
 
-            Bitmap addNewBitmap = new Bitmap(typeof(DesignBindingPicker), "AddNewDataSource.bmp");
+            Bitmap addNewBitmap = new(typeof(DesignBindingPicker), "AddNewDataSource.bmp");
             addNewBitmap.MakeTransparent(Color.Magenta);
-            if (DpiHelper.IsScalingRequired)
-            {
-                DpiHelper.ScaleBitmapLogicalToDevice(ref addNewBitmap);
-                addNewHeight = DpiHelper.LogicalToDeviceUnitsY(_addNewCtrl.Height);
-                addNewWidth = DpiHelper.LogicalToDeviceUnitsX(_addNewCtrl.Height);
-            }
+            addNewBitmap = ScaleHelper.ScaleToDpi(addNewBitmap, ScaleHelper.InitialSystemDpi, disposeBitmap: true);
 
-            PictureBox addNewIcon = new PictureBox();
-            addNewIcon.Image = addNewBitmap;
-            addNewIcon.BackColor = SystemColors.Window;
-            addNewIcon.ForeColor = SystemColors.WindowText;
-            addNewIcon.Width = addNewWidth;
-            addNewIcon.Height = addNewHeight;
-            addNewIcon.Dock = DockStyle.Left;
-            addNewIcon.SizeMode = PictureBoxSizeMode.CenterImage;
-            addNewIcon.AccessibleRole = AccessibleRole.Graphic;
+            PictureBox addNewIcon = new()
+            {
+                Image = addNewBitmap,
+                BackColor = SystemColors.Window,
+                ForeColor = SystemColors.WindowText,
+                Width = addNewWidth,
+                Height = addNewHeight,
+                Dock = DockStyle.Left,
+                SizeMode = PictureBoxSizeMode.CenterImage,
+                AccessibleRole = AccessibleRole.Graphic
+            };
 
             _addNewPanel = new Panel();
             _addNewPanel.Controls.Add(_addNewCtrl);
@@ -295,21 +309,22 @@ namespace System.Windows.Forms.Design
             _addNewPanel.Height = addNewHeight + 1;
             _addNewPanel.Dock = DockStyle.Bottom;
 
-            Label helpTextDiv = new Label();
-            helpTextDiv.Height = 1;
-            helpTextDiv.BackColor = SystemColors.ControlDark;
-            helpTextDiv.Dock = DockStyle.Top;
-
-            _helpTextCtrl = new HelpTextLabel();
-            _helpTextCtrl.TextAlign = ContentAlignment.TopLeft;
-            _helpTextCtrl.BackColor = SystemColors.Window;
-            _helpTextCtrl.ForeColor = SystemColors.WindowText;
-            _helpTextCtrl.Height *= 2;
-            int helpTextHeight = _helpTextCtrl.Height;
-            if (DpiHelper.IsScalingRequired)
+            Label helpTextDiv = new()
             {
-                helpTextHeight = DpiHelper.LogicalToDeviceUnitsY(helpTextHeight);
-            }
+                Height = 1,
+                BackColor = SystemColors.ControlDark,
+                Dock = DockStyle.Top
+            };
+
+            _helpTextCtrl = new HelpTextLabel
+            {
+                TextAlign = ContentAlignment.TopLeft,
+                BackColor = SystemColors.Window,
+                ForeColor = SystemColors.WindowText
+            };
+
+            _helpTextCtrl.Height *= 2;
+            int helpTextHeight = ScaleHelper.ScaleToInitialSystemDpi(_helpTextCtrl.Height);
 
             _helpTextCtrl.Dock = DockStyle.Fill;
 
@@ -323,12 +338,12 @@ namespace System.Windows.Forms.Design
             Controls.Add(_addNewPanel);
             Controls.Add(_helpTextPanel);
 
-            ResumeLayout(false);
+            ResumeLayout(performLayout: false);
 
             Size = _initialSize;
             BackColor = SystemColors.Control;
             ActiveControl = _treeViewCtrl;
-            AccessibleName = (SR.DesignBindingPickerAccessibleName);
+            AccessibleName = SR.DesignBindingPickerAccessibleName;
 
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
         }
@@ -356,11 +371,6 @@ namespace System.Windows.Forms.Design
         ///     the user picked, or null if no selection was made.
         ///
         /// </devdoc>
-
-        ///  FXCOP suggests we use generics to avoid boxing of value types when referencing
-        ///  values in the uiService.Styles hashtable.  However, the values contained within
-        ///  can be of differing types - so we cannot do this.  Hence the suppression.
-        [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
         public DesignBinding? Pick(ITypeDescriptorContext? context,
                                   IServiceProvider provider,
                                   bool showDataSources,
@@ -372,12 +382,10 @@ namespace System.Windows.Forms.Design
         {
             // Get services
             _serviceProvider = provider;
-            _windowsFormsEditorService = _serviceProvider?.GetService(typeof(IWindowsFormsEditorService)) as IWindowsFormsEditorService;
-#pragma warning disable VSSDK006
-            _dataSourceProviderService = _serviceProvider?.GetService(typeof(DataSourceProviderService)) as DataSourceProviderService;
-            _typeResolutionService = _serviceProvider?.GetService(typeof(ITypeResolutionService)) as ITypeResolutionService;
-            _designerHost = _serviceProvider?.GetService(typeof(IDesignerHost)) as IDesignerHost;
-#pragma warning restore VSSDK006
+            _windowsFormsEditorService = _serviceProvider.GetService<IWindowsFormsEditorService>();
+            _dataSourceProviderService = _serviceProvider.GetService<DataSourceProviderService>();
+            _typeResolutionService = _serviceProvider.GetService<ITypeResolutionService>();
+            _designerHost = _serviceProvider.GetService<IDesignerHost>();
 
             if (_windowsFormsEditorService is null)
             {
@@ -388,7 +396,7 @@ namespace System.Windows.Forms.Design
             _context = context;
             _showDataSources = showDataSources;
             _showDataMembers = showDataMembers;
-            _selectListMembers = showDataMembers ? selectListMembers : true;
+            _selectListMembers = !showDataMembers || selectListMembers;
             _rootDataSource = rootDataSource;
             _rootDataMember = rootDataMember;
 
@@ -432,7 +440,6 @@ namespace System.Windows.Forms.Design
             _windowsFormsEditorService = null;
             _dataSourceProviderService = null;
             _designerHost = null;
-            context = null;
 
             // Return final selection to caller
             return finalSelectedItem;
@@ -442,10 +449,13 @@ namespace System.Windows.Forms.Design
         {
             base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
 
-            var factor = (double)deviceDpiNew / deviceDpiOld;
-            _minimumWidth = DpiHelper.ConvertToGivenDpiPixel(_minimumWidth, factor);
-            _minimumHeight = DpiHelper.ConvertToGivenDpiPixel(_minimumHeight, factor);
-            Size = new Size(DpiHelper.ConvertToGivenDpiPixel(_initialSize.Width, factor), DpiHelper.ConvertToGivenDpiPixel(_initialSize.Height, factor));
+            double scalePercent = (double)deviceDpiNew / deviceDpiOld;
+            s_minimumWidth = ScaleHelper.ScaleToDpi(MinimumDimension, deviceDpiNew);
+            s_minimumHeight = ScaleHelper.ScaleToDpi(MinimumDimension, deviceDpiNew);
+            Size = new Size(
+                ScaleHelper.ScaleToPercent(_initialSize.Width, scalePercent),
+                ScaleHelper.ScaleToPercent(_initialSize.Height, scalePercent));
+
             SuspendLayout();
             try
             {
@@ -670,7 +680,7 @@ namespace System.Windows.Forms.Design
             }
 
             // Create node and add to specified nodes collection
-            DataSourceNode dataSourceNode = new DataSourceNode(this, dataSource, dataSource.Site?.Name);
+            DataSourceNode dataSourceNode = new(this, dataSource, dataSource.Site?.Name);
             nodes?.Add(dataSourceNode);
 
             // If this node matches the selected item, make it the selected node
@@ -710,15 +720,18 @@ namespace System.Windows.Forms.Design
             }
 
             // Special case: Data source is a list type (or list item type) rather than a list instance.
-            //    Arises when some component's DataSource property is bound to a Type, and the user opens the dropdown for the DataMember property.
-            //    We need to create a temporary instance of the correct list type, and use that as our data source for the purpose of determining
-            //    data members. Since only BindingSource supports type binding, we bind a temporary BindingSource to the specified type - it will
-            //    create an instance of the correct list type for us. Fixes VSWhidbey bugs 302757 and 280708.
+            //    Arises when some component's DataSource property is bound to a Type, and the user opens
+            //    the dropdown for the DataMember property.
+            //    We need to create a temporary instance of the correct list type,
+            //    and use that as our data source for the purpose of determining data members.
+            //    Since only BindingSource supports type binding, we bind a temporary BindingSource
+            //    to the specified type - it will create an instance of the correct list type for us.
+            //    Fixes VSWhidbey bugs 302757 and 280708.
             if (dataSource is Type)
             {
                 try
                 {
-                    BindingSource bindingSource = new BindingSource();
+                    BindingSource bindingSource = [];
                     bindingSource.DataSource = dataSource;
                     dataSource = bindingSource.List;
                 }
@@ -804,7 +817,7 @@ namespace System.Windows.Forms.Design
             }
 
             // Create node and add to specified nodes collection
-            DataMemberNode dataMemberNode = new DataMemberNode(this, dataSource, dataMember, propertyName, isList);
+            DataMemberNode dataMemberNode = new(this, dataSource, dataMember, propertyName, isList);
             nodes?.Add(dataMemberNode);
 
             // If this node matches the selected item, make it the selected node
@@ -864,10 +877,10 @@ namespace System.Windows.Forms.Design
                 }
 
                 // Add a data member sub-node for this property
-                DataMemberNode dataMemberNode = new DataMemberNode(this, dataSource, dataMember + "." + property.Name, property.Name, isSubList);
+                DataMemberNode dataMemberNode = new(this, dataSource, dataMember + "." + property.Name, property.Name, isSubList);
                 nodes.Add(dataMemberNode);
 
-                // Auto-select support...
+                // Auto-select support.
                 if (_selectedItem is not null && _selectedItem.DataSource == dataMemberNode.DataSource)
                 {
                     if (_selectedItem.Equals(dataSource, dataMemberNode.DataMember))
@@ -877,8 +890,8 @@ namespace System.Windows.Forms.Design
                     }
                     else
                     {
-                        if (!string.IsNullOrEmpty(_selectedItem.DataMember) &&
-                            _selectedItem.DataMember.IndexOf(dataMemberNode.DataMember) == 0)
+                        if (!string.IsNullOrEmpty(_selectedItem.DataMember)
+                            && _selectedItem.DataMember.StartsWith(dataMemberNode.DataMember, StringComparison.Ordinal))
                         {
                             // If this node is an ancestor of the selected item, recursively start
                             // filling out sub-member tree (so that node for selected item will
@@ -961,7 +974,7 @@ namespace System.Windows.Forms.Design
         private void AddProjectGroup(TreeNodeCollection? nodes, DataSourceGroup group, bool addMembers)
         {
             // Create the group node, add its data sources, and wire it up
-            ProjectGroupNode groupNode = new ProjectGroupNode(this, group.Name, group.Image);
+            ProjectGroupNode groupNode = new(this, group.Name, group.Image);
             AddProjectGroupContents(groupNode.Nodes, group);
             nodes?.Add(groupNode);
 
@@ -1002,12 +1015,12 @@ namespace System.Windows.Forms.Design
 
             // vsw 477085: don't add the project data source if it points to a virtual type.
             Type? type = GetType(descriptor.TypeName, true, true);
-            if (type is not null && type.GetType() != runtimeType)
+            if (type is not null && type.GetType() != s_runtimeType)
             {
                 return;
             }
 
-            ProjectDataSourceNode projectDataSourceNode = new ProjectDataSourceNode(this, descriptor, descriptor.Name, descriptor.Image);
+            ProjectDataSourceNode projectDataSourceNode = new(this, descriptor, descriptor.Name, descriptor.Image);
             nodes.Add(projectDataSourceNode);
 
             // Auto-select this new node if it corresponds to the current selection (ie. current value)
@@ -1043,8 +1056,7 @@ namespace System.Windows.Forms.Design
         /// </devdoc>
         private void AddProjectDataSourceContents(TreeNodeCollection nodes, DataSourceNode projectDataSourceNode)
         {
-            DataSourceDescriptor? dataSourceDescriptor = projectDataSourceNode.DataSource as DataSourceDescriptor;
-            if (dataSourceDescriptor is null)
+            if (projectDataSourceNode.DataSource is not DataSourceDescriptor dataSourceDescriptor)
             {
                 return;
             }
@@ -1142,7 +1154,7 @@ namespace System.Windows.Forms.Design
         {
             // vsw 477085: don't add the project data source if it points to a virtual type.
             Type? dsType = GetType(dataSourceDescriptor.TypeName, true, true);
-            if (dsType is not null && dsType.GetType() != runtimeType)
+            if (dsType is not null && dsType.GetType() != s_runtimeType)
             {
                 return;
             }
@@ -1182,7 +1194,7 @@ namespace System.Windows.Forms.Design
             }
 
             // Determine properties of list member
-            PropertyDescriptorCollection properties = ListBindingHelper.GetListItemProperties(dataSourceInstance, new PropertyDescriptor[] { propertyDescriptor });
+            PropertyDescriptorCollection properties = ListBindingHelper.GetListItemProperties(dataSourceInstance, [propertyDescriptor]);
             if (properties is null)
             {
                 return;
@@ -1229,7 +1241,6 @@ namespace System.Windows.Forms.Design
         /// <devdoc>
         ///  Puts a new BindingSource on the form, with the specified DataSource and DataMember values.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private BindingSource? CreateNewBindingSource(object dataSource, string dataMember)
         {
             if (_designerHost is null || _dataSourceProviderService is null)
@@ -1238,7 +1249,7 @@ namespace System.Windows.Forms.Design
             }
 
             // Create the BindingSource
-            BindingSource bs = new BindingSource();
+            BindingSource bs = [];
             try
             {
                 bs.DataSource = dataSource;
@@ -1378,7 +1389,10 @@ namespace System.Windows.Forms.Design
         ///  use that in preference to using the Type class (since this service can more
         ///  reliably instantiate project level types).
         /// </devdoc>
-        [SuppressMessage("Trimming", "IL2096:Call to 'Type.GetType' method can perform case insensitive lookup of the type, currently trimming can not guarantee presence of all the matching types.", Justification = "<Pending>")]
+        [SuppressMessage(
+            "Trimming",
+            "IL2096:Call to 'Type.GetType' method can perform case insensitive lookup of the type, currently trimming can not guarantee presence of all the matching types.",
+            Justification = "No known workaround.")]
         private Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             if (_typeResolutionService is not null)
@@ -1464,7 +1478,7 @@ namespace System.Windows.Forms.Design
         private static bool IsBindableDataSource(object? dataSource)
         {
             // Check for expected interfaces (require at least one)
-            if (!(dataSource is IListSource || dataSource is IList || dataSource is Array))
+            if (dataSource is not (IListSource or IList or Array))
             {
                 return false;
             }
@@ -1652,12 +1666,12 @@ namespace System.Windows.Forms.Design
         {
             if ((specified & BoundsSpecified.Width) == BoundsSpecified.Width)
             {
-                width = Math.Max(width, _minimumWidth);
+                width = Math.Max(width, s_minimumWidth);
             }
 
             if ((specified & BoundsSpecified.Height) == BoundsSpecified.Height)
             {
-                height = Math.Max(height, _minimumHeight);
+                height = Math.Max(height, s_minimumHeight);
             }
 
             base.SetBoundsCore(x, y, width, height, specified);
@@ -1736,7 +1750,7 @@ namespace System.Windows.Forms.Design
         private void treeViewCtrl_MouseMove(object? sender, MouseEventArgs e)
         {
             // Get the tree node under the mouse
-            Point pt = new Point(e.X, e.Y);
+            Point pt = new(e.X, e.Y);
             TreeNode? node = _treeViewCtrl?.GetNodeAt(pt);
 
             // Make sure point is over the node label, since GetNodeAt() will return
@@ -1829,7 +1843,7 @@ namespace System.Windows.Forms.Design
         {
             if (node is not null && IsHandleCreated)
             {
-                BeginInvoke(PostSelectTreeNodeCallback, new object[] { node });
+                BeginInvoke(PostSelectTreeNodeCallback, [node]);
             }
         }
 
@@ -1840,8 +1854,13 @@ namespace System.Windows.Forms.Design
         {
             protected override void OnPaint(PaintEventArgs e)
             {
-                TextFormatFlags formatFlags = TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis | TextFormatFlags.TextBoxControl;
-                Rectangle rect = new Rectangle(ClientRectangle.Location, ClientRectangle.Size);
+                TextFormatFlags formatFlags =
+                    TextFormatFlags.WordBreak |
+                    TextFormatFlags.EndEllipsis |
+                    TextFormatFlags.TextBoxControl |
+                    TextFormatFlags.PreserveGraphicsClipping |
+                    TextFormatFlags.PreserveGraphicsTranslateTransform;
+                Rectangle rect = new(ClientRectangle.Location, ClientRectangle.Size);
                 rect.Inflate(-2, -2);
                 TextRenderer.DrawText(e.Graphics, Text, Font, rect, ForeColor, formatFlags);
             }
@@ -1918,7 +1937,7 @@ namespace System.Windows.Forms.Design
 
             private static ImageList CreateScaledCopy(ImageList imageList, int dpi)
             {
-                Size scaledSize = DpiHelper.LogicalToDeviceUnits(imageList.ImageSize, dpi);
+                Size scaledSize = ScaleHelper.ScaleToDpi(imageList.ImageSize, dpi);
 
                 ImageList copy = new()
                 {
@@ -1929,7 +1948,7 @@ namespace System.Windows.Forms.Design
 
                 foreach (Image image in imageList.Images)
                 {
-                    Bitmap scaledImage = DpiHelper.CreateResizedBitmap((Bitmap)image, scaledSize);
+                    Bitmap scaledImage = ScaleHelper.CopyAndScaleToSize((Bitmap)image, scaledSize);
                     copy.Images.Add(scaledImage);
                 }
 
@@ -1940,8 +1959,8 @@ namespace System.Windows.Forms.Design
             // Cleared every time DesignBindingPicker dropdown is closed.
             // Every instance of BindingPickerTree has it's own cache,
             // but the basic set of images is shared, see s_defaultImages.
-            private readonly Dictionary<int, ImageList> _imageListCacheByDPI = new();
-            private int _dpi = (int)DpiHelper.LogicalDpi;
+            private readonly Dictionary<int, ImageList> _imageListCacheByDPI = [];
+            private int _dpi = ScaleHelper.OneHundredPercentLogicalDpi;
 
             internal BindingPickerTree()
             {
@@ -1951,7 +1970,7 @@ namespace System.Windows.Forms.Design
             internal void ResetImages()
             {
                 // reset current DPI to logical (96)
-                _dpi = (int)DpiHelper.LogicalDpi;
+                _dpi = ScaleHelper.OneHundredPercentLogicalDpi;
 
                 // Clear scaled images cache
                 foreach (var imageList in _imageListCacheByDPI.Values)
@@ -1966,7 +1985,7 @@ namespace System.Windows.Forms.Design
                 ImageList = CreateCopy(s_defaultImages);
 
                 // Cache current ImageList instance as default for scaling
-                _imageListCacheByDPI.Add((int)DpiHelper.LogicalDpi, ImageList);
+                _imageListCacheByDPI.Add(ScaleHelper.OneHundredPercentLogicalDpi, ImageList);
             }
 
             internal void RescaleImages(int dpi)
@@ -1986,7 +2005,7 @@ namespace System.Windows.Forms.Design
                 // Get ImageList from cache or create new one from unscaled
                 if (!_imageListCacheByDPI.TryGetValue(dpi, out ImageList? scaledImageList))
                 {
-                    ImageList unscaledImageList = _imageListCacheByDPI[(int)DpiHelper.LogicalDpi];
+                    ImageList unscaledImageList = _imageListCacheByDPI[ScaleHelper.OneHundredPercentLogicalDpi];
                     scaledImageList = CreateScaledCopy(unscaledImageList, dpi);
                     _imageListCacheByDPI.Add(dpi, scaledImageList);
                 }
@@ -2004,12 +2023,12 @@ namespace System.Windows.Forms.Design
             /// </summary>
             private static int GetMaxItemWidth(TreeNodeCollection nodes)
             {
-                var maxWidth = 0;
+                int maxWidth = 0;
 
                 foreach (TreeNode node in nodes)
                 {
                     Rectangle bounds = node.Bounds;
-                    var w = bounds.Left + bounds.Width;
+                    int w = bounds.Left + bounds.Width;
                     maxWidth = Math.Max(w, maxWidth);
 
                     if (node.IsExpanded)
@@ -2274,7 +2293,7 @@ namespace System.Windows.Forms.Design
         /// </summary>
         internal class DataSourceNode : BindingPickerNode
         {
-            private object? _dataSource;
+            private readonly object? _dataSource;
 
             public DataSourceNode(DesignBindingPicker picker, object? dataSource, string? nodeName) : base(picker, nodeName)
             {
@@ -2301,7 +2320,7 @@ namespace System.Windows.Forms.Design
                 {
                     // If data members are included in tree, only
                     // they can be selected, not data sources.
-                    return _picker is null ? false : !_picker._showDataMembers;
+                    return _picker is not null && !_picker._showDataMembers;
                 }
             }
 
@@ -2352,17 +2371,18 @@ namespace System.Windows.Forms.Design
 
         internal class DataMemberNode : DataSourceNode
         {
-            private bool isList;
-            private string dataMember;
+            private readonly bool _isList;
+            private readonly string _dataMember;
 
-            public DataMemberNode(DesignBindingPicker picker,
-                                  object? dataSource,
-                                  string dataMember,
-                                  string dataField,
-                                  bool isList) : base(picker, dataSource, dataField)
+            public DataMemberNode(
+                DesignBindingPicker picker,
+                object? dataSource,
+                string dataMember,
+                string dataField,
+                bool isList) : base(picker, dataSource, dataField)
             {
-                this.dataMember = dataMember;
-                this.isList = isList;
+                _dataMember = dataMember;
+                _isList = isList;
                 BindingImageIndex = (int)(isList ? BindingImage.ListMember : BindingImage.FieldMember);
             }
 
@@ -2370,7 +2390,7 @@ namespace System.Windows.Forms.Design
             {
                 get
                 {
-                    return dataMember;
+                    return _dataMember;
                 }
             }
 
@@ -2379,7 +2399,7 @@ namespace System.Windows.Forms.Design
             {
                 get
                 {
-                    return isList;
+                    return _isList;
                 }
             }
 
@@ -2631,9 +2651,8 @@ namespace System.Windows.Forms.Design
 
                 // Instance the project data source on the form, and point a BindingSource
                 // at the appropriate list member of the form instance
-                DataSourceDescriptor? dataSourceDescriptor = DataSource as DataSourceDescriptor;
 
-                if (dataSourceDescriptor is null)
+                if (DataSource is not DataSourceDescriptor dataSourceDescriptor)
                 {
                     return DesignBinding.Null;
                 }

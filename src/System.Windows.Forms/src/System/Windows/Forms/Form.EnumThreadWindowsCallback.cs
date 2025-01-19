@@ -22,12 +22,12 @@ public partial class Form
 
         internal BOOL Callback(HWND hwnd)
         {
-            HWND parent = (HWND)PInvoke.GetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT);
+            HWND parent = (HWND)PInvokeCore.GetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT);
             if (parent == _formHandle)
             {
                 // Enumerated window is owned by this Form.
                 // Store it in a list for further treatment.
-                _ownedWindows ??= new();
+                _ownedWindows ??= [];
                 _ownedWindows.Add(hwnd);
             }
 
@@ -35,14 +35,14 @@ public partial class Form
         }
 
         // Resets the owner of all the windows owned by this Form before handle recreation.
-        internal void ResetOwners()
+        internal unsafe void ResetOwners()
         {
             if (_ownedWindows is not null)
             {
                 foreach (HWND hwnd in _ownedWindows)
                 {
-                    nint oldValue = PInvoke.SetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT, 0);
-                    Debug.Assert(oldValue == _formHandle.Value);
+                    nint oldValue = PInvokeCore.SetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT, 0);
+                    Debug.Assert(oldValue == (nint)_formHandle.Value);
                 }
             }
         }
@@ -54,7 +54,7 @@ public partial class Form
             {
                 foreach (HWND hwnd in _ownedWindows)
                 {
-                    PInvoke.SetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT, ownerHwnd);
+                    PInvokeCore.SetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT, ownerHwnd);
                 }
             }
         }

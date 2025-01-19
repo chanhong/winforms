@@ -17,9 +17,9 @@ public partial class ListView
         ///  A caching mechanism for key accessor
         ///  We use an index here rather than control so that we don't have lifetime
         ///  issues by holding on to extra references.
-        private int lastAccessedIndex = -1;
+        private int _lastAccessedIndex = -1;
 
-        private readonly IInnerList innerList;
+        private readonly IInnerList _innerList;
 
         public ListViewItemCollection(ListView owner)
         {
@@ -27,66 +27,30 @@ public partial class ListView
             // In Whidbey this constructor is a no-op.
 
             // initialize the inner list w/ a dummy list.
-            innerList = new ListViewNativeItemCollection(owner);
+            _innerList = new ListViewNativeItemCollection(owner);
         }
 
         internal ListViewItemCollection(IInnerList innerList)
         {
             Debug.Assert(innerList is not null, "Can't pass in null innerList");
-            this.innerList = innerList;
+            _innerList = innerList;
         }
 
-        private IInnerList InnerList
-        {
-            get
-            {
-                return innerList;
-            }
-        }
+        private IInnerList InnerList => _innerList;
 
         /// <summary>
         ///  Returns the total number of items within the list view.
         /// </summary>
         [Browsable(false)]
-        public int Count
-        {
-            get
-            {
-                return InnerList.Count;
-            }
-        }
+        public int Count => InnerList.Count;
 
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                return this;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return true;
-            }
-        }
+        bool ICollection.IsSynchronized => true;
 
-        bool IList.IsFixedSize
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool IList.IsFixedSize => false;
 
-        public bool IsReadOnly
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public bool IsReadOnly => false;
 
         /// <summary>
         ///  Returns the ListViewItem at the given index.
@@ -107,6 +71,14 @@ public partial class ListView
 
                 InnerList[index] = value;
             }
+        }
+
+        internal ListViewItem? GetItemByIndex(int index)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, InnerList.Count);
+
+            return InnerList.GetItemByIndex(index);
         }
 
         object? IList.this[int index]
@@ -148,7 +120,7 @@ public partial class ListView
         }
 
         /// <summary>
-        ///  Add an item to the ListView.  The item will be inserted either in
+        ///  Add an item to the ListView. The item will be inserted either in
         ///  the correct sorted position, or, if no sorting is set, at the end
         ///  of the list.
         /// </summary>
@@ -164,7 +136,7 @@ public partial class ListView
                 return IndexOf(Add(listViewItem));
             }
 
-            if (item is {} obj)
+            if (item is { } obj)
             {
                 return IndexOf(Add(obj.ToString()));
             }
@@ -173,7 +145,7 @@ public partial class ListView
         }
 
         /// <summary>
-        ///  Add an item to the ListView.  The item will be inserted either in
+        ///  Add an item to the ListView. The item will be inserted either in
         ///  the correct sorted position, or, if no sorting is set, at the end
         ///  of the list.
         /// </summary>
@@ -185,7 +157,7 @@ public partial class ListView
         }
 
         /// <summary>
-        ///  Add an item to the ListView.  The item will be inserted either in
+        ///  Add an item to the ListView. The item will be inserted either in
         ///  the correct sorted position, or, if no sorting is set, at the end
         ///  of the list.
         /// </summary>
@@ -198,7 +170,7 @@ public partial class ListView
         // <-- NEW ADD OVERLOADS IN WHIDBEY
 
         /// <summary>
-        ///  Add an item to the ListView.  The item will be inserted either in
+        ///  Add an item to the ListView. The item will be inserted either in
         ///  the correct sorted position, or, if no sorting is set, at the end
         ///  of the list.
         /// </summary>
@@ -210,7 +182,7 @@ public partial class ListView
         }
 
         /// <summary>
-        ///  Add an item to the ListView.  The item will be inserted either in
+        ///  Add an item to the ListView. The item will be inserted either in
         ///  the correct sorted position, or, if no sorting is set, at the end
         ///  of the list.
         /// </summary>
@@ -225,7 +197,7 @@ public partial class ListView
         }
 
         /// <summary>
-        ///  Add an item to the ListView.  The item will be inserted either in
+        ///  Add an item to the ListView. The item will be inserted either in
         ///  the correct sorted position, or, if no sorting is set, at the end
         ///  of the list.
         /// </summary>
@@ -294,10 +266,10 @@ public partial class ListView
         {
             key.ThrowIfNullOrEmptyWithMessage(SR.FindKeyMayNotBeEmptyOrNull);
 
-            List<ListViewItem> foundItems = new();
+            List<ListViewItem> foundItems = [];
             FindInternal(key, searchAllSubItems, this, foundItems);
 
-            return foundItems.ToArray();
+            return [.. foundItems];
         }
 
         /// <summary>
@@ -369,11 +341,11 @@ public partial class ListView
             }
 
             // step 1 - check the last cached item
-            if (IsValidIndex(lastAccessedIndex))
+            if (IsValidIndex(_lastAccessedIndex))
             {
-                if (WindowsFormsUtils.SafeCompareStrings(this[lastAccessedIndex].Name, key, /* ignoreCase = */ true))
+                if (WindowsFormsUtils.SafeCompareStrings(this[_lastAccessedIndex].Name, key, /* ignoreCase = */ true))
                 {
-                    return lastAccessedIndex;
+                    return _lastAccessedIndex;
                 }
             }
 
@@ -382,13 +354,13 @@ public partial class ListView
             {
                 if (WindowsFormsUtils.SafeCompareStrings(this[i].Name, key, /* ignoreCase = */ true))
                 {
-                    lastAccessedIndex = i;
+                    _lastAccessedIndex = i;
                     return i;
                 }
             }
 
-            // step 3 - we didn't find it.  Invalidate the last accessed index and return -1.
-            lastAccessedIndex = -1;
+            // step 3 - we didn't find it. Invalidate the last accessed index and return -1.
+            _lastAccessedIndex = -1;
             return -1;
         }
 
@@ -425,7 +397,7 @@ public partial class ListView
             {
                 Insert(index, listViewItem);
             }
-            else if (item is {} obj)
+            else if (item is { } obj)
             {
                 Insert(index, obj.ToString());
             }
@@ -438,15 +410,15 @@ public partial class ListView
 
         public virtual ListViewItem Insert(int index, string? key, string? text, string? imageKey)
             => Insert(index, new ListViewItem(text, imageKey)
-                {
-                    Name = key
-                });
+            {
+                Name = key
+            });
 
         public virtual ListViewItem Insert(int index, string? key, string? text, int imageIndex)
             => Insert(index, new ListViewItem(text, imageIndex)
-                {
-                    Name = key
-                });
+            {
+                Name = key
+            });
 
         // END - NEW INSERT OVERLOADS IN WHIDBEY -->
 

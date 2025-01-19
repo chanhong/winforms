@@ -74,6 +74,10 @@ public partial class Label : Control, IAutomationLiveRegion
 
         SetStyle(ControlStyles.ResizeRedraw, true);
 
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
+
         CommonProperties.SetSelfAutoSizeInDefaultLayout(this, true);
 
         _labelState[s_stateFlatStyle] = (int)FlatStyle.Standard;
@@ -120,8 +124,8 @@ public partial class Label : Control, IAutomationLiveRegion
     }
 
     /// <summary>
-    ///  This property controls the activation handling of bleedover for the text that
-    ///  extends beyond the width of the label.
+    ///  Gets or sets a value indicating whether the ellipsis character (...) appears at the right edge of the Label,
+    ///  denoting that the Label text extends beyond the specified length of the Label.
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
     [DefaultValue(false)]
@@ -203,7 +207,7 @@ public partial class Label : Control, IAutomationLiveRegion
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
     [DefaultValue(BorderStyle.None)]
-    [DispId(PInvoke.DISPID_BORDERSTYLE)]
+    [DispId(PInvokeCore.DISPID_BORDERSTYLE)]
     [SRDescription(nameof(SR.LabelBorderDescr))]
     public virtual BorderStyle BorderStyle
     {
@@ -237,7 +241,7 @@ public partial class Label : Control, IAutomationLiveRegion
     internal virtual bool CanUseTextRenderer => true;
 
     /// <summary>
-    ///  Overrides Control.  A Label is a Win32 STATIC control, which we setup here.
+    ///  Overrides Control. A Label is a Win32 STATIC control, which we setup here.
     /// </summary>
     protected override CreateParams CreateParams
     {
@@ -365,7 +369,7 @@ public partial class Label : Control, IAutomationLiveRegion
     {
         get
         {
-            Image? image = (Image?)Properties.GetObject(s_propImage);
+            Image? image = Properties.GetValueOrDefault<Image>(s_propImage);
 
             if (image is null && ImageList is not null && ImageIndexer.ActualIndex >= 0)
             {
@@ -378,28 +382,28 @@ public partial class Label : Control, IAutomationLiveRegion
         }
         set
         {
-            if (Image != value)
+            if (Image == value)
             {
-                StopAnimate();
-
-                Properties.SetObject(s_propImage, value);
-                if (value is not null)
-                {
-                    ImageIndex = -1;
-                    ImageList = null;
-                }
-
-                // Hook up the frame changed event
-                //
-                Animate();
-                Invalidate();
+                return;
             }
+
+            StopAnimate();
+
+            Properties.AddOrRemoveValue(s_propImage, value);
+            if (value is not null)
+            {
+                ImageIndex = -1;
+                ImageList = null;
+            }
+
+            // Hook up the frame changed event
+            Animate();
+            Invalidate();
         }
     }
 
     /// <summary>
-    ///  Gets or sets the index value of the images displayed on the
-    ///  <see cref="Label"/>.
+    ///  Gets or sets the index value of the images displayed on the <see cref="Label"/>.
     /// </summary>
     [TypeConverter(typeof(ImageIndexConverter))]
     [Editor($"System.Windows.Forms.Design.ImageIndexEditor, {AssemblyRef.SystemDesign}", typeof(UITypeEditor))]
@@ -428,10 +432,7 @@ public partial class Label : Control, IAutomationLiveRegion
         }
         set
         {
-            if (value < ImageList.Indexer.DefaultIndex)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(ImageIndex), value, ImageList.Indexer.DefaultIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, ImageList.Indexer.DefaultIndex);
 
             if (ImageIndex == value && value != ImageList.Indexer.DefaultIndex)
             {
@@ -441,7 +442,7 @@ public partial class Label : Control, IAutomationLiveRegion
             if (value != ImageList.Indexer.DefaultIndex)
             {
                 // Image.set calls ImageIndex = -1
-                Properties.SetObject(s_propImage, null);
+                Properties.RemoveValue(s_propImage);
             }
 
             ImageIndexer.Index = value;
@@ -471,7 +472,7 @@ public partial class Label : Control, IAutomationLiveRegion
             }
 
             // Image.set calls ImageIndex = -1
-            Properties.SetObject(s_propImage, null);
+            Properties.RemoveValue(s_propImage);
 
             ImageIndexer.Key = value;
             Invalidate();
@@ -483,7 +484,7 @@ public partial class Label : Control, IAutomationLiveRegion
         get
         {
             // Demand create the ImageIndexer property
-            if ((!(Properties.GetObject(s_propImageIndex, out bool found) is LabelImageIndexer imageIndexer)) || (!found))
+            if (!Properties.TryGetValue(s_propImageIndex, out LabelImageIndexer? imageIndexer))
             {
                 imageIndexer = new LabelImageIndexer(this);
                 ImageIndexer = imageIndexer;
@@ -491,10 +492,7 @@ public partial class Label : Control, IAutomationLiveRegion
 
             return imageIndexer;
         }
-        set
-        {
-            Properties.SetObject(s_propImageIndex, value);
-        }
+        set => Properties.AddOrRemoveValue(s_propImageIndex, value);
     }
 
     /// <summary>
@@ -506,39 +504,39 @@ public partial class Label : Control, IAutomationLiveRegion
     [SRCategory(nameof(SR.CatAppearance))]
     public ImageList? ImageList
     {
-        get => (ImageList?)Properties.GetObject(s_propImageList);
+        get => Properties.GetValueOrDefault<ImageList>(s_propImageList);
         set
         {
-            if (ImageList != value)
+            ImageList? imageList = ImageList;
+
+            if (imageList == value)
             {
-                EventHandler recreateHandler = new EventHandler(ImageListRecreateHandle);
-                EventHandler disposedHandler = new EventHandler(DetachImageList);
-
-                // Remove the previous imagelist handle recreate handler
-                ImageList? imageList = ImageList;
-                if (imageList is not null)
-                {
-                    imageList.RecreateHandle -= recreateHandler;
-                    imageList.Disposed -= disposedHandler;
-                }
-
-                // Make sure we don't have an Image as well as an ImageList
-                if (value is not null)
-                {
-                    Properties.SetObject(s_propImage, null); // Image.set calls ImageList = null
-                }
-
-                Properties.SetObject(s_propImageList, value);
-
-                // Add the new imagelist handle recreate handler
-                if (value is not null)
-                {
-                    value.RecreateHandle += recreateHandler;
-                    value.Disposed += disposedHandler;
-                }
-
-                Invalidate();
+                return;
             }
+
+            // Remove the previous imagelist handle recreate handler
+            if (imageList is not null)
+            {
+                imageList.RecreateHandle -= ImageListRecreateHandle;
+                imageList.Disposed -= DetachImageList;
+            }
+
+            // Make sure we don't have an Image as well as an ImageList
+            if (value is not null)
+            {
+                Properties.RemoveValue(s_propImage);
+            }
+
+            Properties.AddOrRemoveValue(s_propImageList, value);
+
+            // Add the new ImageList handle recreate handler
+            if (value is not null)
+            {
+                value.RecreateHandle += ImageListRecreateHandle;
+                value.Disposed += DetachImageList;
+            }
+
+            Invalidate();
         }
     }
 
@@ -551,18 +549,14 @@ public partial class Label : Control, IAutomationLiveRegion
     [SRCategory(nameof(SR.CatAppearance))]
     public ContentAlignment ImageAlign
     {
-        get
-        {
-            int imageAlign = Properties.GetInteger(s_propImageAlign, out bool found);
-            return found ? (ContentAlignment)imageAlign : ContentAlignment.MiddleCenter;
-        }
+        get => Properties.GetValueOrDefault(s_propImageAlign, ContentAlignment.MiddleCenter);
         set
         {
             SourceGenerated.EnumValidator.Validate(value);
 
             if (value != ImageAlign)
             {
-                Properties.SetInteger(s_propImageAlign, (int)value);
+                Properties.AddOrRemoveValue(s_propImageAlign, value, defaultValue: ContentAlignment.MiddleCenter);
                 LayoutTransaction.DoLayoutIf(AutoSize, ParentInternal, this, PropertyNames.ImageAlign);
                 Invalidate();
             }
@@ -699,18 +693,14 @@ public partial class Label : Control, IAutomationLiveRegion
     [SRCategory(nameof(SR.CatAppearance))]
     public virtual ContentAlignment TextAlign
     {
-        get
-        {
-            int textAlign = Properties.GetInteger(s_propTextAlign, out bool found);
-            return found ? (ContentAlignment)textAlign : ContentAlignment.TopLeft;
-        }
+        get => Properties.GetValueOrDefault(s_propTextAlign, ContentAlignment.TopLeft);
         set
         {
             SourceGenerated.EnumValidator.Validate(value);
 
             if (TextAlign != value)
             {
-                Properties.SetInteger(s_propTextAlign, (int)value);
+                Properties.AddOrRemoveValue(s_propTextAlign, value, defaultValue: ContentAlignment.TopLeft);
                 Invalidate();
 
                 // Change the TextAlignment for SystemDrawn Labels
@@ -756,7 +746,7 @@ public partial class Label : Control, IAutomationLiveRegion
         {
             if (CanUseTextRenderer)
             {
-                return UseCompatibleTextRenderingInt;
+                return UseCompatibleTextRenderingInternal;
             }
 
             // Use compat text rendering (GDI+).
@@ -764,9 +754,9 @@ public partial class Label : Control, IAutomationLiveRegion
         }
         set
         {
-            if (UseCompatibleTextRenderingInt != value)
+            if (UseCompatibleTextRenderingInternal != value)
             {
-                UseCompatibleTextRenderingInt = value;
+                UseCompatibleTextRenderingInternal = value;
                 AdjustSize();
             }
         }
@@ -863,25 +853,20 @@ public partial class Label : Control, IAutomationLiveRegion
     private void Animate(bool animate)
     {
         bool currentlyAnimating = _labelState[s_stateAnimating] != 0;
-        if (animate != currentlyAnimating)
+        if (animate == currentlyAnimating || !Properties.TryGetValue(s_propImage, out Image? image))
         {
-            Image? image = (Image?)Properties.GetObject(s_propImage);
-            if (animate)
-            {
-                if (image is not null)
-                {
-                    ImageAnimator.Animate(image, new EventHandler(OnFrameChanged));
-                    _labelState[s_stateAnimating] = animate ? 1 : 0;
-                }
-            }
-            else
-            {
-                if (image is not null)
-                {
-                    ImageAnimator.StopAnimate(image, new EventHandler(OnFrameChanged));
-                    _labelState[s_stateAnimating] = animate ? 1 : 0;
-                }
-            }
+            return;
+        }
+
+        if (animate)
+        {
+            ImageAnimator.Animate(image, OnFrameChanged);
+            _labelState[s_stateAnimating] = animate ? 1 : 0;
+        }
+        else
+        {
+            ImageAnimator.StopAnimate(image, OnFrameChanged);
+            _labelState[s_stateAnimating] = animate ? 1 : 0;
         }
     }
 
@@ -890,7 +875,7 @@ public partial class Label : Control, IAutomationLiveRegion
         Size pointImageSize = image.Size;
 
         int xLoc = r.X + 2;
-        int yLoc = r.Y + 2;
+        int yLoc;
 
         if ((align & WindowsFormsUtils.AnyRightAlign) != 0)
         {
@@ -944,7 +929,7 @@ public partial class Label : Control, IAutomationLiveRegion
         if (!MeasureTextCache.TextRequiresWordBreak(Text, Font, constrainingSize, flags))
         {
             // The effect of the TextBoxControl flag is that in-word line breaking will occur if needed, this happens when AutoSize
-            // is false and a one-word line still doesn't fit the binding box (width).  The other effect is that partially visible
+            // is false and a one-word line still doesn't fit the binding box (width). The other effect is that partially visible
             // lines are clipped; this is how GDI+ works by default.
             flags &= ~(TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl);
         }
@@ -959,26 +944,19 @@ public partial class Label : Control, IAutomationLiveRegion
         if (disposing)
         {
             StopAnimate();
+
             // Holding on to images and image list is a memory leak.
-            if (ImageList is not null)
+            if (ImageList is { } imageList)
             {
-                ImageList.Disposed -= new EventHandler(DetachImageList);
-                ImageList.RecreateHandle -= new EventHandler(ImageListRecreateHandle);
-                Properties.SetObject(s_propImageList, null);
+                imageList.Disposed -= DetachImageList;
+                imageList.RecreateHandle -= ImageListRecreateHandle;
+                Properties.RemoveValue(s_propImageList);
             }
 
-            if (Image is not null)
-            {
-                Properties.SetObject(s_propImage, null);
-            }
+            Properties.RemoveValue(s_propImage);
 
-            // Dispose the tooltip if one present..
-            if (_textToolTip is not null)
-            {
-                _textToolTip.Dispose();
-                _textToolTip = null;
-            }
-
+            _textToolTip?.Dispose();
+            _textToolTip = null;
             _controlToolTip = false;
         }
 
@@ -1084,7 +1062,7 @@ public partial class Label : Control, IAutomationLiveRegion
         if (string.IsNullOrEmpty(Text))
         {
             // Empty labels return the font height + borders
-            using var hfont = GdiCache.GetHFONT(Font);
+            using var hfont = GdiCache.GetHFONTScope(Font);
             using var screen = GdiCache.GetScreenHdc();
 
             // This is the character that Windows uses to determine the extent
@@ -1142,7 +1120,7 @@ public partial class Label : Control, IAutomationLiveRegion
             padding = TextPaddingOptions.LeftAndRightPadding;
         }
 
-        using var hfont = GdiCache.GetHFONT(Font);
+        using var hfont = GdiCache.GetHFONTScope(Font);
         DRAWTEXTPARAMS dtParams = hfont.GetTextMargins(padding);
 
         // This is actually leading margin.
@@ -1322,8 +1300,8 @@ public partial class Label : Control, IAutomationLiveRegion
             }
             else
             {
-                // Theme specs -- if the backcolor is darker than Control, we use
-                // ControlPaint.Dark(backcolor).  Otherwise we use ControlDark.
+                // Theme specs -- if the BackColor is darker than Control, we use
+                // ControlPaint.Dark(BackColor). Otherwise we use ControlDark.
 
                 Color disabledTextForeColor = TextRenderer.DisabledTextColor(BackColor);
                 TextRenderer.DrawTextInternal(e, Text, Font, face, disabledTextForeColor, flags: flags);
@@ -1334,7 +1312,7 @@ public partial class Label : Control, IAutomationLiveRegion
     }
 
     /// <summary>
-    ///  Overriden by LinkLabel.
+    ///  Overridden by LinkLabel.
     /// </summary>
     internal virtual void OnAutoEllipsisChanged()
     {
@@ -1425,7 +1403,7 @@ public partial class Label : Control, IAutomationLiveRegion
 
     private void ResetImage() => Image = null;
 
-    private bool ShouldSerializeImage() => Properties.ContainsObjectThatIsNotNull(s_propImage);
+    private bool ShouldSerializeImage() => Properties.ContainsKey(s_propImage);
 
     internal override void SetToolTip(ToolTip toolTip)
     {
@@ -1450,12 +1428,12 @@ public partial class Label : Control, IAutomationLiveRegion
     {
         switch (m.MsgInternal)
         {
-            case PInvoke.WM_NCHITTEST:
-                // Label returns HT_TRANSPARENT for everything, so all messages get routed to the parent.  Change
+            case PInvokeCore.WM_NCHITTEST:
+                // Label returns HT_TRANSPARENT for everything, so all messages get routed to the parent. Change
                 // this so we can tell what's going on.
 
                 Rectangle rectInScreen = RectangleToScreen(new Rectangle(0, 0, Width, Height));
-                Point pt = new Point((int)m.LParamInternal);
+                Point pt = new((int)m.LParamInternal);
                 m.ResultInternal = (LRESULT)(nint)(rectInScreen.Contains(pt) ? PInvoke.HTCLIENT : PInvoke.HTNOWHERE);
                 break;
 

@@ -21,8 +21,8 @@ internal static class GdiPlusCache
     // Picking soft and hard limits expecting that 30 of each is a reasonable upper limit of permanently reserved
     // space. These items are roughly .5KB each, with _most_ of the memory being native (in the GDI+ object).
 
-    private static PenCache PenCache => s_penCache ??= new PenCache(softLimit: 30, hardLimit: 40);
-    private static SolidBrushCache BrushCache => s_brushCache ??= new SolidBrushCache(softLimit: 30, hardLimit: 40);
+    private static PenCache PenCache => s_penCache ??= new(softLimit: 30, hardLimit: 40);
+    private static SolidBrushCache BrushCache => s_brushCache ??= new(softLimit: 30, hardLimit: 40);
 
     private static PenCache.Scope GetPenScope(Color color)
     {
@@ -38,7 +38,7 @@ internal static class GdiPlusCache
             }
         }
 
-        return PenCache.GetEntry(color);
+        return PenCache.GetEntry(color).CreateScope();
     }
 
     private static SolidBrushCache.Scope GetSolidBrushScope(Color color)
@@ -55,39 +55,28 @@ internal static class GdiPlusCache
             }
         }
 
-        return BrushCache.GetEntry(color);
+        return BrushCache.GetEntry(color).CreateScope();
     }
 
     /// <summary>
     ///  Returns a cached <see cref="Pen"/>. Use in a using and assign to var.
     /// </summary>
     /// <remarks>
-    ///  Correct: using var pen = GdiPlusCache.GetCachedPen(Color.Blue);
-    ///  Incorrect (LEAKS): using Pen pen = GdiPlusCache.GetCachedPen(Color.Blue);
+    ///  <para>
+    ///   Correct: using var pen = GdiPlusCache.GetCachedPen(Color.Blue);
+    ///   Incorrect (LEAKS): using Pen pen = GdiPlusCache.GetCachedPen(Color.Blue);
+    ///  </para>
+    ///  <para>
+    ///   Debug builds track proper disposal.
+    ///  </para>
     /// </remarks>
     internal static PenCache.Scope GetCachedPenScope(this Color color) => GetPenScope(color);
 
-    /// <summary>
-    ///  Returns a cached <see cref="Pen"/>. Use in a using and assign to var.
-    /// </summary>
-    /// <remarks>
-    ///  Correct: using var pen = GdiPlusCache.GetCachedPen(Color.Blue);
-    ///  Incorrect (LEAKS): using Pen pen = GdiPlusCache.GetCachedPen(Color.Blue);
-    ///
-    ///  Debug builds track proper disposal.
-    /// </remarks>
+    /// <inheritdoc cref="GetCachedPenScope(Color)"/>
     internal static PenCache.Scope GetCachedPenScope(this Color color, int width)
         => width == 1 ? GetPenScope(color) : new PenCache.Scope(new Pen(color, width));
 
-    /// <summary>
-    ///  Returns a cached <see cref="SolidBrush"/>. Use in a using and assign to var.
-    /// </summary>
-    /// <remarks>
-    ///  Correct: using var pen = GdiPlusCache.GetCachedSolidBrush(Color.Blue);
-    ///  Incorrect (LEAKS): using Pen pen = GdiPlusCache.GetCachedSolidBrush(Color.Blue);
-    ///
-    ///  Debug builds track proper disposal.
-    /// </remarks>
+    /// <inheritdoc cref="GetCachedPenScope(Color)"/>
     internal static SolidBrushCache.Scope GetCachedSolidBrushScope(this Color color) => GetSolidBrushScope(color);
 
     private static Brush? BrushFromKnownColor(KnownColor color) => color switch

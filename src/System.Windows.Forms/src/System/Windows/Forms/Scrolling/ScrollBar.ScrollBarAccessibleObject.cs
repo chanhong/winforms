@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Drawing;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
 
@@ -73,6 +72,8 @@ public partial class ScrollBar
             };
         }
 
+        private protected override bool IsInternal => true;
+
         public override int GetChildCount()
             => this.IsOwnerHandleCreated(out ScrollBar? _)
                 ? ArePageButtonsDisplayed
@@ -141,7 +142,7 @@ public partial class ScrollBar
                 UIA_PROPERTY_ID.UIA_ControlTypePropertyId when
                     this.GetOwnerAccessibleRole() == AccessibleRole.Default
                     => (VARIANT)(int)UIA_CONTROLTYPE_ID.UIA_ScrollBarControlTypeId,
-                UIA_PROPERTY_ID.UIA_HasKeyboardFocusPropertyId => (VARIANT)(this.TryGetOwnerAs(out ScrollBar? owner) ? owner.Focused : false),
+                UIA_PROPERTY_ID.UIA_HasKeyboardFocusPropertyId => (VARIANT)(this.TryGetOwnerAs(out ScrollBar? owner) && owner.Focused),
                 UIA_PROPERTY_ID.UIA_RangeValueValuePropertyId => (VARIANT)RangeValue,
                 UIA_PROPERTY_ID.UIA_RangeValueIsReadOnlyPropertyId => (VARIANT)IsReadOnly,
                 UIA_PROPERTY_ID.UIA_RangeValueLargeChangePropertyId => (VARIANT)LargeChange,

@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Drawing;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
 
@@ -9,7 +8,7 @@ namespace System.Windows.Forms;
 
 public partial class LinkLabel
 {
-    internal class LinkLabelAccessibleObject : LabelAccessibleObject
+    internal sealed class LinkLabelAccessibleObject : LabelAccessibleObject
     {
         private int[]? _runtimeId;
 
@@ -18,7 +17,7 @@ public partial class LinkLabel
         }
 
         internal override IRawElementProviderFragment.Interface? ElementProviderFromPoint(double x, double y)
-            => !this.IsOwnerHandleCreated(out LinkLabel? owner)
+            => !this.IsOwnerHandleCreated(out LinkLabel? _)
                 ? base.ElementProviderFromPoint(x, y)
                 : HitTest((int)x, (int)y) ?? base.ElementProviderFromPoint(x, y);
 
@@ -38,15 +37,12 @@ public partial class LinkLabel
 
         internal override IRawElementProviderFragmentRoot.Interface FragmentRoot => this;
 
-        public override AccessibleObject? GetChild(int index)
-        {
-            if (this.TryGetOwnerAs(out LinkLabel? owner) && index >= 0 && index < GetChildCount())
-            {
-                return owner.Links[index].AccessibleObject;
-            }
+        public override AccessibleObject? GetChild(int index) =>
+            this.TryGetOwnerAs(out LinkLabel? owner) && index >= 0 && index < GetChildCount()
+                ? owner.Links[index].AccessibleObject
+                : null;
 
-            return null;
-        }
+        private protected override bool IsInternal => true;
 
         public override int GetChildCount() => this.TryGetOwnerAs(out LinkLabel? owner) ? owner.Links.Count : 0;
 

@@ -12,7 +12,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Ctor_ListViewItem()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         Assert.Empty(collection);
     }
@@ -26,9 +26,9 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IList_GetProperties_ReturnsExpected()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.False(collection.IsFixedSize);
         Assert.False(collection.IsReadOnly);
         Assert.True(collection.IsSynchronized);
@@ -38,7 +38,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Item_GetValidIndex_ReturnsExpected()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
 
         var subItem = new ListViewItem.ListViewSubItem();
@@ -51,7 +51,7 @@ public class ListViewSubItemCollectionTests
     [InlineData(1)]
     public void ListViewSubItemCollection_Item_GetInvalidIndex_ThrowsArgumentOutOfRangeException(int index)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item)
         {
             new ListViewItem.ListViewSubItem()
@@ -62,7 +62,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Item_SetValidIndex_GetReturnsExpected()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item)
         {
             new ListViewItem.ListViewSubItem()
@@ -78,7 +78,7 @@ public class ListViewSubItemCollectionTests
     [InlineData(1)]
     public void ListViewSubItemCollection_Item_SetInvalidIndex_ThrowsArgumentOutOfRangeException(int index)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item)
         {
             new ListViewItem.ListViewSubItem()
@@ -89,7 +89,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Item_SetNull_ThrowsArgumentNullException()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item)
         {
             new ListViewItem.ListViewSubItem()
@@ -100,7 +100,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IListItem_GetValidIndex_ReturnsExpected()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
 
         var subItem = new ListViewItem.ListViewSubItem();
@@ -113,7 +113,7 @@ public class ListViewSubItemCollectionTests
     [InlineData(1)]
     public void ListViewSubItemCollection_IListItem_GetInvalidIndex_ThrowsArgumentOutOfRangeException(int index)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item)
         {
             new ListViewItem.ListViewSubItem()
@@ -124,7 +124,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IListItem_SetValidIndex_GetReturnsExpected()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item)
         {
             new ListViewItem.ListViewSubItem()
@@ -140,7 +140,7 @@ public class ListViewSubItemCollectionTests
     [InlineData(1)]
     public void ListViewSubItemCollection_IListItem_SetInvalidIndex_ThrowsArgumentOutOfRangeException(int index)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item)
         {
             new ListViewItem.ListViewSubItem()
@@ -153,7 +153,7 @@ public class ListViewSubItemCollectionTests
     [InlineData("text")]
     public void ListViewSubItemCollection_IList_SetInvalidValue_ThrowsArgumentException(object value)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
         Assert.Throws<ArgumentException>("value", () => collection[0] = value);
     }
@@ -168,7 +168,7 @@ public class ListViewSubItemCollectionTests
     [InlineData("TEXT", 1)]
     public void ListViewSubItemCollection_Item_GetString_ReturnsExpected(string key, int expectedIndex)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem1 = new ListViewItem.ListViewSubItem();
         var subItem2 = new ListViewItem.ListViewSubItem
@@ -184,7 +184,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Add_ListViewSubItem_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
@@ -195,7 +195,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Add_ManyItems_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         for (int i = 0; i < 4096; i++)
         {
@@ -210,7 +210,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Add_ListViewSubItemExists_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
@@ -224,10 +224,9 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Add_ListViewSubItemExistsInOtherCollection_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
 
-        var otherItem = new ListViewItem();
         var otherCollection = new ListViewItem.ListViewSubItemCollection(item);
 
         var subItem = new ListViewItem.ListViewSubItem();
@@ -243,7 +242,7 @@ public class ListViewSubItemCollectionTests
     [NormalizedStringData]
     public void ListViewSubItemCollection_Add_String_Success(string text, string expectedText)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item)
         {
             text
@@ -264,7 +263,7 @@ public class ListViewSubItemCollectionTests
     [MemberData(nameof(Add_String_Color_Color_Font_TestData))]
     public void ListViewSubItemCollection_Add_String_Color_Color_Font_Success(string text, Color foreColor, Color backColor, Font font, Color expectedForeColor, Color expectedBackColor, string expectedText)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item)
         {
             { text, foreColor, backColor, font }
@@ -280,7 +279,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Add_NullItem_ThrowsArgumentNullException()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         Assert.Throws<ArgumentNullException>("item", () => collection.Add((ListViewItem.ListViewSubItem)null));
     }
@@ -288,7 +287,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IListAdd_ListViewSubItem_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
@@ -301,7 +300,7 @@ public class ListViewSubItemCollectionTests
     [InlineData("text")]
     public void ListViewSubItemCollection_IListAdd_NotListViewSubItem_ThrowsArgumentException(object value)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
         Assert.Throws<ArgumentException>("item", () => collection.Add(value));
     }
@@ -309,7 +308,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_AddRange_ListViewSubItemArray_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem1 = new ListViewItem.ListViewSubItem(null, "text1");
         var subItem2 = new ListViewItem.ListViewSubItem(null, "text2");
@@ -324,7 +323,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_AddRange_LargeListViewSubItemArrayWithItems_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem1 = new ListViewItem.ListViewSubItem(null, "text1");
         var subItem2 = new ListViewItem.ListViewSubItem(null, "text2");
@@ -343,7 +342,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_AddRange_LargeListViewSubItemArrayWithoutItems_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem1 = new ListViewItem.ListViewSubItem(null, "text1");
         var subItem2 = new ListViewItem.ListViewSubItem(null, "text2");
@@ -373,9 +372,9 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_AddRange_StringArray_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
-        var items = new string[] { "text1", null, "text2" };
+        string[] items = ["text1", null, "text2"];
         collection.AddRange(items);
 
         Assert.Equal(2, collection.Count);
@@ -394,9 +393,9 @@ public class ListViewSubItemCollectionTests
     [MemberData(nameof(AddRange_StringArrayWithStyles_TestData))]
     public void ListViewSubItemCollection_AddRange_StringArrayWithStyles_Success(Color foreColor, Color backColor, Font font, Color expectedForeColor, Color expectedBackColor)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
-        var items = new string[] { "text1", null, "text2" };
+        string[] items = ["text1", null, "text2"];
         collection.AddRange(items, foreColor, backColor, font);
 
         Assert.Equal(2, collection.Count);
@@ -413,7 +412,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_AddRange_NullList_ThrowsArgumentNullException()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         Assert.Throws<ArgumentNullException>("items", () => collection.AddRange((ListViewItem.ListViewSubItem[])null));
         Assert.Throws<ArgumentNullException>("items", () => collection.AddRange((string[])null));
@@ -423,7 +422,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Clear_Invoke_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
@@ -441,7 +440,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Clear_Empty_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
 
         collection.Clear();
@@ -451,7 +450,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Contains_Invoke_ReturnsExpected()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
@@ -464,7 +463,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Contains_Empty_ReturnsFalse()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
 
         Assert.False(collection.Contains(new ListViewItem.ListViewSubItem()));
@@ -481,7 +480,7 @@ public class ListViewSubItemCollectionTests
     [InlineData("TEXT", true)]
     public void ListViewSubItemCollection_ContainsKey_Invoke_ReturnsExpected(string key, bool expected)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem1 = new ListViewItem.ListViewSubItem();
         var subItem2 = new ListViewItem.ListViewSubItem
@@ -497,7 +496,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_ContainsKey_Empty_ReturnsFalse()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
 
         Assert.False(collection.ContainsKey("text"));
@@ -507,7 +506,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IListContains_Invoke_ReturnsExpected()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
@@ -521,7 +520,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IListContains_Empty_ReturnsFalse()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
 
         Assert.False(collection.Contains(new ListViewItem.ListViewSubItem()));
@@ -532,7 +531,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IndexOf_Invoke_ReturnsExpected()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
@@ -545,7 +544,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IndexOf_Empty_ReturnsFalse()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
 
         Assert.Equal(-1, collection.IndexOf(new ListViewItem.ListViewSubItem()));
@@ -562,7 +561,7 @@ public class ListViewSubItemCollectionTests
     [InlineData("TEXT", 1)]
     public void ListViewSubItemCollection_IndexOfKey_Invoke_ReturnsExpected(string key, int expected)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem1 = new ListViewItem.ListViewSubItem();
         var subItem2 = new ListViewItem.ListViewSubItem
@@ -574,7 +573,7 @@ public class ListViewSubItemCollectionTests
 
         Assert.Equal(expected, collection.IndexOfKey(key));
 
-        // Call again to validate caching behaviour.
+        // Call again to validate caching behavior.
         Assert.Equal(expected, collection.IndexOfKey(key));
         Assert.Equal(-1, collection.IndexOfKey("noSuchKey"));
     }
@@ -582,7 +581,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IndexOfKey_Empty_ReturnsFalse()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
 
         Assert.Equal(-1, collection.IndexOfKey("text"));
@@ -592,7 +591,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IListIndexOf_Invoke_ReturnsExpected()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
@@ -606,7 +605,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IListIndexOf_Empty_ReturnsMinusOne()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
 
         Assert.Equal(-1, collection.IndexOf(new ListViewItem.ListViewSubItem()));
@@ -617,7 +616,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Insert_ListViewSubItem_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(new ListViewItem.ListViewSubItem());
@@ -630,7 +629,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Insert_ManyItems_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         for (int i = 0; i < 4096; i++)
         {
@@ -645,7 +644,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Insert_NullItem_ThrowsArgumentNullException()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item)
         {
             new ListViewItem.ListViewSubItem()
@@ -658,7 +657,7 @@ public class ListViewSubItemCollectionTests
     [InlineData(1)]
     public void ListViewSubItemCollection_Insert_InvalidIndex_ThrowsArgumentOutOfRangeException(int index)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(index, null));
     }
@@ -666,7 +665,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IListInsert_ListViewSubItem_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(new ListViewItem.ListViewSubItem());
@@ -681,7 +680,7 @@ public class ListViewSubItemCollectionTests
     [InlineData("text")]
     public void ListViewSubItemCollection_IListInsert_InvalidItem_ThrowsArgumentException(object value)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
         Assert.Throws<ArgumentException>("item", () => collection.Insert(0, value));
     }
@@ -691,7 +690,7 @@ public class ListViewSubItemCollectionTests
     [InlineData(1)]
     public void ListViewSubItemCollection_IListInsert_InvalidIndex_ThrowsArgumentOutOfRangeException(int index)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(index, new ListViewItem.ListViewSubItem()));
     }
@@ -699,7 +698,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_Remove_ListViewSubItem_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
@@ -721,7 +720,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_IListRemove_ListViewSubItem_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
@@ -741,7 +740,7 @@ public class ListViewSubItemCollectionTests
     [InlineData("text")]
     public void ListViewSubItemCollection_IListRemove_InvalidItem_Nop(object value)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
@@ -753,7 +752,7 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_RemoveAt_ValidIndex_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem1 = new ListViewItem.ListViewSubItem();
         var subItem2 = new ListViewItem.ListViewSubItem();
@@ -802,7 +801,7 @@ public class ListViewSubItemCollectionTests
     [InlineData(2)]
     public void ListViewSubItemCollection_RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException(int index)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item)
         {
             new ListViewItem.ListViewSubItem()
@@ -815,7 +814,7 @@ public class ListViewSubItemCollectionTests
     [InlineData(1)]
     public void ListViewSubItemCollection_RemoveAt_InvalidIndexEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(index));
     }
@@ -830,7 +829,7 @@ public class ListViewSubItemCollectionTests
     [InlineData("TEXT", 0)]
     public void ListViewSubItemCollection_RemoveByKey_Invoke_Success(string key, int expectedCount)
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         var collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem
         {
@@ -853,24 +852,24 @@ public class ListViewSubItemCollectionTests
     [Fact]
     public void ListViewSubItemCollection_CopyTo_NonEmpty_Success()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
         var subItem = new ListViewItem.ListViewSubItem();
         collection.Add(subItem);
 
-        var array = new object[] { 1, 2, 3 };
+        object[] array = [1, 2, 3];
         collection.CopyTo(array, 1);
-        Assert.Equal(new object[] { 1, subItem, 3 }, array);
+        Assert.Equal([1, subItem, 3], array);
     }
 
     [Fact]
     public void ListViewSubItemCollection_CopyTo_Empty_Nop()
     {
-        var item = new ListViewItem();
+        ListViewItem item = new();
         IList collection = new ListViewItem.ListViewSubItemCollection(item);
-        var array = new object[] { 1, 2, 3 };
+        object[] array = [1, 2, 3];
         collection.CopyTo(array, 0);
-        Assert.Equal(new object[] { 1, 2, 3 }, array);
+        Assert.Equal([1, 2, 3], array);
     }
 
     [WinFormsFact]
@@ -916,7 +915,7 @@ public class ListViewSubItemCollectionTests
         Assert.Null(subItem1._owner);
         Assert.Null(subItem2._owner);
 
-        listViewItem.SubItems.AddRange(new ListViewItem.ListViewSubItem[] { subItem1, subItem2 });
+        listViewItem.SubItems.AddRange([subItem1, subItem2]);
 
         Assert.Same(listViewItem, subItem1._owner);
         Assert.Same(listViewItem, subItem2._owner);
@@ -927,7 +926,7 @@ public class ListViewSubItemCollectionTests
     {
         ListViewItem listViewItem = new();
 
-        listViewItem.SubItems.AddRange(new string[] { "Test 1", "Test 2" });
+        listViewItem.SubItems.AddRange(["Test 1", "Test 2"]);
 
         Assert.Same(listViewItem, listViewItem.SubItems[1]._owner);
         Assert.Same(listViewItem, listViewItem.SubItems[2]._owner);
@@ -938,7 +937,7 @@ public class ListViewSubItemCollectionTests
     {
         ListViewItem listViewItem = new();
 
-        listViewItem.SubItems.AddRange(new string[] { "Test 1", "Test 2" }, Color.White, Color.Black, SystemFonts.MenuFont);
+        listViewItem.SubItems.AddRange(["Test 1", "Test 2"], Color.White, Color.Black, SystemFonts.MenuFont);
 
         Assert.Same(listViewItem, listViewItem.SubItems[1]._owner);
         Assert.Same(listViewItem, listViewItem.SubItems[2]._owner);
@@ -1112,7 +1111,7 @@ public class ListViewSubItemCollectionTests
         ListViewItem listViewItem = new("Test 1");
         ListViewItem.ListViewSubItem oldSubItem = listViewItem.SubItems[0];
         oldSubItem.Name = "Test 1";
-        ListViewItem.ListViewSubItem subItem = new(listViewItem, "Test 2") { Name = "Test 2"  };
+        ListViewItem.ListViewSubItem subItem = new(listViewItem, "Test 2") { Name = "Test 2" };
         listViewItem.SubItems.Add(subItem);
 
         Assert.Same(listViewItem, subItem._owner);

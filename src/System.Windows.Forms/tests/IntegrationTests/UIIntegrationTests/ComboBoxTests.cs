@@ -13,17 +13,17 @@ public class ComboBoxTests : ControlTestBase
     }
 
     [WinFormsFact]
-    public async Task ComboBoxTest_ChangeAutoCompleteSource_DoesntThrowAsync()
+    public async Task ComboBoxTest_ChangeAutoCompleteSource_DoesNotThrowAsync()
     {
         await RunSingleControlTestAsync<ComboBox>((form, comboBox) =>
         {
             // Test case captured from here.
             // https://github.com/dotnet/winforms/issues/6953
-            comboBox.AutoCompleteCustomSource.AddRange(new[]
-            {
+            comboBox.AutoCompleteCustomSource.AddRange(
+            [
                 "_sss",
                 "_sss"
-            });
+            ]);
             comboBox.AutoCompleteSource = AutoCompleteSource.CustomSource;
             comboBox.AutoCompleteSource = AutoCompleteSource.CustomSource;
             comboBox.AutoCompleteMode = AutoCompleteMode.Suggest;

@@ -52,7 +52,7 @@ internal partial class OleDragDropHandler
                         _serializationStream = new MemoryStream();
 #pragma warning disable SYSLIB0011 // Type or member is obsolete
                         new BinaryFormatter().Serialize(_serializationStream, sd);
-#pragma warning restore SYSLIB0011 // Type or member is obsolete
+#pragma warning restore SYSLIB0011
                         _serializationStream.Seek(0, SeekOrigin.Begin);
                     }
                 }
@@ -70,7 +70,7 @@ internal partial class OleDragDropHandler
                     Deserialize(null, false);
                 }
 
-                return (object[]?)_components?.Clone() ?? Array.Empty<object>();
+                return (object[]?)_components?.Clone() ?? [];
             }
         }
 
@@ -80,7 +80,7 @@ internal partial class OleDragDropHandler
         private CfCodeToolboxItem NestedToolboxItem => _toolboxItemData ??= new CfCodeToolboxItem(GetData(DataFormat));
 
         /// <summary>
-        ///  Used to retrieve the selection for a copy.  The default implementation
+        ///  Used to retrieve the selection for a copy. The default implementation
         ///  retrieves the current selection.
         /// </summary>
         private object[] GetComponentList(object[] components)
@@ -99,7 +99,7 @@ internal partial class OleDragDropHandler
             IDesignerHost? host = _serviceProvider.GetService<IDesignerHost>();
             if (host is not null)
             {
-                List<IComponent> copySelection = new();
+                List<IComponent> copySelection = [];
                 foreach (IComponent comp in selectedComponents)
                 {
                     copySelection.Add(comp);
@@ -139,8 +139,12 @@ internal partial class OleDragDropHandler
             {
                 SerializationStream!.Seek(0, SeekOrigin.Begin);
 #pragma warning disable SYSLIB0011 // Type or member is obsolete
-                return new BinaryFormatter().Deserialize(SerializationStream);
-#pragma warning restore SYSLIB0011 // Type or member is obsolete
+#pragma warning disable CA2300 // Do not use insecure deserializer BinaryFormatter
+#pragma warning disable CA2301 // Ensure BinaryFormatter.Binder is set before calling BinaryFormatter.Deserialize
+                return new BinaryFormatter().Deserialize(SerializationStream); // CodeQL[SM03722, SM04191] : The operation is essential for the design experience when users are running their own designers they have created. This cannot be achieved without BinaryFormatter
+#pragma warning restore CA2301
+#pragma warning restore CA2300
+#pragma warning restore SYSLIB0011
             }
             else if (format.Equals(NestedToolboxItemFormat))
             {
@@ -196,7 +200,7 @@ internal partial class OleDragDropHandler
         /// </summary>
         public string[] GetFormats()
         {
-            return new string[] { NestedToolboxItemFormat, DataFormat, DataFormats.Serializable, ExtraInfoFormat };
+            return [NestedToolboxItemFormat, DataFormat, DataFormats.Serializable, ExtraInfoFormat];
         }
 
         [MemberNotNull(nameof(_components))]
@@ -211,8 +215,12 @@ internal partial class OleDragDropHandler
             try
             {
 #pragma warning disable SYSLIB0011 // Type or member is obsolete
-                _serializationData ??= new BinaryFormatter().Deserialize(SerializationStream!);
-#pragma warning restore SYSLIB0011 // Type or member is obsolete
+#pragma warning disable CA2300 // Do not use insecure deserializer BinaryFormatter
+#pragma warning disable CA2301 // Ensure BinaryFormatter.Binder is set before calling BinaryFormatter.Deserialize
+                _serializationData ??= new BinaryFormatter().Deserialize(SerializationStream!); // CodeQL[SM03722, SM04191] : The operation is essential for the design experience when users are running their own designers they have created. This cannot be achieved without BinaryFormatter
+#pragma warning restore CA2301
+#pragma warning restore CA2300
+#pragma warning restore SYSLIB0011
 
                 if (removeCurrentComponents && _components is not null)
                 {
@@ -254,7 +262,7 @@ internal partial class OleDragDropHandler
                     }
                 }
 
-                _components = topComponents.ToArray();
+                _components = [.. topComponents];
             }
             finally
             {
@@ -277,7 +285,7 @@ internal partial class OleDragDropHandler
         /// </summary>
         public void SetData(string format, object? data)
         {
-            throw new Exception(SR.DragDropSetDataError);
+            throw new InvalidOperationException(SR.DragDropSetDataError);
         }
 
         /// <summary>

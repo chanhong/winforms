@@ -14,17 +14,17 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_Count_GetEmptyWithHandle_ReturnsExpected()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         Assert.NotEqual(IntPtr.Zero, list.Handle);
 
         ImageList.ImageCollection collection = list.Images;
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
     }
 
     [WinFormsFact]
     public void ImageCollection_Empty_GetEmptyWithHandle_ReturnsExpected()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         Assert.NotEqual(IntPtr.Zero, list.Handle);
 
         ImageList.ImageCollection collection = list.Images;
@@ -34,7 +34,7 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_IsReadOnly_IsReadOnly_ReturnsExpected()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.False(collection.IsReadOnly);
     }
@@ -43,15 +43,15 @@ public class ImageCollectionTests
     [EnumData<ColorDepth>]
     public void ImageCollection_Item_GetInt_InvokeWithoutHandle_ReturnsExpected(ColorDepth depth)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             ColorDepth = depth
         };
-        using var image1bppIndexed = new Bitmap(1, 2, PixelFormat.Format24bppRgb);
-        using var image24bppRGb = new Bitmap(3, 4, PixelFormat.Format24bppRgb);
-        using var image32bppRGb = new Bitmap(5, 6, PixelFormat.Format32bppRgb);
-        using var image32bppArgbNotTransparent = new Bitmap(7, 8, PixelFormat.Format32bppArgb);
-        using var image32bppArgbTransparent = new Bitmap(9, 10, PixelFormat.Format32bppArgb);
+        using Bitmap image1bppIndexed = new(1, 2, PixelFormat.Format24bppRgb);
+        using Bitmap image24bppRGb = new(3, 4, PixelFormat.Format24bppRgb);
+        using Bitmap image32bppRGb = new(5, 6, PixelFormat.Format32bppRgb);
+        using Bitmap image32bppArgbNotTransparent = new(7, 8, PixelFormat.Format32bppArgb);
+        using Bitmap image32bppArgbTransparent = new(9, 10, PixelFormat.Format32bppArgb);
         image32bppArgbTransparent.SetPixel(0, 0, Color.FromArgb(0x12, 0x34, 0x56, 0x78));
         list.Images.Add(image1bppIndexed);
         list.Images.Add(image24bppRGb);
@@ -91,15 +91,15 @@ public class ImageCollectionTests
     [EnumData<ColorDepth>]
     public void ImageCollection_Item_GetInt_InvokeWithHandle_ReturnsExpected(ColorDepth depth)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             ColorDepth = depth
         };
-        using var image1bppIndexed = new Bitmap(1, 2, PixelFormat.Format24bppRgb);
-        using var image24bppRGb = new Bitmap(3, 4, PixelFormat.Format24bppRgb);
-        using var image32bppRGb = new Bitmap(5, 6, PixelFormat.Format32bppRgb);
-        using var image32bppArgbNotTransparent = new Bitmap(7, 8, PixelFormat.Format32bppArgb);
-        using var image32bppArgbTransparent = new Bitmap(9, 10, PixelFormat.Format32bppArgb);
+        using Bitmap image1bppIndexed = new(1, 2, PixelFormat.Format24bppRgb);
+        using Bitmap image24bppRGb = new(3, 4, PixelFormat.Format24bppRgb);
+        using Bitmap image32bppRGb = new(5, 6, PixelFormat.Format32bppRgb);
+        using Bitmap image32bppArgbNotTransparent = new(7, 8, PixelFormat.Format32bppArgb);
+        using Bitmap image32bppArgbTransparent = new(9, 10, PixelFormat.Format32bppArgb);
         image32bppArgbTransparent.SetPixel(0, 0, Color.FromArgb(0x12, 0x34, 0x56, 0x78));
         list.Images.Add(image1bppIndexed);
         list.Images.Add(image24bppRGb);
@@ -160,37 +160,39 @@ public class ImageCollectionTests
         // SetPixel is not supported for images with indexed pixel formats.
         yield return new object[] { PixelFormat.Format1bppIndexed, Color.Empty, Color.Empty, Color.FromArgb(255, 0, 0, 0) };
 
-        // The actual colours are visually close to the originals, but no colour fidelity
+        // The actual colors are visually close to the originals, but no color fidelity.
+        // Comment the following data out due to ActiveIssue "https://github.com/dotnet/winforms/issues/11226".
         if (ArchitectureDetection.Is64bit)
         {
             yield return new object[] { PixelFormat.Format24bppRgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(255, 50, 75, 100) };
             yield return new object[] { PixelFormat.Format32bppRgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(255, 50, 75, 100) };
-            yield return new object[] { PixelFormat.Format32bppArgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(200, 67, 81, 96) };
-            yield return new object[] { PixelFormat.Format32bppPArgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(200, 67, 81, 96) };
+            // yield return new object[] { PixelFormat.Format32bppArgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(200, 67, 81, 96) };
+            // yield return new object[] { PixelFormat.Format32bppPArgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(200, 67, 81, 96) };
         }
         else
         {
-            yield return new object[] { PixelFormat.Format24bppRgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(255, 49, 74, 99) };
-            yield return new object[] { PixelFormat.Format32bppRgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(255, 49, 74, 99) };
-            yield return new object[] { PixelFormat.Format32bppArgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(200, 66, 81, 95) };
-            yield return new object[] { PixelFormat.Format32bppPArgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(200, 66, 81, 95) };
+            // yield return new object[] { PixelFormat.Format24bppRgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(255, 49, 74, 99) };
+            // yield return new object[] { PixelFormat.Format32bppRgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(255, 49, 74, 99) };
+            // yield return new object[] { PixelFormat.Format32bppArgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(200, 66, 81, 95) };
+            // yield return new object[] { PixelFormat.Format32bppPArgb, Color.Red, Color.FromArgb(200, 50, 75, 100), Color.FromArgb(200, 66, 81, 95) };
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/winforms/issues/11226")]
     [WinFormsTheory]
     [MemberData(nameof(ImageCollection_VisualStyles_on_Item_Get32bppColorDepth_TestData))]
     public void ImageCollection_Item_Get32bppColorDepth_Success(PixelFormat pixelFormat, Color pixel00Color, Color givenPixel10Color, Color expectedPixel10Color)
     {
-        using var imageFiller1 = new Bitmap(16, 16, pixelFormat);
-        using var imageFiller2 = new Bitmap(16, 16, pixelFormat);
+        using Bitmap imageFiller1 = new(16, 16, pixelFormat);
+        using Bitmap imageFiller2 = new(16, 16, pixelFormat);
 
-        using var image = new Bitmap(16, 16, pixelFormat);
+        using Bitmap image = new(16, 16, pixelFormat);
         if (pixel00Color != Color.Empty)
             image.SetPixel(0, 0, pixel00Color);
         if (givenPixel10Color != Color.Empty)
             image.SetPixel(1, 0, givenPixel10Color);
 
-        using var list = new ImageList
+        using ImageList list = new()
         {
             ColorDepth = ColorDepth.Depth32Bit
         };
@@ -199,7 +201,7 @@ public class ImageCollectionTests
         collection.Add(image);
         collection.Add(imageFiller2);
 
-        // By getting a bitmap from the ImageListcollection ImageList will clone the original bitmap.
+        // By getting a bitmap from the ImageListCollection ImageList will clone the original bitmap.
         // Assert that the new bitmap contains all the same properties.
 
         Bitmap resultImage = Assert.IsType<Bitmap>(collection[1]);
@@ -216,7 +218,7 @@ public class ImageCollectionTests
     [InlineData(1)]
     public void ImageCollection_Item_GetIntInvalidIndexEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[index]);
     }
@@ -226,8 +228,8 @@ public class ImageCollectionTests
     [InlineData(1)]
     public void ImageCollection_Item_GetIntInvalidIndexNotEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList();
+        using Bitmap image = new(10, 10);
+        using ImageList list = new();
         list.Images.Add(image);
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[index]);
@@ -242,7 +244,7 @@ public class ImageCollectionTests
             yield return new object[] { transparentColor, new Bitmap(32, 32) };
             yield return new object[] { transparentColor, new Bitmap(256, 256) };
 
-            var bitmap = new Bitmap(16, 16);
+            Bitmap bitmap = new(16, 16);
             bitmap.SetPixel(0, 0, Color.FromArgb(0x12, 0x34, 0x56, 0x78));
             yield return new object[] { transparentColor, bitmap };
 
@@ -254,8 +256,8 @@ public class ImageCollectionTests
     [MemberData(nameof(Item_Set_TestData))]
     public void ImageCollection_Item_Set_GetReturnsExpected(Color transparentColor, Image value)
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList
+        using Bitmap image = new(10, 10);
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
@@ -275,8 +277,8 @@ public class ImageCollectionTests
     [MemberData(nameof(Item_Set_TestData))]
     public void ImageCollection_Item_SetWithHandle_GetReturnsExpected(Color transparentColor, Image value)
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList
+        using Bitmap image = new(10, 10);
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
@@ -298,7 +300,7 @@ public class ImageCollectionTests
     [InlineData(1)]
     public void ImageCollection_Item_SetInvalidIndexEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[index] = null);
     }
@@ -308,8 +310,8 @@ public class ImageCollectionTests
     [InlineData(1)]
     public void ImageCollection_Item_SetInvalidIndexNotEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList();
+        using Bitmap image = new(10, 10);
+        using ImageList list = new();
         list.Images.Add(image);
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[index] = null);
@@ -318,8 +320,8 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_Item_SetNullValue_ThrowsArgumentNullException()
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList();
+        using Bitmap image = new(10, 10);
+        using ImageList list = new();
         list.Images.Add(image);
         ImageList.ImageCollection collection = list.Images;
 
@@ -329,12 +331,12 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_Item_SetNonBitmapValue_ThrowsArgumentException()
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList();
+        using Bitmap image = new(10, 10);
+        using ImageList list = new();
         list.Images.Add(image);
         ImageList.ImageCollection collection = list.Images;
 
-        using var value = new Metafile("bitmaps/telescope_01.wmf");
+        using Metafile value = new("bitmaps/telescope_01.wmf");
         Assert.Throws<ArgumentException>(() => collection[0] = value);
     }
 
@@ -344,10 +346,10 @@ public class ImageCollectionTests
     [InlineData("name2", 1)]
     public void ImageCollection_Item_GetStringValidKey_ReturnsExpected(string key, int expectedIndex)
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
         image1.SetPixel(0, 0, Color.Red);
-        using var image2 = new Bitmap(3, 4);
+        using Bitmap image2 = new(3, 4);
         image2.SetPixel(0, 0, Color.Blue);
         ImageList.ImageCollection collection = list.Images;
         collection.Add("name1", image1);
@@ -376,9 +378,9 @@ public class ImageCollectionTests
     [InlineData("abcdef")]
     public void ImageCollection_Item_GetStringNoSuchKey_ReturnsNull(string key)
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
-        using var image2 = new Bitmap(3, 4);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
+        using Bitmap image2 = new(3, 4);
         ImageList.ImageCollection collection = list.Images;
         collection.Add("name1", image1);
         collection.Add("name2", image2);
@@ -394,7 +396,7 @@ public class ImageCollectionTests
     [StringWithNullData]
     public void ImageCollection_Item_GetStringEmpty_ReturnsNull(string key)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
 
         Assert.Null(collection[key]);
@@ -407,7 +409,7 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_Keys_GetEmpty_ReturnsExpected()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.Empty(collection.Keys);
         Assert.NotSame(collection.Keys, collection.Keys);
@@ -422,7 +424,7 @@ public class ImageCollectionTests
             yield return new object[] { transparentColor, new Bitmap(32, 32) };
             yield return new object[] { transparentColor, new Bitmap(256, 256) };
 
-            var bitmap = new Bitmap(16, 16);
+            Bitmap bitmap = new(16, 16);
             bitmap.SetPixel(0, 0, Color.FromArgb(0x12, 0x34, 0x56, 0x78));
             yield return new object[] { transparentColor, bitmap };
 
@@ -434,14 +436,14 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Image_TestData))]
     public void ImageCollection_Add_InvokeStringImage_Success(Color transparentColor, Image value)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
         ImageList.ImageCollection collection = list.Images;
 
         collection.Add("Key1", value);
-        Assert.Equal(1, collection.Count);
+        collection.Count.Should().Be(1);
         Assert.False(collection.Empty);
         Assert.Equal("Key1", Assert.Single(collection.Keys));
         Assert.False(list.HandleCreated);
@@ -478,7 +480,7 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Image_TestData))]
     public void ImageCollection_Add_InvokeStringImageWithHandle_Success(Color transparentColor, Image value)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
@@ -486,7 +488,7 @@ public class ImageCollectionTests
         Assert.NotEqual(IntPtr.Zero, list.Handle);
 
         collection.Add("Key1", value);
-        Assert.Equal(1, collection.Count);
+        Assert.Single(collection);
         Assert.False(collection.Empty);
         Assert.Equal("Key1", Assert.Single(collection.Keys));
         Assert.True(list.HandleCreated);
@@ -523,14 +525,14 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Image_TestData))]
     public void ImageCollection_Add_InvokeImage_Success(Color transparentColor, Image value)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
         ImageList.ImageCollection collection = list.Images;
 
         collection.Add(value);
-        Assert.Equal(1, collection.Count);
+        collection.Count.Should().Be(1);
         Assert.False(collection.Empty);
         Assert.Equal(string.Empty, Assert.Single(collection.Keys));
         Assert.False(list.HandleCreated);
@@ -547,7 +549,7 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Image_TestData))]
     public void ImageCollection_Add_InvokeImageWithHandle_Success(Color transparentColor, Image value)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
@@ -555,7 +557,7 @@ public class ImageCollectionTests
         Assert.NotEqual(IntPtr.Zero, list.Handle);
 
         collection.Add(value);
-        Assert.Equal(1, collection.Count);
+        Assert.Single(collection);
         Assert.False(collection.Empty);
         Assert.Equal(string.Empty, Assert.Single(collection.Keys));
         Assert.True(list.HandleCreated);
@@ -579,7 +581,7 @@ public class ImageCollectionTests
                 yield return new object[] { listTransparentColor, new Bitmap(32, 32), transparentColor };
                 yield return new object[] { listTransparentColor, new Bitmap(256, 256), transparentColor };
 
-                var bitmap = new Bitmap(16, 16);
+                Bitmap bitmap = new(16, 16);
                 bitmap.SetPixel(0, 0, Color.FromArgb(0x12, 0x34, 0x56, 0x78));
                 yield return new object[] { listTransparentColor, bitmap, transparentColor };
 
@@ -592,14 +594,14 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Image_Color_TestData))]
     public void ImageCollection_Add_InvokeImageColor_Success(Color listTransparentColor, Image value, Color transparentColor)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = listTransparentColor
         };
         ImageList.ImageCollection collection = list.Images;
 
         collection.Add(value, transparentColor);
-        Assert.Equal(1, collection.Count);
+        collection.Count.Should().Be(1);
         Assert.False(collection.Empty);
         Assert.Equal(string.Empty, Assert.Single(collection.Keys));
         Assert.False(list.HandleCreated);
@@ -616,7 +618,7 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Image_Color_TestData))]
     public void ImageCollection_Add_InvokeImageColorWithHandle_Success(Color listTransparentColor, Image value, Color transparentColor)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = listTransparentColor
         };
@@ -624,7 +626,7 @@ public class ImageCollectionTests
         Assert.NotEqual(IntPtr.Zero, list.Handle);
 
         collection.Add(value, transparentColor);
-        Assert.Equal(1, collection.Count);
+        Assert.Single(collection);
         Assert.False(collection.Empty);
         Assert.Equal(string.Empty, Assert.Single(collection.Keys));
         Assert.True(list.HandleCreated);
@@ -649,14 +651,14 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Icon_TestData))]
     public void ImageCollection_Add_InvokeStringIcon_Success(Color transparentColor, Icon value)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
         ImageList.ImageCollection collection = list.Images;
 
         collection.Add("Key1", value);
-        Assert.Equal(1, collection.Count);
+        collection.Count.Should().Be(1);
         Assert.False(collection.Empty);
         Assert.Equal("Key1", Assert.Single(collection.Keys));
         Assert.False(list.HandleCreated);
@@ -693,7 +695,7 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Icon_TestData))]
     public void ImageCollection_Add_InvokeStringIconWithHandle_Success(Color transparentColor, Icon value)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
@@ -701,7 +703,7 @@ public class ImageCollectionTests
         Assert.NotEqual(IntPtr.Zero, list.Handle);
 
         collection.Add("Key1", value);
-        Assert.Equal(1, collection.Count);
+        Assert.Single(collection);
         Assert.False(collection.Empty);
         Assert.Equal("Key1", Assert.Single(collection.Keys));
         Assert.True(list.HandleCreated);
@@ -738,14 +740,14 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Icon_TestData))]
     public void ImageCollection_Add_InvokeIcon_Success(Color transparentColor, Icon value)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
         ImageList.ImageCollection collection = list.Images;
 
         collection.Add(value);
-        Assert.Equal(1, collection.Count);
+        collection.Count.Should().Be(1);
         Assert.False(collection.Empty);
         Assert.Equal(string.Empty, Assert.Single(collection.Keys));
         Assert.False(list.HandleCreated);
@@ -762,7 +764,7 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Icon_TestData))]
     public void ImageCollection_Add_InvokeIconWithHandle_Success(Color transparentColor, Icon value)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
@@ -770,7 +772,7 @@ public class ImageCollectionTests
         Assert.NotEqual(IntPtr.Zero, list.Handle);
 
         collection.Add(value);
-        Assert.Equal(1, collection.Count);
+        Assert.Single(collection);
         Assert.False(collection.Empty);
         Assert.Equal(string.Empty, Assert.Single(collection.Keys));
         Assert.True(list.HandleCreated);
@@ -786,10 +788,10 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_Add_NullImage_ThrowsArgumentNullException()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<ArgumentNullException>("value", () => collection.Add((Image)null));
-        Assert.Throws<ArgumentNullException>("value", () => collection.Add((Image)null, Color.Transparent));
+        Assert.Throws<ArgumentNullException>("value", () => collection.Add(null, Color.Transparent));
         Assert.Throws<InvalidOperationException>(() => collection.Add("Key", (Image)null));
         Assert.Throws<ArgumentNullException>("value", () => collection.Add((Icon)null));
         Assert.Throws<InvalidOperationException>(() => collection.Add("Key", (Icon)null));
@@ -798,10 +800,10 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_Add_NonBitmapImage_ThrowsArgumentException()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
 
-        using var value = new Metafile("bitmaps/telescope_01.wmf");
+        using Metafile value = new("bitmaps/telescope_01.wmf");
         Assert.Throws<ArgumentException>(() => collection.Add(value));
         Assert.Throws<ArgumentException>(() => collection.Add(value, Color.Transparent));
         Assert.Throws<ArgumentException>(() => collection.Add("Key", value));
@@ -811,13 +813,13 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Image_TestData))]
     public void ImageCollection_AddRange_Invoke_Success(Color transparentColor, Image value)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
         ImageList.ImageCollection collection = list.Images;
 
-        collection.AddRange(new Image[] { value, value });
+        collection.AddRange([value, value]);
         Assert.Equal(2, collection.Count);
         Assert.False(collection.Empty);
         Assert.Equal(new string[] { string.Empty, string.Empty }, collection.Keys.Cast<string>());
@@ -835,14 +837,14 @@ public class ImageCollectionTests
     [MemberData(nameof(Add_Image_TestData))]
     public void ImageCollection_AddRange_InvokeWithHandle_Success(Color transparentColor, Image value)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
         ImageList.ImageCollection collection = list.Images;
         Assert.NotEqual(IntPtr.Zero, list.Handle);
 
-        collection.AddRange(new Image[] { value, value });
+        collection.AddRange([value, value]);
         Assert.Equal(2, collection.Count);
         Assert.False(collection.Empty);
         Assert.Equal(new string[] { string.Empty, string.Empty }, collection.Keys.Cast<string>());
@@ -859,7 +861,7 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_AddRange_NullImages_ThrowsArgumentNullException()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<ArgumentNullException>("images", () => collection.AddRange(null));
     }
@@ -867,19 +869,19 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_AddRange_NullImageInImages_ThrowsArgumentNullException()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
-        Assert.Throws<ArgumentNullException>("value", () => collection.AddRange(new Image[] { null }));
+        Assert.Throws<ArgumentNullException>("value", () => collection.AddRange([null]));
     }
 
     [WinFormsFact]
     public void ImageCollection_AddRange_NonBitmapImage_ThrowsArgumentException()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
 
-        using var value = new Metafile("bitmaps/telescope_01.wmf");
-        Assert.Throws<ArgumentException>(() => collection.AddRange(new Image[] { value }));
+        using Metafile value = new("bitmaps/telescope_01.wmf");
+        Assert.Throws<ArgumentException>(() => collection.AddRange([value]));
     }
 
     public static IEnumerable<object[]> AddStrip_TestData()
@@ -890,7 +892,7 @@ public class ImageCollectionTests
             yield return new object[] { transparentColor, new Bitmap(32, 16), 2 };
             yield return new object[] { transparentColor, new Bitmap(256, 16), 16 };
 
-            var bitmap = new Bitmap(16, 16);
+            Bitmap bitmap = new(16, 16);
             bitmap.SetPixel(0, 0, Color.FromArgb(0x12, 0x34, 0x56, 0x78));
             yield return new object[] { transparentColor, bitmap, 1 };
         }
@@ -900,7 +902,7 @@ public class ImageCollectionTests
     [MemberData(nameof(AddStrip_TestData))]
     public void ImageCollection_AddStrip_Invoke_Success(Color transparentColor, Image value, int expectedCount)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
@@ -917,7 +919,7 @@ public class ImageCollectionTests
     [MemberData(nameof(AddStrip_TestData))]
     public void ImageCollection_AddStrip_InvokeWithHandle_Success(Color transparentColor, Image value, int expectedCount)
     {
-        using var list = new ImageList
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
@@ -934,7 +936,7 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_AddStrip_NullValue_ThrowsArgumentNullException()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<ArgumentNullException>("value", () => collection.AddStrip(null));
     }
@@ -945,9 +947,9 @@ public class ImageCollectionTests
     [InlineData(17)]
     public void ImageCollection_AddStrip_InvalidWidth_ThrowsArgumentException(int width)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
-        using var image = new Bitmap(width, 16);
+        using Bitmap image = new(width, 16);
         Assert.Throws<ArgumentException>("value", () => collection.AddStrip(image));
     }
 
@@ -957,28 +959,28 @@ public class ImageCollectionTests
     [InlineData(17)]
     public void ImageCollection_AddStrip_InvalidHeight_ThrowsArgumentException(int width)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
-        using var image = new Bitmap(16, width);
+        using Bitmap image = new(16, width);
         Assert.Throws<ArgumentException>("value", () => collection.AddStrip(image));
     }
 
     [WinFormsFact]
     public void ImageCollection_Clear_InvokeEmpty_Nop()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
 
         collection.Clear();
         Assert.Empty(collection);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
         Assert.False(list.HandleCreated);
 
         // Clear again.
         collection.Clear();
         Assert.Empty(collection);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
         Assert.False(list.HandleCreated);
     }
@@ -986,21 +988,21 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_Clear_InvokeNotEmpty_Success()
     {
-        using var list = new ImageList();
-        using var image = new Bitmap(10, 10);
+        using ImageList list = new();
+        using Bitmap image = new(10, 10);
         ImageList.ImageCollection collection = list.Images;
         collection.Add(image);
 
         collection.Clear();
         Assert.Empty(collection);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
         Assert.False(list.HandleCreated);
 
         // Clear again.
         collection.Clear();
         Assert.Empty(collection);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
         Assert.False(list.HandleCreated);
     }
@@ -1008,20 +1010,20 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_Clear_InvokeEmptyWithHandle_Nop()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.NotEqual(IntPtr.Zero, list.Handle);
 
         collection.Clear();
         Assert.Empty(collection);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
         Assert.True(list.HandleCreated);
 
         // Clear again.
         collection.Clear();
         Assert.Empty(collection);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
         Assert.True(list.HandleCreated);
     }
@@ -1029,22 +1031,22 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_Clear_InvokeNotEmptyWithHandle_Success()
     {
-        using var list = new ImageList();
-        using var image = new Bitmap(10, 10);
+        using ImageList list = new();
+        using Bitmap image = new(10, 10);
         ImageList.ImageCollection collection = list.Images;
         collection.Add(image);
         Assert.NotEqual(IntPtr.Zero, list.Handle);
 
         collection.Clear();
         Assert.Empty(collection);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
         Assert.True(list.HandleCreated);
 
         // Clear again.
         collection.Clear();
         Assert.Empty(collection);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
         Assert.True(list.HandleCreated);
     }
@@ -1060,7 +1062,7 @@ public class ImageCollectionTests
     [MemberData(nameof(Contains_TestData))]
     public void ImageCollection_Contains_ThrowsNotSupportedException(Image image)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<NotSupportedException>(() => collection.Contains(image));
     }
@@ -1077,10 +1079,10 @@ public class ImageCollectionTests
     [InlineData("abcdef", false)]
     public void ImageCollection_ContainsKey_InvokeNotEmpty_ReturnsExpected(string key, bool expected)
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
-        using var image2 = new Bitmap(3, 4);
-        using var image3 = new Bitmap(5, 6);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
+        using Bitmap image2 = new(3, 4);
+        using Bitmap image3 = new(5, 6);
         ImageList.ImageCollection collection = list.Images;
         collection.Add("name1", image1);
         collection.Add("name2", image2);
@@ -1097,7 +1099,7 @@ public class ImageCollectionTests
     [StringWithNullData]
     public void ImageCollection_ContainsKey_InvokeEmpty_ReturnsExpected(string key)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
 
         Assert.False(collection.ContainsKey(key));
@@ -1110,7 +1112,7 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageListCollection_GetEnumerator_InvokeWithoutHandleEmpty_Success()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
 
         IEnumerator enumerator = collection.GetEnumerator();
@@ -1129,7 +1131,7 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageListCollection_GetEnumerator_InvokeWithHandleEmpty_Success()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.NotEqual(IntPtr.Zero, list.Handle);
 
@@ -1149,10 +1151,10 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageListCollection_GetEnumerator_InvokeWithoutHandleNotEmpty_Success()
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
         image1.SetPixel(0, 0, Color.Red);
-        using var image2 = new Bitmap(3, 4);
+        using Bitmap image2 = new(3, 4);
         image2.SetPixel(0, 0, Color.Blue);
         ImageList.ImageCollection collection = list.Images;
         collection.Add(image1);
@@ -1186,10 +1188,10 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageListCollection_GetEnumerator_InvokeWithHandleNotEmpty_Success()
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
         image1.SetPixel(0, 0, Color.Red);
-        using var image2 = new Bitmap(3, 4);
+        using Bitmap image2 = new(3, 4);
         image2.SetPixel(0, 0, Color.Blue);
         ImageList.ImageCollection collection = list.Images;
         collection.Add(image1);
@@ -1233,10 +1235,10 @@ public class ImageCollectionTests
     [InlineData("abcdef", -1)]
     public void ImageCollection_IndexOfKey_InvokeNotEmpty_ReturnsExpected(string key, int expected)
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
-        using var image2 = new Bitmap(3, 4);
-        using var image3 = new Bitmap(5, 6);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
+        using Bitmap image2 = new(3, 4);
+        using Bitmap image3 = new(5, 6);
         ImageList.ImageCollection collection = list.Images;
         collection.Add("name1", image1);
         collection.Add("name2", image2);
@@ -1253,7 +1255,7 @@ public class ImageCollectionTests
     [StringWithNullData]
     public void ImageCollection_IndexOfKey_InvokeEmpty_ReturnsExpected(string key)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
 
         Assert.Equal(-1, collection.IndexOfKey(key));
@@ -1274,7 +1276,7 @@ public class ImageCollectionTests
     [MemberData(nameof(IndexOf_TestData))]
     public void ImageCollection_IndexOf_ThrowsNotSupportedException(Image image)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<NotSupportedException>(() => collection.IndexOf(image));
     }
@@ -1290,7 +1292,7 @@ public class ImageCollectionTests
     [MemberData(nameof(Remove_TestData))]
     public void ImageCollection_Remove_Invoke_ThrowsNotSupportedException(Image image)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<NotSupportedException>(() => collection.Remove(image));
     }
@@ -1298,12 +1300,12 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageListCollection_RemoveAt_InvokeWithoutHandleNotEmpty_Success()
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
         image1.SetPixel(0, 0, Color.Red);
-        using var image2 = new Bitmap(3, 4);
+        using Bitmap image2 = new(3, 4);
         image2.SetPixel(0, 0, Color.Blue);
-        using var image3 = new Bitmap(3, 4);
+        using Bitmap image3 = new(3, 4);
         image3.SetPixel(0, 0, Color.Yellow);
         ImageList.ImageCollection collection = list.Images;
         collection.Add(image1);
@@ -1319,25 +1321,25 @@ public class ImageCollectionTests
         // Remove first.
         collection.RemoveAt(0);
         Assert.True(list.HandleCreated);
-        Assert.Equal(1, collection.Count);
+        Assert.Single(collection);
         Assert.False(collection.Empty);
 
         // Remove last.
         collection.RemoveAt(0);
         Assert.True(list.HandleCreated);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
     }
 
     [WinFormsFact]
     public void ImageListCollection_RemoveAt_InvokeWithHandleNotEmpty_Success()
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
         image1.SetPixel(0, 0, Color.Red);
-        using var image2 = new Bitmap(3, 4);
+        using Bitmap image2 = new(3, 4);
         image2.SetPixel(0, 0, Color.Blue);
-        using var image3 = new Bitmap(3, 4);
+        using Bitmap image3 = new(3, 4);
         image3.SetPixel(0, 0, Color.Yellow);
         ImageList.ImageCollection collection = list.Images;
         collection.Add(image1);
@@ -1359,14 +1361,14 @@ public class ImageCollectionTests
         // Remove first.
         collection.RemoveAt(0);
         Assert.True(list.HandleCreated);
-        Assert.Equal(1, collection.Count);
+        Assert.Single(collection);
         Assert.False(collection.Empty);
         Assert.Equal(color3, ((Bitmap)collection[0]).GetPixel(0, 0));
 
         // Remove last.
         collection.RemoveAt(0);
         Assert.True(list.HandleCreated);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
     }
 
@@ -1376,7 +1378,7 @@ public class ImageCollectionTests
     [InlineData(1)]
     public void ImageCollection_RemoveAt_InvalidIndexEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(index));
     }
@@ -1386,8 +1388,8 @@ public class ImageCollectionTests
     [InlineData(1)]
     public void ImageCollection_RemoveAt_InvalidIndexNotEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList();
+        using Bitmap image = new(10, 10);
+        using ImageList list = new();
         list.Images.Add(image);
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(index));
@@ -1396,12 +1398,12 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageListCollection_RemoveByKey_InvokeWithoutHandleNotEmpty_Success()
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
         image1.SetPixel(0, 0, Color.Red);
-        using var image2 = new Bitmap(3, 4);
+        using Bitmap image2 = new(3, 4);
         image2.SetPixel(0, 0, Color.Blue);
-        using var image3 = new Bitmap(3, 4);
+        using Bitmap image3 = new(3, 4);
         image3.SetPixel(0, 0, Color.Yellow);
         ImageList.ImageCollection collection = list.Images;
         collection.Add("image1", image1);
@@ -1423,25 +1425,25 @@ public class ImageCollectionTests
         // Remove first.
         collection.RemoveByKey("image1");
         Assert.True(list.HandleCreated);
-        Assert.Equal(1, collection.Count);
+        Assert.Single(collection);
         Assert.False(collection.Empty);
 
         // Remove last.
         collection.RemoveByKey("IMAGE3");
         Assert.True(list.HandleCreated);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
     }
 
     [WinFormsFact]
     public void ImageListCollection_RemoveByKey_InvokeWithHandleNotEmpty_Success()
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
         image1.SetPixel(0, 0, Color.Red);
-        using var image2 = new Bitmap(3, 4);
+        using Bitmap image2 = new(3, 4);
         image2.SetPixel(0, 0, Color.Blue);
-        using var image3 = new Bitmap(3, 4);
+        using Bitmap image3 = new(3, 4);
         image3.SetPixel(0, 0, Color.Yellow);
         ImageList.ImageCollection collection = list.Images;
         collection.Add("image1", image1);
@@ -1471,14 +1473,14 @@ public class ImageCollectionTests
         // Remove first.
         collection.RemoveByKey("image1");
         Assert.True(list.HandleCreated);
-        Assert.Equal(1, collection.Count);
+        Assert.Single(collection);
         Assert.False(collection.Empty);
         Assert.Equal(color3, ((Bitmap)collection[0]).GetPixel(0, 0));
 
         // Remove last.
         collection.RemoveByKey("IMAGE3");
         Assert.True(list.HandleCreated);
-        Assert.Equal(0, collection.Count);
+        Assert.Empty(collection);
         Assert.True(collection.Empty);
     }
 
@@ -1488,12 +1490,12 @@ public class ImageCollectionTests
     [InlineData("NoSuchImage")]
     public void ImageListCollection_RemoveByKey_InvokeNoSuchKey_Nop(string key)
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
         image1.SetPixel(0, 0, Color.Red);
-        using var image2 = new Bitmap(3, 4);
+        using Bitmap image2 = new(3, 4);
         image2.SetPixel(0, 0, Color.Blue);
-        using var image3 = new Bitmap(3, 4);
+        using Bitmap image3 = new(3, 4);
         image3.SetPixel(0, 0, Color.Yellow);
         ImageList.ImageCollection collection = list.Images;
         collection.Add("image1", image1);
@@ -1537,9 +1539,9 @@ public class ImageCollectionTests
     [MemberData(nameof(SetKeyName_TestData))]
     public void ImageCollection_SetKeyName_InvokeWithoutHandle_Success(int index, string name, string[] expectedKeys)
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
-        using var image2 = new Bitmap(3, 4);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
+        using Bitmap image2 = new(3, 4);
         ImageList.ImageCollection collection = list.Images;
         collection.Add("KeyName", image1);
         collection.Add(image2);
@@ -1558,9 +1560,9 @@ public class ImageCollectionTests
     [MemberData(nameof(SetKeyName_TestData))]
     public void ImageCollection_SetKeyNameWithHandle_InvokeWithoutHandle_Success(int index, string name, string[] expectedKeys)
     {
-        using var list = new ImageList();
-        using var image1 = new Bitmap(1, 2);
-        using var image2 = new Bitmap(3, 4);
+        using ImageList list = new();
+        using Bitmap image1 = new(1, 2);
+        using Bitmap image2 = new(3, 4);
         ImageList.ImageCollection collection = list.Images;
         collection.Add("KeyName", image1);
         collection.Add(image2);
@@ -1582,7 +1584,7 @@ public class ImageCollectionTests
     [InlineData(1)]
     public void ImageCollection_SetKeyName_InvalidIndexEmpty_ThrowsIndexOutOfRangeException(int index)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<IndexOutOfRangeException>(() => collection.SetKeyName(index, "name"));
     }
@@ -1592,8 +1594,8 @@ public class ImageCollectionTests
     [InlineData(1)]
     public void ImageCollection_SetKeyName_InvalidIndexNotEmpty_ThrowsIndexOutOfRangeException(int index)
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList();
+        using Bitmap image = new(10, 10);
+        using ImageList list = new();
         list.Images.Add(image);
         ImageList.ImageCollection collection = list.Images;
         Assert.Throws<IndexOutOfRangeException>(() => collection.SetKeyName(index, "name"));
@@ -1602,7 +1604,7 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_IListIsFixedSize_GetReturnsExpected()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         IList collection = list.Images;
         Assert.False(collection.IsFixedSize);
     }
@@ -1610,7 +1612,7 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_ICollectionIsSynchronized_GetReturnsExpected()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ICollection collection = list.Images;
         Assert.False(collection.IsSynchronized);
     }
@@ -1618,7 +1620,7 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_ICollectionSyncRoot_GetReturnsExpected()
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         ICollection collection = list.Images;
         Assert.Same(collection, collection.SyncRoot);
     }
@@ -1627,8 +1629,8 @@ public class ImageCollectionTests
     [MemberData(nameof(Item_Set_TestData))]
     public void ImageCollection_IListItem_Set_GetReturnsExpected(Color transparentColor, Image value)
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList
+        using Bitmap image = new(10, 10);
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
@@ -1648,8 +1650,8 @@ public class ImageCollectionTests
     [MemberData(nameof(Item_Set_TestData))]
     public void ImageCollection_IListItem_SetWithHandle_GetReturnsExpected(Color transparentColor, Image value)
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList
+        using Bitmap image = new(10, 10);
+        using ImageList list = new()
         {
             TransparentColor = transparentColor
         };
@@ -1671,10 +1673,10 @@ public class ImageCollectionTests
     [InlineData(1)]
     public void ImageCollection_IListItem_SetInvalidIndexEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         IList collection = list.Images;
 
-        using var value = new Bitmap(1, 2);
+        using Bitmap value = new(1, 2);
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[index] = value);
     }
 
@@ -1683,27 +1685,27 @@ public class ImageCollectionTests
     [InlineData(1)]
     public void ImageCollection_IListItem_SetInvalidIndexNotEmpty_ThrowsArgumentOutOfRangeException(int index)
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList();
+        using Bitmap image = new(10, 10);
+        using ImageList list = new();
         list.Images.Add(image);
         IList collection = list.Images;
 
-        using var value = new Bitmap(1, 2);
+        using Bitmap value = new(1, 2);
         Assert.Throws<ArgumentOutOfRangeException>("index", () => collection[index] = image);
     }
 
     public static IEnumerable<object[]> IListItem_SetNonImageValue_TestData()
     {
         yield return new object[] { null };
-        yield return new object[] { new object() };
+        yield return new object[] { new() };
     }
 
     [WinFormsTheory]
     [MemberData(nameof(IListItem_SetNonImageValue_TestData))]
     public void ImageCollection_IListItem_SetNullValue_ThrowsArgumentException(object value)
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList();
+        using Bitmap image = new(10, 10);
+        using ImageList list = new();
         list.Images.Add(image);
         IList collection = list.Images;
 
@@ -1713,12 +1715,12 @@ public class ImageCollectionTests
     [WinFormsFact]
     public void ImageCollection_IListItem_SetNonBitmapValue_ThrowsArgumentException()
     {
-        using var image = new Bitmap(10, 10);
-        using var list = new ImageList();
+        using Bitmap image = new(10, 10);
+        using ImageList list = new();
         list.Images.Add(image);
         IList collection = list.Images;
 
-        using var value = new Metafile("bitmaps/telescope_01.wmf");
+        using Metafile value = new("bitmaps/telescope_01.wmf");
         Assert.Throws<ArgumentException>(() => collection[0] = value);
     }
 
@@ -1732,7 +1734,7 @@ public class ImageCollectionTests
     [MemberData(nameof(IListContains_Image_TestData))]
     public void ImageCollection_IListContains_InvokeImage_ThrowsNotSupportedException(object value)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         IList collection = list.Images;
         Assert.Throws<NotSupportedException>(() => collection.Contains(value));
     }
@@ -1740,7 +1742,7 @@ public class ImageCollectionTests
     public static IEnumerable<object[]> IListContains_NotImage_TestData()
     {
         yield return new object[] { null };
-        yield return new object[] { new object() };
+        yield return new object[] { new() };
         yield return new object[] { new Icon("bitmaps/10x16_one_entry_32bit.ico") };
     }
 
@@ -1748,7 +1750,7 @@ public class ImageCollectionTests
     [MemberData(nameof(IListContains_NotImage_TestData))]
     public void ImageCollection_IListContains_InvokeNotImage_ReturnsFalse(object value)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         IList collection = list.Images;
         Assert.False(collection.Contains(value));
     }
@@ -1763,7 +1765,7 @@ public class ImageCollectionTests
     [MemberData(nameof(IListIndexOf_Image_TestData))]
     public void ImageCollection_IListIndexOf_InvokeImage_ThrowsNotSupportedException(object value)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         IList collection = list.Images;
         Assert.Throws<NotSupportedException>(() => collection.IndexOf(value));
     }
@@ -1771,7 +1773,7 @@ public class ImageCollectionTests
     public static IEnumerable<object[]> IListIndexOf_NotImage_TestData()
     {
         yield return new object[] { null };
-        yield return new object[] { new object() };
+        yield return new object[] { new() };
         yield return new object[] { new Icon("bitmaps/10x16_one_entry_32bit.ico") };
     }
 
@@ -1779,7 +1781,7 @@ public class ImageCollectionTests
     [MemberData(nameof(IListIndexOf_NotImage_TestData))]
     public void ImageCollection_IListIndexOf_InvokeNotImage_ReturnsExpected(object value)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         IList collection = list.Images;
         Assert.Equal(-1, collection.IndexOf(value));
     }
@@ -1789,7 +1791,7 @@ public class ImageCollectionTests
         foreach (int index in new int[] { -1, 0, 1 })
         {
             yield return new object[] { index, null };
-            yield return new object[] { index, new object() };
+            yield return new object[] { index, new() };
             yield return new object[] { index, new Bitmap(10, 10) };
             yield return new object[] { index, new Metafile("bitmaps/telescope_01.wmf") };
             yield return new object[] { index, new Icon("bitmaps/10x16_one_entry_32bit.ico") };
@@ -1800,7 +1802,7 @@ public class ImageCollectionTests
     [MemberData(nameof(IListInsert_TestData))]
     public void ImageCollection_IListInsert_Invoke_ThrowsNotSupportedException(int index, object value)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         IList collection = list.Images;
         Assert.Throws<NotSupportedException>(() => collection.Insert(index, value));
     }
@@ -1815,7 +1817,7 @@ public class ImageCollectionTests
     [MemberData(nameof(IListRemove_Image_TestData))]
     public void ImageCollection_IListRemove_InvokeImage_ThrowsNotSupportedException(object value)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         IList collection = list.Images;
         Assert.Throws<NotSupportedException>(() => collection.Remove(value));
     }
@@ -1823,7 +1825,7 @@ public class ImageCollectionTests
     public static IEnumerable<object[]> IListRemove_NotImage_TestData()
     {
         yield return new object[] { null };
-        yield return new object[] { new object() };
+        yield return new object[] { new() };
         yield return new object[] { new Icon("bitmaps/10x16_one_entry_32bit.ico") };
     }
 
@@ -1831,7 +1833,7 @@ public class ImageCollectionTests
     [MemberData(nameof(IListRemove_NotImage_TestData))]
     public void ImageCollection_IListRemove_InvokeNotImage_Nop(object value)
     {
-        using var list = new ImageList();
+        using ImageList list = new();
         IList collection = list.Images;
         collection.Remove(value);
     }

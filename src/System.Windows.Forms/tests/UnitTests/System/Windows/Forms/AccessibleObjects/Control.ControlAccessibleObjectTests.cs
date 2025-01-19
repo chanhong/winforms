@@ -14,8 +14,8 @@ public class Control_ControlAccessibleObjectTests
     // These controls return an empty "AccessKey" property because they have a ControlStyles.UseTextForAccessibility flag
     // with "false" value, which prohibits the use of text to create the AccessKey.
     // This behavior is consistent with .NET Framework 4.7.2
-    private static Type[] s_controlsNotUseTextForAccessibility = new Type[]
-    {
+    private static readonly Type[] s_controlsNotUseTextForAccessibility =
+    [
         typeof(CheckedListBox),
         typeof(ComboBox),
         typeof(DataGridViewComboBoxEditingControl),
@@ -34,20 +34,20 @@ public class Control_ControlAccessibleObjectTests
         typeof(TreeView),
         typeof(VScrollBar),
         typeof(WebBrowser),
-    };
+    ];
 
     // These controls have special conditions for setting the Text property.
     // Please check if the control type isn't contained here in cases where text change is needed
     // otherwise an error can be thrown.
-    private static Type[] s_controlsIgnoringTextChangesForTests = new Type[]
-    {
+    private static readonly Type[] s_controlsIgnoringTextChangesForTests =
+    [
         typeof(DateTimePicker), typeof(WebBrowser)
-    };
+    ];
 
     [WinFormsFact]
     public void ControlAccessibleObject_Ctor_ControlWithoutHandle()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.False(ownerControl.IsHandleCreated);
 
@@ -71,7 +71,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_Ctor_ControlWithHandle()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         Assert.NotEqual(IntPtr.Zero, ownerControl.Handle);
         int invalidatedCallCount = 0;
         ownerControl.Invalidated += (sender, e) => invalidatedCallCount++;
@@ -112,7 +112,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_created_via_owner_ensure_handle_set_when_owner_created()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
 
         AccessibleObject accessibleObject = ownerControl.AccessibilityObject;
         Assert.IsType<Control.ControlAccessibleObject>(accessibleObject);
@@ -131,7 +131,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_created_via_owner_ensure_handle_reset_when_owner_destroyed()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         ownerControl.CreateControl();
 
         AccessibleObject accessibleObject = ownerControl.AccessibilityObject;
@@ -150,7 +150,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_created_detached_owner_ensure_handle_set_when_owner_created()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.False(ownerControl.IsHandleCreated);
         Assert.Equal(IntPtr.Zero, accessibleObject.HandleInternal);
@@ -165,7 +165,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_created_detached_owner_ensure_handle_reset_when_owner_destroyed()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var controlAccessibleObject = new Control.ControlAccessibleObject(ownerControl);
         ownerControl.CreateControl();
 
@@ -184,7 +184,7 @@ public class Control_ControlAccessibleObjectTests
     [StringWithNullData]
     public void ControlAccessibleObject_DefaultAction_GetWithAccessibleDefaultActionDescription_ReturnsExpected(string accessibleDefaultActionDescription)
     {
-        using var ownerControl = new Control
+        using Control ownerControl = new()
         {
             AccessibleDefaultActionDescription = accessibleDefaultActionDescription
         };
@@ -196,7 +196,7 @@ public class Control_ControlAccessibleObjectTests
     [StringWithNullData]
     public void ControlAccessibleObject_GetPropertyValue_LegacyIAccessibleDefaultActionPropertyId_ReturnsExpected(string accessibleDefaultActionDescription)
     {
-        using var ownerControl = new Control
+        using Control ownerControl = new()
         {
             AccessibleDefaultActionDescription = accessibleDefaultActionDescription
         };
@@ -215,7 +215,7 @@ public class Control_ControlAccessibleObjectTests
     [StringWithNullData]
     public void ControlAccessibleObject_Description_GetWithAccessibleDescription_ReturnsExpected(string accessibleDescription)
     {
-        using var ownerControl = new Control
+        using Control ownerControl = new()
         {
             AccessibleDescription = accessibleDescription
         };
@@ -223,30 +223,44 @@ public class Control_ControlAccessibleObjectTests
         Assert.Equal(accessibleDescription, accessibleObject.Description);
     }
 
-    public static IEnumerable<object[]> Handle_Set_TestData()
+    public static TheoryData<object> Handle_Set_DataTestData()
     {
-        yield return new object[] { IntPtr.Zero };
-        yield return new object[] { (IntPtr)(-1) };
-        yield return new object[] { (IntPtr)1 };
-        yield return new object[] { (IntPtr)250 };
-        yield return new object[] { new Control().Handle };
+        return
+        [
+            null,
+            IntPtr.Zero,
+            new IntPtr(-1),
+            new IntPtr(1),
+            new IntPtr(250)
+        ];
     }
 
     [WinFormsTheory]
-    [MemberData(nameof(Handle_Set_TestData))]
-    public void ControlAccessibleObject_Handle_Set_Success(IntPtr value)
+    [MemberData(nameof(Handle_Set_DataTestData))]
+    public void ControlAccessibleObject_Handle_Set_Success(object testValue)
     {
-        using var ownerControl = new Control();
+        IntPtr value;
+        if (testValue is null)
+        {
+            using Control control = new();
+            value = control.Handle;
+        }
+        else
+        {
+            value = (IntPtr)testValue;
+        }
+
+        using Control ownerControl = new();
         ownerControl.CreateControl();
         Assert.True(ownerControl.IsHandleCreated);
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.True(ownerControl.IsHandleCreated);
 
-        // Set empty.
+        // Set value.
         accessibleObject.Handle = value;
         Assert.Equal(value, accessibleObject.Handle);
 
-        // Set same.
+        // Set same value.
         accessibleObject.Handle = value;
         Assert.Equal(value, accessibleObject.Handle);
     }
@@ -255,7 +269,7 @@ public class Control_ControlAccessibleObjectTests
     [StringWithNullData]
     public void ControlAccessibleObject_Help_GetWithQueryAccessibilityHelpEvent_Success(string result)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
 
         int callCount = 0;
@@ -312,7 +326,7 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(KeyboardShortcut_Get_TestData))]
     public void ControlAccessibleObject_KeyboardShortcut_Get_ReturnsExpected(bool useTextForAccessibility, string text, string expected)
     {
-        using var ownerControl = new SubControl
+        using SubControl ownerControl = new()
         {
             Text = text
         };
@@ -325,8 +339,8 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(KeyboardShortcut_Get_TestData))]
     public void ControlAccessibleObject_KeyboardShortcut_GetWithNonContainerControlParent_IgnoresParent(bool useTextForAccessibility, string text, string expected)
     {
-        using var parent = new Control();
-        using var ownerControl = new SubControl
+        using Control parent = new();
+        using SubControl ownerControl = new()
         {
             Parent = parent,
             Text = text
@@ -340,8 +354,8 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(KeyboardShortcut_Get_TestData))]
     public void ControlAccessibleObject_KeyboardShortcut_GetWithContainerControlParentWithoutPreviousLabel_IgnoresParent(bool useTextForAccessibility, string text, string expected)
     {
-        using var parent = new ContainerControl();
-        using var ownerControl = new SubControl
+        using ContainerControl parent = new();
+        using SubControl ownerControl = new()
         {
             Parent = parent,
             Text = text
@@ -400,18 +414,18 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(KeyboardShortcut_GetWithPreviousLabel_TestData))]
     public void ControlAccessibleObject_KeyboardShortcut_GetWithContainerControlParentWithPreviousLabel_ReturnsExpected(bool useTextForAccessibility, string text, string labelText, string expected)
     {
-        using var parent = new ContainerControl();
-        using var previousLabel = new Label
+        using ContainerControl parent = new();
+        using Label previousLabel = new()
         {
             Parent = parent,
             Text = labelText
         };
-        using var previousControl = new Control
+        using Control previousControl = new()
         {
             Parent = parent,
             Visible = false
         };
-        using var ownerControl = new SubControl
+        using SubControl ownerControl = new()
         {
             Parent = parent,
             Text = text
@@ -425,18 +439,18 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(KeyboardShortcut_GetWithPreviousLabel_TestData))]
     public void ControlAccessibleObject_KeyboardShortcut_GetWithPreviousNotTabStopAndPreviousLabel_IgnoresPreviousLabel(bool useTextForAccessibility, string text, string labelText, string expected)
     {
-        using var parent = new ContainerControl();
-        using var previousLabel = new Label
+        using ContainerControl parent = new();
+        using Label previousLabel = new()
         {
             Parent = parent,
             Text = labelText
         };
-        using var previousControl = new Control
+        using Control previousControl = new()
         {
             Parent = parent,
             TabStop = false
         };
-        using var ownerControl = new SubControl
+        using SubControl ownerControl = new()
         {
             Parent = parent,
             Text = text
@@ -450,17 +464,17 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(KeyboardShortcut_Get_TestData))]
     public void ControlAccessibleObject_KeyboardShortcut_GetWithPreviousTabStopVisibleAndPreviousLabel_IgnoresPreviousLabel(bool useTextForAccessibility, string text, string expected)
     {
-        using var parent = new ContainerControl();
-        using var previousLabel = new Label
+        using ContainerControl parent = new();
+        using Label previousLabel = new()
         {
             Parent = parent,
             Text = "LabelText"
         };
-        using var previousControl = new Control
+        using Control previousControl = new()
         {
             Parent = parent
         };
-        using var ownerControl = new SubControl
+        using SubControl ownerControl = new()
         {
             Parent = parent,
             Text = text
@@ -511,7 +525,7 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(Name_Get_TestData))]
     public void ControlAccessibleObject_Name_Get_ReturnsExpected(bool useTextForAccessibility, string accessibleName, string text, string expected)
     {
-        using var ownerControl = new SubControl
+        using SubControl ownerControl = new()
         {
             AccessibleName = accessibleName,
             Text = text
@@ -525,8 +539,8 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(Name_Get_TestData))]
     public void ControlAccessibleObject_Name_GetWithNonContainerControlParent_IgnoresParent(bool useTextForAccessibility, string accessibleName, string text, string expected)
     {
-        using var parent = new Control();
-        using var ownerControl = new SubControl
+        using Control parent = new();
+        using SubControl ownerControl = new()
         {
             Parent = parent,
             AccessibleName = accessibleName,
@@ -541,8 +555,8 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(Name_Get_TestData))]
     public void ControlAccessibleObject_Name_GetWithContainerControlParentEmpty_IgnoresParent(bool useTextForAccessibility, string accessibleName, string text, string expected)
     {
-        using var parent = new ContainerControl();
-        using var ownerControl = new SubControl
+        using ContainerControl parent = new();
+        using SubControl ownerControl = new()
         {
             Parent = parent,
             AccessibleName = accessibleName,
@@ -640,18 +654,18 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(Name_GetWithPreviousLabel_TestData))]
     public void ControlAccessibleObject_Name_GetWithContainerControlParentWithPreviousLabel_ReturnsExpected(bool useTextForAccessibility, string accessibleName, string text, string labelText, string expected)
     {
-        using var parent = new ContainerControl();
-        using var previousLabel = new Label
+        using ContainerControl parent = new();
+        using Label previousLabel = new()
         {
             Parent = parent,
             Text = labelText
         };
-        using var previousControl = new Control
+        using Control previousControl = new()
         {
             Parent = parent,
             Visible = false
         };
-        using var ownerControl = new SubControl
+        using SubControl ownerControl = new()
         {
             Parent = parent,
             AccessibleName = accessibleName,
@@ -666,18 +680,18 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(Name_GetWithPreviousLabel_TestData))]
     public void ControlAccessibleObject_Name_GetWithPreviousNotTabStopAndPreviousLabel_ReturnsExpected(bool useTextForAccessibility, string accessibleName, string text, string labelText, string expected)
     {
-        using var parent = new ContainerControl();
-        using var previousLabel = new Label
+        using ContainerControl parent = new();
+        using Label previousLabel = new()
         {
             Parent = parent,
             Text = labelText
         };
-        using var previousControl = new Control
+        using Control previousControl = new()
         {
             Parent = parent,
             TabStop = false
         };
-        using var ownerControl = new SubControl
+        using SubControl ownerControl = new()
         {
             Parent = parent,
             AccessibleName = accessibleName,
@@ -692,17 +706,17 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(Name_Get_TestData))]
     public void ControlAccessibleObject_Name_GetWithPreviousTabStopVisibleAndPreviousLabel_ReturnsExpected(bool useTextForAccessibility, string accessibleName, string text, string expected)
     {
-        using var parent = new ContainerControl();
-        using var previousLabel = new Label
+        using ContainerControl parent = new();
+        using Label previousLabel = new()
         {
             Parent = parent,
             Text = "LabelText"
         };
-        using var previousControl = new Control
+        using Control previousControl = new()
         {
             Parent = parent
         };
-        using var ownerControl = new SubControl
+        using SubControl ownerControl = new()
         {
             Parent = parent,
             AccessibleName = accessibleName,
@@ -717,10 +731,11 @@ public class Control_ControlAccessibleObjectTests
     [StringWithNullData]
     public void ControlAccessibleObject_Name_Set_GetReturnsExpected(string value)
     {
-        using var ownerControl = new Control();
-        var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
-
-        accessibleObject.Name = value;
+        using Control ownerControl = new();
+        var accessibleObject = new Control.ControlAccessibleObject(ownerControl)
+        {
+            Name = value
+        };
         Assert.Equal(value, accessibleObject.Name);
         Assert.Empty(ownerControl.Name);
         Assert.Equal(value, ownerControl.AccessibleName);
@@ -805,7 +820,7 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(Role_Get_TestData))]
     public void ControlAccessibleObject_Role_GetWithAccessibleRole_ReturnsExpected(AccessibleRole accessibleRole)
     {
-        using var ownerControl = new Control
+        using Control ownerControl = new()
         {
             AccessibleRole = accessibleRole
         };
@@ -817,11 +832,12 @@ public class Control_ControlAccessibleObjectTests
     [StringWithNullData]
     public void ControlAccessibleObject_Value_Set_GetReturnsNull_IfHandleIsCreated(string value)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         ownerControl.CreateControl();
-        var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
-
-        accessibleObject.Value = value;
+        var accessibleObject = new Control.ControlAccessibleObject(ownerControl)
+        {
+            Value = value
+        };
         Assert.Null(accessibleObject.Value);
 
         // Set same.
@@ -834,10 +850,11 @@ public class Control_ControlAccessibleObjectTests
     [StringWithNullData]
     public void ControlAccessibleObject_Value_Set_GetReturnsNull_IfHandleIsNotCreated(string value)
     {
-        using var ownerControl = new Control();
-        var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
-
-        accessibleObject.Value = value;
+        using Control ownerControl = new();
+        var accessibleObject = new Control.ControlAccessibleObject(ownerControl)
+        {
+            Value = value
+        };
         Assert.Equal(string.Empty, accessibleObject.Value);
 
         // Set same.
@@ -849,7 +866,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_DoDefaultAction_InvokeDefault_Nop()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         accessibleObject.DoDefaultAction();
     }
@@ -857,7 +874,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_GetChildCount_InvokeDefault_ReturnsMinusOne()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.Equal(-1, accessibleObject.GetChildCount());
     }
@@ -865,8 +882,8 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_GetChildCount_InvokeWithChildren_ReturnsMinusOne()
     {
-        using var child = new Control();
-        using var ownerControl = new Control();
+        using Control child = new();
+        using Control ownerControl = new();
         ownerControl.Controls.Add(child);
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.Equal(-1, accessibleObject.GetChildCount());
@@ -878,7 +895,7 @@ public class Control_ControlAccessibleObjectTests
     [InlineData(1)]
     public void ControlAccessibleObject_GetChild_InvokeDefault_ReturnsNull(int index)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.Null(accessibleObject.GetChild(index));
     }
@@ -886,7 +903,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_GetFocused_InvokeDefault_ReturnsNull()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.Null(accessibleObject.GetFocused());
     }
@@ -894,7 +911,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_GetHelpTopic_InvokeDefault_ReturnsMinusOne()
     {
-        var accessibleObject = new AccessibleObject();
+        AccessibleObject accessibleObject = new();
         Assert.Equal(-1, accessibleObject.GetHelpTopic(out string fileName));
         Assert.Null(fileName);
     }
@@ -915,7 +932,7 @@ public class Control_ControlAccessibleObjectTests
         bool createControl,
         int expectedResultWithoutHandler)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         if (createControl)
         {
             ownerControl.CreateControl();
@@ -960,7 +977,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_GetSelected_InvokeDefault_ReturnsNull()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.Null(accessibleObject.GetSelected());
     }
@@ -971,7 +988,7 @@ public class Control_ControlAccessibleObjectTests
     [InlineData(1, 2)]
     public void AccessibleObject_HitTest_InvokeDefault_ReturnsNull(int x, int y)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.Null(accessibleObject.HitTest(x, y));
     }
@@ -980,7 +997,7 @@ public class Control_ControlAccessibleObjectTests
     [EnumData<AccessibleNavigation>]
     public void AccessibleObject_Navigate_InvokeDefault_ReturnsNull(AccessibleNavigation navdir)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.Null(accessibleObject.Navigate(navdir));
     }
@@ -989,7 +1006,7 @@ public class Control_ControlAccessibleObjectTests
     [InlineData(AccessibleEvents.Create)]
     public void ControlAccessibleObject_NotifyClients_InvokeAccessibleEvents_Success(AccessibleEvents accEvent)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         accessibleObject.NotifyClients(accEvent);
     }
@@ -1000,7 +1017,7 @@ public class Control_ControlAccessibleObjectTests
     [InlineData(AccessibleEvents.Create, 1)]
     public void ControlAccessibleObject_NotifyClients_InvokeAccessibleEventsInt_Success(AccessibleEvents accEvent, int childID)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         accessibleObject.NotifyClients(accEvent, childID);
     }
@@ -1011,7 +1028,7 @@ public class Control_ControlAccessibleObjectTests
     [InlineData(AccessibleEvents.Create, 2, 1)]
     public void ControlAccessibleObject_NotifyClients_InvokeAccessibleEventsIntInt_Success(AccessibleEvents accEvent, int objectID, int childID)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         accessibleObject.NotifyClients(accEvent, objectID, childID);
     }
@@ -1019,7 +1036,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_RaiseLiveRegionChanged_Invoke_Success()
     {
-        using var ownerControl = new AutomationLiveRegionControl();
+        using AutomationLiveRegionControl ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         accessibleObject.RaiseLiveRegionChanged();
     }
@@ -1027,7 +1044,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_RaiseLiveRegionChanged_InvokeNotIAutomationLiveRegion_ThrowsInvalidOperationException()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.Throws<InvalidOperationException>(() => accessibleObject.RaiseLiveRegionChanged());
     }
@@ -1037,7 +1054,7 @@ public class Control_ControlAccessibleObjectTests
     [InlineData(true)]
     public void ControlAccessibleObject_RaiseAutomationEvent_IsHandleCreatedFlag(bool isHandleCreated)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
 
         Assert.False(ownerControl.IsHandleCreated);
@@ -1056,7 +1073,7 @@ public class Control_ControlAccessibleObjectTests
     [InlineData(true)]
     public void ControlAccessibleObject_RaiseAutomationPropertyChangedEvent_IsHandleCreatedFlag(bool isHandleCreated)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
 
         Assert.False(ownerControl.IsHandleCreated);
@@ -1074,15 +1091,15 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_ToString_Invoke_Success()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         Assert.Equal("ControlAccessibleObject: Owner = System.Windows.Forms.Control", accessibleObject.ToString());
     }
 
     [WinFormsFact]
-    public void ControlAccessibleObject_IAccessibleaccFocus_InvokeDefault_ReturnsNull()
+    public void ControlAccessibleObject_IAccessibleAccFocus_InvokeDefault_ReturnsNull()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         IAccessible iAccessible = accessibleObject;
         Assert.Null(iAccessible.accFocus);
@@ -1095,9 +1112,9 @@ public class Control_ControlAccessibleObjectTests
     [InlineData(false, -1, -2, null)]
     [InlineData(false, 0, 0, null)]
     [InlineData(false, 1, 2, null)]
-    public void AccessibleObject_IAccessibleaccHitTest_InvokeDefault_ReturnsExpectedValue(bool createControl, int x, int y, int? expectedValue)
+    public void AccessibleObject_IAccessibleAccHitTest_InvokeDefault_ReturnsExpectedValue(bool createControl, int x, int y, int? expectedValue)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         if (createControl)
         {
             ownerControl.CreateControl();
@@ -1114,9 +1131,9 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsTheory]
     [InlineData(true)]
     [InlineData(false)]
-    public void ControlAccessibleObject_IAccessibleaccParent_InvokeDefault_ReturnsExpectedValue(bool createControl)
+    public void ControlAccessibleObject_IAccessibleAccParent_InvokeDefault_ReturnsExpectedValue(bool createControl)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         if (createControl)
         {
             ownerControl.CreateControl();
@@ -1131,9 +1148,9 @@ public class Control_ControlAccessibleObjectTests
     }
 
     [WinFormsFact]
-    public void ControlAccessibleObject_IAccessibleaccSelection_InvokeDefault_ReturnsNull()
+    public void ControlAccessibleObject_IAccessibleAccSelection_InvokeDefault_ReturnsNull()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         IAccessible iAccessible = accessibleObject;
         Assert.Null(iAccessible.accSelection);
@@ -1142,18 +1159,18 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsTheory]
     [InlineData(-1)]
     [InlineData(1)]
-    public void ControlAccessibleObject_IAccessibleget_accChild_InvokeNoSuchChild_ReturnsNull(int childID)
+    public void ControlAccessibleObject_IAccessibleGet_accChild_InvokeNoSuchChild_ReturnsNull(int childID)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         IAccessible iAccessible = accessibleObject;
         Assert.Null(iAccessible.get_accChild(childID));
     }
 
     [WinFormsFact]
-    public void ControlAccessibleObject_IAccessibleget_accChildCount_InvokeDefault_ReturnsExpected()
+    public void ControlAccessibleObject_IAccessibleGet_accChildCount_InvokeDefault_ReturnsExpected()
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         IAccessible iAccessible = accessibleObject;
         Assert.Equal(0, iAccessible.accChildCount);
@@ -1162,10 +1179,10 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsTheory]
     [InlineData(true, 1)]
     [InlineData(false, 0)]
-    public void ControlAccessibleObject_IAccessibleget_accChildCount_InvokeWithChildren_ReturnsExpected(bool createControl, int expectedCount)
+    public void ControlAccessibleObject_IAccessibleGet_accChildCount_InvokeWithChildren_ReturnsExpected(bool createControl, int expectedCount)
     {
-        using var child = new Control();
-        using var ownerControl = new Control();
+        using Control child = new();
+        using Control ownerControl = new();
         if (createControl)
         {
             ownerControl.CreateControl();
@@ -1182,18 +1199,18 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsTheory]
     [InlineData(-1)]
     [InlineData(1)]
-    public void ControlAccessibleObject_IAccessibleget_accRole_InvokeNoSuchChild_ReturnsNull(object varChild)
+    public void ControlAccessibleObject_IAccessibleGet_accRole_InvokeNoSuchChild_ReturnsNull(object varChild)
     {
-        using var ownerControl = new Control();
+        using Control ownerControl = new();
         var accessibleObject = new Control.ControlAccessibleObject(ownerControl);
         IAccessible iAccessible = accessibleObject;
         Assert.Null(iAccessible.get_accRole(varChild));
     }
 
     [WinFormsFact]
-    public void ControlAccessibleObject_DoesntSupport_LegacyIAccessiblePattern()
+    public void ControlAccessibleObject_DoesNotSupport_LegacyIAccessiblePattern()
     {
-        using var control = new Control();
+        using Control control = new();
         var accessibleObject = control.AccessibilityObject;
 
         bool expected = control.SupportsUiaProviders;
@@ -1206,7 +1223,7 @@ public class Control_ControlAccessibleObjectTests
     [WinFormsFact]
     public void ControlAccessibleObject_Supports_LegacyIAccessiblePattern_IfOwnerSupportsUia()
     {
-        using var control = new Label();
+        using Label control = new();
         var accessibleObject = new Control.ControlAccessibleObject(control);
 
         Assert.True(control.SupportsUiaProviders);
@@ -1292,7 +1309,7 @@ public class Control_ControlAccessibleObjectTests
         control.AccessibleDescription = "Test Accessible Description";
         AccessibleObject controlAccessibleObject = control.AccessibilityObject;
 
-        var accessibleObjectDescription = controlAccessibleObject.Description;
+        string accessibleObjectDescription = controlAccessibleObject.Description;
 
         Assert.Equal("Test Accessible Description", accessibleObjectDescription);
     }
@@ -1324,7 +1341,9 @@ public class Control_ControlAccessibleObjectTests
         {
             { typeof(DataGridViewTextBoxEditingControl), SR.DataGridView_AccEditingControlAccName },
             { typeof(DateTimePicker), string.Empty },
-            { typeof(PrintPreviewDialog), SR.PrintPreviewDialog_PrintPreview }
+            { typeof(PrintPreviewDialog), SR.PrintPreviewDialog_PrintPreview },
+            { typeof(TextBox), string.Empty},
+            { typeof(MaskedTextBox), string.Empty}
         };
 
         foreach (Type type in ReflectionHelper.GetPublicNotAbstractClasses<Control>())
@@ -1332,7 +1351,7 @@ public class Control_ControlAccessibleObjectTests
             yield return new object[]
             {
                 type,
-                typeDefaultValues.ContainsKey(type) ? typeDefaultValues[type] : null
+                typeDefaultValues.TryGetValue(type, out string value) ? value : null
             };
         }
     }
@@ -1356,7 +1375,7 @@ public class Control_ControlAccessibleObjectTests
         else
         {
             Assert.Equal(VARIANT.Empty, controlAccessibleObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_NamePropertyId));
-        } 
+        }
     }
 
     public static IEnumerable<object[]> ControlAccessibleObject_GetPropertyValue_ControlTypeProperty_ReturnsCorrectValue_TestData()
@@ -1373,7 +1392,7 @@ public class Control_ControlAccessibleObjectTests
     [MemberData(nameof(ControlAccessibleObject_GetPropertyValue_ControlTypeProperty_ReturnsCorrectValue_TestData))]
     public void ControlAccessibleObject_GetPropertyValue_ControlTypeProperty_ReturnsCorrectValue(AccessibleRole role)
     {
-        using Control control = new Control();
+        using Control control = new();
         control.AccessibleRole = role;
 
         UIA_CONTROLTYPE_ID actual = (UIA_CONTROLTYPE_ID)(int)control.AccessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ControlTypePropertyId);
@@ -1381,7 +1400,7 @@ public class Control_ControlAccessibleObjectTests
 
         Assert.Equal(expected, actual);
         // Check if the method returns an exist UIA_ControlTypeId
-        Assert.True(actual >= UIA_CONTROLTYPE_ID.UIA_ButtonControlTypeId && actual <= UIA_CONTROLTYPE_ID.UIA_AppBarControlTypeId);
+        Assert.True(actual is >= UIA_CONTROLTYPE_ID.UIA_ButtonControlTypeId and <= UIA_CONTROLTYPE_ID.UIA_AppBarControlTypeId);
     }
 
     [WinFormsTheory]
@@ -1426,7 +1445,7 @@ public class Control_ControlAccessibleObjectTests
         using ComScope<IRawElementProviderFragmentRoot> actual = new(null);
         Assert.True(((IRawElementProviderFragment.Interface)control.AccessibilityObject).get_FragmentRoot(actual).Succeeded);
 
-        Assert.Equal(toolStrip.AccessibilityObject, ComHelpers.GetObjectForIUnknown(actual.AsUnknown));
+        Assert.Equal(toolStrip.AccessibilityObject, ComHelpers.GetObjectForIUnknown(actual));
         Assert.True(control.IsHandleCreated);
         Assert.True(toolStrip.IsHandleCreated);
     }
@@ -1487,7 +1506,7 @@ public class Control_ControlAccessibleObjectTests
         }
 
         toolStrip.Items.Add(host);
-        ((ToolStripItem)host).TestAccessor().Dynamic._parent = toolStrip;
+        host.TestAccessor().Dynamic._parent = toolStrip;
         host.SetPlacement(ToolStripItemPlacement.Main);
 
         Assert.True(control.AccessibilityObject is Control.ControlAccessibleObject);
@@ -1525,7 +1544,7 @@ public class Control_ControlAccessibleObjectTests
 
         toolStrip.Items.Add(host);
         toolStrip.Items.Add(button);
-        ((ToolStripItem)host).TestAccessor().Dynamic._parent = toolStrip;
+        host.TestAccessor().Dynamic._parent = toolStrip;
         host.SetPlacement(ToolStripItemPlacement.Main);
 
         Assert.True(control.AccessibilityObject is Control.ControlAccessibleObject);
@@ -1561,7 +1580,7 @@ public class Control_ControlAccessibleObjectTests
         }
 
         toolStrip.Items.Add(host);
-        ((ToolStripItem)host).TestAccessor().Dynamic._parent = toolStrip;
+        host.TestAccessor().Dynamic._parent = toolStrip;
         host.SetPlacement(ToolStripItemPlacement.Main);
 
         Assert.True(control.AccessibilityObject is Control.ControlAccessibleObject);
@@ -1652,8 +1671,8 @@ public class Control_ControlAccessibleObjectTests
 
         if (control is not Label)
         {
-            using var form = new Form();
-            using var label = new Label();
+            using Form form = new();
+            using Label label = new();
             label.Text = "&label";
             label.TabIndex = 0;
 
@@ -1706,12 +1725,12 @@ public class Control_ControlAccessibleObjectTests
     // ContextMenuStrip, From, ToolStripDropDown, ToolStripDropDownMenu
     // are Top level controls that can't be added to a ToolStrip.
     // A TabPage can be added to a TabControl only (see TabPage.AssignParent method).
-    private bool CanBeAddedToToolStrip(Control control)
-        => !(control is ContextMenuStrip
-            || control is Form
-            || control is ToolStripDropDown
-            || control is ToolStripDropDownMenu
-            || control is TabPage);
+    private static bool CanBeAddedToToolStrip(Control control)
+        => control is not (ContextMenuStrip
+            or Form
+            or ToolStripDropDown
+            or ToolStripDropDownMenu
+            or TabPage);
 
     private class AutomationLiveRegionControl : Control, IAutomationLiveRegion
     {

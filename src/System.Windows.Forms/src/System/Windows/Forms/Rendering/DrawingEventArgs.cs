@@ -10,9 +10,11 @@ namespace System.Windows.Forms;
 ///  the same way.
 /// </summary>
 /// <remarks>
-///  We should consider making this a base class for the event args that use this rather than a nested struct.
-///  That would make things a little more robust, but would require API review as the class itself would have to
-///  be public. The internal functionality can obviously still be internal.
+///  <para>
+///   We should consider making this a base class for the event args that use this rather than a nested struct.
+///   That would make things a little more robust, but would require API review as the class itself would have to
+///   be public. The internal functionality can obviously still be internal.
+///  </para>
 /// </remarks>
 internal partial class DrawingEventArgs
 {
@@ -49,11 +51,11 @@ internal partial class DrawingEventArgs
         ArgumentValidation.ThrowIfNull(dc);
 
 #if DEBUG
-        OBJ_TYPE type = (OBJ_TYPE)PInvoke.GetObjectType(dc);
-        Debug.Assert(type == OBJ_TYPE.OBJ_DC
-            || type == OBJ_TYPE.OBJ_ENHMETADC
-            || type == OBJ_TYPE.OBJ_MEMDC
-            || type == OBJ_TYPE.OBJ_METADC);
+        OBJ_TYPE type = (OBJ_TYPE)PInvokeCore.GetObjectType(dc);
+        Debug.Assert(type is OBJ_TYPE.OBJ_DC
+            or OBJ_TYPE.OBJ_ENHMETADC
+            or OBJ_TYPE.OBJ_MEMDC
+            or OBJ_TYPE.OBJ_METADC);
 #endif
 
         _hdc = dc;
@@ -69,7 +71,7 @@ internal partial class DrawingEventArgs
     internal bool IsStateClean => !Flags.HasFlag(DrawingEventFlags.GraphicsStateUnclean);
 
     /// <summary>
-    ///  Gets the HDC this event is connected to.  If there is no associated HDC, or the GDI+ Graphics object has
+    ///  Gets the HDC this event is connected to. If there is no associated HDC, or the GDI+ Graphics object has
     ///  been externally accessed (where it may have gotten a transform or clip) a null handle is returned.
     /// </summary>
     internal HDC HDC => IsStateClean ? default : _hdc;
@@ -97,14 +99,13 @@ internal partial class DrawingEventArgs
             Debug.Assert(!_hdc.IsNull);
 
             // We need to manually unset the palette here so this scope shouldn't be disposed
-            var paletteScope = PInvoke.SelectPaletteScope.HalftonePalette(
-                _hdc,
+            var paletteScope = _hdc.HalftonePalette(
                 forceBackground: false,
                 realizePalette: false);
 
             GC.SuppressFinalize(paletteScope);
 
-            _oldPalette = paletteScope.HPalette;
+            _oldPalette = paletteScope.HPALETTE;
 
             _graphics = Graphics.FromHdcInternal((IntPtr)_hdc);
             _graphics.PageUnit = GraphicsUnit.Pixel;
@@ -137,7 +138,7 @@ internal partial class DrawingEventArgs
 
         if (!_oldPalette.IsNull && !_hdc.IsNull)
         {
-            PInvoke.SelectPalette(_hdc, _oldPalette, bForceBkgd: false);
+            PInvokeCore.SelectPalette(_hdc, _oldPalette, bForceBkgd: false);
             _oldPalette = default;
         }
     }

@@ -17,33 +17,21 @@ internal static class DataGridViewUtilities
     private const byte HorizontalTextMarginRight = 2;
     private const byte VerticalTextMargin = 1;
 
-    internal static ContentAlignment ComputeDrawingContentAlignmentForCellStyleAlignment(DataGridViewContentAlignment alignment)
-    {
+    internal static ContentAlignment ComputeDrawingContentAlignmentForCellStyleAlignment(DataGridViewContentAlignment alignment) =>
         // Why isn't the DataGridView using System.Drawing.ContentAlignment?
-        switch (alignment)
+        alignment switch
         {
-            case DataGridViewContentAlignment.TopLeft:
-                return System.Drawing.ContentAlignment.TopLeft;
-            case DataGridViewContentAlignment.TopCenter:
-                return System.Drawing.ContentAlignment.TopCenter;
-            case DataGridViewContentAlignment.TopRight:
-                return System.Drawing.ContentAlignment.TopRight;
-            case DataGridViewContentAlignment.MiddleLeft:
-                return System.Drawing.ContentAlignment.MiddleLeft;
-            case DataGridViewContentAlignment.MiddleCenter:
-                return System.Drawing.ContentAlignment.MiddleCenter;
-            case DataGridViewContentAlignment.MiddleRight:
-                return System.Drawing.ContentAlignment.MiddleRight;
-            case DataGridViewContentAlignment.BottomLeft:
-                return System.Drawing.ContentAlignment.BottomLeft;
-            case DataGridViewContentAlignment.BottomCenter:
-                return System.Drawing.ContentAlignment.BottomCenter;
-            case DataGridViewContentAlignment.BottomRight:
-                return System.Drawing.ContentAlignment.BottomRight;
-            default:
-                return System.Drawing.ContentAlignment.MiddleCenter;
-        }
-    }
+            DataGridViewContentAlignment.TopLeft => ContentAlignment.TopLeft,
+            DataGridViewContentAlignment.TopCenter => ContentAlignment.TopCenter,
+            DataGridViewContentAlignment.TopRight => ContentAlignment.TopRight,
+            DataGridViewContentAlignment.MiddleLeft => ContentAlignment.MiddleLeft,
+            DataGridViewContentAlignment.MiddleCenter => ContentAlignment.MiddleCenter,
+            DataGridViewContentAlignment.MiddleRight => ContentAlignment.MiddleRight,
+            DataGridViewContentAlignment.BottomLeft => ContentAlignment.BottomLeft,
+            DataGridViewContentAlignment.BottomCenter => ContentAlignment.BottomCenter,
+            DataGridViewContentAlignment.BottomRight => ContentAlignment.BottomRight,
+            _ => ContentAlignment.MiddleCenter,
+        };
 
     internal static TextFormatFlags ComputeTextFormatFlagsForCellStyleAlignment(
         bool rightToLeft,
@@ -185,11 +173,11 @@ internal static class DataGridViewUtilities
                         {
                             if (cellStyle.WrapMode == DataGridViewTriState.True)
                             {
-                                preferredWidth = DataGridViewCell.MeasureTextWidth(graphics, val, cellStyle.Font, maxHeight, flags);
+                                preferredWidth = DataGridViewCell.MeasureTextWidth(graphics, val, cellStyle.Font!, maxHeight, flags);
                             }
                             else
                             {
-                                preferredWidth = DataGridViewCell.MeasureTextSize(graphics, val, cellStyle.Font, flags).Width;
+                                preferredWidth = DataGridViewCell.MeasureTextSize(graphics, val, cellStyle.Font!, flags).Width;
                             }
 
                             preferredWidth += 2 * ContentMarginWidth + HorizontalTextMarginLeft + HorizontalTextMarginRight;
@@ -246,11 +234,11 @@ internal static class DataGridViewUtilities
                                             HorizontalTextMarginRight;
                             if (cellStyle.WrapMode == DataGridViewTriState.True)
                             {
-                                minHeightContent = DataGridViewCell.MeasureTextHeight(graphics, val, cellStyle.Font, allowedWidth, flags);
+                                minHeightContent = DataGridViewCell.MeasureTextHeight(graphics, val, cellStyle.Font!, allowedWidth, flags);
                             }
                             else
                             {
-                                minHeightContent = DataGridViewCell.MeasureTextSize(graphics, val, cellStyle.Font, flags).Height;
+                                minHeightContent = DataGridViewCell.MeasureTextSize(graphics, val, cellStyle.Font!, flags).Height;
                             }
 
                             minHeightContent += 2 * VerticalTextMargin;
@@ -273,11 +261,11 @@ internal static class DataGridViewUtilities
                     {
                         if (cellStyle.WrapMode == DataGridViewTriState.True)
                         {
-                            preferredSize = DataGridViewCell.MeasureTextPreferredSize(graphics, val, cellStyle.Font, 5.0F, flags);
+                            preferredSize = DataGridViewCell.MeasureTextPreferredSize(graphics, val, cellStyle.Font!, 5.0F, flags);
                         }
                         else
                         {
-                            preferredSize = DataGridViewCell.MeasureTextSize(graphics, val, cellStyle.Font, flags);
+                            preferredSize = DataGridViewCell.MeasureTextSize(graphics, val, cellStyle.Font!, flags);
                         }
 
                         preferredSize.Width += 2 * ContentMarginWidth +
@@ -319,7 +307,7 @@ internal static class DataGridViewUtilities
         TextFormatFlags flags,
         DataGridViewCellStyle cellStyle)
     {
-        return GetTextBounds(cellBounds, text, flags, cellStyle, cellStyle.Font);
+        return GetTextBounds(cellBounds, text, flags, cellStyle, cellStyle.Font!);
     }
 
     internal static Rectangle GetTextBounds(
@@ -338,7 +326,7 @@ internal static class DataGridViewUtilities
             }
         }
 
-        Size sizeCell = new Size(cellBounds.Width, cellBounds.Height);
+        Size sizeCell = new(cellBounds.Width, cellBounds.Height);
         Size sizeConstraint = TextRenderer.MeasureText(text, font, sizeCell, flags);
         if (sizeConstraint.Width > sizeCell.Width)
         {
@@ -364,7 +352,7 @@ internal static class DataGridViewUtilities
         TextFormatFlags flags,
         DataGridViewCellStyle cellStyle)
     {
-        Point ptTextLocation = new Point(0, 0);
+        Point ptTextLocation = new(0, 0);
 
         // now use the alignment on the cellStyle to determine the final text location
         DataGridViewContentAlignment alignment = cellStyle.Alignment;
@@ -455,6 +443,7 @@ internal static class DataGridViewUtilities
 
     internal static bool ValidTextFormatFlags(TextFormatFlags flags)
     {
+#pragma warning disable CS0618 // Type or member is obsolete - for the ModifyString flag
         return (flags & ~(TextFormatFlags.Bottom |
                           TextFormatFlags.Default |
                           TextFormatFlags.EndEllipsis |
@@ -480,5 +469,6 @@ internal static class DataGridViewUtilities
                           TextFormatFlags.VerticalCenter |
                           TextFormatFlags.WordBreak |
                           TextFormatFlags.WordEllipsis)) == 0;
+#pragma warning restore CS0618
     }
 }

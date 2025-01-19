@@ -4,7 +4,6 @@
 using System.Drawing;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
-using static Interop;
 
 namespace System.Windows.Forms;
 
@@ -40,9 +39,15 @@ public partial class ComboBox
         /// </remarks>
         public override string Name => _owner.DroppedDown ? SR.ComboboxDropDownButtonCloseName : SR.ComboboxDropDownButtonOpenName;
 
+        internal override bool CanGetNameInternal => false;
+
         public override unsafe Rectangle Bounds => SystemIAccessible.TryGetLocation(GetChildId());
 
-        public override unsafe string? DefaultAction => SystemIAccessible.TryGetDefaultAction(GetChildId());
+        public override string? DefaultAction => GetDefaultActionInternal().ToNullableStringAndFree();
+
+        private protected override bool IsInternal => true;
+
+        internal override BSTR GetDefaultActionInternal() => SystemIAccessible.TryGetDefaultAction(GetChildId());
 
         internal override IRawElementProviderFragment.Interface? FragmentNavigate(NavigateDirection direction)
         {
@@ -78,10 +83,13 @@ public partial class ComboBox
                 _ => base.GetPropertyValue(propertyID)
             };
 
-        public override string? Help => SystemIAccessible.TryGetHelp(GetChildId());
+        public override string? Help => GetHelpInternal().ToNullableStringAndFree();
 
-        public override string? KeyboardShortcut
-            => SystemIAccessible.TryGetKeyboardShortcut(GetChildId());
+        internal override BSTR GetHelpInternal() => SystemIAccessible.TryGetHelp(GetChildId());
+
+        public override string? KeyboardShortcut => GetKeyboardShortcutInternal((VARIANT)GetChildId()).ToNullableStringAndFree();
+
+        internal override BSTR GetKeyboardShortcutInternal(VARIANT childID) => SystemIAccessible.TryGetKeyboardShortcut(childID);
 
         internal override bool IsPatternSupported(UIA_PATTERN_ID patternId) => patternId switch
         {
@@ -91,15 +99,14 @@ public partial class ComboBox
 
         public override AccessibleRole Role => SystemIAccessible.TryGetRole(GetChildId());
 
-        internal override int[] RuntimeId
-            => new int[]
-            {
+        internal override int[] RuntimeId =>
+            [
                 RuntimeIDFirstItem,
-                PARAM.ToInt(_owner.InternalHandle),
+                (int)_owner.InternalHandle,
                 _owner.GetHashCode(),
                 GeneratedRuntimeId,
                 COMBOBOX_DROPDOWN_BUTTON_ACC_ITEM_INDEX
-            };
+            ];
 
         public override AccessibleStates State => SystemIAccessible.TryGetState(GetChildId());
     }

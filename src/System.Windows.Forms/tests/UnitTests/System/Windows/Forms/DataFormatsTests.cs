@@ -6,7 +6,7 @@ using System.ComponentModel;
 namespace System.Windows.Forms.Tests;
 
 // NB: doesn't require thread affinity
-public class DataFormatsTests
+public partial class DataFormatsTests
 {
     public static IEnumerable<object[]> KnownFormats_TestData()
     {
@@ -65,7 +65,7 @@ public class DataFormatsTests
     public void DataFormats_GetFormat_InvokeKnownString_ReturnsExpected(string format, string expectedName, int expectedId)
     {
         DataFormats.Format result = DataFormats.GetFormat(format);
-        Assert.Same(result, DataFormats.GetFormat(format.ToLower()));
+        Assert.Same(result, DataFormats.GetFormat(format.ToLowerInvariant()));
         Assert.Equal(expectedName, result.Name);
         Assert.Equal(expectedId, result.Id);
 
@@ -89,7 +89,7 @@ public class DataFormatsTests
     {
         DataFormats.Format result = DataFormats.GetFormat(format);
         Assert.Same(result, DataFormats.GetFormat(format));
-        Assert.Same(result, DataFormats.GetFormat(format.ToLower()));
+        Assert.Same(result, DataFormats.GetFormat(format.ToLowerInvariant()));
         Assert.Equal(expectedName, result.Name);
 
         // Internally the format is registered with RegisterClipboardFormat.
@@ -102,17 +102,11 @@ public class DataFormatsTests
         Assert.Same(result, DataFormats.GetFormat(result.Id));
     }
 
-    public static IEnumerable<object[]> GetFormat_InvalidString_TestData()
+    [Fact]
+    public void DataFormats_GetFormat_NullOrEmptyString_ArgumentException()
     {
-        yield return new object[] { null };
-        yield return new object[] { string.Empty };
-    }
-
-    [Theory]
-    [MemberData(nameof(GetFormat_InvalidString_TestData))]
-    public void DataFormats_GetFormat_NullOrEmptyString_ArgumentException(string format)
-    {
-        Assert.Throws<ArgumentException>(() => DataFormats.GetFormat(format));
+        Assert.Throws<ArgumentException>("format", () => DataFormats.GetFormat(""));
+        Assert.Throws<ArgumentNullException>("format", () => DataFormats.GetFormat(null));
     }
 
     public static IEnumerable<object[]> GetFormat_InvalidFormat_TestData()
@@ -149,11 +143,6 @@ public class DataFormatsTests
 
         yield return new object[] { -1, "Format65535" };
         yield return new object[] { 1234, "Format1234" };
-
-        uint manuallyRegisteredFormatId = PInvoke.RegisterClipboardFormat("ManuallyRegisteredFormat");
-        uint longManuallyRegisteredFormatId = PInvoke.RegisterClipboardFormat(new string('a', 255));
-        yield return new object[] { (int)manuallyRegisteredFormatId, "ManuallyRegisteredFormat" };
-        yield return new object[] { (int)longManuallyRegisteredFormatId, new string('a', 255) };
     }
 
     [Theory]

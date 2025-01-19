@@ -14,13 +14,7 @@ public partial class DataGridViewLinkCell
         {
         }
 
-        public override string DefaultAction
-        {
-            get
-            {
-                return SR.DataGridView_AccLinkCellDefaultAction;
-            }
-        }
+        public override string DefaultAction => SR.DataGridView_AccLinkCellDefaultAction;
 
         public override void DoDefaultAction()
         {
@@ -29,7 +23,7 @@ public partial class DataGridViewLinkCell
                 throw new InvalidOperationException(SR.DataGridViewCellAccessibleObject_OwnerNotSet);
             }
 
-            if (!(Owner is DataGridViewLinkCell dataGridViewCell))
+            if (Owner is not DataGridViewLinkCell dataGridViewCell)
             {
                 return;
             }

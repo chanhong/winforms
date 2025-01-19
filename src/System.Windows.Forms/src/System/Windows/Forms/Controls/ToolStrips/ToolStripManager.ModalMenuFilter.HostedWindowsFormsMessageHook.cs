@@ -14,6 +14,7 @@ public static partial class ToolStripManager
             private HHOOK _messageHookHandle;
             private bool _isHooked;
             private HOOKPROC? _callBack;
+            private readonly Lock _lock = new();
 
             public HostedWindowsFormsMessageHook()
             {
@@ -25,12 +26,14 @@ public static partial class ToolStripManager
 #if DEBUG
             private readonly string _callingStack;
 
+#pragma warning disable CA1821 // Remove empty Finalizers
             ~HostedWindowsFormsMessageHook()
             {
                 Debug.Assert(
                     _messageHookHandle == IntPtr.Zero,
                     $"Finalizing an active mouse hook. This will crash the process. Calling stack: {_callingStack}");
             }
+#pragma warning restore CA1821
 #endif
 
             public bool HookMessages
@@ -51,7 +54,7 @@ public static partial class ToolStripManager
 
             private unsafe void InstallMessageHook()
             {
-                lock (this)
+                lock (_lock)
                 {
                     if (!_messageHookHandle.IsNull)
                     {
@@ -59,12 +62,12 @@ public static partial class ToolStripManager
                     }
 
                     _callBack = MessageHookProc;
-                    var hook = Marshal.GetFunctionPointerForDelegate(_callBack);
+                    IntPtr hook = Marshal.GetFunctionPointerForDelegate(_callBack);
                     _messageHookHandle = PInvoke.SetWindowsHookEx(
                         WINDOWS_HOOK_ID.WH_GETMESSAGE,
                         (delegate* unmanaged[Stdcall]<int, WPARAM, LPARAM, LRESULT>)hook,
-                        (HINSTANCE)0,
-                        PInvoke.GetCurrentThreadId());
+                        HINSTANCE.Null,
+                        PInvokeCore.GetCurrentThreadId());
 
                     if (_messageHookHandle != IntPtr.Zero)
                     {
@@ -87,7 +90,7 @@ public static partial class ToolStripManager
                         // Call pretranslate on the message to execute the message filters and preprocess message.
                         if (Application.ThreadContext.FromCurrent().PreTranslateMessage(ref *msg))
                         {
-                            msg->message = (uint)PInvoke.WM_NULL;
+                            msg->message = PInvokeCore.WM_NULL;
                         }
                     }
                 }
@@ -97,7 +100,7 @@ public static partial class ToolStripManager
 
             private void UninstallMessageHook()
             {
-                lock (this)
+                lock (_lock)
                 {
                     if (!_messageHookHandle.IsNull)
                     {

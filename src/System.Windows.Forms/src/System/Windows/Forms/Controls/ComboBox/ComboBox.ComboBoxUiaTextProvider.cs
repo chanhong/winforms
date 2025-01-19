@@ -6,7 +6,6 @@ using System.Windows.Forms.Automation;
 using Windows.Win32.System.Com;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
-using static Interop;
 
 namespace System.Windows.Forms;
 
@@ -91,19 +90,19 @@ public partial class ComboBox
 
         public override LOGFONTW Logfont
             => _owningComboBox.IsHandleCreated
-                ? LOGFONTW.FromFont(_owningComboBox.Font)
+                ? _owningComboBox.Font.ToLogicalFont()
                 : default;
 
         public override SupportedTextSelection SupportedTextSelection => SupportedTextSelection.SupportedTextSelection_Single;
 
         public override string Text
             => _owningComboBox.IsHandleCreated
-                ? PInvoke.GetWindowText(_owningChildEdit)
+                ? PInvokeCore.GetWindowText(_owningChildEdit)
                 : string.Empty;
 
         public override int TextLength
             => _owningComboBox.IsHandleCreated
-                ? (int)PInvoke.SendMessage(_owningChildEdit, PInvoke.WM_GETTEXTLENGTH)
+                ? (int)PInvokeCore.SendMessage(_owningChildEdit, PInvokeCore.WM_GETTEXTLENGTH)
                 : -1;
 
         public override WINDOW_EX_STYLE WindowExStyle
@@ -222,10 +221,12 @@ public partial class ComboBox
 
             // Returns info about the selected text range.
             // If there is no selection, start and end parameters are the position of the caret.
-            PInvoke.SendMessage(_owningChildEdit, PInvoke.EM_GETSEL, ref start, ref end);
+            PInvokeCore.SendMessage(_owningChildEdit, PInvokeCore.EM_GETSEL, ref start, ref end);
 
             ComSafeArrayScope<ITextRangeProvider> result = new(1);
-            result[0] = ComHelpers.GetComPointer<ITextRangeProvider>(new UiaTextRange(_owningComboBox.ChildEditAccessibleObject, this, start, end));
+            // Adding to the SAFEARRAY adds a reference
+            using var selection = ComHelpers.GetComScope<ITextRangeProvider>(new UiaTextRange(_owningComboBox.ChildEditAccessibleObject, this, start, end));
+            result[0] = selection;
 
             *pRetVal = result;
             return HRESULT.S_OK;
@@ -277,7 +278,9 @@ public partial class ComboBox
             GetVisibleRangePoints(out int start, out int end);
 
             ComSafeArrayScope<ITextRangeProvider> result = new(1);
-            result[0] = ComHelpers.GetComPointer<ITextRangeProvider>(new UiaTextRange(_owningComboBox.ChildEditAccessibleObject, this, start, end));
+            // Adding to the SAFEARRAY adds a reference
+            using var ranges = ComHelpers.GetComScope<ITextRangeProvider>(new UiaTextRange(_owningComboBox.ChildEditAccessibleObject, this, start, end));
+            result[0] = ranges;
 
             *pRetVal = result;
             return HRESULT.S_OK;
@@ -289,7 +292,7 @@ public partial class ComboBox
 
         public override Point PointToScreen(Point pt)
         {
-            PInvoke.MapWindowPoints(_owningChildEdit, (HWND)default, ref pt);
+            PInvokeCore.MapWindowPoints(_owningChildEdit, (HWND)default, ref pt);
             return pt;
         }
 
@@ -339,9 +342,9 @@ public partial class ComboBox
 
             // Convert screen to client coordinates.
             // (Essentially ScreenToClient but MapWindowPoints accounts for window mirroring using WS_EX_LAYOUTRTL.)
-            if (PInvoke.MapWindowPoints((HWND)default, _owningChildEdit, ref clientLocation) == 0)
+            if (PInvokeCore.MapWindowPoints((HWND)default, _owningChildEdit, ref clientLocation) == 0)
             {
-                *pRetVal  = ComHelpers.GetComPointer<ITextRangeProvider>(
+                *pRetVal = ComHelpers.GetComPointer<ITextRangeProvider>(
                     new UiaTextRange(
                         _owningComboBox.ChildEditAccessibleObject,
                         this,
@@ -393,12 +396,12 @@ public partial class ComboBox
                 return;
             }
 
-            PInvoke.SendMessage(_owningChildEdit, PInvoke.EM_SETSEL, (WPARAM)start, (LPARAM)end);
+            PInvokeCore.SendMessage(_owningChildEdit, PInvokeCore.EM_SETSEL, (WPARAM)start, (LPARAM)end);
         }
 
         private int GetCharIndexFromPosition(Point pt)
         {
-            int index = (int)PInvoke.SendMessage(_owningChildEdit, PInvoke.EM_CHARFROMPOS, (WPARAM)0, (LPARAM)pt);
+            int index = (int)PInvokeCore.SendMessage(_owningChildEdit, PInvokeCore.EM_CHARFROMPOS, (WPARAM)0, (LPARAM)pt);
             index = PARAM.LOWORD(index);
 
             if (index < 0)
@@ -424,7 +427,7 @@ public partial class ComboBox
         {
             // Send an EM_GETRECT message to find out the bounding rectangle.
             RECT rectangle = default;
-            PInvoke.SendMessage(_owningChildEdit, PInvoke.EM_GETRECT, (WPARAM)0, ref rectangle);
+            PInvokeCore.SendMessage(_owningChildEdit, PInvokeCore.EM_GETRECT, (WPARAM)0, ref rectangle);
 
             return rectangle;
         }
@@ -436,7 +439,7 @@ public partial class ComboBox
                 return Point.Empty;
             }
 
-            int i = (int)PInvoke.SendMessage(_owningChildEdit, PInvoke.EM_POSFROMCHAR, (WPARAM)index);
+            int i = (int)PInvokeCore.SendMessage(_owningChildEdit, PInvokeCore.EM_POSFROMCHAR, (WPARAM)index);
 
             return new Point(PARAM.SignedLOWORD(i), PARAM.SignedHIWORD(i));
         }

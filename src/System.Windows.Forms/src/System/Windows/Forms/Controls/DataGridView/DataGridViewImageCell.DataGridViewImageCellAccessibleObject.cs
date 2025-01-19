@@ -14,15 +14,11 @@ public partial class DataGridViewImageCell
         {
         }
 
-        public override string DefaultAction
-        {
-            get
-            {
-                return string.Empty;
-            }
-        }
+        public override string DefaultAction => string.Empty;
 
         public override string? Description => Owner is DataGridViewImageCell imageCell ? imageCell.Description : null;
+
+        internal override bool CanGetDescriptionInternal => false;
 
         public override string? Value
         {
@@ -40,7 +36,7 @@ public partial class DataGridViewImageCell
                 throw new InvalidOperationException(SR.DataGridViewCellAccessibleObject_OwnerNotSet);
             }
 
-            if (!(Owner is DataGridViewImageCell dataGridViewCell))
+            if (Owner is not DataGridViewImageCell dataGridViewCell)
             {
                 return;
             }

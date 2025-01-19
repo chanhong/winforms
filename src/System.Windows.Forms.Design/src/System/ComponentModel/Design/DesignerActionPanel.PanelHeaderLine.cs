@@ -18,7 +18,7 @@ internal sealed partial class DesignerActionPanel
         private PanelHeaderLine(IServiceProvider serviceProvider, DesignerActionPanel actionPanel)
             : base(serviceProvider, actionPanel)
         {
-            actionPanel.FontChanged += new EventHandler(OnParentControlFontChanged);
+            actionPanel.FontChanged += OnParentControlFontChanged;
 
             _titleLabel = new Label
             {
@@ -40,8 +40,8 @@ internal sealed partial class DesignerActionPanel
             AddedControls.Add(_subtitleLabel);
 
             // TODO: Need to figure out how to unhook these events. Perhaps have Initialize() and Cleanup() methods.
-            ActionPanel.FormActivated += new EventHandler(OnFormActivated);
-            ActionPanel.FormDeactivate += new EventHandler(OnFormDeactivate);
+            ActionPanel.FormActivated += OnFormActivated;
+            ActionPanel.FormDeactivate += OnFormDeactivate;
         }
 
         public override string FocusId => string.Empty;
@@ -98,16 +98,12 @@ internal sealed partial class DesignerActionPanel
         public override void PaintLine(Graphics g, int lineWidth, int lineHeight)
         {
             Color backColor = (_formActive || ActionPanel._dropDownActive) ? ActionPanel.TitleBarColor : ActionPanel.TitleBarUnselectedColor;
-            using (SolidBrush b = new SolidBrush(backColor))
-            {
-                g.FillRectangle(b, 1, 1, lineWidth - 2, lineHeight - 1);
-            }
+            using SolidBrush b = new(backColor);
+            g.FillRectangle(b, 1, 1, lineWidth - 2, lineHeight - 1);
 
             // Paint a line under the title label
-            using (Pen p = new Pen(ActionPanel.BorderColor))
-            {
-                g.DrawLine(p, 0, lineHeight - 1, lineWidth, lineHeight - 1);
-            }
+            using Pen p = new(ActionPanel.BorderColor);
+            g.DrawLine(p, 0, lineHeight - 1, lineWidth, lineHeight - 1);
         }
 
         internal override void UpdateActionItem(LineInfo lineInfo, ToolTip toolTip, ref int currentTabIndex)

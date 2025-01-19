@@ -31,6 +31,10 @@ public class ToolStripDesignerTests
         var mockSite = MockSite.CreateMockSiteWithDesignerHost(mockDesignerHost.Object);
         mockSite.Setup(s => s.GetService(typeof(BehaviorService))).Returns(null);
         mockSite.Setup(s => s.GetService(typeof(ToolStripAdornerWindowService))).Returns(null);
+
+        Mock<IComponentChangeService> mockComponentChangeService = new(MockBehavior.Strict);
+        mockSite.Setup(s => s.GetService(typeof(IComponentChangeService))).Returns(mockComponentChangeService.Object);
+
         toolStrip.Site = mockSite.Object;
 
         toolStripDesigner.Initialize(toolStrip);
@@ -56,7 +60,7 @@ public class ToolStripDesignerTests
         Assert.Equal(-1, toolStripDesigner.IndexOfItemUnderMouseToDrag);
         Assert.Equal(-1, toolStripDesigner.IndexOfItemUnderMouseToDrag);
         Assert.Null(toolStripDesigner.InsertTransaction);
-        Assert.Equal(0, toolStripDesigner.Items.Count);
+        Assert.Empty(toolStripDesigner.Items);
         Assert.Null(toolStripDesigner.NewItemTransaction);
         Assert.NotNull(toolStripDesigner.SelectionService);
         Assert.True(toolStripDesigner.SerializePerformLayout);

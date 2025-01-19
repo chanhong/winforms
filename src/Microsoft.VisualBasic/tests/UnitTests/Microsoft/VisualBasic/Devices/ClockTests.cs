@@ -8,13 +8,13 @@ public class ClockTests
     [Fact]
     public void LocalTime()
     {
-        var clock = new Clock();
+        Clock clock = new();
 
         var before = clock.LocalTime;
-        System.Threading.Thread.Sleep(10);
+        Thread.Sleep(10);
 
         var now = DateTime.Now;
-        System.Threading.Thread.Sleep(10);
+        Thread.Sleep(10);
 
         var after = clock.LocalTime;
 
@@ -25,13 +25,13 @@ public class ClockTests
     [Fact]
     public void GmtTime()
     {
-        var clock = new Clock();
+        Clock clock = new();
 
         var before = clock.GmtTime;
-        System.Threading.Thread.Sleep(10);
+        Thread.Sleep(10);
 
         var now = DateTime.UtcNow;
-        System.Threading.Thread.Sleep(10);
+        Thread.Sleep(10);
 
         var after = clock.GmtTime;
 
@@ -42,12 +42,12 @@ public class ClockTests
     [Fact]
     public void TickCount()
     {
-        var clock = new Clock();
+        Clock clock = new();
 
-        var before = clock.TickCount;
-        System.Threading.Thread.Sleep(10);
+        int before = clock.TickCount;
+        Thread.Sleep(10);
 
-        var after = clock.TickCount;
+        int after = clock.TickCount;
         Assert.True(before <= after);
     }
 }

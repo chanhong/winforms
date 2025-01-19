@@ -73,7 +73,7 @@ public class SpecialFolderEnumConverterTests
         Assert.Equal(expected, converter.GetStandardValues(null).Cast<Environment.SpecialFolder>());
 
         converter = GetNewSpecialFolderEnumConverter();
-        var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
+        Mock<TypeDescriptionProvider> mockProvider = new(MockBehavior.Strict);
         mockProvider
             .Setup(p => p.GetReflectionType(typeof(Environment.SpecialFolder), null))
             .Returns(() => typeof(CustomReflectionType));
@@ -97,10 +97,14 @@ public class SpecialFolderEnumConverterTests
         return (TypeConverter)Activator.CreateInstance(descriptor.Converter.GetType(), new Type[] { typeof(Environment.SpecialFolder) });
     }
 
+#pragma warning disable CA1052 // Static holder types should be Static or NotInheritable
     private class CustomReflectionType
+#pragma warning restore CA1052
     {
 #pragma warning disable CS0649
+#pragma warning disable IDE1006 // Naming Styles
         public static int Personal;
+#pragma warning restore IDE1006
 #pragma warning restore CS0649
     }
 

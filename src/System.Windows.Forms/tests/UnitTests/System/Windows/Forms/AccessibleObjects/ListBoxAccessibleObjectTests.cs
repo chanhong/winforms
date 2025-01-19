@@ -4,6 +4,7 @@
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
 using static System.Windows.Forms.ListBox;
+using System.Drawing;
 
 namespace System.Windows.Forms.Tests.AccessibleObjects;
 
@@ -14,7 +15,7 @@ public class ListBoxAccessibleObjectTests
     {
         using ListBox listBox = InitializeListBoxWithItems();
 
-        var childCount = listBox.AccessibilityObject.GetChildCount();
+        int childCount = listBox.AccessibilityObject.GetChildCount();
 
         for (int i = 0; i < childCount; i++)
         {
@@ -26,7 +27,7 @@ public class ListBoxAccessibleObjectTests
     [WinFormsFact]
     public void ListBoxAccessibleObject_ControlType_IsList_IfAccessibleRoleIsDefault()
     {
-        using ListBox listBox = new ListBox();
+        using ListBox listBox = new();
         // AccessibleRole is not set = Default
 
         UIA_CONTROLTYPE_ID actual = (UIA_CONTROLTYPE_ID)(int)listBox.AccessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ControlTypePropertyId);
@@ -40,7 +41,7 @@ public class ListBoxAccessibleObjectTests
     [InlineData(false, AccessibleRole.None)]
     public void ListBoxAccessibleObject_Role_IsExpected_ByDefault(bool createControl, AccessibleRole expectedRole)
     {
-        using ListBox listBox = new ListBox();
+        using ListBox listBox = new();
         // AccessibleRole is not set = Default
 
         if (createControl)
@@ -73,7 +74,7 @@ public class ListBoxAccessibleObjectTests
     [MemberData(nameof(ListBoxAccessibleObject_GetPropertyValue_ControlType_IsExpected_ForCustomRole_TestData))]
     public void ListBoxAccessibleObject_GetPropertyValue_ControlType_IsExpected_ForCustomRole(AccessibleRole role)
     {
-        using ListBox listBox = new ListBox();
+        using ListBox listBox = new();
         listBox.AccessibleRole = role;
 
         UIA_CONTROLTYPE_ID actual = (UIA_CONTROLTYPE_ID)(int)listBox.AccessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ControlTypePropertyId);
@@ -86,7 +87,7 @@ public class ListBoxAccessibleObjectTests
     [WinFormsFact]
     public void ListBoxItemAccessibleObject_GetPropertyValue_ValueValuePropertyId_ReturnsExpected()
     {
-        using ListBox listBox = new ListBox();
+        using ListBox listBox = new();
         AccessibleObject accessibleObject = listBox.AccessibilityObject;
 
         Assert.Equal(VARIANT.Empty, accessibleObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ValueValuePropertyId));
@@ -160,7 +161,7 @@ public class ListBoxAccessibleObjectTests
     [InlineData(SelectionMode.None, false)]
     [InlineData(SelectionMode.MultiSimple, true)]
     [InlineData(SelectionMode.MultiExtended, true)]
-    public void ListBoxItemAccessibleObject_GetPropertyValue_IsSelectionRequired(SelectionMode mode, bool expected)
+    public unsafe void ListBoxItemAccessibleObject_GetPropertyValue_IsSelectionRequired(SelectionMode mode, bool expected)
     {
         using ListBox listBox = InitializeListBoxWithItems();
         listBox.SelectionMode = mode;
@@ -171,8 +172,9 @@ public class ListBoxAccessibleObjectTests
 
         Assert.Equal(expected, (bool)actual);
 
-        Interop.UiaCore.ISelectionProvider provider = listBoxAccessibleObject;
-        Assert.Equal(expected, (bool)provider.IsSelectionRequired);
+        ISelectionProvider.Interface provider = listBoxAccessibleObject;
+        Assert.True(provider.get_IsSelectionRequired(out BOOL result).Succeeded);
+        Assert.Equal(expected, (bool)result);
     }
 
     [WinFormsTheory]
@@ -180,7 +182,7 @@ public class ListBoxAccessibleObjectTests
     [InlineData(SelectionMode.None, false)]
     [InlineData(SelectionMode.MultiSimple, true)]
     [InlineData(SelectionMode.MultiExtended, true)]
-    public void ListBoxItemAccessibleObject_GetPropertyValue_CanSelectMultiple(SelectionMode mode, bool expected)
+    public unsafe void ListBoxItemAccessibleObject_GetPropertyValue_CanSelectMultiple(SelectionMode mode, bool expected)
     {
         using ListBox listBox = InitializeListBoxWithItems();
         listBox.SelectionMode = mode;
@@ -191,8 +193,9 @@ public class ListBoxAccessibleObjectTests
 
         Assert.Equal(expected, (bool)actual);
 
-        Interop.UiaCore.ISelectionProvider provider = listBoxAccessibleObject;
-        Assert.Equal(expected, (bool)provider.CanSelectMultiple);
+        ISelectionProvider.Interface provider = listBoxAccessibleObject;
+        Assert.True(provider.get_CanSelectMultiple(out BOOL result).Succeeded);
+        Assert.Equal(expected, (bool)result);
     }
 
     [WinFormsFact]
@@ -205,19 +208,19 @@ public class ListBoxAccessibleObjectTests
         listBox.SetSelected(2, value: true);
 
         var listBoxAccessibleObject = listBox.AccessibilityObject;
-        Interop.UiaCore.ISelectionItemProvider provider = listBoxAccessibleObject.GetChild(0);
+        ISelectionItemProvider.Interface provider = listBoxAccessibleObject.GetChild(0);
         provider.RemoveFromSelection();
 
         var indices = listBox.SelectedIndices;
-        Assert.Equal(1, indices.Count);
+        Assert.Single(indices);
         Assert.True(indices.Contains(2));
     }
 
     private ListBox InitializeListBoxWithItems()
     {
         ListBox listBox = new();
-        listBox.Items.AddRange(new object[]
-        {
+        listBox.Items.AddRange((object[])
+        [
             "a",
             "b",
             "c",
@@ -225,7 +228,7 @@ public class ListBoxAccessibleObjectTests
             "e",
             "f",
             "g"
-        });
+        ]);
 
         return listBox;
     }
@@ -244,4 +247,111 @@ public class ListBoxAccessibleObjectTests
 
         return accessibilityObject;
     }
+
+#nullable enable
+
+    [WinFormsFact]
+    public void ListBoxAccessibleObject_ShouldCorrectlyHandleChildrenAndSelection()
+    {
+        using ListBox listBox = new();
+        listBox.Items.AddRange(new[] { "Item 1", "Item 2" });
+        var accessibleObject = listBox.AccessibilityObject;
+
+        accessibleObject.GetSelected().Should().BeNull();
+
+        listBox.SelectedIndex = 0;
+        accessibleObject.GetSelected().Should().Be(accessibleObject.GetChild(0));
+
+        listBox.SelectedIndex = 1;
+        accessibleObject.GetSelected().Should().Be(accessibleObject.GetChild(1));
+
+        listBox.ClearSelected();
+        accessibleObject.GetSelected().Should().BeNull();
+
+        listBox.IsHandleCreated.Should().BeFalse();
+    }
+
+    [WinFormsTheory]
+    [InlineData(0, 0)]
+    [InlineData(2, 2)]
+    public void GetChildCount_ReturnsExpected(int numberOfItemsToAdd, int expectedCount)
+    {
+        using ListBox listBox = new();
+        for (int i = 0; i < numberOfItemsToAdd; i++)
+        {
+            listBox.Items.Add($"Item {i + 1}");
+        }
+
+        var accessibleObject = listBox.AccessibilityObject;
+
+        accessibleObject.GetChildCount().Should().Be(expectedCount);
+    }
+
+    [WinFormsFact]
+    public void TestGetFocused_ReturnsExpected()
+    {
+        using ListBox listBox = new();
+        listBox.Items.AddRange(new[] { "Item 1", "Item 2" });
+        listBox.CreateControl();
+        listBox.SelectedIndex = 1; // Focus the second item
+        listBox.Focus();
+
+        var accessibleObject = listBox.AccessibilityObject;
+        var focusedObject = accessibleObject.GetFocused();
+
+        focusedObject.Should().BeEquivalentTo(accessibleObject.GetChild(1));
+
+        listBox.IsHandleCreated.Should().BeTrue();
+    }
+
+    [WinFormsTheory]
+    [InlineData(-1, null)]
+    [InlineData(1, 1)]
+    [InlineData(-1, null, true)]
+    [InlineData(0, 0, false, true)]
+    public void TestGetSelected_VariousScenarios(int selectedIndex, int? expectedIndex, bool clearSelection = false, bool multipleSelection = false)
+    {
+        using ListBox listBox = new() { SelectionMode = multipleSelection ? SelectionMode.MultiExtended : SelectionMode.One };
+        listBox.Items.AddRange(new[] { "Item 1", "Item 2", "Item 3" });
+        if (selectedIndex >= 0)
+        {
+            listBox.SelectedIndices.Add(selectedIndex);
+            if (multipleSelection)
+            {
+                listBox.SelectedIndices.Add(2);
+            }
+        }
+
+        if (clearSelection)
+        {
+            listBox.ClearSelected();
+        }
+
+        var accessibleObject = listBox.AccessibilityObject;
+        var selectedObject = accessibleObject.GetSelected();
+
+        if (expectedIndex.HasValue)
+        {
+            selectedObject.Should().BeEquivalentTo(accessibleObject.GetChild(expectedIndex.Value));
+        }
+        else
+        {
+            selectedObject.Should().BeNull();
+        }
+    }
+
+    [WinFormsFact]
+    public void TestHitTest_ListBoxNotCreated_ReturnsNull()
+    {
+        using Form form = new();
+        using ListBox listBox = new() { Parent = form, Items = { "Item 1", "Item 2" } };
+        Point testPoint = new Point(10, 10);
+
+        var result = listBox.AccessibilityObject.HitTest(testPoint.X, testPoint.Y);
+
+        result.Should().BeNull();
+        listBox.IsHandleCreated.Should().BeFalse();
+    }
+
+#nullable disable
 }

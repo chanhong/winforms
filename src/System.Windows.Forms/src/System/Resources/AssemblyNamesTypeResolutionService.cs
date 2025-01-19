@@ -63,8 +63,10 @@ internal class AssemblyNamesTypeResolutionService : ITypeResolutionService
     public string GetPathOfAssembly(AssemblyName name)
     {
 #pragma warning disable SYSLIB0044 // Type or member is obsolete. Ref https://github.com/dotnet/winforms/issues/7308
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
         return name.CodeBase ?? string.Empty;
-#pragma warning restore SYSLIB0044 // Type or member is obsolete
+#pragma warning restore IL3000
+#pragma warning restore SYSLIB0044
     }
 
     public Type? GetType(string name) => GetType(name, true);
@@ -81,7 +83,7 @@ internal class AssemblyNamesTypeResolutionService : ITypeResolutionService
         }
 
         // Missed in cache, try to resolve the type from the reference assemblies.
-        if (name.IndexOf(',') != -1)
+        if (name.Contains(','))
         {
             result = Type.GetType(name, false, ignoreCase);
         }
@@ -106,7 +108,7 @@ internal class AssemblyNamesTypeResolutionService : ITypeResolutionService
 
                 if (assemblyName is not null)
                 {
-                    List<AssemblyName> assemblyList = new List<AssemblyName>(_names.Length);
+                    List<AssemblyName> assemblyList = new(_names.Length);
                     foreach (AssemblyName asmName in _names)
                     {
                         if (string.Equals(assemblyName.Name, asmName.Name, StringComparison.OrdinalIgnoreCase))
@@ -119,7 +121,7 @@ internal class AssemblyNamesTypeResolutionService : ITypeResolutionService
                         }
                     }
 
-                    _names = assemblyList.ToArray();
+                    _names = [.. assemblyList];
                 }
             }
 
@@ -155,12 +157,14 @@ internal class AssemblyNamesTypeResolutionService : ITypeResolutionService
 
         if (result is not null)
         {
-            // Only cache types from the shared framework  because they don't need to update.
+            // Only cache types from the shared framework because they don't need to update.
             // For simplicity, don't cache custom types
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
             if (IsDotNetAssembly(result.Assembly.Location))
             {
                 _cachedTypes[name] = result;
             }
+#pragma warning restore IL3000
         }
 
         return result;

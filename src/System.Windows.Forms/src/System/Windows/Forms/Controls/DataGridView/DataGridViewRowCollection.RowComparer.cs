@@ -56,7 +56,7 @@ public partial class DataGridViewRowCollection
             }
             else
             {
-                return _dataGridViewRows[rowIndex]; // Unsharing compared rows!
+                return _dataGridViewRows[rowIndex]; // Un-sharing compared rows!
             }
         }
 
@@ -71,12 +71,23 @@ public partial class DataGridViewRowCollection
                 return -1;
             }
 
-            int result = 0;
+            int result;
             if (_customComparer is null)
             {
-                if (!_dataGridView.OnSortCompare(_dataGridViewSortedColumn, value1, value2, rowIndex1, rowIndex2, out result))
+                if (_dataGridViewSortedColumn is null)
                 {
-                    if (!(value1 is IComparable) && !(value2 is IComparable))
+                    throw new InvalidOperationException();
+                }
+
+                if (!_dataGridView.OnSortCompare(
+                    _dataGridViewSortedColumn,
+                    value1,
+                    value2,
+                    rowIndex1,
+                    rowIndex2,
+                    out result))
+                {
+                    if (value1 is not IComparable && value2 is not IComparable)
                     {
                         if (value1 is null)
                         {

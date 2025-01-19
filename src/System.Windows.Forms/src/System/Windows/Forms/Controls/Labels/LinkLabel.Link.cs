@@ -60,7 +60,7 @@ public partial class LinkLabel
                 {
                     _enabled = value;
 
-                    if ((int)(State & (LinkState.Hover | LinkState.Active)) != 0)
+                    if ((State & (LinkState.Hover | LinkState.Active)) != 0)
                     {
                         State &= ~(LinkState.Hover | LinkState.Active);
                         if (Owner is not null)
@@ -82,7 +82,7 @@ public partial class LinkLabel
                 {
                     if (Owner is not null && !string.IsNullOrEmpty(Owner.Text))
                     {
-                        StringInfo stringInfo = new StringInfo(Owner.Text);
+                        StringInfo stringInfo = new(Owner.Text);
                         return stringInfo.LengthInTextElements - Start;
                     }
                     else
@@ -141,7 +141,7 @@ public partial class LinkLabel
 
                     if (Owner is not null)
                     {
-                        Owner._links.Sort(LinkLabel.s_linkComparer);
+                        Owner._links.Sort(s_linkComparer);
                         Owner.InvalidateTextLayout();
                         Owner.Invalidate();
                     }

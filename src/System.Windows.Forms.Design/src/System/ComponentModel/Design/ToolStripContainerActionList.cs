@@ -113,7 +113,7 @@ internal class ToolStripContainerActionList : DesignerActionList
         }
 
         // Change the Parent only if its not parented to the form.
-        if (_designerHost.RootComponent is Control root && _toolStripContainer.Parent is not Control)
+        if (_designerHost.RootComponent is Control root && _toolStripContainer.Parent is null)
         {
             root.Controls.Add(_toolStripContainer);
         }
@@ -160,8 +160,8 @@ internal class ToolStripContainerActionList : DesignerActionList
                 }
 
                 // We should not reparent inherited Controls
-                var inheritanceAttribute = TypeDescriptor.GetAttributes(control)?[typeof(InheritanceAttribute)] as InheritanceAttribute;
-                if (inheritanceAttribute is null || inheritanceAttribute.InheritanceLevel == InheritanceLevel.InheritedReadOnly)
+                if (TypeDescriptor.GetAttributes(control)?[typeof(InheritanceAttribute)] is not InheritanceAttribute inheritanceAttribute
+                    || inheritanceAttribute.InheritanceLevel == InheritanceLevel.InheritedReadOnly)
                 {
                     continue;
                 }
@@ -298,8 +298,8 @@ internal class ToolStripContainerActionList : DesignerActionList
     /// </summary>
     public override DesignerActionItemCollection GetSortedActionItems()
     {
-        DesignerActionItemCollection items = new DesignerActionItemCollection
-        {
+        DesignerActionItemCollection items =
+        [
             new DesignerActionHeaderItem(SR.ToolStripContainerActionList_Visible, SR.ToolStripContainerActionList_Show),
             new DesignerActionPropertyItem(nameof(TopVisible),
                                            SR.ToolStripContainerActionList_Top,
@@ -320,7 +320,7 @@ internal class ToolStripContainerActionList : DesignerActionList
                                            SR.ToolStripContainerActionList_Right,
                                            SR.ToolStripContainerActionList_Show,
                                            SR.ToolStripContainerActionList_RightDesc)
-        };
+        ];
 
         if (!IsDockFilled)
         {

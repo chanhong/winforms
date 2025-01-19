@@ -8,6 +8,7 @@ using System.Drawing.Design;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms.Layout;
+using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
 using Windows.Win32.UI.Controls.RichEdit;
 
@@ -23,28 +24,28 @@ namespace System.Windows.Forms;
 public abstract partial class TextBoxBase : Control
 {
     // The boolean properties for this control are contained in the textBoxFlags bit
-    // vector.  We can store up to 32 boolean values in this one vector.  Here we
+    // vector. We can store up to 32 boolean values in this one vector. Here we
     // create the bitmasks for each bit in the vector.
-    //
-    private static readonly int autoSize = BitVector32.CreateMask();
-    private static readonly int hideSelection = BitVector32.CreateMask(autoSize);
-    private static readonly int multiline = BitVector32.CreateMask(hideSelection);
-    private static readonly int modified = BitVector32.CreateMask(multiline);
-    private static readonly int readOnly = BitVector32.CreateMask(modified);
-    private static readonly int acceptsTab = BitVector32.CreateMask(readOnly);
-    private static readonly int wordWrap = BitVector32.CreateMask(acceptsTab);
-    private static readonly int creatingHandle = BitVector32.CreateMask(wordWrap);
-    private static readonly int codeUpdateText = BitVector32.CreateMask(creatingHandle);
-    private static readonly int shortcutsEnabled = BitVector32.CreateMask(codeUpdateText);
-    private static readonly int scrollToCaretOnHandleCreated = BitVector32.CreateMask(shortcutsEnabled);
-    private static readonly int setSelectionOnHandleCreated = BitVector32.CreateMask(scrollToCaretOnHandleCreated);
 
-    private static readonly object EVENT_ACCEPTSTABCHANGED = new();
-    private static readonly object EVENT_BORDERSTYLECHANGED = new();
-    private static readonly object EVENT_HIDESELECTIONCHANGED = new();
-    private static readonly object EVENT_MODIFIEDCHANGED = new();
-    private static readonly object EVENT_MULTILINECHANGED = new();
-    private static readonly object EVENT_READONLYCHANGED = new();
+    private static readonly int s_autoSize = BitVector32.CreateMask();
+    private static readonly int s_hideSelection = BitVector32.CreateMask(s_autoSize);
+    private static readonly int s_multiline = BitVector32.CreateMask(s_hideSelection);
+    private static readonly int s_modified = BitVector32.CreateMask(s_multiline);
+    private static readonly int s_readOnly = BitVector32.CreateMask(s_modified);
+    private static readonly int s_acceptsTab = BitVector32.CreateMask(s_readOnly);
+    private static readonly int s_wordWrap = BitVector32.CreateMask(s_acceptsTab);
+    private static readonly int s_creatingHandle = BitVector32.CreateMask(s_wordWrap);
+    private static readonly int s_codeUpdateText = BitVector32.CreateMask(s_creatingHandle);
+    private static readonly int s_shortcutsEnabled = BitVector32.CreateMask(s_codeUpdateText);
+    private static readonly int s_scrollToCaretOnHandleCreated = BitVector32.CreateMask(s_shortcutsEnabled);
+    private static readonly int s_setSelectionOnHandleCreated = BitVector32.CreateMask(s_scrollToCaretOnHandleCreated);
+
+    private static readonly object s_acceptsTabChangedEvent = new();
+    private static readonly object s_borderStyleChangedEvent = new();
+    private static readonly object s_hideSelectionChangedEvent = new();
+    private static readonly object s_modifiedChangedEvent = new();
+    private static readonly object s_multilineChangedEvent = new();
+    private static readonly object s_readOnlyChangedEvent = new();
 
     /// <summary>
     ///  The current border for this edit control.
@@ -82,7 +83,7 @@ public abstract partial class TextBoxBase : Control
     private BitVector32 _textBoxFlags;
 
     /// <summary>
-    ///  Creates a new TextBox control.  Uses the parent's current font and color
+    ///  Creates a new TextBox control. Uses the parent's current font and color
     ///  set.
     /// </summary>
     internal TextBoxBase() : base()
@@ -90,12 +91,16 @@ public abstract partial class TextBoxBase : Control
         // this class overrides GetPreferredSizeCore, let Control automatically cache the result
         SetExtendedState(ExtendedStates.UserPreferredSizeCache, true);
 
-        _textBoxFlags[autoSize | hideSelection | wordWrap | shortcutsEnabled] = true;
-        SetStyle(ControlStyles.FixedHeight, _textBoxFlags[autoSize]);
+        _textBoxFlags[s_autoSize | s_hideSelection | s_wordWrap | s_shortcutsEnabled] = true;
+        SetStyle(ControlStyles.FixedHeight, _textBoxFlags[s_autoSize]);
         SetStyle(ControlStyles.StandardClick
                 | ControlStyles.StandardDoubleClick
                 | ControlStyles.UseTextForAccessibility
                 | ControlStyles.UserPaint, false);
+
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
 
         // cache requestedHeight. Note: Control calls DefaultSize (overridable) in the constructor
         // to set the control's cached height that is returned when calling Height, so we just
@@ -117,13 +122,13 @@ public abstract partial class TextBoxBase : Control
     {
         get
         {
-            return _textBoxFlags[acceptsTab];
+            return _textBoxFlags[s_acceptsTab];
         }
         set
         {
-            if (_textBoxFlags[acceptsTab] != value)
+            if (_textBoxFlags[s_acceptsTab] != value)
             {
-                _textBoxFlags[acceptsTab] = value;
+                _textBoxFlags[s_acceptsTab] = value;
                 OnAcceptsTabChanged(EventArgs.Empty);
             }
         }
@@ -133,8 +138,8 @@ public abstract partial class TextBoxBase : Control
     [SRDescription(nameof(SR.TextBoxBaseOnAcceptsTabChangedDescr))]
     public event EventHandler? AcceptsTabChanged
     {
-        add => Events.AddHandler(EVENT_ACCEPTSTABCHANGED, value);
-        remove => Events.RemoveHandler(EVENT_ACCEPTSTABCHANGED, value);
+        add => Events.AddHandler(s_acceptsTabChangedEvent, value);
+        remove => Events.RemoveHandler(s_acceptsTabChangedEvent, value);
     }
 
     /// <summary>
@@ -149,19 +154,19 @@ public abstract partial class TextBoxBase : Control
     {
         get
         {
-            return _textBoxFlags[shortcutsEnabled];
+            return _textBoxFlags[s_shortcutsEnabled];
         }
         set
         {
-            s_shortcutsToDisable ??= new int[]
-                {
+            s_shortcutsToDisable ??=
+                [
                     (int)Shortcut.CtrlZ, (int)Shortcut.CtrlC, (int)Shortcut.CtrlX,
                     (int)Shortcut.CtrlV, (int)Shortcut.CtrlA, (int)Shortcut.CtrlL, (int)Shortcut.CtrlR,
                     (int)Shortcut.CtrlE, (int)Shortcut.CtrlY, (int)Keys.Control + (int)Keys.Back,
                     (int)Shortcut.CtrlDel, (int)Shortcut.ShiftDel, (int)Shortcut.ShiftIns, (int)Shortcut.CtrlJ
-                };
+                ];
 
-            _textBoxFlags[shortcutsEnabled] = value;
+            _textBoxFlags[s_shortcutsEnabled] = value;
         }
     }
 
@@ -174,7 +179,7 @@ public abstract partial class TextBoxBase : Control
         // the shortcut key we are not supported in TextBox.
         bool returnedValue = base.ProcessCmdKey(ref msg, keyData);
 
-        if (ShortcutsEnabled == false && s_shortcutsToDisable is not null)
+        if (!ShortcutsEnabled && s_shortcutsToDisable is not null)
         {
             foreach (int shortcutValue in s_shortcutsToDisable)
             {
@@ -186,18 +191,17 @@ public abstract partial class TextBoxBase : Control
             }
         }
 
-        //
         // There are a few keys that change the alignment of the text, but that
         // are not ignored by the native control when the ReadOnly property is set.
         // We need to workaround that.
-        if (_textBoxFlags[readOnly])
+        if (_textBoxFlags[s_readOnly])
         {
             int k = (int)keyData;
-            if (k == (int)Shortcut.CtrlL        // align left
-                || k == (int)Shortcut.CtrlR     // align right
-                || k == (int)Shortcut.CtrlE     // align centre
-                || k == (int)Shortcut.CtrlJ)
-            {  // align justified
+            if (k is ((int)Shortcut.CtrlL)        // align left
+                or ((int)Shortcut.CtrlR)          // align right
+                or ((int)Shortcut.CtrlE)          // align center
+                or ((int)Shortcut.CtrlJ))         // align justified
+            {
                 return true;
             }
         }
@@ -244,17 +248,17 @@ public abstract partial class TextBoxBase : Control
     {
         get
         {
-            return _textBoxFlags[autoSize];
+            return _textBoxFlags[s_autoSize];
         }
         set
         {
-            // Note that we intentionally do not call base.  TextBoxes size themselves by
-            // overriding SetBoundsCore (old RTM code).  We let CommonProperties.GetAutoSize
+            // Note that we intentionally do not call base. TextBoxes size themselves by
+            // overriding SetBoundsCore (old RTM code). We let CommonProperties.GetAutoSize
             // continue to return false to keep our LayoutEngines from messing with TextBoxes.
             // This is done for backwards compatibility since the new AutoSize behavior differs.
-            if (_textBoxFlags[autoSize] != value)
+            if (_textBoxFlags[s_autoSize] != value)
             {
-                _textBoxFlags[autoSize] = value;
+                _textBoxFlags[s_autoSize] = value;
 
                 // AutoSize's effects are ignored for a multi-line textbox
                 //
@@ -273,7 +277,7 @@ public abstract partial class TextBoxBase : Control
     ///  Gets or sets the background color of the control.
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
-    [DispId(PInvoke.DISPID_BACKCOLOR)]
+    [DispId(PInvokeCore.DISPID_BACKCOLOR)]
     [SRDescription(nameof(SR.ControlBackColorDescr))]
     public override Color BackColor
     {
@@ -341,7 +345,7 @@ public abstract partial class TextBoxBase : Control
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
     [DefaultValue(BorderStyle.Fixed3D)]
-    [DispId(PInvoke.DISPID_BORDERSTYLE)]
+    [DispId(PInvokeCore.DISPID_BORDERSTYLE)]
     [SRDescription(nameof(SR.TextBoxBorderDescr))]
     public BorderStyle BorderStyle
     {
@@ -370,27 +374,13 @@ public abstract partial class TextBoxBase : Control
     [SRDescription(nameof(SR.TextBoxBaseOnBorderStyleChangedDescr))]
     public event EventHandler? BorderStyleChanged
     {
-        add => Events.AddHandler(EVENT_BORDERSTYLECHANGED, value);
-        remove => Events.RemoveHandler(EVENT_BORDERSTYLECHANGED, value);
+        add => Events.AddHandler(s_borderStyleChangedEvent, value);
+        remove => Events.RemoveHandler(s_borderStyleChangedEvent, value);
     }
 
     internal virtual bool CanRaiseTextChangedEvent => true;
 
-    protected override bool CanEnableIme
-    {
-        get
-        {
-            Debug.WriteLineIf(CompModSwitches.ImeMode.Level >= TraceLevel.Info, $"Inside get_CanEnableIme(), this = {this}");
-            Debug.Indent();
-
-            bool canEnable = !(ReadOnly || PasswordProtect) && base.CanEnableIme;
-
-            Debug.WriteLineIf(CompModSwitches.ImeMode.Level >= TraceLevel.Info, $"Value = {canEnable}");
-            Debug.Unindent();
-
-            return canEnable;
-        }
-    }
+    protected override bool CanEnableIme => !(ReadOnly || PasswordProtect) && base.CanEnableIme;
 
     /// <summary>
     ///  Gets a value indicating whether the user can undo the previous operation in a text box control.
@@ -399,7 +389,7 @@ public abstract partial class TextBoxBase : Control
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     [SRDescription(nameof(SR.TextBoxCanUndoDescr))]
-    public bool CanUndo => IsHandleCreated && (int)PInvoke.SendMessage(this, PInvoke.EM_CANUNDO) != 0;
+    public bool CanUndo => IsHandleCreated && (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_CANUNDO) != 0;
 
     /// <summary>
     ///  Returns the parameters needed to create the handle. Inheriting classes
@@ -414,12 +404,12 @@ public abstract partial class TextBoxBase : Control
             CreateParams cp = base.CreateParams;
             cp.ClassName = PInvoke.WC_EDIT;
             cp.Style |= PInvoke.ES_AUTOHSCROLL | PInvoke.ES_AUTOVSCROLL;
-            if (!_textBoxFlags[hideSelection])
+            if (!_textBoxFlags[s_hideSelection])
             {
                 cp.Style |= PInvoke.ES_NOHIDESEL;
             }
 
-            if (_textBoxFlags[readOnly])
+            if (_textBoxFlags[s_readOnly])
             {
                 cp.Style |= PInvoke.ES_READONLY;
             }
@@ -437,10 +427,10 @@ public abstract partial class TextBoxBase : Control
                     break;
             }
 
-            if (_textBoxFlags[multiline])
+            if (_textBoxFlags[s_multiline])
             {
                 cp.Style |= PInvoke.ES_MULTILINE;
-                if (_textBoxFlags[wordWrap])
+                if (_textBoxFlags[s_wordWrap])
                 {
                     cp.Style &= ~PInvoke.ES_AUTOHSCROLL;
                 }
@@ -501,7 +491,7 @@ public abstract partial class TextBoxBase : Control
     ///  Gets or sets the foreground color of the control.
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
-    [DispId(PInvoke.DISPID_FORECOLOR)]
+    [DispId(PInvokeCore.DISPID_FORECOLOR)]
     [SRDescription(nameof(SR.ControlForeColorDescr))]
     public override Color ForeColor
     {
@@ -530,14 +520,14 @@ public abstract partial class TextBoxBase : Control
     {
         get
         {
-            return _textBoxFlags[hideSelection];
+            return _textBoxFlags[s_hideSelection];
         }
 
         set
         {
-            if (_textBoxFlags[hideSelection] != value)
+            if (_textBoxFlags[s_hideSelection] != value)
             {
-                _textBoxFlags[hideSelection] = value;
+                _textBoxFlags[s_hideSelection] = value;
                 RecreateHandle();
                 OnHideSelectionChanged(EventArgs.Empty);
             }
@@ -548,34 +538,18 @@ public abstract partial class TextBoxBase : Control
     [SRDescription(nameof(SR.TextBoxBaseOnHideSelectionChangedDescr))]
     public event EventHandler? HideSelectionChanged
     {
-        add => Events.AddHandler(EVENT_HIDESELECTIONCHANGED, value);
-        remove => Events.RemoveHandler(EVENT_HIDESELECTIONCHANGED, value);
+        add => Events.AddHandler(s_hideSelectionChangedEvent, value);
+        remove => Events.RemoveHandler(s_hideSelectionChangedEvent, value);
     }
 
     /// <summary>
-    ///  Internal version of ImeMode property.  The ImeMode of TextBoxBase controls depend on its IME restricted
+    ///  Internal version of ImeMode property. The ImeMode of TextBoxBase controls depend on its IME restricted
     ///  mode which is determined by the CanEnableIme property which checks whether the control is in Password or
     ///  ReadOnly mode.
     /// </summary>
     protected override ImeMode ImeModeBase
     {
-        get
-        {
-            if (DesignMode)
-            {
-                return base.ImeModeBase;
-            }
-
-            Debug.WriteLineIf(CompModSwitches.ImeMode.Level >= TraceLevel.Info, $"Inside get_ImeModeInternal(), this = {this}");
-            Debug.Indent();
-
-            ImeMode imeMode = CanEnableIme ? base.ImeModeBase : ImeMode.Disable;
-
-            Debug.WriteLineIf(CompModSwitches.ImeMode.Level >= TraceLevel.Info, $"Value = {imeMode}");
-            Debug.Unindent();
-
-            return imeMode;
-        }
+        get => (DesignMode || CanEnableIme) ? base.ImeModeBase : ImeMode.Disable;
         set => base.ImeModeBase = value;
     }
 
@@ -595,7 +569,7 @@ public abstract partial class TextBoxBase : Control
         get
         {
             string text = Text;
-            List<string> list = new();
+            List<string> list = [];
 
             int lineStart = 0;
             while (lineStart < text.Length)
@@ -604,13 +578,13 @@ public abstract partial class TextBoxBase : Control
                 for (; lineEnd < text.Length; lineEnd++)
                 {
                     char c = text[lineEnd];
-                    if (c == '\r' || c == '\n')
+                    if (c is '\r' or '\n')
                     {
                         break;
                     }
                 }
 
-                string line = text.Substring(lineStart, lineEnd - lineStart);
+                string line = text[lineStart..lineEnd];
                 list.Add(line);
 
                 // Treat "\r", "\r\n", and "\n" as new lines
@@ -628,12 +602,12 @@ public abstract partial class TextBoxBase : Control
             }
 
             // Corner case -- last character in Text is a new line; need to add blank line to list
-            if (text.Length > 0 && (text[text.Length - 1] == '\r' || text[text.Length - 1] == '\n'))
+            if (text.Length > 0 && (text[^1] == '\r' || text[^1] == '\n'))
             {
                 list.Add(string.Empty);
             }
 
-            return list.ToArray();
+            return [.. list];
         }
         set
         {
@@ -665,10 +639,7 @@ public abstract partial class TextBoxBase : Control
         }
         set
         {
-            if (value < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(MaxLength), value, 0));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
             if (_maxLength != value)
             {
@@ -692,11 +663,11 @@ public abstract partial class TextBoxBase : Control
         {
             if (IsHandleCreated)
             {
-                bool curState = (int)PInvoke.SendMessage(this, PInvoke.EM_GETMODIFY) != 0;
-                if (_textBoxFlags[modified] != curState)
+                bool curState = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_GETMODIFY) != 0;
+                if (_textBoxFlags[s_modified] != curState)
                 {
-                    // Raise ModifiedChanged event.  See WmReflectCommand for more info.
-                    _textBoxFlags[modified] = curState;
+                    // Raise ModifiedChanged event. See WmReflectCommand for more info.
+                    _textBoxFlags[s_modified] = curState;
                     OnModifiedChanged(EventArgs.Empty);
                 }
 
@@ -704,7 +675,7 @@ public abstract partial class TextBoxBase : Control
             }
             else
             {
-                return _textBoxFlags[modified];
+                return _textBoxFlags[s_modified];
             }
         }
 
@@ -714,12 +685,12 @@ public abstract partial class TextBoxBase : Control
             {
                 if (IsHandleCreated)
                 {
-                    PInvoke.SendMessage(this, PInvoke.EM_SETMODIFY, (WPARAM)(BOOL)value);
+                    PInvokeCore.SendMessage(this, PInvokeCore.EM_SETMODIFY, (WPARAM)(BOOL)value);
                     // Must maintain this state always in order for the
                     // test in the Get method to work properly.
                 }
 
-                _textBoxFlags[modified] = value;
+                _textBoxFlags[s_modified] = value;
                 OnModifiedChanged(EventArgs.Empty);
             }
         }
@@ -729,8 +700,8 @@ public abstract partial class TextBoxBase : Control
     [SRDescription(nameof(SR.TextBoxBaseOnModifiedChangedDescr))]
     public event EventHandler? ModifiedChanged
     {
-        add => Events.AddHandler(EVENT_MODIFIEDCHANGED, value);
-        remove => Events.RemoveHandler(EVENT_MODIFIEDCHANGED, value);
+        add => Events.AddHandler(s_modifiedChangedEvent, value);
+        remove => Events.RemoveHandler(s_modifiedChangedEvent, value);
     }
 
     /// <summary>
@@ -746,15 +717,15 @@ public abstract partial class TextBoxBase : Control
     {
         get
         {
-            return _textBoxFlags[multiline];
+            return _textBoxFlags[s_multiline];
         }
         set
         {
-            if (_textBoxFlags[multiline] != value)
+            if (_textBoxFlags[s_multiline] != value)
             {
                 using (LayoutTransaction.CreateTransactionIf(AutoSize, ParentInternal, this, PropertyNames.Multiline))
                 {
-                    _textBoxFlags[multiline] = value;
+                    _textBoxFlags[s_multiline] = value;
 
                     if (value)
                     {
@@ -779,8 +750,8 @@ public abstract partial class TextBoxBase : Control
     [SRDescription(nameof(SR.TextBoxBaseOnMultilineChangedDescr))]
     public event EventHandler? MultilineChanged
     {
-        add => Events.AddHandler(EVENT_MULTILINECHANGED, value);
-        remove => Events.RemoveHandler(EVENT_MULTILINECHANGED, value);
+        add => Events.AddHandler(s_multilineChangedEvent, value);
+        remove => Events.RemoveHandler(s_multilineChangedEvent, value);
     }
 
     [Browsable(false)]
@@ -804,7 +775,7 @@ public abstract partial class TextBoxBase : Control
     }
 
     /// <summary>
-    ///  Determines if the control is in password protect mode.  This is overridden in TextBox and
+    ///  Determines if the control is in password protect mode. This is overridden in TextBox and
     ///  MaskedTextBox and is false by default so RichTextBox that doesn't support Password doesn't
     ///  have to care about this.
     /// </summary>
@@ -824,7 +795,7 @@ public abstract partial class TextBoxBase : Control
         get
         {
             // COMPAT we must return the same busted height we did in Everett, even
-            // if it doesnt take multiline and word wrap into account.  For better accuracy and/or wrapping use
+            // if it doesn't take multiline and word wrap into account. For better accuracy and/or wrapping use
             // GetPreferredSize instead.
             int height = FontHeight;
             if (_borderStyle != BorderStyle.None)
@@ -885,7 +856,7 @@ public abstract partial class TextBoxBase : Control
     }
 
     /// <summary>
-    ///  Get the currently selected text start position and length.  Use this method internally
+    ///  Get the currently selected text start position and length. Use this method internally
     ///  to avoid calling SelectionStart + SelectionLength each of which does essentially the
     ///  same (save one message round trip).
     /// </summary>
@@ -896,7 +867,7 @@ public abstract partial class TextBoxBase : Control
         if (!IsHandleCreated)
         {
             // It is possible that the cached values are no longer valid if the Text has been changed
-            // while the control does not have a handle. We need to return valid values.  We also need
+            // while the control does not have a handle. We need to return valid values. We also need
             // to keep the old cached values in case the Text is changed again making the cached values
             // valid again.
             AdjustSelectionStartAndEnd(_selectionStart, _selectionLength, out start, out end, -1);
@@ -906,11 +877,11 @@ public abstract partial class TextBoxBase : Control
         {
             start = 0;
             int startResult = 0;
-            PInvoke.SendMessage(this, PInvoke.EM_GETSEL, (WPARAM)(&startResult), ref end);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_GETSEL, (WPARAM)(&startResult), ref end);
             start = startResult;
 
             // Here, we return the max of either 0 or the # returned by
-            // the windows call.  This eliminates a problem on nt4 where
+            // the windows call. This eliminates a problem on nt4 where
             // a huge negative # is being returned.
             start = Math.Max(0, start);
             // ditto for end
@@ -952,16 +923,16 @@ public abstract partial class TextBoxBase : Control
     {
         get
         {
-            return _textBoxFlags[readOnly];
+            return _textBoxFlags[s_readOnly];
         }
         set
         {
-            if (_textBoxFlags[readOnly] != value)
+            if (_textBoxFlags[s_readOnly] != value)
             {
-                _textBoxFlags[readOnly] = value;
+                _textBoxFlags[s_readOnly] = value;
                 if (IsHandleCreated)
                 {
-                    PInvoke.SendMessage(this, PInvoke.EM_SETREADONLY, (WPARAM)(BOOL)value);
+                    PInvokeCore.SendMessage(this, PInvokeCore.EM_SETREADONLY, (WPARAM)(BOOL)value);
                 }
 
                 OnReadOnlyChanged(EventArgs.Empty);
@@ -975,8 +946,8 @@ public abstract partial class TextBoxBase : Control
     [SRDescription(nameof(SR.TextBoxBaseOnReadOnlyChangedDescr))]
     public event EventHandler? ReadOnlyChanged
     {
-        add => Events.AddHandler(EVENT_READONLYCHANGED, value);
-        remove => Events.RemoveHandler(EVENT_READONLYCHANGED, value);
+        add => Events.AddHandler(s_readOnlyChangedEvent, value);
+        remove => Events.RemoveHandler(s_readOnlyChangedEvent, value);
     }
 
     /// <summary>
@@ -1015,28 +986,27 @@ public abstract partial class TextBoxBase : Control
         // The EM_LIMITTEXT message limits only the text the user can enter. It does not affect any text
         // already in the edit control when the message is sent, nor does it affect the length of the text
         // copied to the edit control by the WM_SETTEXT message.
-        PInvoke.SendMessage(this, PInvoke.EM_LIMITTEXT);
+        PInvokeCore.SendMessage(this, PInvokeCore.EM_LIMITTEXT);
 
         if (clearUndo)
         {
-            PInvoke.SendMessage(this, PInvoke.EM_REPLACESEL, 0, text);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_REPLACESEL, 0, text);
 
             // For consistency with Text, we clear the modified flag
-            PInvoke.SendMessage(this, PInvoke.EM_SETMODIFY);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETMODIFY);
             ClearUndo();
         }
         else
         {
-            PInvoke.SendMessage(this, PInvoke.EM_REPLACESEL, (WPARAM)(-1), text);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_REPLACESEL, (WPARAM)(-1), text);
         }
 
         // Re-enable user input.
-        PInvoke.SendMessage(this, PInvoke.EM_LIMITTEXT, (WPARAM)_maxLength);
+        PInvokeCore.SendMessage(this, PInvokeCore.EM_LIMITTEXT, (WPARAM)_maxLength);
     }
 
     /// <summary>
-    ///  Gets or sets the number of characters selected in the text
-    ///  box.
+    ///  Gets or sets the number of characters selected in the text box.
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
     [Browsable(false)]
@@ -1046,31 +1016,24 @@ public abstract partial class TextBoxBase : Control
     {
         get
         {
-            GetSelectionStartAndLength(out int start, out int length);
-
+            GetSelectionStartAndLength(out int _, out int length);
             return length;
         }
-
         set
         {
-            if (value < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidArgument, nameof(SelectionLength), value));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
-            GetSelectionStartAndLength(out int selStart, out int selLength);
+            GetSelectionStartAndLength(out int start, out int length);
 
-            if (value != selLength)
+            if (value != length)
             {
-                Select(selStart, value);
+                Select(start, value);
             }
         }
     }
 
     /// <summary>
-    ///  Gets or sets the starting
-    ///  point of text selected in the text
-    ///  box.
+    ///  Gets or sets the starting point of text selected in the text box.
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
     [Browsable(false)]
@@ -1080,24 +1043,18 @@ public abstract partial class TextBoxBase : Control
     {
         get
         {
-            GetSelectionStartAndLength(out int selStart, out _);
-
-            return selStart;
+            GetSelectionStartAndLength(out int start, out _);
+            return start;
         }
         set
         {
-            if (value < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidArgument, nameof(SelectionStart), value));
-            }
-
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
             Select(value, SelectionLength);
         }
     }
 
     /// <summary>
-    ///  Gets or sets
-    ///  the current text in the text box.
+    ///  Gets or sets the current text in the text box.
     /// </summary>
     [Localizable(true)]
     [AllowNull]
@@ -1113,7 +1070,7 @@ public abstract partial class TextBoxBase : Control
                 if (IsHandleCreated)
                 {
                     // clear the modified flag
-                    PInvoke.SendMessage(this, PInvoke.EM_SETMODIFY);
+                    PInvokeCore.SendMessage(this, PInvokeCore.EM_SETMODIFY);
                 }
             }
         }
@@ -1121,10 +1078,10 @@ public abstract partial class TextBoxBase : Control
 
     [Browsable(false)]
     public virtual int TextLength
-        // Note: Currently Winforms does not fully support surrogates.  If
+        // Note: Currently WinForms does not fully support surrogates. If
         // the text contains surrogate characters this property may return incorrect values.
 
-        => IsHandleCreated ? PInvoke.GetWindowTextLength(this) : Text.Length;
+        => IsHandleCreated ? PInvokeCore.GetWindowTextLength(this) : Text.Length;
 
     internal override string WindowText
     {
@@ -1138,14 +1095,14 @@ public abstract partial class TextBoxBase : Control
 
             if (!WindowText.Equals(value))
             {
-                _textBoxFlags[codeUpdateText] = true;
+                _textBoxFlags[s_codeUpdateText] = true;
                 try
                 {
                     base.WindowText = value;
                 }
                 finally
                 {
-                    _textBoxFlags[codeUpdateText] = false;
+                    _textBoxFlags[s_codeUpdateText] = false;
                 }
             }
         }
@@ -1154,13 +1111,13 @@ public abstract partial class TextBoxBase : Control
     /// <summary>
     ///  In certain circumstances we might have to force text into the window whether or not the text is the same.
     ///  Make this a method on <see cref="TextBoxBase"/> rather than <see cref="RichTextBox"/> (which is the only
-    ///  control that needs this at this point), since we need to set <see cref="codeUpdateText"/>.
+    ///  control that needs this at this point), since we need to set <see cref="s_codeUpdateText"/>.
     /// </summary>
     internal void ForceWindowText(string? value)
     {
         value ??= string.Empty;
 
-        _textBoxFlags[codeUpdateText] = true;
+        _textBoxFlags[s_codeUpdateText] = true;
         try
         {
             if (IsHandleCreated)
@@ -1174,7 +1131,7 @@ public abstract partial class TextBoxBase : Control
         }
         finally
         {
-            _textBoxFlags[codeUpdateText] = false;
+            _textBoxFlags[s_codeUpdateText] = false;
         }
     }
 
@@ -1190,15 +1147,15 @@ public abstract partial class TextBoxBase : Control
     {
         get
         {
-            return _textBoxFlags[wordWrap];
+            return _textBoxFlags[s_wordWrap];
         }
         set
         {
             using (LayoutTransaction.CreateTransactionIf(AutoSize, ParentInternal, this, PropertyNames.WordWrap))
             {
-                if (_textBoxFlags[wordWrap] != value)
+                if (_textBoxFlags[s_wordWrap] != value)
                 {
-                    _textBoxFlags[wordWrap] = value;
+                    _textBoxFlags[s_wordWrap] = value;
                     RecreateHandle();
                 }
             }
@@ -1221,7 +1178,7 @@ public abstract partial class TextBoxBase : Control
         int saveHeight = _requestedHeight;
         try
         {
-            if (_textBoxFlags[autoSize] && !_textBoxFlags[multiline])
+            if (_textBoxFlags[s_autoSize] && !_textBoxFlags[s_multiline])
             {
                 Height = PreferredHeight;
             }
@@ -1232,7 +1189,7 @@ public abstract partial class TextBoxBase : Control
                 // Changing the font of a multi-line textbox can sometimes cause a painting problem
                 // The only workaround I can find is to size the textbox big enough for the font, and
                 // then restore its correct size.
-                if (_textBoxFlags[multiline])
+                if (_textBoxFlags[s_multiline])
                 {
                     Height = Math.Max(saveHeight, PreferredHeight + 2); // 2 = fudge factor
                 }
@@ -1303,32 +1260,20 @@ public abstract partial class TextBoxBase : Control
     {
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.EM_EMPTYUNDOBUFFER);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_EMPTYUNDOBUFFER);
         }
     }
 
-    protected bool ContainsNavigationKeyCode(Keys keyCode)
+    protected bool ContainsNavigationKeyCode(Keys keyCode) => keyCode switch
     {
-        switch (keyCode)
-        {
-            case Keys.Up:
-            case Keys.Down:
-            case Keys.PageUp:
-            case Keys.PageDown:
-            case Keys.Home:
-            case Keys.End:
-            case Keys.Left:
-            case Keys.Right:
-                return true;
-            default:
-                return false;
-        }
-    }
+        Keys.Up or Keys.Down or Keys.PageUp or Keys.PageDown or Keys.Home or Keys.End or Keys.Left or Keys.Right => true,
+        _ => false,
+    };
 
     /// <summary>
     ///  Copies the current selection in the text box to the Clipboard.
     /// </summary>
-    public void Copy() => PInvoke.SendMessage(this, PInvoke.WM_COPY);
+    public void Copy() => PInvokeCore.SendMessage(this, PInvokeCore.WM_COPY);
 
     protected override AccessibleObject CreateAccessibilityInstance() => new TextBoxBaseAccessibleObject(this);
 
@@ -1336,7 +1281,7 @@ public abstract partial class TextBoxBase : Control
     {
         // This "creatingHandle" stuff is to avoid property change events
         // when we set the Text property.
-        _textBoxFlags[creatingHandle] = true;
+        _textBoxFlags[s_creatingHandle] = true;
         try
         {
             base.CreateHandle();
@@ -1346,17 +1291,17 @@ public abstract partial class TextBoxBase : Control
         }
         finally
         {
-            _textBoxFlags[creatingHandle] = false;
+            _textBoxFlags[s_creatingHandle] = false;
         }
     }
 
     /// <summary>
     ///  Moves the current selection in the text box to the Clipboard.
     /// </summary>
-    public void Cut() => PInvoke.SendMessage(this, PInvoke.WM_CUT);
+    public void Cut() => PInvokeCore.SendMessage(this, PInvokeCore.WM_CUT);
 
     /// <summary>
-    ///  Returns the text end position (one past the last input character).  This property is virtual to allow MaskedTextBox
+    ///  Returns the text end position (one past the last input character). This property is virtual to allow MaskedTextBox
     ///  to set the last input char position as opposed to the last char position which may be a mask character.
     /// </summary>
     internal virtual int GetEndPosition()
@@ -1377,7 +1322,7 @@ public abstract partial class TextBoxBase : Control
                 case Keys.Tab:
                     // Single-line RichEd's want tab characters (see WM_GETDLGCODE),
                     // so we don't ask it
-                    return Multiline && _textBoxFlags[acceptsTab] && ((keyData & Keys.Control) == 0);
+                    return Multiline && _textBoxFlags[s_acceptsTab] && ((keyData & Keys.Control) == 0);
                 case Keys.Escape:
                     if (Multiline)
                     {
@@ -1422,22 +1367,22 @@ public abstract partial class TextBoxBase : Control
         AdjustHeight(true);
 
         UpdateMaxLength();
-        if (_textBoxFlags[modified])
+        if (_textBoxFlags[s_modified])
         {
-            PInvoke.SendMessage(this, PInvoke.EM_SETMODIFY, (WPARAM)(BOOL)true);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETMODIFY, (WPARAM)(BOOL)true);
         }
 
-        if (_textBoxFlags[scrollToCaretOnHandleCreated])
+        if (_textBoxFlags[s_scrollToCaretOnHandleCreated])
         {
             ScrollToCaret();
-            _textBoxFlags[scrollToCaretOnHandleCreated] = false;
+            _textBoxFlags[s_scrollToCaretOnHandleCreated] = false;
         }
     }
 
     protected override void OnHandleDestroyed(EventArgs e)
     {
-        _textBoxFlags[modified] = Modified;
-        _textBoxFlags[setSelectionOnHandleCreated] = true;
+        _textBoxFlags[s_modified] = Modified;
+        _textBoxFlags[s_setSelectionOnHandleCreated] = true;
         // Update text selection cached values to be restored when recreating the handle.
         GetSelectionStartAndLength(out _selectionStart, out _selectionLength);
         base.OnHandleDestroyed(e);
@@ -1446,12 +1391,11 @@ public abstract partial class TextBoxBase : Control
     /// <summary>
     ///  Replaces the current selection in the text box with the contents of the Clipboard.
     /// </summary>
-    public void Paste() => PInvoke.SendMessage(this, PInvoke.WM_PASTE);
+    public void Paste() => PInvokeCore.SendMessage(this, PInvokeCore.WM_PASTE);
 
     protected override bool ProcessDialogKey(Keys keyData)
     {
-        s_controlKeyboardRouting.TraceVerbose($"TextBoxBase.ProcessDialogKey [{keyData}]");
-        Keys keyCode = (Keys)keyData & Keys.KeyCode;
+        Keys keyCode = keyData & Keys.KeyCode;
 
         if (keyCode == Keys.Tab && AcceptsTab && (keyData & Keys.Control) != 0)
         {
@@ -1476,7 +1420,7 @@ public abstract partial class TextBoxBase : Control
 
     protected virtual void OnAcceptsTabChanged(EventArgs e)
     {
-        if (Events[EVENT_ACCEPTSTABCHANGED] is EventHandler eh)
+        if (Events[s_acceptsTabChangedEvent] is EventHandler eh)
         {
             eh(this, e);
         }
@@ -1484,7 +1428,7 @@ public abstract partial class TextBoxBase : Control
 
     protected virtual void OnBorderStyleChanged(EventArgs e)
     {
-        if (Events[EVENT_BORDERSTYLECHANGED] is EventHandler eh)
+        if (Events[s_borderStyleChangedEvent] is EventHandler eh)
         {
             eh(this, e);
         }
@@ -1498,7 +1442,7 @@ public abstract partial class TextBoxBase : Control
 
     protected virtual void OnHideSelectionChanged(EventArgs e)
     {
-        if (Events[EVENT_HIDESELECTIONCHANGED] is EventHandler eh)
+        if (Events[s_hideSelectionChangedEvent] is EventHandler eh)
         {
             eh(this, e);
         }
@@ -1506,7 +1450,7 @@ public abstract partial class TextBoxBase : Control
 
     protected virtual void OnModifiedChanged(EventArgs e)
     {
-        if (Events[EVENT_MODIFIEDCHANGED] is EventHandler eh)
+        if (Events[s_modifiedChangedEvent] is EventHandler eh)
         {
             eh(this, e);
         }
@@ -1543,7 +1487,7 @@ public abstract partial class TextBoxBase : Control
 
     protected virtual void OnMultilineChanged(EventArgs e)
     {
-        if (Events[EVENT_MULTILINECHANGED] is EventHandler eh)
+        if (Events[s_multilineChangedEvent] is EventHandler eh)
         {
             eh(this, e);
         }
@@ -1557,7 +1501,7 @@ public abstract partial class TextBoxBase : Control
 
     protected virtual void OnReadOnlyChanged(EventArgs e)
     {
-        if (Events[EVENT_READONLYCHANGED] is EventHandler eh)
+        if (Events[s_readOnlyChangedEvent] is EventHandler eh)
         {
             eh(this, e);
         }
@@ -1583,6 +1527,8 @@ public abstract partial class TextBoxBase : Control
         if (IsAccessibilityObjectCreated)
         {
             AccessibilityObject.RaiseAutomationEvent(UIA_EVENT_ID.UIA_Text_TextChangedEventId);
+            using var textVariant = PasswordProtect ? (VARIANT)string.Empty : (VARIANT)Text;
+            AccessibilityObject.RaiseAutomationPropertyChangedEvent(UIA_PROPERTY_ID.UIA_ValueValuePropertyId, textVariant, textVariant);
         }
     }
 
@@ -1601,8 +1547,8 @@ public abstract partial class TextBoxBase : Control
     /// </summary>
     public virtual int GetCharIndexFromPosition(Point pt)
     {
-        int index = (int)PInvoke.SendMessage(this, PInvoke.EM_CHARFROMPOS, 0, Interop.PARAM.FromPoint(pt));
-        index = Interop.PARAM.LOWORD(index);
+        int index = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_CHARFROMPOS, 0, PARAM.FromPoint(pt));
+        index = PARAM.LOWORD(index);
 
         if (index < 0)
         {
@@ -1631,7 +1577,7 @@ public abstract partial class TextBoxBase : Control
     ///  you pass the index of a overflowed character, GetLineFromCharIndex would
     ///  return 1 and not 0.
     /// </summary>
-    public virtual int GetLineFromCharIndex(int index) => (int)PInvoke.SendMessage(this, PInvoke.EM_LINEFROMCHAR, (WPARAM)index);
+    public virtual int GetLineFromCharIndex(int index) => (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_LINEFROMCHAR, (WPARAM)index);
 
     /// <summary>
     ///  Returns the location of the character at the given index.
@@ -1643,8 +1589,8 @@ public abstract partial class TextBoxBase : Control
             return Point.Empty;
         }
 
-        int i = (int)PInvoke.SendMessage(this, PInvoke.EM_POSFROMCHAR, (WPARAM)index);
-        return new Point(Interop.PARAM.SignedLOWORD(i), Interop.PARAM.SignedHIWORD(i));
+        int i = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_POSFROMCHAR, (WPARAM)index);
+        return new Point(PARAM.SignedLOWORD(i), PARAM.SignedHIWORD(i));
     }
 
     /// <summary>
@@ -1654,13 +1600,13 @@ public abstract partial class TextBoxBase : Control
     {
         ArgumentOutOfRangeException.ThrowIfNegative(lineNumber);
 
-        return (int)PInvoke.SendMessage(this, PInvoke.EM_LINEINDEX, (WPARAM)lineNumber);
+        return (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_LINEINDEX, (WPARAM)lineNumber);
     }
 
     /// <summary>
     ///  Returns the index of the first character of the line where the caret is.
     /// </summary>
-    public int GetFirstCharIndexOfCurrentLine() => (int)PInvoke.SendMessage(this, PInvoke.EM_LINEINDEX, (WPARAM)(-1));
+    public int GetFirstCharIndexOfCurrentLine() => (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_LINEINDEX, (WPARAM)(-1));
 
     /// <summary>
     ///  Ensures that the caret is visible in the TextBox window, by scrolling the
@@ -1670,7 +1616,7 @@ public abstract partial class TextBoxBase : Control
     {
         if (!IsHandleCreated)
         {
-            _textBoxFlags[scrollToCaretOnHandleCreated] = true;
+            _textBoxFlags[s_scrollToCaretOnHandleCreated] = true;
             return;
         }
 
@@ -1682,9 +1628,9 @@ public abstract partial class TextBoxBase : Control
 
         using ComScope<IRichEditOle> richEdit = new(null);
 
-        if (PInvoke.SendMessage(this, PInvoke.EM_GETOLEINTERFACE, 0, (void**)richEdit) == 0)
+        if (PInvokeCore.SendMessage(this, PInvokeCore.EM_GETOLEINTERFACE, 0, (void**)richEdit) == 0)
         {
-            PInvoke.SendMessage(this, PInvoke.EM_SCROLLCARET);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SCROLLCARET);
             return;
         }
 
@@ -1711,7 +1657,7 @@ public abstract partial class TextBoxBase : Control
             windowTextRange.Value->ScrollIntoView((int)tomConstants.tomEnd).ThrowOnFailure();
 
             // 2. Get the first visible line.
-            int firstVisibleLine = (int)PInvoke.SendMessage(this, PInvoke.EM_GETFIRSTVISIBLELINE);
+            int firstVisibleLine = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_GETFIRSTVISIBLELINE);
 
             // 3. If the first visible line is smaller than the start of the selection, we are done.
             if (firstVisibleLine <= selStartLine)
@@ -1728,7 +1674,7 @@ public abstract partial class TextBoxBase : Control
             }
         }
 
-        PInvoke.SendMessage(this, PInvoke.EM_SCROLLCARET);
+        PInvokeCore.SendMessage(this, PInvokeCore.EM_SCROLLCARET);
     }
 
     /// <summary>
@@ -1776,27 +1722,29 @@ public abstract partial class TextBoxBase : Control
     ///  But if you do have it cached, please pass it in. This will avoid
     ///  the expensive call to the TextLength property.
     /// </summary>
-    private protected virtual void SelectInternal(int start, int length, int textLen)
+    private protected virtual void SelectInternal(int selectionStart, int selectionLength, int textLength)
     {
         // if our handle is created - send message...
         if (IsHandleCreated)
         {
-            AdjustSelectionStartAndEnd(start, length, out int s, out int e, textLen);
+            AdjustSelectionStartAndEnd(selectionStart, selectionLength, out int start, out int end, textLength);
 
-            PInvoke.SendMessage(this, PInvoke.EM_SETSEL, (WPARAM)s, (LPARAM)e);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETSEL, (WPARAM)start, (LPARAM)end);
 
             if (IsAccessibilityObjectCreated)
             {
-                AccessibilityObject.RaiseAutomationEvent(UIA_EVENT_ID.UIA_Text_TextSelectionChangedEventId);
+                AccessibilityObject.RaiseAutomationEvent(end == 0
+                    ? UIA_EVENT_ID.UIA_AutomationFocusChangedEventId
+                    : UIA_EVENT_ID.UIA_Text_TextSelectionChangedEventId);
             }
         }
         else
         {
             // otherwise, wait until handle is created to send this message.
             // Store the indices until then...
-            _selectionStart = start;
-            _selectionLength = length;
-            _textBoxFlags[setSelectionOnHandleCreated] = true;
+            _selectionStart = selectionStart;
+            _selectionLength = selectionLength;
+            _textBoxFlags[s_setSelectionOnHandleCreated] = true;
         }
     }
 
@@ -1819,7 +1767,7 @@ public abstract partial class TextBoxBase : Control
             _requestedHeight = height;
         }
 
-        if (_textBoxFlags[autoSize] && !_textBoxFlags[multiline])
+        if (_textBoxFlags[s_autoSize] && !_textBoxFlags[s_multiline])
         {
             height = PreferredHeight;
         }
@@ -1827,14 +1775,8 @@ public abstract partial class TextBoxBase : Control
         base.SetBoundsCore(x, y, width, height, specified);
     }
 
-    private static void Swap(ref int n1, ref int n2)
-    {
-        int temp = n2;
-        n2 = n1;
-        n1 = temp;
-    }
+    private static void Swap(ref int n1, ref int n2) => (n1, n2) = (n2, n1);
 
-    //
     // Send in -1 if you don't have the text length cached
     // when calling this method. It will be computed. If not,
     // please pass in the text length as the last parameter.
@@ -1896,11 +1838,11 @@ public abstract partial class TextBoxBase : Control
     internal void SetSelectionOnHandle()
     {
         Debug.Assert(IsHandleCreated, "Don't call this method until the handle is created.");
-        if (_textBoxFlags[setSelectionOnHandleCreated])
+        if (_textBoxFlags[s_setSelectionOnHandleCreated])
         {
-            _textBoxFlags[setSelectionOnHandleCreated] = false;
+            _textBoxFlags[s_setSelectionOnHandleCreated] = false;
             AdjustSelectionStartAndEnd(_selectionStart, _selectionLength, out int start, out int end, -1);
-            PInvoke.SendMessage(this, PInvoke.EM_SETSEL, (WPARAM)start, (LPARAM)end);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETSEL, (WPARAM)start, (LPARAM)end);
         }
     }
 
@@ -2023,19 +1965,19 @@ public abstract partial class TextBoxBase : Control
     /// <summary>
     ///  Undoes the last edit operation in the text box.
     /// </summary>
-    public void Undo() => PInvoke.SendMessage(this, PInvoke.EM_UNDO);
+    public void Undo() => PInvokeCore.SendMessage(this, PInvokeCore.EM_UNDO);
 
     internal virtual void UpdateMaxLength()
     {
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.EM_LIMITTEXT, (WPARAM)_maxLength);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_LIMITTEXT, (WPARAM)_maxLength);
         }
     }
 
     internal override HBRUSH InitializeDCForWmCtlColor(HDC dc, MessageId msg)
     {
-        if (msg == PInvoke.WM_CTLCOLORSTATIC && !ShouldSerializeBackColor())
+        if (msg == PInvokeCore.WM_CTLCOLORSTATIC && !ShouldSerializeBackColor())
         {
             // Let the Win32 Edit control handle background colors itself.
             // This is necessary because a disabled edit control will display a different
@@ -2050,7 +1992,7 @@ public abstract partial class TextBoxBase : Control
 
     private void WmReflectCommand(ref Message m)
     {
-        if (!_textBoxFlags[codeUpdateText] && !_textBoxFlags[creatingHandle])
+        if (!_textBoxFlags[s_codeUpdateText] && !_textBoxFlags[s_creatingHandle])
         {
             uint hiword = m.WParamInternal.HIWORD;
             if (hiword == PInvoke.EN_CHANGE && CanRaiseTextChangedEvent)
@@ -2068,25 +2010,18 @@ public abstract partial class TextBoxBase : Control
     private void WmSetFont(ref Message m)
     {
         base.WndProc(ref m);
-        if (!_textBoxFlags[multiline])
+        if (!_textBoxFlags[s_multiline])
         {
-            PInvoke.SendMessage(this, PInvoke.EM_SETMARGINS, (WPARAM)(PInvoke.EC_LEFTMARGIN | PInvoke.EC_RIGHTMARGIN));
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETMARGINS, (WPARAM)(PInvoke.EC_LEFTMARGIN | PInvoke.EC_RIGHTMARGIN));
         }
     }
 
     private void WmGetDlgCode(ref Message m)
     {
         base.WndProc(ref m);
-        if (AcceptsTab)
-        {
-            s_controlKeyboardRouting.TraceVerbose("TextBox wants tabs");
-            m.ResultInternal = (LRESULT)(m.ResultInternal | (int)PInvoke.DLGC_WANTTAB);
-        }
-        else
-        {
-            s_controlKeyboardRouting.TraceVerbose("TextBox doesn't want tabs");
-            m.ResultInternal = (LRESULT)(m.ResultInternal & ~(int)(PInvoke.DLGC_WANTTAB | PInvoke.DLGC_WANTALLKEYS));
-        }
+        m.ResultInternal = AcceptsTab
+            ? (LRESULT)(m.ResultInternal | (int)PInvoke.DLGC_WANTTAB)
+            : (LRESULT)(m.ResultInternal & ~(int)(PInvoke.DLGC_WANTTAB | PInvoke.DLGC_WANTALLKEYS));
     }
 
     /// <summary>
@@ -2110,7 +2045,7 @@ public abstract partial class TextBoxBase : Control
         }
         else
         {
-            client = PointToClient(Interop.PARAM.ToPoint(m.LParamInternal));
+            client = PointToClient(PARAM.ToPoint(m.LParamInternal));
         }
 
         // Only show the context menu when clicked in the client area.
@@ -2121,7 +2056,7 @@ public abstract partial class TextBoxBase : Control
     }
 
     /// <summary>
-    ///  The control's window procedure.  Inheriting classes can override this
+    ///  The control's window procedure. Inheriting classes can override this
     ///  to add extra functionality, but should not forget to call
     ///  base.wndProc(m); to ensure the control continues to function properly.
     /// </summary>
@@ -2129,20 +2064,20 @@ public abstract partial class TextBoxBase : Control
     {
         switch (m.MsgInternal)
         {
-            case PInvoke.WM_LBUTTONDBLCLK:
+            case PInvokeCore.WM_LBUTTONDBLCLK:
                 _doubleClickFired = true;
                 base.WndProc(ref m);
                 break;
             case MessageId.WM_REFLECT_COMMAND:
                 WmReflectCommand(ref m);
                 break;
-            case PInvoke.WM_GETDLGCODE:
+            case PInvokeCore.WM_GETDLGCODE:
                 WmGetDlgCode(ref m);
                 break;
-            case PInvoke.WM_SETFONT:
+            case PInvokeCore.WM_SETFONT:
                 WmSetFont(ref m);
                 break;
-            case PInvoke.WM_CONTEXTMENU:
+            case PInvokeCore.WM_CONTEXTMENU:
                 if (ShortcutsEnabled)
                 {
                     // Calling base will find ContextMenus in this order:
@@ -2157,7 +2092,7 @@ public abstract partial class TextBoxBase : Control
                 }
 
                 break;
-            case PInvoke.WM_DESTROY:
+            case PInvokeCore.WM_DESTROY:
                 if (TryGetAccessibilityObject(out AccessibleObject? @object) && @object is TextBoxBaseAccessibleObject accessibleObject &&
                     !RecreatingHandle)
                 {

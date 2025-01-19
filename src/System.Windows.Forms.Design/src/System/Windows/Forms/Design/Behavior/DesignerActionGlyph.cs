@@ -16,6 +16,7 @@ internal sealed class DesignerActionGlyph : Glyph
     internal const int CONTROLOVERLAP_X = 5;                    // number of pixels the anchor should be offset to the left of the control's upper-right
     internal const int CONTROLOVERLAP_Y = 2;                    // number of pixels the anchor overlaps the control in the y-direction
 
+    private const byte IconSize = 10;
     private Rectangle _alternativeBounds = Rectangle.Empty;     // if !empty, this represents the bounds of the tray control this glyph is related to
     private Rectangle _bounds;                                  // the bounds of our glyph
     private readonly Adorner? _adorner;                         // A ptr back to our adorner - so when we decide to change state, we can invalidate
@@ -54,7 +55,7 @@ internal sealed class DesignerActionGlyph : Glyph
     }
 
     /// <summary>
-    ///  Returns the bounds of our glyph.  This is used by the related Behavior to determine where to show the
+    ///  Returns the bounds of our glyph. This is used by the related Behavior to determine where to show the
     ///  contextmenu (list of actions).
     /// </summary>
     public override Rectangle Bounds
@@ -95,44 +96,15 @@ internal sealed class DesignerActionGlyph : Glyph
         return null;
     }
 
-    /// <summary>
-    ///  Returns an image representing the
-    /// </summary>
-    private Image GlyphImageClosed
-    {
-        get
-        {
-            if (_glyphImageClosed is null)
-            {
-                _glyphImageClosed = new Icon(typeof(DesignerActionGlyph), "Close_left").ToBitmap();
+    private Image GlyphImageClosed => _glyphImageClosed ??= ScaleHelper.GetIconResourceAsBitmap(
+        typeof(DesignerActionGlyph),
+        "Close_left",
+        ScaleHelper.ScaleToDpi(new Size(IconSize, IconSize), ScaleHelper.InitialSystemDpi));
 
-                if (DpiHelper.IsScalingRequired)
-                {
-                    DpiHelper.ScaleBitmapLogicalToDevice(ref _glyphImageClosed);
-                }
-            }
-
-            return _glyphImageClosed;
-        }
-    }
-
-    private Image GlyphImageOpened
-    {
-        get
-        {
-            if (_glyphImageOpened is null)
-            {
-                _glyphImageOpened = new Icon(typeof(DesignerActionGlyph), "Open_left").ToBitmap();
-
-                if (DpiHelper.IsScalingRequired)
-                {
-                    DpiHelper.ScaleBitmapLogicalToDevice(ref _glyphImageOpened);
-                }
-            }
-
-            return _glyphImageOpened;
-        }
-    }
+    private Image GlyphImageOpened => _glyphImageOpened ??= ScaleHelper.GetIconResourceAsBitmap(
+        typeof(DesignerActionGlyph),
+        "Open_left",
+        ScaleHelper.ScaleToDpi(new Size(IconSize, IconSize), ScaleHelper.InitialSystemDpi));
 
     internal void InvalidateOwnerLocation()
     {
@@ -148,8 +120,8 @@ internal sealed class DesignerActionGlyph : Glyph
     }
 
     /// <summary>
-    ///  Called when the state for this DesignerActionGlyph changes.  Or when the related component's size or
-    ///  location change.  Here, we re-calculate the Glyph's bounds and change our image.
+    ///  Called when the state for this DesignerActionGlyph changes. Or when the related component's size or
+    ///  location change. Here, we re-calculate the Glyph's bounds and change our image.
     /// </summary>
     internal void Invalidate()
     {
@@ -190,7 +162,7 @@ internal sealed class DesignerActionGlyph : Glyph
     }
 
     /// <summary>
-    ///  Used to manage the mouse-pointer-is-over-glyph state.  If this is true,  then we will shade our BoxImage
+    ///  Used to manage the mouse-pointer-is-over-glyph state. If this is true, then we will shade our BoxImage
     ///  in the Paint logic.
     /// </summary>
     private bool MouseOver
@@ -208,7 +180,7 @@ internal sealed class DesignerActionGlyph : Glyph
     }
 
     /// <summary>
-    ///  Responds to a paint event.  This Glyph will paint its current image and, if  MouseHover is true,
+    ///  Responds to a paint event. This Glyph will paint its current image and, if MouseHover is true,
     ///  we'll paint over the image with the 'hoverBrush'.
     /// </summary>
     public override void Paint(PaintEventArgs pe)

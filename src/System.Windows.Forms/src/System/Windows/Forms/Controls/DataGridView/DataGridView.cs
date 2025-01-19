@@ -235,9 +235,9 @@ public partial class DataGridView : Control, ISupportInitialize
 
     private const int FocusRectOffset = 2;
 
-    private BitVector32 _dataGridViewState1;  // see State1_ consts above
-    private BitVector32 _dataGridViewState2;  // see State2_ consts above
-    private BitVector32 _dataGridViewOper;    // see Operation consts above
+    private BitVector32 _dataGridViewState1;  // see State1_ constants above
+    private BitVector32 _dataGridViewState2;  // see State2_ constants above
+    private BitVector32 _dataGridViewOper;    // see Operation constants above
 
     private const BorderStyle DefaultBorderStyle = BorderStyle.FixedSingle;
     private const DataGridViewAdvancedCellBorderStyle DefaultAdvancedCellBorderStyle
@@ -267,7 +267,7 @@ public partial class DataGridView : Control, ISupportInitialize
     private object? _uneditedFormattedValue;
     private Control? _latestEditingControl;
     private Control? _cachedEditingControl;
-    private Panel? _editingPanel;
+    private DataGridViewEditingPanel? _editingPanel;
     private DataGridViewEditingPanelAccessibleObject? _editingPanelAccessibleObject;
     private Point _ptCurrentCell;
     private Point _ptCurrentCellCache = Point.Empty;
@@ -353,8 +353,8 @@ public partial class DataGridView : Control, ISupportInitialize
     private Timer? _horizScrollTimer;
 
     private readonly Dictionary<Type, TypeConverter> _converters;
-    private static Color s_defaultBackColor = SystemColors.Window;
-    private static Color s_defaultBackgroundColor = SystemColors.ControlDark;
+    private static readonly Color s_defaultBackColor = SystemColors.Window;
+    private static readonly Color s_defaultBackgroundColor = SystemColors.ControlDark;
     private Color _backgroundColor = s_defaultBackgroundColor;
 
     private RECT[]? _cachedScrollableRegion;
@@ -371,7 +371,7 @@ public partial class DataGridView : Control, ISupportInitialize
 #if DEBUG
     // set to false when the grid is not in sync with the underlying data store
     // in virtual mode, and OnCellValueNeeded cannot be called.
-    // disable csharp compiler warning #0414: field assigned unused value
+    // disable C# compiler warning #0414: field assigned unused value
 #pragma warning disable 0414
     internal bool _dataStoreAccessAllowed = true;
 #pragma warning restore 0414
@@ -386,6 +386,10 @@ public partial class DataGridView : Control, ISupportInitialize
                  ControlStyles.UserMouse, true);
 
         SetStyle(ControlStyles.SupportsTransparentBackColor, false);
+
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
 
         // this class overrides GetPreferredSizeCore, let Control automatically cache the result
         SetExtendedState(ExtendedStates.UserPreferredSizeCache, true);
@@ -412,14 +416,14 @@ public partial class DataGridView : Control, ISupportInitialize
                                 | State2_UsedFillWeightsDirty] = true;
 
         DisplayedBandsInfo = new DisplayedBandsData();
-        _lstRows = new List<DataGridViewRow>();
+        _lstRows = [];
 
         _converters = new(8);
         GridPenColor = DefaultGridColor;
 
-        _selectedBandIndexes = new DataGridViewIntLinkedList();
-        _individualSelectedCells = new DataGridViewCellLinkedList();
-        _individualReadOnlyCells = new DataGridViewCellLinkedList();
+        _selectedBandIndexes = [];
+        _individualSelectedCells = [];
+        _individualReadOnlyCells = [];
 
         AdvancedCellBorderStyle = new DataGridViewAdvancedBorderStyle(this,
             DataGridViewAdvancedCellBorderStyle.OutsetDouble,
@@ -458,14 +462,14 @@ public partial class DataGridView : Control, ISupportInitialize
         _horizScrollBar.Top = ClientRectangle.Height - _horizScrollBar.Height;
         _horizScrollBar.Left = 0;
         _horizScrollBar.Visible = false;
-        _horizScrollBar.Scroll += new ScrollEventHandler(DataGridViewHScrolled);
+        _horizScrollBar.Scroll += DataGridViewHScrolled;
         Controls.Add(_horizScrollBar);
 
         _vertScrollBar.Top = 0;
         _vertScrollBar.AccessibleName = SR.DataGridView_AccVerticalScrollBarAccName;
         _vertScrollBar.Left = ClientRectangle.Width - _vertScrollBar.Width;
         _vertScrollBar.Visible = false;
-        _vertScrollBar.Scroll += new ScrollEventHandler(DataGridViewVScrolled);
+        _vertScrollBar.Scroll += DataGridViewVScrolled;
         Controls.Add(_vertScrollBar);
 
         _ptCurrentCell = new Point(-1, -1);
@@ -483,17 +487,10 @@ public partial class DataGridView : Control, ISupportInitialize
         PerformLayout();
 
         _toolTipControl = new DataGridViewToolTip(this);
-        RowHeadersWidth = ScaleToCurrentDpi(DefaultRowHeadersWidth);
-        _columnHeadersHeight = ScaleToCurrentDpi(DefaultColumnHeadersHeight);
+        RowHeadersWidth = LogicalToDeviceUnits(DefaultRowHeadersWidth);
+        _columnHeadersHeight = LogicalToDeviceUnits(DefaultColumnHeadersHeight);
         Invalidate();
     }
-
-    /// <summary>
-    ///  Scaling row header width and column header height.
-    /// </summary>
-    private int ScaleToCurrentDpi(int value) => DpiHelper.IsScalingRequirementMet
-        ? LogicalToDeviceUnits(value)
-        : value;
 
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -925,7 +922,7 @@ public partial class DataGridView : Control, ISupportInitialize
                     previousModes[dataGridViewColumn.Index] = dataGridViewColumn.InheritedAutoSizeMode;
                 }
 
-                DataGridViewAutoSizeColumnsModeEventArgs dgvcasme = new DataGridViewAutoSizeColumnsModeEventArgs(previousModes);
+                DataGridViewAutoSizeColumnsModeEventArgs dgvcasme = new(previousModes);
                 _autoSizeColumnsMode = value;
                 OnAutoSizeColumnsModeChanged(dgvcasme);
             }
@@ -973,7 +970,7 @@ public partial class DataGridView : Control, ISupportInitialize
 
             if (_autoSizeRowsMode != value)
             {
-                DataGridViewAutoSizeModeEventArgs dgvasme = new DataGridViewAutoSizeModeEventArgs(_autoSizeRowsMode != DataGridViewAutoSizeRowsMode.None);
+                DataGridViewAutoSizeModeEventArgs dgvasme = new(_autoSizeRowsMode != DataGridViewAutoSizeRowsMode.None);
                 _autoSizeRowsMode = value;
                 OnAutoSizeRowsModeChanged(dgvasme);
             }
@@ -1078,7 +1075,7 @@ public partial class DataGridView : Control, ISupportInitialize
         get => _borderStyle;
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x2
+            // Sequential enum. Valid values are 0x0 to 0x2
             SourceGenerated.EnumValidator.Validate(value);
             if (_borderStyle != value)
             {
@@ -1135,9 +1132,6 @@ public partial class DataGridView : Control, ISupportInitialize
         {
             bool canEnable = false;
 
-            Debug.WriteLineIf(CompModSwitches.ImeMode.Level >= TraceLevel.Info, $"Inside get_CanEnableIme(), this = {this}");
-            Debug.Indent();
-
             if (_ptCurrentCell.X != -1 && ColumnEditable(_ptCurrentCell.X))
             {
                 DataGridViewCell dataGridViewCell = CurrentCellInternal;
@@ -1148,9 +1142,6 @@ public partial class DataGridView : Control, ISupportInitialize
                     canEnable = base.CanEnableIme;
                 }
             }
-
-            Debug.WriteLineIf(CompModSwitches.ImeMode.Level >= TraceLevel.Info, $"Value = {canEnable}");
-            Debug.Unindent();
 
             return canEnable;
         }
@@ -1243,7 +1234,7 @@ public partial class DataGridView : Control, ISupportInitialize
         }
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0xa
+            // Sequential enum. Valid values are 0x0 to 0xa
             SourceGenerated.EnumValidator.Validate(value);
 
             if (value != CellBorderStyle)
@@ -1383,7 +1374,7 @@ public partial class DataGridView : Control, ISupportInitialize
         get => _clipboardCopyMode;
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x3
+            // Sequential enum. Valid values are 0x0 to 0x3
             SourceGenerated.EnumValidator.Validate(value);
             _clipboardCopyMode = value;
         }
@@ -1398,10 +1389,7 @@ public partial class DataGridView : Control, ISupportInitialize
         get => Columns.Count;
         set
         {
-            if (value < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(ColumnCount), value, 0));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
             if (DataSource is not null)
             {
@@ -1453,32 +1441,18 @@ public partial class DataGridView : Control, ISupportInitialize
     [DefaultValue(DataGridViewHeaderBorderStyle.Raised)]
     public DataGridViewHeaderBorderStyle ColumnHeadersBorderStyle
     {
-        get
+        get => AdvancedColumnHeadersBorderStyle.All switch
         {
-            switch (AdvancedColumnHeadersBorderStyle.All)
-            {
-                case DataGridViewAdvancedCellBorderStyle.NotSet:
-                    return DataGridViewHeaderBorderStyle.Custom;
-
-                case DataGridViewAdvancedCellBorderStyle.None:
-                    return DataGridViewHeaderBorderStyle.None;
-
-                case DataGridViewAdvancedCellBorderStyle.Single:
-                    return DataGridViewHeaderBorderStyle.Single;
-
-                case DataGridViewAdvancedCellBorderStyle.InsetDouble:
-                    return DataGridViewHeaderBorderStyle.Sunken;
-
-                case DataGridViewAdvancedCellBorderStyle.OutsetPartial:
-                    return DataGridViewHeaderBorderStyle.Raised;
-
-                default:
-                    return DataGridViewHeaderBorderStyle.Custom;
-            }
-        }
+            DataGridViewAdvancedCellBorderStyle.NotSet => DataGridViewHeaderBorderStyle.Custom,
+            DataGridViewAdvancedCellBorderStyle.None => DataGridViewHeaderBorderStyle.None,
+            DataGridViewAdvancedCellBorderStyle.Single => DataGridViewHeaderBorderStyle.Single,
+            DataGridViewAdvancedCellBorderStyle.InsetDouble => DataGridViewHeaderBorderStyle.Sunken,
+            DataGridViewAdvancedCellBorderStyle.OutsetPartial => DataGridViewHeaderBorderStyle.Raised,
+            _ => DataGridViewHeaderBorderStyle.Custom,
+        };
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x4
+            // Sequential enum. Valid values are 0x0 to 0x4
             SourceGenerated.EnumValidator.Validate(value);
             if (value != ColumnHeadersBorderStyle)
             {
@@ -1596,15 +1570,8 @@ public partial class DataGridView : Control, ISupportInitialize
         get => _columnHeadersHeight;
         set
         {
-            if (value < MinimumColumnHeadersHeight)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), string.Format(SR.InvalidLowBoundArgumentEx, nameof(ColumnHeadersHeight), value, MinimumColumnHeadersHeight));
-            }
-
-            if (value > MaxHeadersThickness)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), string.Format(SR.InvalidHighBoundArgumentEx, nameof(ColumnHeadersHeight), value, MaxHeadersThickness));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, MinimumColumnHeadersHeight);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxHeadersThickness);
 
             if (ColumnHeadersHeightSizeMode == DataGridViewColumnHeadersHeightSizeMode.AutoSize)
             {
@@ -1641,11 +1608,11 @@ public partial class DataGridView : Control, ISupportInitialize
         get => _columnHeadersHeightSizeMode;
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x2
+            // Sequential enum. Valid values are 0x0 to 0x2
             SourceGenerated.EnumValidator.Validate(value);
             if (_columnHeadersHeightSizeMode != value)
             {
-                DataGridViewAutoSizeModeEventArgs dgvasme = new DataGridViewAutoSizeModeEventArgs(_columnHeadersHeightSizeMode == DataGridViewColumnHeadersHeightSizeMode.AutoSize);
+                DataGridViewAutoSizeModeEventArgs dgvasme = new(_columnHeadersHeightSizeMode == DataGridViewColumnHeadersHeightSizeMode.AutoSize);
                 _columnHeadersHeightSizeMode = value;
                 OnColumnHeadersHeightSizeModeChanged(dgvasme);
             }
@@ -1739,7 +1706,7 @@ public partial class DataGridView : Control, ISupportInitialize
             Debug.Assert(_ptCurrentCell.X >= 0 && _ptCurrentCell.Y >= 0);
             Debug.Assert(_ptCurrentCell.X < Columns.Count);
             Debug.Assert(_ptCurrentCell.Y < Rows.Count);
-            DataGridViewRow dataGridViewRow = (DataGridViewRow)Rows[_ptCurrentCell.Y]; // unsharing row
+            DataGridViewRow dataGridViewRow = Rows[_ptCurrentCell.Y]; // un-sharing row
             return dataGridViewRow.Cells[_ptCurrentCell.X];
         }
         set
@@ -2009,7 +1976,7 @@ public partial class DataGridView : Control, ISupportInitialize
                 || _defaultCellStyle.Alignment == DataGridViewContentAlignment.NotSet
                 || _defaultCellStyle.WrapMode == DataGridViewTriState.NotSet)
             {
-                DataGridViewCellStyle defaultCellStyleTmp = new DataGridViewCellStyle(_defaultCellStyle)
+                DataGridViewCellStyle defaultCellStyleTmp = new(_defaultCellStyle)
                 {
                     Scope = DataGridViewCellStyleScopes.None
                 };
@@ -2179,7 +2146,7 @@ public partial class DataGridView : Control, ISupportInitialize
         get => _editMode;
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x4
+            // Sequential enum. Valid values are 0x0 to 0x4
             SourceGenerated.EnumValidator.Validate(value);
 
             if (_editMode != value)
@@ -2206,7 +2173,7 @@ public partial class DataGridView : Control, ISupportInitialize
         {
             if (EditingControl is not null)
             {
-                Point ptMouse = PointToClient(Control.MousePosition);
+                Point ptMouse = PointToClient(MousePosition);
                 return EditingControl.Bounds.Contains(ptMouse);
             }
 
@@ -2220,7 +2187,7 @@ public partial class DataGridView : Control, ISupportInitialize
         {
             if (_editingPanel is not null)
             {
-                Point ptMouse = PointToClient(Control.MousePosition);
+                Point ptMouse = PointToClient(MousePosition);
                 return _editingPanel.Bounds.Contains(ptMouse);
             }
 
@@ -2232,7 +2199,7 @@ public partial class DataGridView : Control, ISupportInitialize
     {
         get
         {
-            Point ptMouse = PointToClient(Control.MousePosition);
+            Point ptMouse = PointToClient(MousePosition);
             if (_vertScrollBar is not null && _vertScrollBar.Visible)
             {
                 if (_vertScrollBar.Bounds.Contains(ptMouse))
@@ -2311,7 +2278,7 @@ public partial class DataGridView : Control, ISupportInitialize
             Point firstDisplayedCellAddress = FirstDisplayedCellAddress;
             if (firstDisplayedCellAddress.X >= 0)
             {
-                return Rows[firstDisplayedCellAddress.Y].Cells[firstDisplayedCellAddress.X]; // unshares the row of first displayed cell
+                return Rows[firstDisplayedCellAddress.Y].Cells[firstDisplayedCellAddress.X]; // un-shares the row of first displayed cell
             }
 
             return null;
@@ -2361,7 +2328,7 @@ public partial class DataGridView : Control, ISupportInitialize
     {
         get
         {
-            Point ptFirstDisplayedCellAddress = new Point(-1, -1)
+            Point ptFirstDisplayedCellAddress = new(-1, -1)
             {
                 Y = Rows.GetFirstRow(DataGridViewElementStates.Visible | DataGridViewElementStates.Frozen)
             };
@@ -2820,17 +2787,14 @@ public partial class DataGridView : Control, ISupportInitialize
         set
         {
             // int widthNotVisible = this.Columns.GetColumnsWidth(DataGridViewElementStates.Visible) - this.layout.Data.Width;
-            if (value < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(HorizontalScrollingOffset), value, 0));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
             // Intentionally ignoring the out of range situation.
-            // else if (value > widthNotVisible && widthNotVisible > 0)
+            // if (value > widthNotVisible && widthNotVisible > 0)
             // {
             //     throw new ArgumentOutOfRangeException(string.Format(SR.DataGridView_PropertyTooLarge, "HorizontalScrollingOffset", (widthNotVisible).ToString()));
             // }
-            else if (value > 0 && (Columns.GetColumnsWidth(DataGridViewElementStates.Visible) - _layout.Data.Width) <= 0)
+            if (value > 0 && (Columns.GetColumnsWidth(DataGridViewElementStates.Visible) - _layout.Data.Width) <= 0)
             {
                 // Intentionally ignoring the case where dev tries to set value while there is no horizontal scrolling possible.
                 // throw new ArgumentOutOfRangeException(nameof(HorizontalScrollingOffset), SR.DataGridView_PropertyMustBeZero);
@@ -2854,7 +2818,7 @@ public partial class DataGridView : Control, ISupportInitialize
             if (_horizScrollTimer is null)
             {
                 _horizScrollTimer = new Timer();
-                _horizScrollTimer.Tick += new EventHandler(HorizScrollTimer_Tick);
+                _horizScrollTimer.Tick += HorizScrollTimer_Tick;
             }
 
             return _horizScrollTimer;
@@ -2912,7 +2876,7 @@ public partial class DataGridView : Control, ISupportInitialize
             }
             else
             {
-                QuestionEventArgs qe = new QuestionEventArgs(_dataGridViewState1[State1_EditedRowChanged] || IsCurrentCellDirty);
+                QuestionEventArgs qe = new(_dataGridViewState1[State1_EditedRowChanged] || IsCurrentCellDirty);
                 OnRowDirtyStateNeeded(qe);
                 return qe.Response;
             }
@@ -2983,18 +2947,16 @@ public partial class DataGridView : Control, ISupportInitialize
     {
         get
         {
-            if (Properties.TryGetObject(s_propToolTip, out ToolTip? toolTip))
+            if (!Properties.TryGetValue(s_propToolTip, out ToolTip? toolTip))
             {
-                return toolTip!;
+                toolTip = Properties.AddValue(
+                    s_propToolTip,
+                    new ToolTip
+                    {
+                        ReshowDelay = 500,
+                        InitialDelay = 500
+                    });
             }
-
-            toolTip = new ToolTip
-            {
-                ReshowDelay = 500,
-                InitialDelay = 500
-            };
-
-            Properties.SetObject(s_propToolTip, toolTip);
 
             return toolTip;
         }
@@ -3146,7 +3108,7 @@ public partial class DataGridView : Control, ISupportInitialize
                 Debug.Assert(_individualReadOnlyCells.Count == 0);
                 for (int columnIndex = 0; columnIndex < Columns.Count; columnIndex++)
                 {
-                    Debug.Assert(Columns[columnIndex].ReadOnly == false);
+                    Debug.Assert(!Columns[columnIndex].ReadOnly);
                 }
 
                 int rowCount = Rows.Count;
@@ -3171,7 +3133,8 @@ public partial class DataGridView : Control, ISupportInitialize
     private void ResetCurrentCell()
     {
         if (_ptCurrentCell.X != -1 && !SetCurrentCellAddressCore(
-            -1, -1,
+            -1,
+            -1,
             setAnchorCellAddress: true,
             validateCurrentCell: true,
             throughMouseClick: false))
@@ -3207,26 +3170,7 @@ public partial class DataGridView : Control, ISupportInitialize
         get => Rows.Count;
         set
         {
-            if (AllowUserToAddRowsInternal)
-            {
-                if (value < 1)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        string.Format(SR.InvalidLowBoundArgumentEx, nameof(RowCount), value, 1));
-                }
-            }
-            else
-            {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        string.Format(SR.InvalidLowBoundArgumentEx, nameof(RowCount), value, 0));
-                }
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, AllowUserToAddRowsInternal ? 1 : 0);
 
             if (DataSource is not null)
             {
@@ -3263,7 +3207,7 @@ public partial class DataGridView : Control, ISupportInitialize
                 if (Columns.Count == 0)
                 {
                     // There are no columns yet, we simply create a single DataGridViewTextBoxColumn.
-                    DataGridViewTextBoxColumn dataGridViewTextBoxColumn = new DataGridViewTextBoxColumn();
+                    DataGridViewTextBoxColumn dataGridViewTextBoxColumn = new();
                     Columns.Add(dataGridViewTextBoxColumn);
                 }
 
@@ -3282,32 +3226,18 @@ public partial class DataGridView : Control, ISupportInitialize
     [DefaultValue(DataGridViewHeaderBorderStyle.Raised)]
     public DataGridViewHeaderBorderStyle RowHeadersBorderStyle
     {
-        get
+        get => AdvancedRowHeadersBorderStyle.All switch
         {
-            switch (AdvancedRowHeadersBorderStyle.All)
-            {
-                case DataGridViewAdvancedCellBorderStyle.NotSet:
-                    return DataGridViewHeaderBorderStyle.Custom;
-
-                case DataGridViewAdvancedCellBorderStyle.None:
-                    return DataGridViewHeaderBorderStyle.None;
-
-                case DataGridViewAdvancedCellBorderStyle.Single:
-                    return DataGridViewHeaderBorderStyle.Single;
-
-                case DataGridViewAdvancedCellBorderStyle.InsetDouble:
-                    return DataGridViewHeaderBorderStyle.Sunken;
-
-                case DataGridViewAdvancedCellBorderStyle.OutsetPartial:
-                    return DataGridViewHeaderBorderStyle.Raised;
-
-                default:
-                    return DataGridViewHeaderBorderStyle.Custom;
-            }
-        }
+            DataGridViewAdvancedCellBorderStyle.NotSet => DataGridViewHeaderBorderStyle.Custom,
+            DataGridViewAdvancedCellBorderStyle.None => DataGridViewHeaderBorderStyle.None,
+            DataGridViewAdvancedCellBorderStyle.Single => DataGridViewHeaderBorderStyle.Single,
+            DataGridViewAdvancedCellBorderStyle.InsetDouble => DataGridViewHeaderBorderStyle.Sunken,
+            DataGridViewAdvancedCellBorderStyle.OutsetPartial => DataGridViewHeaderBorderStyle.Raised,
+            _ => DataGridViewHeaderBorderStyle.Custom,
+        };
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x4
+            // Sequential enum. Valid values are 0x0 to 0x4
             SourceGenerated.EnumValidator.Validate(value);
 
             if (value != RowHeadersBorderStyle)
@@ -3445,21 +3375,8 @@ public partial class DataGridView : Control, ISupportInitialize
         get => _rowHeaderWidth;
         set
         {
-            if (value < MinimumRowHeadersWidth)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidLowBoundArgumentEx, nameof(RowHeadersWidth), value, MinimumRowHeadersWidth));
-            }
-
-            if (value > MaxHeadersThickness)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidHighBoundArgumentEx, nameof(RowHeadersWidth), value, MaxHeadersThickness));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, MinimumRowHeadersWidth);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxHeadersThickness);
 
             if (RowHeadersWidthSizeMode is not DataGridViewRowHeadersWidthSizeMode.EnableResizing
                 and not DataGridViewRowHeadersWidthSizeMode.DisableResizing)
@@ -3531,7 +3448,7 @@ public partial class DataGridView : Control, ISupportInitialize
         }
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x4
+            // Sequential enum. Valid values are 0x0 to 0x4
             SourceGenerated.EnumValidator.Validate(value);
             if (_rowHeadersWidthSizeMode != value)
             {
@@ -3659,7 +3576,7 @@ public partial class DataGridView : Control, ISupportInitialize
         get => _scrollBars;
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x3
+            // Sequential enum. Valid values are 0x0 to 0x3
             SourceGenerated.EnumValidator.Validate(value);
 
             if (_scrollBars != value)
@@ -3704,7 +3621,7 @@ public partial class DataGridView : Control, ISupportInitialize
     {
         get
         {
-            DataGridViewSelectedCellCollection stcc = new DataGridViewSelectedCellCollection();
+            DataGridViewSelectedCellCollection stcc = [];
             switch (SelectionMode)
             {
                 case DataGridViewSelectionMode.CellSelect:
@@ -3720,7 +3637,7 @@ public partial class DataGridView : Control, ISupportInitialize
                     {
                         foreach (int columnIndex in _selectedBandIndexes)
                         {
-                            foreach (DataGridViewRow dataGridViewRow in Rows)   // unshares all rows!
+                            foreach (DataGridViewRow dataGridViewRow in Rows)   // un-shares all rows!
                             {
                                 stcc.Add(dataGridViewRow.Cells[columnIndex]);
                             }
@@ -3739,7 +3656,7 @@ public partial class DataGridView : Control, ISupportInitialize
                     {
                         foreach (int rowIndex in _selectedBandIndexes)
                         {
-                            DataGridViewRow dataGridViewRow = (DataGridViewRow)Rows[rowIndex]; // unshares the selected row
+                            DataGridViewRow dataGridViewRow = Rows[rowIndex]; // un-shares the selected row
                             foreach (DataGridViewCell dataGridViewCell in dataGridViewRow.Cells)
                             {
                                 stcc.Add(dataGridViewCell);
@@ -3764,7 +3681,7 @@ public partial class DataGridView : Control, ISupportInitialize
     {
         get
         {
-            DataGridViewSelectedColumnCollection strc = new DataGridViewSelectedColumnCollection();
+            DataGridViewSelectedColumnCollection strc = [];
             switch (SelectionMode)
             {
                 case DataGridViewSelectionMode.CellSelect:
@@ -3790,7 +3707,7 @@ public partial class DataGridView : Control, ISupportInitialize
     {
         get
         {
-            DataGridViewSelectedRowCollection strc = new DataGridViewSelectedRowCollection();
+            DataGridViewSelectedRowCollection strc = [];
             switch (SelectionMode)
             {
                 case DataGridViewSelectionMode.CellSelect:
@@ -3801,7 +3718,7 @@ public partial class DataGridView : Control, ISupportInitialize
                 case DataGridViewSelectionMode.RowHeaderSelect:
                     foreach (int rowIndex in _selectedBandIndexes)
                     {
-                        strc.Add((DataGridViewRow)Rows[rowIndex]); // unshares the selected row
+                        strc.Add(Rows[rowIndex]); // un-shares the selected row
                     }
 
                     break;
@@ -3820,7 +3737,7 @@ public partial class DataGridView : Control, ISupportInitialize
         get => _selectionMode;
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x4
+            // Sequential enum. Valid values are 0x0 to 0x4
             SourceGenerated.EnumValidator.Validate(value);
 
             if (SelectionMode != value)
@@ -3931,7 +3848,7 @@ public partial class DataGridView : Control, ISupportInitialize
                         if (!value)
                         {
                             bool activate = !string.IsNullOrEmpty(ToolTipPrivate);
-                            Point mouseCoord = System.Windows.Forms.Control.MousePosition;
+                            Point mouseCoord = MousePosition;
                             activate &= ClientRectangle.Contains(PointToClient(mouseCoord));
 
                             // Reset the tool tip
@@ -4207,7 +4124,7 @@ public partial class DataGridView : Control, ISupportInitialize
             if (_vertScrollTimer is null)
             {
                 _vertScrollTimer = new Timer();
-                _vertScrollTimer.Tick += new EventHandler(VertScrollTimer_Tick);
+                _vertScrollTimer.Tick += VertScrollTimer_Tick;
             }
 
             return _vertScrollTimer;
@@ -4232,9 +4149,8 @@ public partial class DataGridView : Control, ISupportInitialize
     }
 
     private bool VisibleCellExists =>
-        Columns.GetFirstColumn(DataGridViewElementStates.Visible) is null
-            ? false
-            : Rows.GetFirstRow(DataGridViewElementStates.Visible) != -1;
+        Columns.GetFirstColumn(DataGridViewElementStates.Visible) is not null
+        && Rows.GetFirstRow(DataGridViewElementStates.Visible) != -1;
 
     // Events start here
 
@@ -5041,7 +4957,7 @@ public partial class DataGridView : Control, ISupportInitialize
         }
 
         DataGridViewSelectionMode selectionMode = SelectionMode;
-        if (selectionMode == DataGridViewSelectionMode.FullColumnSelect || selectionMode == DataGridViewSelectionMode.ColumnHeaderSelect)
+        if (selectionMode is DataGridViewSelectionMode.FullColumnSelect or DataGridViewSelectionMode.ColumnHeaderSelect)
         {
             foreach (DataGridViewColumn dataGridViewColumn in Columns)
             {

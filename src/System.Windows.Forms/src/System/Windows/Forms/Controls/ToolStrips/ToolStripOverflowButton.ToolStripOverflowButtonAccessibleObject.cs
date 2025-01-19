@@ -7,7 +7,7 @@ namespace System.Windows.Forms;
 
 public partial class ToolStripOverflowButton
 {
-    internal class ToolStripOverflowButtonAccessibleObject : ToolStripDropDownItemAccessibleObject
+    internal sealed class ToolStripOverflowButtonAccessibleObject : ToolStripDropDownItemAccessibleObject
     {
         private readonly ToolStripOverflowButton _owningToolStripOverflowButton;
 
@@ -17,11 +17,9 @@ public partial class ToolStripOverflowButton
         }
 
         [AllowNull]
-        public override string Name
-        {
-            get => Owner.AccessibleName ?? SR.ToolStripOptions;
-            set => base.Name = value;
-        }
+        public override string Name => Owner.AccessibleName ?? SR.ToolStripOptions;
+
+        private protected override bool IsInternal => true;
 
         internal override IRawElementProviderFragment.Interface? FragmentNavigate(NavigateDirection direction)
             => direction switch
@@ -30,9 +28,9 @@ public partial class ToolStripOverflowButton
                     => _owningToolStripOverflowButton.DropDown.Visible
                         ? _owningToolStripOverflowButton.DropDown.AccessibilityObject
                         : null,
-                        // Don't show the inner menu while it is invisible.
-                        // Otherwise it will affect accessibility tree,
-                        // especially for items-controls that have not been created yet.
+                // Don't show the inner menu while it is invisible.
+                // Otherwise it will affect accessibility tree,
+                // especially for items-controls that have not been created yet.
                 _ => base.FragmentNavigate(direction),
             };
     }

@@ -1,4 +1,7 @@
-﻿using System.Drawing;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Drawing;
 using Windows.Win32.UI.Accessibility;
 using static System.Windows.Forms.PrintPreviewControl;
 using IScrollProvider = Windows.Win32.UI.Accessibility.IScrollProvider;
@@ -22,7 +25,7 @@ public class PrintPreviewControl_PrintPreviewControlAccessibilityObjectTests
     [WinFormsFact]
     public void PrintPreviewControlAccessibilityObject_Ctor_NullControl_ThrowsArgumentException()
     {
-        Assert.Throws<ArgumentNullException>(() => new PrintPreviewControl.PrintPreviewControlAccessibleObject(null));
+        Assert.Throws<ArgumentNullException>(() => new PrintPreviewControlAccessibleObject(null));
     }
 
     [WinFormsFact]
@@ -227,6 +230,6 @@ public class PrintPreviewControl_PrintPreviewControlAccessibilityObjectTests
             }
 
             SetVirtualSizeNoInvalidate(new Size(200, 200));
-        }        
+        }
     }
 }

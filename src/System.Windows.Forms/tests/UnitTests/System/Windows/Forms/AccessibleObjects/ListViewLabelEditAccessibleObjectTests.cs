@@ -5,7 +5,6 @@ using System.Drawing;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
 using static System.Windows.Forms.ListViewItem;
-using static Interop;
 
 namespace System.Windows.Forms.Tests.AccessibleObjects;
 
@@ -20,7 +19,7 @@ public class ListViewLabelEditAccessibleObjectTests
         ListViewLabelEditAccessibleObject accessibilityObject = (ListViewLabelEditAccessibleObject)labelEdit.AccessibilityObject;
         using VARIANT runtimeId = accessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_RuntimeIdPropertyId);
         Assert.Equal(accessibilityObject.RuntimeId, runtimeId.ToObject());
-        PInvoke.GetWindowRect(labelEdit, out RECT r);
+        PInvokeCore.GetWindowRect(labelEdit, out RECT r);
         using VARIANT rectArrayVariant = accessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_BoundingRectanglePropertyId);
         double[] actualArray = (double[])rectArrayVariant.ToObject();
         Rectangle actualRectangle = new((int)actualArray[0], (int)actualArray[1], (int)actualArray[2], (int)actualArray[3]);
@@ -162,7 +161,7 @@ public class ListViewLabelEditAccessibleObjectTests
         listView.Columns.Add(new ColumnHeader() { Text = "Column 1", Width = 100 });
 
         ListViewItem item = new("Test", 0);
-        ListViewSubItem subItem = new ListViewSubItem(item, "Test");
+        ListViewSubItem subItem = new(item, "Test");
         item.SubItems.Add(subItem);
         listView.Items.Add(item);
         listView._listViewSubItem = subItem;
@@ -170,7 +169,7 @@ public class ListViewLabelEditAccessibleObjectTests
 
         PInvoke.SetFocus(listView);
 
-        PInvoke.SendMessage(listView, PInvoke.LVM_EDITLABELW, wParam: 0);
+        PInvokeCore.SendMessage(listView, PInvoke.LVM_EDITLABELW, wParam: 0);
 
         return listView;
     }
@@ -181,8 +180,9 @@ public class ListViewLabelEditAccessibleObjectTests
         {
             if (disposing)
             {
-                // End the label edit because ListView cannot be correctly disposed with an active label edit when AccessibilityObject is created for the ListView
-                PInvoke.SendMessage(this, PInvoke.LVM_CANCELEDITLABEL);
+                // End the label edit because ListView cannot be correctly disposed with an active label edit when
+                // AccessibilityObject is created for the ListView
+                PInvokeCore.SendMessage(this, PInvoke.LVM_CANCELEDITLABEL);
             }
 
             base.Dispose(disposing);

@@ -5,8 +5,6 @@ using System.Threading;
 
 #if NET8_0_OR_GREATER
 
-using static System.Drawing.SafeNativeMethods;
-
 namespace System.Drawing.Imaging;
 
 /// <summary>
@@ -27,7 +25,7 @@ namespace System.Drawing.Imaging;
 ///   <see cref="CachedBitmap"/> cannot be used to draw to a printer or metafile.
 ///  </para>
 /// </remarks>
-public sealed class CachedBitmap : IDisposable
+public sealed unsafe class CachedBitmap : IDisposable
 {
     private nint _handle;
 
@@ -36,17 +34,23 @@ public sealed class CachedBitmap : IDisposable
     ///  <paramref name="graphics"/>
     /// </summary>
     /// <param name="bitmap">The <see cref="Bitmap"/> to convert.</param>
-    /// <param name="graphics">The <see cref="Graphics"/> object to use to format the cached copy of the <paramref name="bitmap"/>.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="bitmap"/> or <paramref name="graphics"/> is <see langword="null"/>.</exception>
+    /// <param name="graphics">
+    ///  The <see cref="Graphics"/> object to use to format the cached copy of the <paramref name="bitmap"/>.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    ///  <paramref name="bitmap"/> or <paramref name="graphics"/> is <see langword="null"/>.
+    /// </exception>
     public CachedBitmap(Bitmap bitmap, Graphics graphics)
     {
         ArgumentNullException.ThrowIfNull(bitmap);
         ArgumentNullException.ThrowIfNull(graphics);
 
-        Gdip.CheckStatus(Gdip.GdipCreateCachedBitmap(
-            new(bitmap, bitmap._nativeImage),
-            new(graphics, graphics.NativeGraphics),
-            out _handle));
+        GpCachedBitmap* cachedBitmap;
+        PInvokeGdiPlus.GdipCreateCachedBitmap(
+            bitmap.Pointer(),
+            graphics.Pointer(),
+            &cachedBitmap);
+        _handle = (nint)cachedBitmap;
     }
 
     internal nint Handle => _handle;
@@ -59,7 +63,7 @@ public sealed class CachedBitmap : IDisposable
             return;
         }
 
-        int status = Gdip.GdipDeleteCachedBitmap(handle);
+        Status status = PInvokeGdiPlus.GdipDeleteCachedBitmap((GpCachedBitmap*)handle);
         if (disposing)
         {
             // Don't want to throw on the finalizer thread.

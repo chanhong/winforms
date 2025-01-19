@@ -20,12 +20,12 @@ public class SendInput
     {
         await SendAsync(window, inputSimulator =>
         {
-            foreach (var key in keys)
+            foreach (object key in keys)
             {
                 switch (key)
                 {
                     case string str:
-                        var text = str.Replace("\r\n", "\r").Replace("\n", "\r");
+                        string text = str.Replace("\r\n", "\r").Replace("\n", "\r");
                         int index = 0;
                         while (index < text.Length)
                         {
@@ -42,7 +42,7 @@ public class SendInput
                                     nextIndex = text.Length;
                                 }
 
-                                inputSimulator.Keyboard.TextEntry(text.Substring(index, nextIndex - index));
+                                inputSimulator.Keyboard.TextEntry(text[index..nextIndex]);
                                 index = nextIndex;
                             }
                         }
@@ -69,10 +69,7 @@ public class SendInput
 
     internal async Task SendAsync(Form window, Action<InputSimulator> actions)
     {
-        if (actions is null)
-        {
-            throw new ArgumentNullException(nameof(actions));
-        }
+        ArgumentNullException.ThrowIfNull(actions);
 
         SetForegroundWindow(window);
         await Task.Run(() => actions(new InputSimulator()));
@@ -88,7 +85,7 @@ public class SendInput
         // Move the window into the foreground as it may not have been achieved by the 'SetWindowPos' call
         if (!PInvoke.SetForegroundWindow(window))
         {
-            string windowTitle = PInvoke.GetWindowText(window);
+            string windowTitle = PInvokeCore.GetWindowText(window);
             if (PInvoke.GetWindowThreadProcessId(window, out uint processId) == 0 || processId != Environment.ProcessId)
             {
                 string message = $"ForegroundWindow doesn't belong the test process! The current window HWND: {window}, title:{windowTitle}.";

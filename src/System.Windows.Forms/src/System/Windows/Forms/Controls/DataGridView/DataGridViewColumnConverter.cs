@@ -21,10 +21,10 @@ internal class DataGridViewColumnConverter : ExpandableObjectConverter
     }
 
     /// <summary>
-    ///  Converts the given object to another type.  The most common types to convert
-    ///  are to and from a string object.  The default implementation will make a call
+    ///  Converts the given object to another type. The most common types to convert
+    ///  are to and from a string object. The default implementation will make a call
     ///  to ToString on the object if the object is valid and if the destination
-    ///  type is string.  If this cannot convert to the destination type, this will
+    ///  type is string. If this cannot convert to the destination type, this will
     ///  throw a NotSupportedException.
     /// </summary>
     public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
@@ -39,7 +39,7 @@ internal class DataGridViewColumnConverter : ExpandableObjectConverter
             //
             if (dataGridViewColumn.CellType is not null)
             {
-                ctor = dataGridViewColumn.GetType().GetConstructor(new Type[] { typeof(Type) });
+                ctor = dataGridViewColumn.GetType().GetConstructor([typeof(Type)]);
                 if (ctor is not null)
                 {
                     return new InstanceDescriptor(ctor, new object[] { dataGridViewColumn.CellType }, false);
@@ -48,7 +48,7 @@ internal class DataGridViewColumnConverter : ExpandableObjectConverter
 
             // public DataGridViewColumn()
             //
-            ctor = dataGridViewColumn.GetType().GetConstructor(Array.Empty<Type>());
+            ctor = dataGridViewColumn.GetType().GetConstructor([]);
             if (ctor is not null)
             {
                 return new InstanceDescriptor(ctor, Array.Empty<object>(), false);

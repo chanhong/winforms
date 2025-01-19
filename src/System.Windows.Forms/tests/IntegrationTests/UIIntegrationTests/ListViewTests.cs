@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 namespace System.Windows.Forms.UITests;
 
 // NOTE: This class contains many tests which don't require user input. Although they arguably belong to the unit
-// tests project, these tests assert behaviours of ListView.View=View.Tile, which doesn't work correctly unless
+// tests project, these tests assert behaviors of ListView.View=View.Tile, which doesn't work correctly unless
 // we ran an app.
 
 public class ListViewTests : ControlTestBase
@@ -39,18 +39,21 @@ public class ListViewTests : ControlTestBase
         });
     }
 
+    [ActiveIssue("https://github.com/dotnet/winforms/issues/11328")]
     [WinFormsFact]
+    [SkipOnArchitecture(TestArchitectures.X64,
+        "Flaky tests, see: https://github.com/dotnet/winforms/issues/11328")]
     public async Task ListView_Group_NavigateKeyboard_SucceedsAsync()
     {
         await RunTestAsync(async (form, listView) =>
         {
-            var group = new ListViewGroup($"Group 1", HorizontalAlignment.Left) { CollapsedState = ListViewGroupCollapsedState.Expanded };
-            var item1 = new ListViewItem("g1-1") { Group = group };
-            var item2 = new ListViewItem("g1-2") { Group = group };
-            var item3 = new ListViewItem("g1-3") { Group = group };
+            ListViewGroup group = new($"Group 1", HorizontalAlignment.Left) { CollapsedState = ListViewGroupCollapsedState.Expanded };
+            ListViewItem item1 = new("g1-1") { Group = group };
+            ListViewItem item2 = new("g1-2") { Group = group };
+            ListViewItem item3 = new("g1-3") { Group = group };
 
             listView.Groups.Add(group);
-            listView.Items.AddRange(new[] { item1, item2, item3 });
+            listView.Items.AddRange(item1, item2, item3);
             listView.Focus();
 
             bool collapsedStateChangedFired = false;
@@ -511,13 +514,13 @@ public class ListViewTests : ControlTestBase
 
     private void InitializeItems(ListView listView, View view, bool virtualModeEnabled, bool checkBoxesEnabled)
     {
-        var columnHeader1 = new ColumnHeader { Text = "ColumnHeader1", Width = 140 };
-        var columnHeader2 = new ColumnHeader { Text = "ColumnHeader2", Width = 140 };
-        var columnHeader3 = new ColumnHeader { Text = "ColumnHeader3", Width = 140 };
-        listView.Columns.AddRange(new[] { columnHeader1, columnHeader2, columnHeader3 });
-        var listViewItem1 = new ListViewItem(new[] { "row1", "row1Col2", "row1Col3" }, -1) { StateImageIndex = 0 };
-        var listViewItem2 = new ListViewItem(new[] { "row2", "row2Col2", "row2Col3" }, -1) { StateImageIndex = 0 };
-        var listViewItem3 = new ListViewItem(new[] { "row3", "row3Col2", "row3Col3" }, -1) { StateImageIndex = 0 };
+        ColumnHeader columnHeader1 = new() { Text = "ColumnHeader1", Width = 140 };
+        ColumnHeader columnHeader2 = new() { Text = "ColumnHeader2", Width = 140 };
+        ColumnHeader columnHeader3 = new() { Text = "ColumnHeader3", Width = 140 };
+        listView.Columns.AddRange([columnHeader1, columnHeader2, columnHeader3]);
+        ListViewItem listViewItem1 = new(["row1", "row1Col2", "row1Col3"], -1) { StateImageIndex = 0 };
+        ListViewItem listViewItem2 = new(["row2", "row2Col2", "row2Col3"], -1) { StateImageIndex = 0 };
+        ListViewItem listViewItem3 = new(["row3", "row3Col2", "row3Col3"], -1) { StateImageIndex = 0 };
         listView.RetrieveVirtualItem += (s, e) =>
         {
             e.Item = e.ItemIndex switch
@@ -536,7 +539,7 @@ public class ListViewTests : ControlTestBase
         listView.VirtualListSize = 3;
         if (!virtualModeEnabled)
         {
-            listView.Items.AddRange(new[] { listViewItem1, listViewItem2, listViewItem3 });
+            listView.Items.AddRange(listViewItem1, listViewItem2, listViewItem3);
         }
     }
 
@@ -550,7 +553,7 @@ public class ListViewTests : ControlTestBase
             listView.Columns.Add(new ColumnHeader() { Text = $"ColumnHeader{i}" });
         }
 
-        ListViewItem listViewItem = new ListViewItem("Test");
+        ListViewItem listViewItem = new("Test");
         for (int i = 0; i < subItemsCount; i++)
         {
             listViewItem.SubItems.Add(new ListViewItem.ListViewSubItem() { Text = $"Test SubItem{i}" });

@@ -13,7 +13,7 @@ public partial class MonthCalendar
     /// <summary>
     ///  Represents an accessible object for a row in <see cref="MonthCalendar"/> control.
     /// </summary>
-    internal class CalendarRowAccessibleObject : MonthCalendarChildAccessibleObject
+    internal sealed class CalendarRowAccessibleObject : MonthCalendarChildAccessibleObject
     {
         // This const is used to get ChildId.
         // It should take into account previous rows in a calendar body.
@@ -24,7 +24,7 @@ public partial class MonthCalendar
         private readonly MonthCalendarAccessibleObject _monthCalendarAccessibleObject;
         private readonly int _calendarIndex;
         private readonly int _rowIndex;
-        private readonly int[] _initRuntimeId;
+        private readonly int[] _runtimeId;
         private LinkedList<CalendarCellAccessibleObject>? _cellsAccessibleObjects;
         private CalendarWeekNumberCellAccessibleObject? _weekNumberCellAccessibleObject;
 
@@ -36,18 +36,13 @@ public partial class MonthCalendar
             _monthCalendarAccessibleObject = monthCalendarAccessibleObject;
             _calendarIndex = calendarIndex;
             _rowIndex = rowIndex;
+
             // RuntimeId doesn't change if the calendar date range is not changed,
             // otherwise the calendar accessibility tree will be rebuilt.
             // So save this value one time to avoid recreating new structures
             // and making extra calculations every time.
-            _initRuntimeId = new int[]
-            {
-                _calendarBodyAccessibleObject.RuntimeId[0],
-                _calendarBodyAccessibleObject.RuntimeId[1],
-                _calendarBodyAccessibleObject.RuntimeId[2],
-                _calendarBodyAccessibleObject.RuntimeId[3],
-                GetChildId()
-            };
+            int[] id = _calendarBodyAccessibleObject.RuntimeId;
+            _runtimeId = [id[0], id[1], id[2], id[3], GetChildId()];
         }
 
         public override Rectangle Bounds
@@ -142,6 +137,8 @@ public partial class MonthCalendar
             }
         }
 
+        internal override bool CanGetDescriptionInternal => false;
+
         internal override IRawElementProviderFragment.Interface? FragmentNavigate(NavigateDirection direction)
             => direction switch
             {
@@ -187,13 +184,17 @@ public partial class MonthCalendar
 
         public override string? Name => null; // Rows don't have names like in a native calendar
 
+        internal override bool CanGetNameInternal => false;
+
         public override AccessibleObject Parent => _calendarBodyAccessibleObject;
+
+        private protected override bool IsInternal => true;
 
         public override AccessibleRole Role => AccessibleRole.Row;
 
         internal override int Row => _rowIndex;
 
-        internal override int[] RuntimeId => _initRuntimeId;
+        internal override int[] RuntimeId => _runtimeId;
 
         internal override void SetFocus()
         {

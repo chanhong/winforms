@@ -6,11 +6,14 @@ using System.Runtime.CompilerServices;
 namespace System.IO;
 
 /// <summary>
-/// Represents a temporary file. Creating an instance creates a file at the specified path,
-/// and disposing the instance deletes the file.
+///  Represents a temporary file. Creating an instance creates a file at the specified path,
+///  and disposing the instance deletes the file.
 /// </summary>
 /// <remarks>
-/// This is copied verbatim from TempFile.cs in dotnet/runtime (https://github.com/dotnet/runtime/blob/master/src/libraries/Common/tests/System/IO/TempFile.cs)
+///  <para>
+///   This is copied verbatim from TempFile.cs in dotnet/runtime.
+///   (https://github.com/dotnet/runtime/blob/master/src/libraries/Common/tests/System/IO/TempFile.cs)
+///  </para>
 /// </remarks>
 public sealed class TempFile : IDisposable
 {

@@ -1,16 +1,16 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Drawing;
 
 /// <summary>
-/// Specifies the display and layout information for text strings.
+///  Specifies the display and layout information for text strings.
 /// </summary>
 [Flags]
 public enum StringFormatFlags
 {
     /// <summary>
-    /// Specifies that text is right to left.
+    ///  Specifies that text is right to left.
     /// </summary>
     DirectionRightToLeft = 0x00000001,
 
@@ -29,7 +29,7 @@ public enum StringFormatFlags
     ///
     /// WARNING:
     /// The GDI+ equivalent for this is StringFormatFlags::StringFormatFlagsNoFitBlackBox,
-    /// which is defined as 0x4.  This was a mistake introduced since the first version of
+    /// which is defined as 0x4. This was a mistake introduced since the first version of
     /// the product and fixing it at this point would be a breaking change.
     /// <see href="https://docs.microsoft.com/en-us/windows/desktop/api/gdiplusenums/ne-gdiplusenums-stringformatflags"/>
     /// </summary>

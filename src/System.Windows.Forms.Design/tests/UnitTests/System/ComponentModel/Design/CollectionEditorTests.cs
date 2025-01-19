@@ -34,7 +34,7 @@ public class CollectionEditorTests
         Assert.Null(editor.Context);
         Assert.Equal("net.ComponentModel.CollectionEditor", editor.HelpTopic);
         Assert.False(editor.IsDropDownResizable);
-        Assert.Equal(new Type[] { expectedItemType }, editor.NewItemTypes);
+        Assert.Equal([expectedItemType], editor.NewItemTypes);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class CollectionEditorTests
     public void CollectionEditor_CreateCollectionForm_NullCollectionType_ThrowsArgumentNullException()
     {
         SubCollectionEditor editor = new(null);
-        Assert.Throws<ArgumentNullException>("type", () => editor.CreateCollectionForm());
+        Assert.Throws<ArgumentNullException>("type", editor.CreateCollectionForm);
     }
 
     [Theory]
@@ -135,7 +135,7 @@ public class CollectionEditorTests
     public void CollectionEditor_CreateCollectionItemType_NullType_ThrowsArgumentNullException()
     {
         SubCollectionEditor editor = new(null);
-        Assert.Throws<ArgumentNullException>("type", () => editor.CreateCollectionItemType());
+        Assert.Throws<ArgumentNullException>("type", editor.CreateCollectionItemType);
     }
 
     public static IEnumerable<object[]> InvalidDesignerHost_TestData()
@@ -383,7 +383,7 @@ public class CollectionEditorTests
     public void CollectionEditor_CreateNewItemTypes_NullType_ThrowsArgumentNullException()
     {
         SubCollectionEditor editor = new(null);
-        Assert.Throws<ArgumentNullException>("type", () => editor.CreateNewItemTypes());
+        Assert.Throws<ArgumentNullException>("type", editor.CreateNewItemTypes);
     }
 
     public static IEnumerable<object[]> DestroyInstance_NormalObject_TestData()
@@ -604,9 +604,6 @@ public class CollectionEditorTests
         Mock<DesignerTransaction> mockTransaction = new(MockBehavior.Strict);
         mockTransaction
             .Protected()
-            .Setup("Dispose", It.IsAny<bool>());
-        mockTransaction
-            .Protected()
             .Setup("OnCommit")
             .Verifiable();
 
@@ -652,9 +649,6 @@ public class CollectionEditorTests
             .Returns(mockEditorService.Object);
 
         Mock<DesignerTransaction> mockTransaction = new(MockBehavior.Strict);
-        mockTransaction
-            .Protected()
-            .Setup("Dispose", It.IsAny<bool>());
         mockTransaction
             .Protected()
             .Setup("OnCancel")
@@ -776,7 +770,7 @@ public class CollectionEditorTests
         Assert.False(editor.GetPaintValueSupported(context));
     }
 
-    public static IEnumerable<Object[]> GetDisplayText_TestData()
+    public static IEnumerable<object[]> GetDisplayText_TestData()
     {
         yield return new object[] { null, null, string.Empty };
         yield return new object[] { null, string.Empty, "String" };
@@ -812,7 +806,7 @@ public class CollectionEditorTests
     }
 
     [Fact]
-    public void CollectionEditor_GetDisplayText_ValueDoesntMatchCollectionType_ThrowsTargetException()
+    public void CollectionEditor_GetDisplayText_ValueDoesNotMatchCollectionType_ThrowsTargetException()
     {
         SubCollectionEditor editor = new(typeof(ClassWithStringDefaultProperty));
         TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => editor.GetDisplayText(new ClassWithNonStringDefaultProperty()));
@@ -1073,10 +1067,14 @@ public class CollectionEditorTests
 
     private class ClassWithPrivateItem
     {
+#pragma warning disable IDE0051 // Remove unused private members
         private int Item { get; set; }
+#pragma warning restore IDE0051
     }
 
+#pragma warning disable CA1052 // Static holder types should be Static or NotInheritable
     private class ClassWithStaticItem
+#pragma warning restore CA1052 // Static holder types should be Static or NotInheritable
     {
         public static int Item { get; set; }
     }
@@ -1088,10 +1086,14 @@ public class CollectionEditorTests
 
     private class ClassWithPrivateItems
     {
+#pragma warning disable IDE0051 // Remove unused private members
         private int Items { get; set; }
+#pragma warning restore IDE0051
     }
 
+#pragma warning disable CA1052 // Static holder types should be Static or NotInheritable
     private class ClassWithStaticItems
+#pragma warning restore CA1052 // Static holder types should be Static or NotInheritable
     {
         public static int Items { get; set; }
     }
@@ -1117,7 +1119,7 @@ public class CollectionEditorTests
         public override string ToString() => null;
     }
 
-    [DefaultProperty(nameof(ClassWithStringDefaultProperty.DefaultProperty))]
+    [DefaultProperty(nameof(DefaultProperty))]
     private class ClassWithStringDefaultProperty
     {
         public string DefaultProperty { get; set; }
@@ -1125,7 +1127,7 @@ public class CollectionEditorTests
         public override string ToString() => nameof(ClassWithStringDefaultProperty);
     }
 
-    [DefaultProperty(nameof(ClassWithNonStringDefaultProperty.DefaultProperty))]
+    [DefaultProperty(nameof(DefaultProperty))]
     private class ClassWithNonStringDefaultProperty
     {
         public int DefaultProperty { get; set; }

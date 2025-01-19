@@ -37,7 +37,7 @@ public partial class ToolStripTextBox
                 int offsetY = -rect.top;
 
                 // fetch the client rect, then apply the offset.
-                PInvoke.GetClientRect(this, out var clientRect);
+                PInvokeCore.GetClientRect(this, out var clientRect);
 
                 clientRect.left += offsetX;
                 clientRect.right += offsetX;
@@ -114,15 +114,15 @@ public partial class ToolStripTextBox
             var absoluteClientRectangle = AbsoluteClientRECT;
 
             // Get the total client area, then exclude the client by using XOR
-            using PInvoke.RegionScope hTotalRegion = new(0, 0, Width, Height);
-            using PInvoke.RegionScope hClientRegion = new(
+            using RegionScope hTotalRegion = new(0, 0, Width, Height);
+            using RegionScope hClientRegion = new(
                 absoluteClientRectangle.left,
                 absoluteClientRectangle.top,
                 absoluteClientRectangle.right,
                 absoluteClientRectangle.bottom);
-            using PInvoke.RegionScope hNonClientRegion = new(0, 0, 0, 0);
+            using RegionScope hNonClientRegion = new(0, 0, 0, 0);
 
-            PInvoke.CombineRgn(hNonClientRegion, hTotalRegion, hClientRegion, RGN_COMBINE_MODE.RGN_XOR);
+            PInvokeCore.CombineRgn(hNonClientRegion, hTotalRegion, hClientRegion, RGN_COMBINE_MODE.RGN_XOR);
 
             // Call RedrawWindow with the region.
             PInvoke.RedrawWindow(
@@ -165,7 +165,7 @@ public partial class ToolStripTextBox
                 {
                     try
                     {
-                        SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
+                        SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
                     }
                     finally
                     {
@@ -177,7 +177,7 @@ public partial class ToolStripTextBox
             {
                 try
                 {
-                    SystemEvents.UserPreferenceChanged -= new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
+                    SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
                 }
                 finally
                 {
@@ -237,7 +237,8 @@ public partial class ToolStripTextBox
                 throw new Win32Exception();
             }
 
-            // Don't set the clipping region based on the WParam - windows seems to take out the two pixels intended for the non-client border.
+            // Don't set the clipping region based on the WParam
+            // - windows seems to take out the two pixels intended for the non-client border.
 
             bool focused = MouseIsOver || Focused;
             Color outerBorderColor = focused ? ColorTable.TextBoxBorder : BackColor;
@@ -269,7 +270,7 @@ public partial class ToolStripTextBox
 
         protected override void WndProc(ref Message m)
         {
-            if (m.MsgInternal == PInvoke.WM_NCPAINT)
+            if (m.MsgInternal == PInvokeCore.WM_NCPAINT)
             {
                 WmNCPaint(ref m);
                 return;

@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using Windows.Win32.System.Com;
 using Windows.Win32.System.Com.StructuredStorage;
-using static Interop;
 using static Windows.Win32.System.Memory.GLOBAL_ALLOC_FLAGS;
 
 namespace System.Windows.Forms;
@@ -15,7 +14,7 @@ public abstract partial class AxHost
 {
     /// <summary>
     ///  The class which encapsulates the persisted state of the underlying activeX control.
-    ///  An instance of this class my be obtained either by calling <see cref="OcxState"/> on an
+    ///  An instance of this class may be obtained either by calling <see cref="OcxState"/> on an
     ///  AxHost object, or by reading in from a stream.
     /// </summary>
     [TypeConverter(typeof(TypeConverter))]
@@ -26,8 +25,12 @@ public abstract partial class AxHost
         private int _length;
         private byte[]? _buffer;
         private MemoryStream? _memoryStream;
+
+        [NonSerialized]
         private AgileComPointer<IStorage>? _storage;
+        [NonSerialized]
         private AgileComPointer<ILockBytes>? _lockBytes;
+
         private readonly PropertyBagStream? _propertyBag;
         private const string PropertyBagSerializationName = "PropertyBagBinary";
         private const string DataSerializationName = "Data";
@@ -134,8 +137,8 @@ public abstract partial class AxHost
             HGLOBAL hglobal = default;
             if (_buffer is not null)
             {
-                hglobal = PInvoke.GlobalAlloc(GMEM_MOVEABLE, (uint)_length);
-                void* pointer = PInvoke.GlobalLock(hglobal);
+                hglobal = PInvokeCore.GlobalAlloc(GMEM_MOVEABLE, (uint)_length);
+                void* pointer = PInvokeCore.GlobalLock(hglobal);
                 try
                 {
                     if (pointer is not null)
@@ -145,14 +148,14 @@ public abstract partial class AxHost
                 }
                 finally
                 {
-                    PInvoke.GlobalUnlock(hglobal);
+                    PInvokeCore.GlobalUnlock(hglobal);
                 }
             }
 
             ILockBytes* lockBytes;
             if (PInvoke.CreateILockBytesOnHGlobal(hglobal, true, &lockBytes).Failed)
             {
-                PInvoke.GlobalFree(hglobal);
+                PInvokeCore.GlobalFree(hglobal);
                 return;
             }
 
@@ -175,7 +178,7 @@ public abstract partial class AxHost
             if (hr.Failed)
             {
                 lockBytes->Release();
-                PInvoke.GlobalFree(hglobal);
+                PInvokeCore.GlobalFree(hglobal);
             }
 
             _lockBytes = new(lockBytes, takeOwnership: true);
@@ -212,7 +215,7 @@ public abstract partial class AxHost
                 _memoryStream.Seek(0, SeekOrigin.Begin);
             }
 
-            return ComHelpers.GetComScope<IStream>(new Ole32.GPStream(_memoryStream));
+            return _memoryStream.ToIStream();
         }
 
         private void InitializeFromStream(Stream dataStream, bool initializeBufferOnly = false)
@@ -224,7 +227,10 @@ public abstract partial class AxHost
                 // For compatibility, always translate by adding 1 to match our new internal
                 // storage values (unknown = 0, stream = 1, etc.).
                 Type = (StorageType)(binaryReader.ReadInt32() + 1);
-                int version = binaryReader.ReadInt32();
+
+                // Version
+                _ = binaryReader.ReadInt32();
+
                 ManualUpdate = binaryReader.ReadBoolean();
                 int cc = binaryReader.ReadInt32();
                 if (cc != 0)
@@ -269,7 +275,7 @@ public abstract partial class AxHost
                 _buffer = new byte[_length];
                 HGLOBAL hglobal;
                 PInvoke.GetHGlobalFromILockBytes(lockBytes, &hglobal).ThrowOnFailure();
-                void* pointer = PInvoke.GlobalLock(hglobal);
+                void* pointer = PInvokeCore.GlobalLock(hglobal);
 
                 if (pointer is not null)
                 {
@@ -279,7 +285,7 @@ public abstract partial class AxHost
                     }
                     finally
                     {
-                        PInvoke.GlobalUnlock(hglobal);
+                        PInvokeCore.GlobalUnlock(hglobal);
                     }
                 }
                 else

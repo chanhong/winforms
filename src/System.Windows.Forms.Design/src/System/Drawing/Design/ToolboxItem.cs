@@ -15,8 +15,6 @@ namespace System.Drawing.Design;
 /// </summary>
 public class ToolboxItem : ISerializable
 {
-    private static readonly TraceSwitch s_toolboxItemPersist = new("ToolboxPersisting", "ToolboxItem: write data");
-
     private static bool s_isScalingInitialized;
     private const int ICON_DIMENSION = 16;
     private static int s_iconWidth = ICON_DIMENSION;
@@ -34,12 +32,8 @@ public class ToolboxItem : ISerializable
     {
         if (!s_isScalingInitialized)
         {
-            if (DpiHelper.IsScalingRequired)
-            {
-                s_iconWidth = DpiHelper.LogicalToDeviceUnitsX(ICON_DIMENSION);
-                s_iconHeight = DpiHelper.LogicalToDeviceUnitsY(ICON_DIMENSION);
-            }
-
+            s_iconWidth = ScaleHelper.ScaleToInitialSystemDpi(ICON_DIMENSION);
+            s_iconHeight = ScaleHelper.ScaleToInitialSystemDpi(ICON_DIMENSION);
             s_isScalingInitialized = true;
         }
     }
@@ -113,7 +107,7 @@ public class ToolboxItem : ISerializable
 
     /// <summary>
     ///  Description is a free-form, multiline capable text description that will be displayed in the tooltip
-    ///  for the toolboxItem.  It defaults to the path of the assembly that contains the item, but can be overridden.
+    ///  for the toolboxItem. It defaults to the path of the assembly that contains the item, but can be overridden.
     /// </summary>
     public string? Description
     {
@@ -132,7 +126,7 @@ public class ToolboxItem : ISerializable
     }
 
     /// <summary>
-    ///  Gets or sets the filter for this toolbox item.  The filter is a collection of
+    ///  Gets or sets the filter for this toolbox item. The filter is a collection of
     ///  ToolboxItemFilterAttribute objects.
     /// </summary>
     [AllowNull]
@@ -145,7 +139,7 @@ public class ToolboxItem : ISerializable
     /// <summary>
     ///  If true, it indicates that this toolbox item should not be stored in
     ///  any toolbox database when an application that is providing a toolbox
-    ///  closes down.  This property defaults to false.
+    ///  closes down. This property defaults to false.
     /// </summary>
     public bool IsTransient
     {
@@ -154,14 +148,14 @@ public class ToolboxItem : ISerializable
     }
 
     /// <summary>
-    ///  Determines if this toolbox item is locked.  Once locked, a toolbox item will
+    ///  Determines if this toolbox item is locked. Once locked, a toolbox item will
     ///  not accept any changes to its properties.
     /// </summary>
     public virtual bool Locked => _locked;
 
     /// <summary>
-    ///  The properties dictionary is a set of name/value pairs.  The keys are property
-    ///  names and the values are property values.  This dictionary becomes read-only
+    ///  The properties dictionary is a set of name/value pairs. The keys are property
+    ///  names and the values are property values. This dictionary becomes read-only
     ///  after the toolbox item has been locked.
     ///  Values in the properties dictionary are validated through ValidateProperty
     ///  and default values are obtained from GetDefaultProperty.
@@ -222,7 +216,7 @@ public class ToolboxItem : ISerializable
     public IComponent[]? CreateComponents() => CreateComponents(null);
 
     /// <summary>
-    ///  Creates objects from the type contained in this toolbox item.  If designerHost is non-null
+    ///  Creates objects from the type contained in this toolbox item. If designerHost is non-null
     ///  this will also add them to the designer.
     /// </summary>
     public IComponent[]? CreateComponents(IDesignerHost? host)
@@ -238,7 +232,7 @@ public class ToolboxItem : ISerializable
     }
 
     /// <summary>
-    ///  Creates objects from the type contained in this toolbox item.  If designerHost is non-null
+    ///  Creates objects from the type contained in this toolbox item. If designerHost is non-null
     ///  this will also add them to the designer.
     /// </summary>
     /// <returns></returns>
@@ -255,12 +249,12 @@ public class ToolboxItem : ISerializable
     }
 
     /// <summary>
-    ///  Creates objects from the type contained in this toolbox item.  If designerHost is non-null
+    ///  Creates objects from the type contained in this toolbox item. If designerHost is non-null
     ///  this will also add them to the designer.
     /// </summary>
     protected virtual IComponent[]? CreateComponentsCore(IDesignerHost? host)
     {
-        List<IComponent> comps = new();
+        List<IComponent> comps = [];
         Type? createType = GetType(host, AssemblyName, TypeName, true);
         if (createType is not null)
         {
@@ -274,11 +268,11 @@ public class ToolboxItem : ISerializable
             }
         }
 
-        return comps.ToArray();
+        return [.. comps];
     }
 
     /// <summary>
-    ///  Creates objects from the type contained in this toolbox item.  If designerHost is non-null
+    ///  Creates objects from the type contained in this toolbox item. If designerHost is non-null
     ///  this will also add them to the designer.
     /// </summary>
     protected virtual IComponent[]? CreateComponentsCore(IDesignerHost? host, IDictionary? defaultValues)
@@ -318,7 +312,7 @@ public class ToolboxItem : ISerializable
     protected virtual void Deserialize(SerializationInfo info, StreamingContext context)
     {
         // Do this in a couple of passes -- first pass, try to pull
-        // out our dictionary of property names.  We need to do this
+        // out our dictionary of property names. We need to do this
         // for backwards compatibility because if we throw everything
         // into the property dictionary we'll duplicate stuff people
         // have serialized by hand.
@@ -335,15 +329,15 @@ public class ToolboxItem : ISerializable
 
         // For backwards compat, here are the default property
         // names we use
-        propertyNames ??= new string[]
-        {
+        propertyNames ??=
+        [
                 "AssemblyName",
                 "Bitmap",
                 "DisplayName",
                 "Filter",
                 "IsTransient",
                 "TypeName"
-        };
+        ];
 
         foreach (SerializationEntry entry in info)
         {
@@ -400,7 +394,7 @@ public class ToolboxItem : ISerializable
     public override int GetHashCode() => HashCode.Combine(TypeName, DisplayName);
 
     /// <summary>
-    ///  Filters a property value before returning it.  This allows a property to always clone values,
+    ///  Filters a property value before returning it. This allows a property to always clone values,
     ///  or to provide a default value when none exists.
     /// </summary>
     protected virtual object? FilterPropertyValue(string propertyName, object? value)
@@ -443,9 +437,9 @@ public class ToolboxItem : ISerializable
     public Type? GetType(IDesignerHost? host) => GetType(host, AssemblyName, TypeName, false);
 
     /// <summary>
-    ///  This utility function can be used to load a type given a name.  AssemblyName and
+    ///  This utility function can be used to load a type given a name. AssemblyName and
     ///  designer host can be null, but if they are present they will be used to help
-    ///  locate the type.  If reference is true, the given assembly name will be added
+    ///  locate the type. If reference is true, the given assembly name will be added
     ///  to the designer host's set of references.
     /// </summary>
     [UnconditionalSuppressMessage("SingleFile", "IL3002", Justification = "Single-file case is handled")]
@@ -466,7 +460,7 @@ public class ToolboxItem : ISerializable
                 }
                 else
                 {
-                    // Just try loading the type.  If we succeed, then use this as the
+                    // Just try loading the type. If we succeed, then use this as the
                     // reference.
                     type = ts.GetType(typeName);
                     type ??= Type.GetType(typeName);
@@ -511,6 +505,10 @@ public class ToolboxItem : ISerializable
                 }
 
 #pragma warning disable SYSLIB0044 // Type or member is obsolete. Ref https://github.com/dotnet/winforms/issues/7308
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
+
+                // If we're single file, CodeBase will be empty, that is expected. We can't load from a path
+                // that doesn't exist, so falling through to the next case is the right thing to do.
                 if (a is null && !string.IsNullOrEmpty(assemblyName.CodeBase))
                 {
                     try
@@ -527,7 +525,8 @@ public class ToolboxItem : ISerializable
                     {
                     }
                 }
-#pragma warning restore SYSLIB0044 // Type or member is obsolete
+#pragma warning restore IL3000
+#pragma warning restore SYSLIB0044
 
                 if (a is not null)
                 {
@@ -542,7 +541,7 @@ public class ToolboxItem : ISerializable
     }
 
     /// <summary>
-    ///  Initializes a toolbox item with a given type.  A locked toolbox item cannot be initialized.
+    ///  Initializes a toolbox item with a given type. A locked toolbox item cannot be initialized.
     /// </summary>
     public virtual void Initialize(Type? type)
     {
@@ -553,7 +552,7 @@ public class ToolboxItem : ISerializable
             TypeName = type.FullName;
             AssemblyName assemblyName = type.Assembly.GetName(true);
 
-            Dictionary<string, AssemblyName> parents = new Dictionary<string, AssemblyName>();
+            Dictionary<string, AssemblyName> parents = [];
             Type? parentType = type;
 
             do
@@ -613,7 +612,7 @@ public class ToolboxItem : ISerializable
                 }
 
                 bool filterContainsType = false;
-                List<ToolboxItemFilterAttribute> filterItems = new();
+                List<ToolboxItemFilterAttribute> filterItems = [];
                 foreach (Attribute a in TypeDescriptor.GetAttributes(type))
                 {
                     if (a is ToolboxItemFilterAttribute ta)
@@ -693,7 +692,7 @@ public class ToolboxItem : ISerializable
     }
 
     /// <summary>
-    ///  Locks this toolbox item.  Locking a toolbox item makes it read-only and
+    ///  Locks this toolbox item. Locking a toolbox item makes it read-only and
     ///  prevents any changes to its properties.
     /// </summary>
     public virtual void Lock()
@@ -702,15 +701,10 @@ public class ToolboxItem : ISerializable
     }
 
     /// <summary>
-    ///Saves the state of this ToolboxItem to the specified serialization info
+    ///  Saves the state of this ToolboxItem to the specified serialization info
     /// </summary>
     protected virtual void Serialize(SerializationInfo info, StreamingContext context)
     {
-        Debug.WriteLineIf(s_toolboxItemPersist.TraceVerbose, $"""
-                Persisting: {GetType().Name}
-                    Display Name: {DisplayName}
-                """);
-
         info.AddValue(nameof(Locked), Locked);
         List<string> propertyNames = new(Properties.Count);
         foreach (DictionaryEntry de in Properties)
@@ -760,7 +754,7 @@ public class ToolboxItem : ISerializable
     }
 
     /// <summary>
-    ///  This is called whenever a value is set in the property dictionary.  It gives you a chance
+    ///  This is called whenever a value is set in the property dictionary. It gives you a chance
     ///  to change the value of an object before committing it, our reject it by throwing an
     ///  exception.
     /// </summary>
@@ -789,7 +783,7 @@ public class ToolboxItem : ISerializable
                 ValidatePropertyType(propertyName, value, typeof(ICollection), true);
 
                 ICollection? col = (ICollection?)value;
-                return col?.OfType<ToolboxItemFilterAttribute>().ToArray() ?? Array.Empty<ToolboxItemFilterAttribute>();
+                return col?.OfType<ToolboxItemFilterAttribute>().ToArray() ?? [];
 
             case "DependentAssemblies":
                 ValidatePropertyType(propertyName, value, typeof(AssemblyName[]), true);

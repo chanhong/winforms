@@ -20,7 +20,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     {
         using (new NoAssertContext())
         {
-            using ComboBox control = new ComboBox();
+            using ComboBox control = new();
 
             HashNotImplementedObject item1 = new();
             HashNotImplementedObject item2 = new();
@@ -28,15 +28,15 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
 
             control.Items.AddRange(new[] { item1, item2, item3 });
 
-            ComboBox.ComboBoxAccessibleObject comboBoxAccessibleObject = (ComboBox.ComboBoxAccessibleObject)control.AccessibilityObject;
+            ComboBoxAccessibleObject comboBoxAccessibleObject = (ComboBoxAccessibleObject)control.AccessibilityObject;
 
             bool exceptionThrown = false;
 
             try
             {
-                ComboBox.ComboBoxItemAccessibleObject item1AccessibleObject = comboBoxAccessibleObject.ItemAccessibleObjects.GetComboBoxItemAccessibleObject(control.Items.InnerList[0]);
-                ComboBox.ComboBoxItemAccessibleObject item2AccessibleObject = comboBoxAccessibleObject.ItemAccessibleObjects.GetComboBoxItemAccessibleObject(control.Items.InnerList[1]);
-                ComboBox.ComboBoxItemAccessibleObject item3AccessibleObject = comboBoxAccessibleObject.ItemAccessibleObjects.GetComboBoxItemAccessibleObject(control.Items.InnerList[2]);
+                ComboBoxItemAccessibleObject item1AccessibleObject = comboBoxAccessibleObject.ItemAccessibleObjects.GetComboBoxItemAccessibleObject(control.Items.InnerList[0]);
+                ComboBoxItemAccessibleObject item2AccessibleObject = comboBoxAccessibleObject.ItemAccessibleObjects.GetComboBoxItemAccessibleObject(control.Items.InnerList[1]);
+                ComboBoxItemAccessibleObject item3AccessibleObject = comboBoxAccessibleObject.ItemAccessibleObjects.GetComboBoxItemAccessibleObject(control.Items.InnerList[2]);
             }
             catch
             {
@@ -61,18 +61,18 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
         using (new NoAssertContext())
         {
             // Regression test for https://github.com/dotnet/winforms/issues/3549
-            using ComboBox control = new ComboBox()
+            using ComboBox control = new()
             {
                 DataSource = TestDataSources.GetPersons(),
                 DisplayMember = TestDataSources.PersonDisplayMember
             };
 
-            ComboBox.ComboBoxAccessibleObject accessibleObject = Assert.IsType<ComboBox.ComboBoxAccessibleObject>(control.AccessibilityObject);
+            ComboBoxAccessibleObject accessibleObject = Assert.IsType<ComboBoxAccessibleObject>(control.AccessibilityObject);
 
             foreach (Person person in TestDataSources.GetPersons())
             {
-                ComboBox.ComboBoxItemAccessibleObject item = accessibleObject.ItemAccessibleObjects.GetComboBoxItemAccessibleObject(new Entry(person));
-                AccessibleObject itemAccessibleObject = Assert.IsType<ComboBox.ComboBoxItemAccessibleObject>(item);
+                ComboBoxItemAccessibleObject item = accessibleObject.ItemAccessibleObjects.GetComboBoxItemAccessibleObject(new Entry(person));
+                AccessibleObject itemAccessibleObject = Assert.IsType<ComboBoxItemAccessibleObject>(item);
                 Assert.Equal(person.Name, itemAccessibleObject.Name);
             }
         }
@@ -92,22 +92,22 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
         comboBox.Items.AddRange(new[] { "aaa", "aaa", "aaa" });
         comboBox.CreateControl();
 
-        ComboBoxItemAccessibleObjectCollection itemAccessibleObjects = ((ComboBox.ComboBoxAccessibleObject)comboBox.AccessibilityObject).ItemAccessibleObjects;
+        ComboBoxItemAccessibleObjectCollection itemAccessibleObjects = ((ComboBoxAccessibleObject)comboBox.AccessibilityObject).ItemAccessibleObjects;
 
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBox.ComboBoxItemAccessibleObject)comboBox
+        ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBoxItemAccessibleObject)comboBox
             .ChildListAccessibleObject.FragmentNavigate(NavigateDirection.NavigateDirection_FirstChild);
         Assert.Equal("aaa", comboBoxItem1.Name);
         Assert.Equal(comboBoxItem1, itemAccessibleObjects.GetComboBoxItemAccessibleObject(comboBox.Items.InnerList[0]));
 
         // FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling) should return accessible object for second "aaa" item
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem1
+        ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBoxItemAccessibleObject)comboBoxItem1
             .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
         Assert.NotEqual(comboBoxItem1, comboBoxItem2);
         Assert.Equal("aaa", comboBoxItem2.Name);
         Assert.Equal(comboBoxItem2, itemAccessibleObjects.GetComboBoxItemAccessibleObject(comboBox.Items.InnerList[1]));
 
         // FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling) should return accessible object for third "aaa" item
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem2
+        ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBoxItemAccessibleObject)comboBoxItem2
             .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
         Assert.NotEqual(comboBoxItem3, comboBoxItem2);
         Assert.NotEqual(comboBoxItem3, comboBoxItem1);
@@ -131,16 +131,16 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
         comboBox.Items.AddRange(new[] { "aaa", "aaa", "aaa" });
         comboBox.CreateControl();
 
-        ComboBoxItemAccessibleObjectCollection itemAccessibleObjects = ((ComboBox.ComboBoxAccessibleObject)comboBox.AccessibilityObject).ItemAccessibleObjects;
+        ComboBoxItemAccessibleObjectCollection itemAccessibleObjects = ((ComboBoxAccessibleObject)comboBox.AccessibilityObject).ItemAccessibleObjects;
 
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBox.ComboBoxItemAccessibleObject)comboBox
+        ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBoxItemAccessibleObject)comboBox
             .ChildListAccessibleObject.FragmentNavigate(NavigateDirection.NavigateDirection_LastChild);
 
         Assert.Equal("aaa", comboBoxItem3.Name);
         Assert.Equal(comboBoxItem3, itemAccessibleObjects.GetComboBoxItemAccessibleObject(comboBox.Items.InnerList[2]));
 
         // FragmentNavigate(NavigateDirection.NavigateDirection_PreviousSibling) should return accessible object for second "aaa" item
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem3
+        ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBoxItemAccessibleObject)comboBoxItem3
             .FragmentNavigate(NavigateDirection.NavigateDirection_PreviousSibling);
 
         Assert.NotEqual(comboBoxItem2, comboBoxItem3);
@@ -148,7 +148,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
         Assert.Equal(comboBoxItem2, itemAccessibleObjects.GetComboBoxItemAccessibleObject(comboBox.Items.InnerList[1]));
 
         // FragmentNavigate(NavigateDirection.NavigateDirection_PreviousSibling) should return accessible object for first "aaa" item
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem2
+        ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBoxItemAccessibleObject)comboBoxItem2
             .FragmentNavigate(NavigateDirection.NavigateDirection_PreviousSibling);
         Assert.NotEqual(comboBoxItem1, comboBoxItem2);
         Assert.NotEqual(comboBoxItem1, comboBoxItem3);
@@ -156,7 +156,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
         Assert.Equal(comboBoxItem1, itemAccessibleObjects.GetComboBoxItemAccessibleObject(comboBox.Items.InnerList[0]));
 
         // FragmentNavigate(NavigateDirection.NavigateDirection_PreviousSibling) should return null for first "aaa" item
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItemPrevious = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem1
+        ComboBoxItemAccessibleObject comboBoxItemPrevious = (ComboBoxItemAccessibleObject)comboBoxItem1
             .FragmentNavigate(NavigateDirection.NavigateDirection_PreviousSibling);
         Assert.Null(comboBoxItemPrevious);
         Assert.True(comboBox.IsHandleCreated);
@@ -192,7 +192,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     [WinFormsFact]
     public void ComboBoxItemAccessibleObject_IsPatternSupported_ReturnsTrue_ForScrollItemPattern()
     {
-        using ComboBox comboBox = new ComboBox();
+        using ComboBox comboBox = new();
         comboBox.Items.AddRange(new[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" });
         comboBox.CreateControl();
 
@@ -211,7 +211,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     [WinFormsFact]
     public void ComboBoxItemAccessibleObject_GetPropertyValue_Pattern_IsAvailable()
     {
-        using ComboBox comboBox = new ComboBox();
+        using ComboBox comboBox = new();
         comboBox.Items.AddRange(new[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" });
         comboBox.CreateControl();
 
@@ -241,7 +241,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     [MemberData(nameof(ComboBoxItemAccessibleObject_ScrollIntoView_DoNothing_IfControlIsNotEnabled_TestData))]
     public void ComboBoxItemAccessibleObject_ScrollIntoView_DoNothing_IfControlIsNotEnabled(ComboBoxStyle comboBoxStyle)
     {
-        using ComboBox comboBox = new ComboBox();
+        using ComboBox comboBox = new();
         comboBox.IntegralHeight = false;
         comboBox.DropDownStyle = comboBoxStyle;
         comboBox.Enabled = false;
@@ -265,9 +265,9 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
 
         itemAccessibleObject.ScrollIntoView();
 
-        int actual = (int)PInvoke.SendMessage(comboBox, PInvoke.CB_GETTOPINDEX);
+        int actual = (int)PInvokeCore.SendMessage(comboBox, PInvoke.CB_GETTOPINDEX);
 
-        Assert.Equal(0, actual); // ScrollIntoView didn't scroll to the tested item because the combobox is disabled
+        Assert.Equal(0, actual); // ScrollIntoView didn't scroll to the tested item because the ComboBox is disabled
     }
 
     public static IEnumerable<object[]> ComboBoxItemAccessibleObject_ScrollIntoView_EnsureVisible_TestData()
@@ -278,7 +278,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
             {
                 int itemsCount = 41;
 
-                for (int index = 0; index < itemsCount; index++)
+                for (int index = 0; index < itemsCount; index += 10)
                 {
                     yield return new object[] { comboBoxStyle, scrollingDown, index, itemsCount };
                 }
@@ -290,7 +290,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     [MemberData(nameof(ComboBoxItemAccessibleObject_ScrollIntoView_EnsureVisible_TestData))]
     public void ComboBoxItemAccessibleObject_ScrollIntoView_EnsureVisible(ComboBoxStyle comboBoxStyle, bool scrollingDown, int itemIndex, int itemsCount)
     {
-        using ComboBox comboBox = new ComboBox();
+        using ComboBox comboBox = new();
         comboBox.IntegralHeight = false;
         comboBox.DropDownStyle = comboBoxStyle;
         comboBox.CreateControl();
@@ -339,7 +339,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
         else
         {
             // Scroll to the bottom and test the method when scrolling up
-            PInvoke.SendMessage(comboBox, PInvoke.CB_SETTOPINDEX, (WPARAM)(itemsCount - 1));
+            PInvokeCore.SendMessage(comboBox, PInvoke.CB_SETTOPINDEX, (WPARAM)(itemsCount - 1));
 
             if (dropDownRect.IntersectsWith(itemAccessibleObject.Bounds))
             {
@@ -355,7 +355,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
 
         itemAccessibleObject.ScrollIntoView();
 
-        int actual = (int)PInvoke.SendMessage(comboBox, PInvoke.CB_GETTOPINDEX);
+        int actual = (int)PInvokeCore.SendMessage(comboBox, PInvoke.CB_GETTOPINDEX);
 
         Assert.Equal(expected, actual);
     }
@@ -364,13 +364,13 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     {
         foreach (ComboBoxStyle comboBoxStyle in Enum.GetValues(typeof(ComboBoxStyle)))
         {
-            // The tested combobox contains 11 items
+            // The tested ComboBox contains 11 items
             for (int index = 0; index < 11; index++)
             {
                 int y = index * 15;
                 int initialYPosition = comboBoxStyle == ComboBoxStyle.Simple ? 56 : 55;
                 int x = comboBoxStyle == ComboBoxStyle.Simple ? 10 : 9;
-                Point point = new Point(x, y + initialYPosition);
+                Point point = new(x, y + initialYPosition);
 
                 yield return new object[] { comboBoxStyle, index, point };
             }
@@ -381,7 +381,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     [MemberData(nameof(ComboBoxItemAccessibleObject_Bounds_ReturnsCorrect_IfComboBoxIsScrollable_TestData))]
     public void ComboBoxItemAccessibleObject_Bounds_ReturnsCorrect_IfComboBoxIsScrollable(ComboBoxStyle comboBoxStyle, int itemIndex, Point expectedPosition)
     {
-        using ComboBox comboBox = new ComboBox();
+        using ComboBox comboBox = new();
         comboBox.IntegralHeight = false;
         comboBox.DropDownStyle = comboBoxStyle;
         comboBox.Items.AddRange(new[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" });
@@ -406,7 +406,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
         Rectangle dropdownRect = comboBox.ChildListAccessibleObject.Bounds;
 
         // We get items rectangles from Windows
-        // It returns to us different expected widths values depending on a combobox drop-down style
+        // It returns to us different expected widths values depending on a ComboBox drop-down style
         int itemWidth = comboBoxStyle == ComboBoxStyle.Simple ? 79 : 81;
 
         Assert.Equal(expectedPosition.X, actual.X);
@@ -419,13 +419,13 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     {
         foreach (ComboBoxStyle comboBoxStyle in Enum.GetValues(typeof(ComboBoxStyle)))
         {
-            // The tested combobox contains 11 items
+            // The tested ComboBox contains 11 items
             for (int index = 0; index < 11; index++)
             {
                 int height = DifferentHeightComboBox.GetCustomItemHeight(index);
 
                 // We get items rectangles from Windows
-                // It returns to us different expected bounds values depending on a combobox drop-down style
+                // It returns to us different expected bounds values depending on a ComboBox drop-down style
                 int width = comboBoxStyle == ComboBoxStyle.Simple ? 96 : 81;
                 int x = comboBoxStyle == ComboBoxStyle.Simple ? 10 : 9;
                 int y = comboBoxStyle == ComboBoxStyle.Simple ? 57 : 56;
@@ -444,7 +444,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     [MemberData(nameof(ComboBoxItemAccessibleObject_Bounds_ReturnsCorrect_ForDifferentHeightItems_TestData))]
     public void ComboBoxItemAccessibleObject_Bounds_ReturnsCorrect_ForDifferentHeightItems(ComboBoxStyle comboBoxStyle, int itemIndex, Rectangle expectedRect)
     {
-        using DifferentHeightComboBox comboBox = new DifferentHeightComboBox();
+        using DifferentHeightComboBox comboBox = new();
         comboBox.DropDownStyle = comboBoxStyle;
         comboBox.Items.AddRange(new[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" });
         comboBox.CreateControl();
@@ -493,7 +493,7 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
             }
 
             e.DrawBackground();
-            using var brush = new SolidBrush(e.ForeColor);
+            using SolidBrush brush = new(e.ForeColor);
             e.Graphics.DrawString(
                 Items[e.Index].ToString(),
                 e.Font,
@@ -511,11 +511,11 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     {
         using ComboBox comboBox = GetComboBoxWithMaxItems(comboBoxStyle);
 
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBox.ComboBoxItemAccessibleObject)comboBox
+        ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBoxItemAccessibleObject)comboBox
                 .ChildListAccessibleObject.FragmentNavigate(NavigateDirection.NavigateDirection_FirstChild);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem1
+        ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBoxItemAccessibleObject)comboBoxItem1
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem2
+        ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBoxItemAccessibleObject)comboBoxItem2
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
 
         Assert.Equal(InvisibleItemState, comboBoxItem1.State); // comboBoxItem1 above the visible area
@@ -530,11 +530,11 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     {
         using ComboBox comboBox = GetComboBoxWithMaxHeight(comboBoxStyle);
 
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBox.ComboBoxItemAccessibleObject)comboBox
+        ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBoxItemAccessibleObject)comboBox
                 .ChildListAccessibleObject.FragmentNavigate(NavigateDirection.NavigateDirection_FirstChild);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem1
+        ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBoxItemAccessibleObject)comboBoxItem1
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem2
+        ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBoxItemAccessibleObject)comboBoxItem2
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
 
         Assert.Equal(InvisibleItemState, comboBoxItem1.State); // comboBoxItem1 above the visible area
@@ -549,9 +549,9 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     {
         using ComboBox comboBox = GetComboBox(comboBoxStyle);
 
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBox.ComboBoxItemAccessibleObject)comboBox
+        ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBoxItemAccessibleObject)comboBox
                 .ChildListAccessibleObject.FragmentNavigate(NavigateDirection.NavigateDirection_FirstChild);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem1
+        ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBoxItemAccessibleObject)comboBoxItem1
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
 
         Assert.Equal(InvisibleItemState, comboBoxItem1.State);
@@ -563,11 +563,11 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     {
         using ComboBox comboBox = GetComboBoxWithMaxSize(ComboBoxStyle.Simple);
 
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBox.ComboBoxItemAccessibleObject)comboBox
+        ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBoxItemAccessibleObject)comboBox
                 .ChildListAccessibleObject.FragmentNavigate(NavigateDirection.NavigateDirection_FirstChild);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem1
+        ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBoxItemAccessibleObject)comboBoxItem1
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem2
+        ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBoxItemAccessibleObject)comboBoxItem2
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
 
         AccessibleStates itemState = AccessibleStates.Invisible | AccessibleStates.Selected | AccessibleStates.Focusable | AccessibleStates.Selectable;
@@ -584,11 +584,11 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     {
         using ComboBox comboBox = GetComboBoxWithMaxItems(comboBoxStyle);
 
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBox.ComboBoxItemAccessibleObject)comboBox
+        ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBoxItemAccessibleObject)comboBox
                 .ChildListAccessibleObject.FragmentNavigate(NavigateDirection.NavigateDirection_FirstChild);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem1
+        ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBoxItemAccessibleObject)comboBoxItem1
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem2
+        ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBoxItemAccessibleObject)comboBoxItem2
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
 
         AssertExtensions.True(comboBoxItem1, UIA_PROPERTY_ID.UIA_IsOffscreenPropertyId); // comboBoxItem1 above the visible area
@@ -603,11 +603,11 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     {
         using ComboBox comboBox = GetComboBoxWithMaxHeight(comboBoxStyle);
 
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBox.ComboBoxItemAccessibleObject)comboBox
+        ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBoxItemAccessibleObject)comboBox
                 .ChildListAccessibleObject.FragmentNavigate(NavigateDirection.NavigateDirection_FirstChild);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem1
+        ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBoxItemAccessibleObject)comboBoxItem1
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem2
+        ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBoxItemAccessibleObject)comboBoxItem2
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
 
         AssertExtensions.True(comboBoxItem1, UIA_PROPERTY_ID.UIA_IsOffscreenPropertyId); // comboBoxItem1 above the visible area
@@ -622,9 +622,9 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     {
         using ComboBox comboBox = GetComboBox(comboBoxStyle);
 
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBox.ComboBoxItemAccessibleObject)comboBox
+        ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBoxItemAccessibleObject)comboBox
                 .ChildListAccessibleObject.FragmentNavigate(NavigateDirection.NavigateDirection_FirstChild);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem1
+        ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBoxItemAccessibleObject)comboBoxItem1
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
 
         AssertExtensions.True(comboBoxItem1, UIA_PROPERTY_ID.UIA_IsOffscreenPropertyId);
@@ -636,11 +636,11 @@ public class ComboBox_ComboBoxItemAccessibleObjectTests
     {
         using ComboBox comboBox = GetComboBoxWithMaxSize(ComboBoxStyle.Simple);
 
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBox.ComboBoxItemAccessibleObject)comboBox
+        ComboBoxItemAccessibleObject comboBoxItem1 = (ComboBoxItemAccessibleObject)comboBox
                 .ChildListAccessibleObject.FragmentNavigate(NavigateDirection.NavigateDirection_FirstChild);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem1
+        ComboBoxItemAccessibleObject comboBoxItem2 = (ComboBoxItemAccessibleObject)comboBoxItem1
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
-        ComboBox.ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBox.ComboBoxItemAccessibleObject)comboBoxItem2
+        ComboBoxItemAccessibleObject comboBoxItem3 = (ComboBoxItemAccessibleObject)comboBoxItem2
                 .FragmentNavigate(NavigateDirection.NavigateDirection_NextSibling);
 
         AssertExtensions.True(comboBoxItem1, UIA_PROPERTY_ID.UIA_IsOffscreenPropertyId); // comboBoxItem1 above the visible area

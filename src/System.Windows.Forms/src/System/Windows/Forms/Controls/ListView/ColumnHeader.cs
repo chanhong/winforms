@@ -16,7 +16,7 @@ namespace System.Windows.Forms;
 [TypeConverter(typeof(ColumnHeaderConverter))]
 public partial class ColumnHeader : Component, ICloneable
 {
-    // disable csharp compiler warning #0414: field assigned unused value
+    // disable C# compiler warning #0414: field assigned unused value
 #pragma warning disable 0414
     internal int _index = -1;
 #pragma warning restore 0414
@@ -167,7 +167,7 @@ public partial class ColumnHeader : Component, ICloneable
     internal int DisplayIndexInternal { get; set; } = -1;
 
     /// <summary>
-    ///  The index of this column.  This index does not necessarily correspond
+    ///  The index of this column. This index does not necessarily correspond
     ///  to the current visual position of the column in the ListView, because the
     ///  user may order columns if the allowColumnReorder property is true.
     /// </summary>
@@ -203,10 +203,7 @@ public partial class ColumnHeader : Component, ICloneable
         }
         set
         {
-            if (value < ImageList.Indexer.DefaultIndex)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(ImageIndex), value, ImageList.Indexer.DefaultIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, ImageList.Indexer.DefaultIndex);
 
             if (_imageIndexer.Index == value && value != ImageList.Indexer.DefaultIndex)
             {
@@ -260,7 +257,7 @@ public partial class ColumnHeader : Component, ICloneable
     }
 
     /// <summary>
-    ///  Returns the ListView control that this column is displayed in.  May be null
+    ///  Returns the ListView control that this column is displayed in. May be null
     /// </summary>
     [Browsable(false)]
     public ListView? ListView { get; private set; }
@@ -398,13 +395,13 @@ public partial class ColumnHeader : Component, ICloneable
             if (ListView is not null && ListView.IsHandleCreated && !ListView.Disposing && ListView.View == View.Details)
             {
                 // Make sure this column has already been added to the ListView, else just return width
-                HWND hwndHdr = (HWND)PInvoke.SendMessage(ListView, PInvoke.LVM_GETHEADER);
+                HWND hwndHdr = (HWND)PInvokeCore.SendMessage(ListView, PInvoke.LVM_GETHEADER);
                 if (!hwndHdr.IsNull)
                 {
-                    int nativeColumnCount = (int)PInvoke.SendMessage(hwndHdr, PInvoke.HDM_GETITEMCOUNT);
+                    int nativeColumnCount = (int)PInvokeCore.SendMessage(hwndHdr, PInvoke.HDM_GETITEMCOUNT);
                     if (Index < nativeColumnCount)
                     {
-                        _width = (int)PInvoke.SendMessage(ListView, PInvoke.LVM_GETCOLUMNWIDTH, (WPARAM)Index);
+                        _width = (int)PInvokeCore.SendMessage(ListView, PInvoke.LVM_GETCOLUMNWIDTH, (WPARAM)Index);
                     }
                 }
             }
@@ -420,7 +417,7 @@ public partial class ColumnHeader : Component, ICloneable
 
     public void AutoResize(ColumnHeaderAutoResizeStyle headerAutoResize)
     {
-        if (headerAutoResize < ColumnHeaderAutoResizeStyle.None || headerAutoResize > ColumnHeaderAutoResizeStyle.ColumnContent)
+        if (headerAutoResize is < ColumnHeaderAutoResizeStyle.None or > ColumnHeaderAutoResizeStyle.ColumnContent)
         {
             throw new InvalidEnumArgumentException(nameof(headerAutoResize), (int)headerAutoResize, typeof(ColumnHeaderAutoResizeStyle));
         }
@@ -486,7 +483,7 @@ public partial class ColumnHeader : Component, ICloneable
         {
             fixed (int* pCols = cols)
             {
-                PInvoke.SendMessage(ListView, PInvoke.LVM_SETCOLUMNORDERARRAY, (WPARAM)cols.Length, (LPARAM)pCols);
+                PInvokeCore.SendMessage(ListView, PInvoke.LVM_SETCOLUMNORDERARRAY, (WPARAM)cols.Length, (LPARAM)pCols);
             }
         }
     }

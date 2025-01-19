@@ -14,7 +14,7 @@ public class AgileComPointerTests
 
         uint count;
 
-        using (var agileStream = new AgileComPointer<IStream>(stream, takeOwnership: true))
+        using (AgileComPointer<IStream> agileStream = new(stream, takeOwnership: true))
         {
             count = stream->AddRef();
             Assert.Equal(2u, count);
@@ -28,7 +28,7 @@ public class AgileComPointerTests
     [StaFact]
     public async Task AgileComPointer_MultiThread_COMPointerValue_ForSameObject()
     {
-        using AgileComPointer<IStream> agileStream = CreateMyStreamAgileComPointer(out var originalPtr);
+        using AgileComPointer<IStream> agileStream = CreateMyStreamAgileComPointer(out nint originalPtr);
         try
         {
             using AgileComPointer<IStream> proxyAgileStream = await GetProxyAgileComPointer(agileStream);

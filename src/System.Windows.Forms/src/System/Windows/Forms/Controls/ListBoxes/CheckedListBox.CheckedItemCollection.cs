@@ -33,14 +33,14 @@ public partial class CheckedListBox
         }
 
         /// <summary>
-        ///  This is the item array that stores our data.  We share this backing store
+        ///  This is the item array that stores our data. We share this backing store
         ///  with the main object collection.
         /// </summary>
         private ItemArray InnerArray
         {
             get
             {
-                return ((ListBox.ObjectCollection)_owner.Items).InnerArray;
+                return _owner.Items.InnerArray;
             }
         }
 
@@ -143,14 +143,14 @@ public partial class CheckedListBox
         }
 
         /// <summary>
-        ///  This method returns if the actual item index is checked.  The index is the index to the MAIN
+        ///  This method returns if the actual item index is checked. The index is the index to the MAIN
         ///  collection, not this one.
         /// </summary>
         internal CheckState GetCheckedState(int index)
         {
             bool isChecked = InnerArray.GetState(index, s_checkedItemMask);
             bool isIndeterminate = InnerArray.GetState(index, s_indeterminateItemMask);
-            Debug.Assert(!isChecked || !isIndeterminate, "Can't be both checked and indeterminate.  Somebody broke our state.");
+            Debug.Assert(!isChecked || !isIndeterminate, "Can't be both checked and indeterminate. Somebody broke our state.");
             if (isIndeterminate)
             {
                 return CheckState.Indeterminate;

@@ -21,10 +21,8 @@ public partial class ToolStripTextBox : ToolStripControlHost
     internal static readonly object s_eventMultilineChanged = new();
     internal static readonly object s_eventModifiedChanged = new();
 
-    private static readonly Padding s_defaultMargin = new(1, 0, 1, 0);
-    private static readonly Padding s_defaultDropDownMargin = new(1);
-    private Padding _scaledDefaultMargin = s_defaultMargin;
-    private Padding _scaledDefaultDropDownMargin = s_defaultDropDownMargin;
+    private Padding _defaultMargin;
+    private Padding _defaultDropDownMargin;
 
     public ToolStripTextBox()
         : base(CreateControlInstance())
@@ -32,11 +30,11 @@ public partial class ToolStripTextBox : ToolStripControlHost
         ToolStripTextBoxControl textBox = (ToolStripTextBoxControl)Control;
         textBox.Owner = this;
 
-        if (DpiHelper.IsScalingRequirementMet)
-        {
-            _scaledDefaultMargin = DpiHelper.LogicalToDeviceUnits(s_defaultMargin);
-            _scaledDefaultDropDownMargin = DpiHelper.LogicalToDeviceUnits(s_defaultDropDownMargin);
-        }
+        const int LogicalDefaultMargin = 1;
+        int defaultMargin = ScaleHelper.ScaleToInitialSystemDpi(LogicalDefaultMargin);
+
+        _defaultMargin = new(defaultMargin, 0, defaultMargin, 0);
+        _defaultDropDownMargin = new(defaultMargin);
     }
 
     public ToolStripTextBox(string? name)
@@ -74,48 +72,19 @@ public partial class ToolStripTextBox : ToolStripControlHost
     ///  Deriving classes can override this to configure a default size for their control.
     ///  This is more efficient than setting the size in the control's constructor.
     /// </summary>
-    protected internal override Padding DefaultMargin
-    {
-        get
-        {
-            if (IsOnDropDown)
-            {
-                return _scaledDefaultDropDownMargin;
-            }
-            else
-            {
-                return _scaledDefaultMargin;
-            }
-        }
-    }
+    protected internal override Padding DefaultMargin => IsOnDropDown ? _defaultDropDownMargin : _defaultMargin;
 
-    protected override Size DefaultSize
-    {
-        get
-        {
-            return new Size(100, 22);
-        }
-    }
+    protected override Size DefaultSize => new Size(100, 22);
 
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public TextBox TextBox
-    {
-        get
-        {
-            return (TextBox)Control;
-        }
-    }
+    public TextBox TextBox => (TextBox)Control;
 
-    private static Control CreateControlInstance()
+    private static ToolStripTextBoxControl CreateControlInstance() => new()
     {
-        TextBox textBox = new ToolStripTextBoxControl
-        {
-            BorderStyle = BorderStyle.Fixed3D,
-            AutoSize = true
-        };
-        return textBox;
-    }
+        BorderStyle = BorderStyle.Fixed3D,
+        AutoSize = true
+    };
 
     public override Size GetPreferredSize(Size constrainingSize)
     {
@@ -124,83 +93,44 @@ public partial class ToolStripTextBox : ToolStripControlHost
         return new Size(bounds.Width, TextBox.PreferredHeight);
     }
 
-    private void HandleAcceptsTabChanged(object? sender, EventArgs e)
-    {
-        OnAcceptsTabChanged(e);
-    }
+    private void HandleAcceptsTabChanged(object? sender, EventArgs e) => OnAcceptsTabChanged(e);
 
-    private void HandleBorderStyleChanged(object? sender, EventArgs e)
-    {
-        OnBorderStyleChanged(e);
-    }
+    private void HandleBorderStyleChanged(object? sender, EventArgs e) => OnBorderStyleChanged(e);
 
-    private void HandleHideSelectionChanged(object? sender, EventArgs e)
-    {
-        OnHideSelectionChanged(e);
-    }
+    private void HandleHideSelectionChanged(object? sender, EventArgs e) => OnHideSelectionChanged(e);
 
-    private void HandleModifiedChanged(object? sender, EventArgs e)
-    {
-        OnModifiedChanged(e);
-    }
+    private void HandleModifiedChanged(object? sender, EventArgs e) => OnModifiedChanged(e);
 
-    private void HandleMultilineChanged(object? sender, EventArgs e)
-    {
-        OnMultilineChanged(e);
-    }
+    private void HandleMultilineChanged(object? sender, EventArgs e) => OnMultilineChanged(e);
 
-    private void HandleReadOnlyChanged(object? sender, EventArgs e)
-    {
-        OnReadOnlyChanged(e);
-    }
+    private void HandleReadOnlyChanged(object? sender, EventArgs e) => OnReadOnlyChanged(e);
 
-    private void HandleTextBoxTextAlignChanged(object? sender, EventArgs e)
-    {
-        RaiseEvent(s_eventTextBoxTextAlignChanged, e);
-    }
+    private void HandleTextBoxTextAlignChanged(object? sender, EventArgs e) => RaiseEvent(s_eventTextBoxTextAlignChanged, e);
 
-    protected virtual void OnAcceptsTabChanged(EventArgs e)
-    {
-        RaiseEvent(s_eventAcceptsTabChanged, e);
-    }
+    protected virtual void OnAcceptsTabChanged(EventArgs e) => RaiseEvent(s_eventAcceptsTabChanged, e);
 
-    protected virtual void OnBorderStyleChanged(EventArgs e)
-    {
-        RaiseEvent(s_eventBorderStyleChanged, e);
-    }
+    protected virtual void OnBorderStyleChanged(EventArgs e) => RaiseEvent(s_eventBorderStyleChanged, e);
 
-    protected virtual void OnHideSelectionChanged(EventArgs e)
-    {
-        RaiseEvent(s_eventHideSelectionChanged, e);
-    }
+    protected virtual void OnHideSelectionChanged(EventArgs e) => RaiseEvent(s_eventHideSelectionChanged, e);
 
-    protected virtual void OnModifiedChanged(EventArgs e)
-    {
-        RaiseEvent(s_eventModifiedChanged, e);
-    }
+    protected virtual void OnModifiedChanged(EventArgs e) => RaiseEvent(s_eventModifiedChanged, e);
 
-    protected virtual void OnMultilineChanged(EventArgs e)
-    {
-        RaiseEvent(s_eventMultilineChanged, e);
-    }
+    protected virtual void OnMultilineChanged(EventArgs e) => RaiseEvent(s_eventMultilineChanged, e);
 
-    protected virtual void OnReadOnlyChanged(EventArgs e)
-    {
-        RaiseEvent(s_eventReadOnlyChanged, e);
-    }
+    protected virtual void OnReadOnlyChanged(EventArgs e) => RaiseEvent(s_eventReadOnlyChanged, e);
 
     protected override void OnSubscribeControlEvents(Control? control)
     {
         if (control is TextBox textBox)
         {
             // Please keep this alphabetized and in sync with Unsubscribe.
-            textBox.AcceptsTabChanged += new EventHandler(HandleAcceptsTabChanged);
-            textBox.BorderStyleChanged += new EventHandler(HandleBorderStyleChanged);
-            textBox.HideSelectionChanged += new EventHandler(HandleHideSelectionChanged);
-            textBox.ModifiedChanged += new EventHandler(HandleModifiedChanged);
-            textBox.MultilineChanged += new EventHandler(HandleMultilineChanged);
-            textBox.ReadOnlyChanged += new EventHandler(HandleReadOnlyChanged);
-            textBox.TextAlignChanged += new EventHandler(HandleTextBoxTextAlignChanged);
+            textBox.AcceptsTabChanged += HandleAcceptsTabChanged;
+            textBox.BorderStyleChanged += HandleBorderStyleChanged;
+            textBox.HideSelectionChanged += HandleHideSelectionChanged;
+            textBox.ModifiedChanged += HandleModifiedChanged;
+            textBox.MultilineChanged += HandleMultilineChanged;
+            textBox.ReadOnlyChanged += HandleReadOnlyChanged;
+            textBox.TextAlignChanged += HandleTextBoxTextAlignChanged;
         }
 
         base.OnSubscribeControlEvents(control);
@@ -211,13 +141,13 @@ public partial class ToolStripTextBox : ToolStripControlHost
         if (control is TextBox textBox)
         {
             // Please keep this alphabetized and in sync with Subscribe.
-            textBox.AcceptsTabChanged -= new EventHandler(HandleAcceptsTabChanged);
-            textBox.BorderStyleChanged -= new EventHandler(HandleBorderStyleChanged);
-            textBox.HideSelectionChanged -= new EventHandler(HandleHideSelectionChanged);
-            textBox.ModifiedChanged -= new EventHandler(HandleModifiedChanged);
-            textBox.MultilineChanged -= new EventHandler(HandleMultilineChanged);
-            textBox.ReadOnlyChanged -= new EventHandler(HandleReadOnlyChanged);
-            textBox.TextAlignChanged -= new EventHandler(HandleTextBoxTextAlignChanged);
+            textBox.AcceptsTabChanged -= HandleAcceptsTabChanged;
+            textBox.BorderStyleChanged -= HandleBorderStyleChanged;
+            textBox.HideSelectionChanged -= HandleHideSelectionChanged;
+            textBox.ModifiedChanged -= HandleModifiedChanged;
+            textBox.MultilineChanged -= HandleMultilineChanged;
+            textBox.ReadOnlyChanged -= HandleReadOnlyChanged;
+            textBox.TextAlignChanged -= HandleTextBoxTextAlignChanged;
         }
 
         base.OnUnsubscribeControlEvents(control);
@@ -282,7 +212,7 @@ public partial class ToolStripTextBox : ToolStripControlHost
 
     [SRCategory(nameof(SR.CatAppearance))]
     [DefaultValue(BorderStyle.Fixed3D)]
-    [DispId(PInvoke.DISPID_BORDERSTYLE)]
+    [DispId(PInvokeCore.DISPID_BORDERSTYLE)]
     [SRDescription(nameof(SR.TextBoxBorderDescr))]
     public BorderStyle BorderStyle
     {

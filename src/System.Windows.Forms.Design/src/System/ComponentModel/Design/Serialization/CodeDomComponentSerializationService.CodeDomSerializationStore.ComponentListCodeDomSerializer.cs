@@ -16,11 +16,11 @@ public sealed partial class CodeDomComponentSerializationService
         private class ComponentListCodeDomSerializer : CodeDomSerializer
         {
             internal static readonly ComponentListCodeDomSerializer s_instance = new();
-            private readonly Dictionary<string, OrderedCodeStatementCollection?> _statementsTable = new();
-            private readonly Dictionary<string, List<CodeExpression>> _expressions = new();
+            private readonly Dictionary<string, OrderedCodeStatementCollection?> _statementsTable = [];
+            private readonly Dictionary<string, List<CodeExpression>> _expressions = [];
             private Dictionary<string, CodeDomComponentSerializationState>? _objectState; // only used during deserialization
             private bool _applyDefaults = true;
-            private readonly HashSet<string> _nameResolveGuard = new();
+            private readonly HashSet<string> _nameResolveGuard = [];
 
             public override object Deserialize(IDesignerSerializationManager manager, object state)
             {
@@ -44,10 +44,11 @@ public sealed partial class CodeDomComponentSerializationService
                 }
                 else if (data is CodeExpression expression)
                 {
-                    // we handle expressions a little differently since they don't have a LHS or RHS they won't show up correctly in the statement table. We will deserialize them explicitly.
+                    // we handle expressions a little differently since they don't have a LHS or RHS
+                    // they won't show up correctly in the statement table. We will deserialize them explicitly.
                     if (!expressions.TryGetValue(name, out List<CodeExpression>? exps))
                     {
-                        exps = new();
+                        exps = [];
                         expressions[name] = exps;
                     }
 
@@ -60,11 +61,13 @@ public sealed partial class CodeDomComponentSerializationService
             }
 
             /// <summary>
-            ///  Deserializes the given object state.  The results are contained within the  serialization manager's name table.  The objectNames list is used to  deserialize in the proper order, as objectState is unordered.
+            ///  Deserializes the given object state. The results are contained within the serialization manager's
+            ///  name table. The objectNames list is used to deserialize in the proper order,
+            ///  as objectState is unordered.
             /// </summary>
             internal void Deserialize(IDesignerSerializationManager manager, Dictionary<string, CodeDomComponentSerializationState> objectState, List<string> objectNames, bool applyDefaults)
             {
-                CodeStatementCollection completeStatements = new CodeStatementCollection();
+                CodeStatementCollection completeStatements = [];
                 _expressions.Clear();
                 _applyDefaults = applyDefaults;
                 foreach (string name in objectNames)
@@ -72,12 +75,12 @@ public sealed partial class CodeDomComponentSerializationService
                     if (objectState.TryGetValue(name, out CodeDomComponentSerializationState? state))
                     {
                         PopulateCompleteStatements(state.Code, name, completeStatements, _expressions);
-                        PopulateCompleteStatements(state.Ctx, name, completeStatements, _expressions);
+                        PopulateCompleteStatements(state.Context, name, completeStatements, _expressions);
                     }
                 }
 
-                CodeStatementCollection mappedStatements = new CodeStatementCollection();
-                CodeMethodMap methodMap = new CodeMethodMap(mappedStatements);
+                CodeStatementCollection mappedStatements = [];
+                CodeMethodMap methodMap = new(mappedStatements);
 
                 methodMap.Add(completeStatements);
                 methodMap.Combine();
@@ -86,13 +89,14 @@ public sealed partial class CodeDomComponentSerializationService
                 // generate statement table keyed on component name
                 FillStatementTable(manager, _statementsTable, mappedStatements);
 
-                // We need to also ensure that for every entry in the statement table we have a corresponding entry in objectNames.  Otherwise, we won't deserialize completely.
-                HashSet<string> completeNames = new(objectNames);
+                // We need to also ensure that for every entry in the statement table we have a
+                // corresponding entry in objectNames. Otherwise, we won't deserialize completely.
+                HashSet<string> completeNames = [..objectNames];
                 completeNames.UnionWith(_statementsTable.Keys);
 
                 _objectState = new(objectState);
 
-                ResolveNameEventHandler resolveNameHandler = new ResolveNameEventHandler(OnResolveName);
+                ResolveNameEventHandler resolveNameHandler = new(OnResolveName);
                 manager.ResolveName += resolveNameHandler;
                 try
                 {
@@ -111,7 +115,8 @@ public sealed partial class CodeDomComponentSerializationService
             private void OnResolveName(object? sender, ResolveNameEventArgs e)
             {
                 string name = e.Name!;
-                // note: this recursionguard does not fix the problem, but rather avoids a stack overflow which will bring down VS and cause loss of data.
+                // note: this recursion guard does not fix the problem,
+                // but rather avoids a stack overflow which will bring down VS and cause loss of data.
                 if (!_nameResolveGuard.Add(name))
                 {
                     return;
@@ -133,7 +138,7 @@ public sealed partial class CodeDomComponentSerializationService
 
             private void DeserializeDefaultProperties(IDesignerSerializationManager manager, string name, List<string>? defProps)
             {
-                // Next, default properties, but only if we successfully  resolved.
+                // Next, default properties, but only if we successfully resolved.
                 if (defProps is null || !_applyDefaults)
                 {
                     return;
@@ -151,8 +156,9 @@ public sealed partial class CodeDomComponentSerializationService
                     PropertyDescriptor? prop = props[propName];
                     if (prop is not null && prop.CanResetValue(comp))
                     {
-                        Trace(TraceLevel.Verbose, $"Resetting default for {name}.{propName}");
-                        // If there is a member relationship setup for this property, we should disconnect it first. This makes sense, since if there was a previous relationship, we would have serialized it and not come here at all.
+                        // If there is a member relationship setup for this property, we should disconnect it first.
+                        // This makes sense, since if there was a previous relationship,
+                        // we would have serialized it and not come here at all.
                         if (manager.TryGetService(out MemberRelationshipService? relationships) && relationships[comp, prop] != MemberRelationship.Empty)
                         {
                             relationships[comp, prop] = MemberRelationship.Empty;
@@ -186,7 +192,11 @@ public sealed partial class CodeDomComponentSerializationService
             }
 
             /// <summary>
-            ///  This is used to resolve nested component references.  NestedComponents don't exist as sited components within the DesignerHost, they are actually sited within a parent component.  This method takes the FullName defined on INestedSite and returns the component which matches it. outerComponent is the name of the topmost component which does exist in the DesignerHost
+            ///  This is used to resolve nested component references.
+            ///  NestedComponents don't exist as sited components within the DesignerHost,
+            ///  they are actually sited within a parent component.
+            ///  This method takes the FullName defined on INestedSite and returns the component which matches it.
+            ///  outerComponent is the name of the topmost component which does exist in the DesignerHost
             ///  This code also exists in VSCodeDomDesignerLoader -- please keep them in sync.
             /// </summary>
             private static IComponent? ResolveNestedName(IDesignerSerializationManager? manager, string name, [NotNullIfNotNull(nameof(manager))] out string? outerComponent)
@@ -201,7 +211,7 @@ public sealed partial class CodeDomComponentSerializationService
                 // We need to resolve the first chunk using the manager. other chunks will be resolved within the nested containers.
                 int curIndex = name.IndexOf('.');
                 Debug.Assert(curIndex > 0, "ResolvedNestedName accepts only nested names!");
-                outerComponent = name.Substring(0, curIndex);
+                outerComponent = name[..curIndex];
                 IComponent? curComp = manager.GetInstance(outerComponent) as IComponent;
 
                 do
@@ -212,7 +222,7 @@ public sealed partial class CodeDomComponentSerializationService
                     moreChunks = curIndex != -1;
                     string compName = moreChunks
                         ? name.Substring(prevIndex + 1, curIndex)
-                        : name.Substring(prevIndex + 1);
+                        : name[(prevIndex + 1)..];
 
                     if (string.IsNullOrEmpty(compName))
                     {
@@ -235,14 +245,18 @@ public sealed partial class CodeDomComponentSerializationService
             private bool ResolveName(IDesignerSerializationManager manager, string name, bool canInvokeManager)
             {
                 bool resolved = false;
-                // Check for a nested name. Components that are sited within NestedContainers need to be looked up in their nested container, and won't be resolvable directly via the manager.
+                // Check for a nested name. Components that are sited within NestedContainers need to be looked up
+                // in their nested container, and won't be resolvable directly via the manager.
                 if (name.IndexOf('.') > 0)
                 {
                     IComponent? nestedComp = ResolveNestedName(manager, name, out string? parentName);
                     if (nestedComp is not null && parentName is not null)
                     {
                         manager.SetName(nestedComp, name);
-                        // What is the point of this?  Well, the nested components won't be in the statement table with its nested name.  However, their most parent component will be, so forcing a resolve of their name will actually deserialize the nested statements.
+                        // What is the point of this?
+                        // Well, the nested components won't be in the statement table with its nested name.
+                        // However, their most parent component will be, so forcing a resolve of their name
+                        // will actually deserialize the nested statements.
                         ResolveName(manager, parentName, canInvokeManager);
                     }
                     else
@@ -251,10 +265,16 @@ public sealed partial class CodeDomComponentSerializationService
                     }
                 }
 
-                // First we check to see if the statements table contains an OrderedCodeStatementCollection for this name.  If it does this means we have not resolved this name yet, so we grab its OrderedCodeStatementCollection and deserialize that, along with any default properties and design-time properties.
+                // First we check to see if the statements table contains an OrderedCodeStatementCollection for this name.
+                // If it does this means we have not resolved this name yet, so we grab its
+                // OrderedCodeStatementCollection and deserialize that, along with any default properties
+                // and design-time properties.
                 // If it doesn't contain an OrderedCodeStatementsCollection this means one of two things:
-                // 1. We already resolved this name and shoved an instance in there.  In this case we just return the instance
-                // 2. There are no statements corresponding to this name, but there might be expressions that have never been deserialized, so we check for that and deserialize those.
+                // 1. We already resolved this name and shoved an instance in there.
+                //    In this case we just return the instance
+                // 2. There are no statements corresponding to this name,
+                //    but there might be expressions that have never been deserialized,
+                //    so we check for that and deserialize those.
                 _statementsTable.TryGetValue(name, out OrderedCodeStatementCollection? statements);
                 if (statements is not null)
                 {
@@ -276,7 +296,6 @@ public sealed partial class CodeDomComponentSerializationService
                         Type? type = manager.GetType(typeName);
                         if (type is null)
                         {
-                            Trace(TraceLevel.Error, $"Type does not exist: {typeName}");
                             manager.ReportError(new CodeDomSerializerException(string.Format(SR.SerializerTypeNotFound, typeName), manager));
                         }
                         else if (statements.Count > 0)
@@ -284,20 +303,13 @@ public sealed partial class CodeDomComponentSerializationService
                             CodeDomSerializer? serializer = GetSerializer(manager, type);
                             if (serializer is null)
                             {
-                                // We report this as an error.  This indicates that there are code statements in initialize component that we do not know how to load.
-                                Trace(TraceLevel.Error,
-                                    $"Type referenced in init method has no serializer: {type.Name}");
+                                // We report this as an error. This indicates that there are code statements
+                                // in initialize component that we do not know how to load.
                                 manager.ReportError(new CodeDomSerializerException(
                                     string.Format(SR.SerializerNoSerializerForComponent, type.FullName), manager));
                             }
                             else
                             {
-                                Trace(TraceLevel.Verbose,
-                                    $"""
-                                     --------------------------------------------------------------------
-                                             Beginning deserialization of {name}
-                                     --------------------------------------------------------------------
-                                     """);
                                 try
                                 {
                                     object? instance = serializer.Deserialize(manager, statements);
@@ -315,7 +327,8 @@ public sealed partial class CodeDomComponentSerializationService
                         }
                     }
 
-                    // if we can't find a typeName to get a serializer with we fallback to deserializing each statement individually using the default serializer.
+                    // if we can't find a typeName to get a serializer with we fallback to deserializing
+                    // each statement individually using the default serializer.
                     else
                     {
                         foreach (CodeStatement cs in statements)
@@ -360,7 +373,11 @@ public sealed partial class CodeDomComponentSerializationService
                             }
                         }
 
-                        // Sometimes components won't be in either the statements table or the expressions table, for example, this occurs for resources  during undo/redo. In these cases the component should be resolvable by the manager. Never do this when we have been asked by the serialization manager to resolve the name;  otherwise we may infinitely recurse.
+                        // Sometimes components won't be in either the statements table or the expressions table,
+                        // for example, this occurs for resources during undo/redo.
+                        // In these cases the component should be resolvable by the manager.
+                        // Never do this when we have been asked by the serialization manager to resolve the name;
+                        // otherwise we may infinitely recurse.
                         if (!resolved && canInvokeManager)
                         {
                             resolved = manager.GetInstance(name) is not null;
@@ -451,7 +468,7 @@ public sealed partial class CodeDomComponentSerializationService
 
                         if (needVar)
                         {
-                            CodeVariableReferenceExpression var = new CodeVariableReferenceExpression(name);
+                            CodeVariableReferenceExpression var = new(name);
                             SetExpression(manager, c, var);
                             if (!shimObjectNames.Contains(name))
                             {
@@ -472,13 +489,13 @@ public sealed partial class CodeDomComponentSerializationService
             /// </summary>
             internal void Serialize(IDesignerSerializationManager manager, Dictionary<object, ObjectData> objectData, Dictionary<string, CodeDomComponentSerializationState> objectState, IList shimObjectNames)
             {
-                if (manager.GetService<IContainer>() is {} container)
+                if (manager.GetService<IContainer>() is { } container)
                 {
                     SetupVariableReferences(manager, container, objectData, shimObjectNames);
                 }
 
                 // Next, save a statement collection for each object.
-                StatementContext statementCtx = new StatementContext();
+                StatementContext statementCtx = new();
                 statementCtx.StatementCollection.Populate(objectData.Keys);
                 manager.Context.Push(statementCtx);
                 try
@@ -488,7 +505,7 @@ public sealed partial class CodeDomComponentSerializationService
                         object? code = null;
                         CodeStatementCollection? ctxStatements = null;
                         Dictionary<string, object?>? resources = null;
-                        CodeStatementCollection extraStatements = new CodeStatementCollection();
+                        CodeStatementCollection extraStatements = [];
                         manager.Context.Push(extraStatements);
                         if (manager.TryGetSerializer(data._value.GetType(), out CodeDomSerializer? serializer))
                         {
@@ -518,7 +535,7 @@ public sealed partial class CodeDomComponentSerializationService
                             }
                             else
                             {
-                                CodeStatementCollection codeStatements = new CodeStatementCollection();
+                                CodeStatementCollection codeStatements = [];
                                 foreach (MemberData md in data.Members)
                                 {
                                     if (md._member.Attributes.Contains(DesignOnlyAttribute.Yes))
@@ -527,11 +544,11 @@ public sealed partial class CodeDomComponentSerializationService
 #pragma warning disable SYSLIB0050 // Type or member is obsolete
                                         if (md._member is PropertyDescriptor prop && prop.PropertyType.IsSerializable)
                                         {
-                                            resources ??= new Dictionary<string, object?>();
+                                            resources ??= [];
 
                                             resources[prop.Name] = prop.GetValue(data._value);
                                         }
-#pragma warning restore SYSLIB0050 // Type or member is obsolete
+#pragma warning restore SYSLIB0050
                                     }
                                     else
                                     {
@@ -569,8 +586,6 @@ public sealed partial class CodeDomComponentSerializationService
                                     if (!prop.IsReadOnly || prop.Attributes.Contains(DesignerSerializationVisibilityAttribute.Content))
                                     {
                                         defaultPropList ??= new(data.Members.Count);
-
-                                        Trace(TraceLevel.Verbose, $"Adding default for {data._name}.{prop.Name}");
                                         defaultPropList.Add(prop.Name);
                                     }
                                 }
@@ -588,7 +603,7 @@ public sealed partial class CodeDomComponentSerializationService
 
                                     if (eventProp.GetValue(data._value) is null)
                                     {
-                                        defaultEventList ??= new List<string>();
+                                        defaultEventList ??= [];
 
                                         defaultEventList.Add(eventProp.Name);
                                     }
@@ -604,15 +619,13 @@ public sealed partial class CodeDomComponentSerializationService
                                     if (ebs?.GetEvent(prop) is not null)
                                     {
                                         Debug.Assert(prop.GetValue(data._value) is null, "ShouldSerializeValue and GetValue are differing");
-                                        defaultEventList ??= new List<string>();
+                                        defaultEventList ??= [];
 
                                         defaultEventList.Add(prop.Name);
                                     }
                                     else
                                     {
                                         defaultPropList ??= new(data.Members.Count);
-
-                                        Trace(TraceLevel.Verbose, $"Adding default for {data._name}.{prop.Name}");
                                         defaultPropList.Add(prop.Name);
                                     }
                                 }

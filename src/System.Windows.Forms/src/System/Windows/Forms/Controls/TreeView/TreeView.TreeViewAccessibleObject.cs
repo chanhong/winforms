@@ -10,9 +10,12 @@ namespace System.Windows.Forms;
 
 public partial class TreeView
 {
-    internal class TreeViewAccessibleObject : ControlAccessibleObject
+    internal sealed class TreeViewAccessibleObject : ControlAccessibleObject
     {
         public TreeViewAccessibleObject(TreeView owningTreeView) : base(owningTreeView) { }
+
+        internal override Rectangle BoundingRectangle => this.IsOwnerHandleCreated(out ListBox? owner) ?
+            owner.GetToolNativeScreenRectangle() : Rectangle.Empty;
 
         internal override IRawElementProviderFragment.Interface? ElementProviderFromPoint(double x, double y)
             => HitTest((int)x, (int)y) ?? base.ElementProviderFromPoint(x, y);
@@ -31,6 +34,8 @@ public partial class TreeView
             => index >= 0 && index < GetChildCount() && this.TryGetOwnerAs(out TreeView? owningTreeView)
                 ? owningTreeView.Nodes[index].AccessibilityObject
                 : null;
+
+        private protected override bool IsInternal => true;
 
         public override int GetChildCount() =>
             this.TryGetOwnerAs(out TreeView? owningTreeView) ? owningTreeView.Nodes.Count : base.GetChildCount();

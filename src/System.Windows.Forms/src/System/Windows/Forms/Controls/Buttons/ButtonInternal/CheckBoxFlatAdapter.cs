@@ -1,14 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Drawing;
-
 namespace System.Windows.Forms.ButtonInternal;
 
 internal class CheckBoxFlatAdapter : CheckBoxBaseAdapter
 {
-    internal CheckBoxFlatAdapter(ButtonBase control)
-        : base(control)
+    internal CheckBoxFlatAdapter(ButtonBase control) : base(control)
     {
     }
 
@@ -72,7 +69,7 @@ internal class CheckBoxFlatAdapter : CheckBoxBaseAdapter
     private void PaintFlatWorker(PaintEventArgs e, Color checkColor, Color checkBackground, Color checkBorder, ColorData colors)
     {
         LayoutData layout = Layout(e).Layout();
-        PaintButtonBackground(e, Control.ClientRectangle, null);
+        PaintButtonBackground(e, Control.ClientRectangle, background: null);
 
         PaintImage(e, layout);
         DrawCheckFlat(
@@ -84,23 +81,12 @@ internal class CheckBoxFlatAdapter : CheckBoxBaseAdapter
             colors);
 
         AdjustFocusRectangle(layout);
-        PaintField(e, layout, colors, checkColor, true);
+        PaintField(e, layout, colors, checkColor, drawFocus: true);
     }
 
-    #region Layout
+    private new ButtonFlatAdapter ButtonAdapter => (ButtonFlatAdapter)base.ButtonAdapter;
 
-    private new ButtonFlatAdapter ButtonAdapter
-    {
-        get
-        {
-            return ((ButtonFlatAdapter)base.ButtonAdapter);
-        }
-    }
-
-    protected override ButtonBaseAdapter CreateButtonAdapter()
-    {
-        return new ButtonFlatAdapter(Control);
-    }
+    protected override ButtonBaseAdapter CreateButtonAdapter() => new ButtonFlatAdapter(Control);
 
     protected override LayoutOptions Layout(PaintEventArgs e)
     {
@@ -110,6 +96,4 @@ internal class CheckBoxFlatAdapter : CheckBoxBaseAdapter
 
         return layout;
     }
-
-    #endregion
 }

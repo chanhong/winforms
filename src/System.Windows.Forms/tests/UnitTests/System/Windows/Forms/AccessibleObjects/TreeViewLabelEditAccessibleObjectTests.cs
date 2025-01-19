@@ -4,7 +4,6 @@
 using System.Drawing;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
-using static Interop;
 
 namespace System.Windows.Forms.Tests.AccessibleObjects;
 
@@ -19,7 +18,7 @@ public class TreeViewLabelEditAccessibleObjectTests
         var accessibilityObject = (TreeViewLabelEditAccessibleObject)labelEdit.AccessibilityObject;
         using VARIANT runtimeId = accessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_RuntimeIdPropertyId);
         Assert.Equal(accessibilityObject.RuntimeId, runtimeId.ToObject());
-        PInvoke.GetWindowRect(labelEdit, out RECT r);
+        PInvokeCore.GetWindowRect(labelEdit, out RECT r);
         using VARIANT rectArrayVariant = accessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_BoundingRectanglePropertyId);
         double[] actualArray = (double[])rectArrayVariant.ToObject();
         Rectangle actualRectangle = new((int)actualArray[0], (int)actualArray[1], (int)actualArray[2], (int)actualArray[3]);

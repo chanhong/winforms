@@ -32,7 +32,7 @@ internal abstract partial class ButtonBaseAdapter
 
         internal ColorData Calculate()
         {
-            ColorData colors = new ColorData(this)
+            ColorData colors = new(this)
             {
                 ButtonFace = _backColor
             };
@@ -92,14 +92,7 @@ internal abstract partial class ButtonBaseAdapter
 
             colors.WindowFrame = _foreColor;
 
-            if (colors.ButtonFace.GetBrightness() < .5)
-            {
-                colors.ConstrastButtonShadow = colors.LowHighlight;
-            }
-            else
-            {
-                colors.ConstrastButtonShadow = colors.ButtonShadow;
-            }
+            colors.ContrastButtonShadow = colors.ButtonFace.GetBrightness() < .5 ? colors.LowHighlight : colors.ButtonShadow;
 
             if (!Enabled)
             {
@@ -115,12 +108,12 @@ internal abstract partial class ButtonBaseAdapter
                 colors.WindowText = colors.WindowFrame;
             }
 
-            using DeviceContextHdcScope hdc = new(_deviceContext, applyGraphicsState: false);
+            using DeviceContextHdcScope hdc = _deviceContext.ToHdcScope(ApplyGraphicsProperties.None);
 
             colors.ButtonFace = hdc.FindNearestColor(colors.ButtonFace);
             colors.ButtonShadow = hdc.FindNearestColor(colors.ButtonShadow);
             colors.ButtonShadowDark = hdc.FindNearestColor(colors.ButtonShadowDark);
-            colors.ConstrastButtonShadow = hdc.FindNearestColor(colors.ConstrastButtonShadow);
+            colors.ContrastButtonShadow = hdc.FindNearestColor(colors.ContrastButtonShadow);
             colors.WindowText = hdc.FindNearestColor(colors.WindowText);
             colors.Highlight = hdc.FindNearestColor(colors.Highlight);
             colors.LowHighlight = hdc.FindNearestColor(colors.LowHighlight);

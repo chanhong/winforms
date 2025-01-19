@@ -19,7 +19,7 @@ internal sealed class Com2ICategorizePropertiesHandler : Com2ExtendedBrowsingHan
             return null;
         }
 
-        PROPCAT categoryId = 0;
+        PROPCAT categoryId;
         if (categorizeProperties.Value->MapPropertyToCategory(dispid, &categoryId).Failed)
         {
             return null;
@@ -47,7 +47,7 @@ internal sealed class Com2ICategorizePropertiesHandler : Com2ExtendedBrowsingHan
         }
 
         using BSTR categoryName = default;
-        return categorizeProperties.Value->GetCategoryName(categoryId, (int)PInvoke.GetThreadLocale(), &categoryName).Succeeded
+        return categorizeProperties.Value->GetCategoryName(categoryId, (int)PInvokeCore.GetThreadLocale(), &categoryName).Succeeded
             ? categoryName.ToString()
             : null;
     }

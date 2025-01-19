@@ -10,7 +10,8 @@ namespace System.Windows.Forms;
 public partial class ComboBox
 {
     /// <summary>
-    ///  Represents the ComboBox's child (inner) edit native window control accessible object with UI Automation provider functionality.
+    ///  Represents the ComboBox's child (inner) edit native window control accessible object with UI Automation
+    ///  provider functionality.
     /// </summary>
     internal unsafe class ComboBoxChildEditUiaProvider : ChildAccessibleObject
     {
@@ -64,6 +65,10 @@ public partial class ComboBox
 
         public override string Name => base.Name ?? SR.ComboBoxEditDefaultAccessibleName;
 
+        private protected override bool IsInternal => true;
+
+        internal override bool CanGetNameInternal => false;
+
         internal override VARIANT GetPropertyValue(UIA_PROPERTY_ID propertyID) =>
             propertyID switch
             {
@@ -96,10 +101,7 @@ public partial class ComboBox
                 _ => base.IsPatternSupported(patternId)
             };
 
-        /// <summary>
-        ///  Gets the runtime ID.
-        /// </summary>
-        internal override int[] RuntimeId => new int[] { RuntimeIDFirstItem, GetHashCode() };
+        internal override int[] RuntimeId => [RuntimeIDFirstItem, GetHashCode()];
 
         internal override unsafe ITextRangeProvider* DocumentRangeInternal
             => _textProvider.DocumentRange;

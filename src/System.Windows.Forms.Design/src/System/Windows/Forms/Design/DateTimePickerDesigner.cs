@@ -21,7 +21,7 @@ internal class DateTimePickerDesigner : ControlDesigner
     {
         get
         {
-            IList snapLines = base.SnapLines;
+            IList<SnapLine> snapLines = SnapLinesInternal;
 
             // A single text-baseline for the label (and linklabel) control.
             int baseline = DesignerUtils.GetTextBaseline(Control, ContentAlignment.MiddleLeft);
@@ -30,13 +30,13 @@ internal class DateTimePickerDesigner : ControlDesigner
             baseline += 2;
             snapLines.Add(new SnapLine(SnapLineType.Baseline, baseline, SnapLinePriority.Medium));
 
-            return snapLines;
+            return snapLines.Unwrap();
         }
     }
 
     /// <summary>
     ///  Retrieves a set of rules concerning the movement capabilities of a component.
-    ///  This should be one or more flags from the SelectionRules class.  If no designer
+    ///  This should be one or more flags from the SelectionRules class. If no designer
     ///  provides rules for a component, the component will not get any UI services.
     /// </summary>
     public override SelectionRules SelectionRules

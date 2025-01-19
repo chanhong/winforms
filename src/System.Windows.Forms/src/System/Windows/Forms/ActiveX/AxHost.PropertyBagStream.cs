@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Formats.Nrbf;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Windows.Forms.BinaryFormat;
+using System.Private.Windows.Core.BinaryFormat;
 using Windows.Win32.System.Com;
-using Windows.Win32.System.Variant;
 using Windows.Win32.System.Com.StructuredStorage;
+using Windows.Win32.System.Variant;
+using System.Windows.Forms.Nrbf;
 
 namespace System.Windows.Forms;
 
@@ -16,15 +18,15 @@ public abstract unsafe partial class AxHost
     {
         private readonly Hashtable _bag;
 
-        internal PropertyBagStream() => _bag = new();
+        internal PropertyBagStream() => _bag = [];
 
         internal PropertyBagStream(Stream stream)
         {
             long position = stream.Position;
             try
             {
-                BinaryFormattedObject format = new(stream, leaveOpen: true);
-                if (format.TryGetPrimitiveHashtable(out _bag!))
+                SerializationRecord rootRecord = stream.Decode();
+                if (rootRecord.TryGetPrimitiveHashtable(out _bag!))
                 {
                     return;
                 }
@@ -34,22 +36,28 @@ public abstract unsafe partial class AxHost
                 // Don't usually expect to fall into this case as we should usually not have anything
                 // in the stream other than primitive VARIANTs, which are handled. If there are arrays or
                 // interface pointers we'd hit this.
-                Debug.WriteLine($"PropertyBagStream: {nameof(BinaryFormattedObject)} failed with {ex.Message}");
+                Debug.WriteLine($"PropertyBagStream: {nameof(NrbfDecoder)} failed with {ex.Message}");
             }
 
             try
             {
                 stream.Position = position;
 #pragma warning disable SYSLIB0011 // Type or member is obsolete
-                _bag = (Hashtable)new BinaryFormatter().Deserialize(stream);
+#pragma warning disable CA2300 // Do not use insecure deserializer BinaryFormatter
+#pragma warning disable CA2301 // Do not call BinaryFormatter.Deserialize without first setting BinaryFormatter.Binder
+#pragma warning disable CA2302 // Ensure BinaryFormatter.Binder is set before calling BinaryFormatter.Deserialize
+                _bag = (Hashtable)new BinaryFormatter().Deserialize(stream); // CodeQL[SM03722, SM04191] : BinaryFormatter is intended to be used as a fallback for unsupported types. Users must explicitly opt into this behavior"
             }
             catch (Exception inner) when (!inner.IsCriticalException())
             {
                 Debug.Fail($"PropertyBagStream: {nameof(BinaryFormatter)} failed with {inner.Message}");
+#pragma warning restore CA2300
+#pragma warning restore CA2301
+#pragma warning restore CA2302
 #pragma warning restore SYSLIB0011
 
                 // Error reading. Just init an empty hashtable.
-                _bag = new();
+                _bag = [];
             }
         }
 
@@ -103,7 +111,7 @@ public abstract unsafe partial class AxHost
             }
             catch (Exception ex) when (!ex.IsCriticalException())
             {
-                Debug.WriteLine($"PropertyBagStream.Save: {nameof(BinaryFormattedObject)} failed with {ex.Message}");
+                Debug.WriteLine($"PropertyBagStream.Save: {nameof(NrbfDecoder)} failed with {ex.Message}");
 
                 stream.Position = position;
 #pragma warning disable SYSLIB0011 // Type or member is obsolete

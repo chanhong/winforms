@@ -42,6 +42,8 @@ public abstract partial class DataGridViewCell
             }
         }
 
+        internal override bool CanGetDefaultActionInternal => false;
+
         public override string? Name
         {
             get
@@ -84,6 +86,8 @@ public abstract partial class DataGridViewCell
                 return name;
             }
         }
+
+        internal override bool CanGetNameInternal => false;
 
         public DataGridViewCell? Owner
         {
@@ -250,6 +254,10 @@ public abstract partial class DataGridViewCell
             }
         }
 
+        internal override bool CanGetValueInternal => false;
+
+        internal override bool CanSetValueInternal => false;
+
         public override void DoDefaultAction()
         {
             if (_owner is null)
@@ -295,7 +303,7 @@ public abstract partial class DataGridViewCell
                 else if (dataGridView.EditMode != DataGridViewEditMode.EditProgrammatically)
                 {
                     // start editing
-                    dataGridView.BeginEdit(true /*selectAll*/);
+                    dataGridView.BeginEdit(selectAll: true);
                 }
             }
         }
@@ -320,8 +328,8 @@ public abstract partial class DataGridViewCell
             Rectangle columnRect = _owner.DataGridView.RectangleToScreen(
                 _owner.DataGridView.GetColumnDisplayRectangle(_owner.ColumnIndex, cutOverflow: false));
 
-            var cellRight = columnRect.Left + columnRect.Width;
-            var cellLeft = columnRect.Left;
+            int cellRight = columnRect.Left + columnRect.Width;
+            int cellLeft = columnRect.Left;
 
             int rightToLeftRowHeadersWidth = 0;
             int leftToRightRowHeadersWidth = 0;
@@ -365,12 +373,12 @@ public abstract partial class DataGridViewCell
         {
             // If this is one of our types, use the shortcut provided by ParentPrivate property.
             // Otherwise, use the Parent property.
-            if (_owner is DataGridViewButtonCell ||
-                _owner is DataGridViewCheckBoxCell ||
-                _owner is DataGridViewComboBoxCell ||
-                _owner is DataGridViewImageCell ||
-                _owner is DataGridViewLinkCell ||
-                _owner is DataGridViewTextBoxCell)
+            if (_owner is DataGridViewButtonCell
+                or DataGridViewCheckBoxCell
+                or DataGridViewComboBoxCell
+                or DataGridViewImageCell
+                or DataGridViewLinkCell
+                or DataGridViewTextBoxCell)
             {
                 return ParentPrivate;
             }
@@ -611,12 +619,11 @@ public abstract partial class DataGridViewCell
             RaiseAutomationEvent(UIA_EVENT_ID.UIA_AutomationFocusChangedEventId);
         }
 
-        internal override int[] RuntimeId
-            => _runtimeId ??= new int[]
-            {
-                RuntimeIDFirstItem, // first item is static - 0x2a
-                GetHashCode()
-            };
+        internal override int[] RuntimeId => _runtimeId ??=
+        [
+            RuntimeIDFirstItem,
+            GetHashCode()
+        ];
 
         private protected override string AutomationId
         {

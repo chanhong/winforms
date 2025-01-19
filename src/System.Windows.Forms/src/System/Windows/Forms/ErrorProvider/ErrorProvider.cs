@@ -22,17 +22,19 @@ namespace System.Windows.Forms;
 [SRDescription(nameof(SR.DescriptionErrorProvider))]
 public partial class ErrorProvider : Component, IExtenderProvider, ISupportInitialize
 {
-    private readonly Dictionary<Control, ControlItem> _items = new();
-    private readonly Dictionary<Control, ErrorWindow> _windows = new();
+    private readonly Dictionary<Control, ControlItem> _items = [];
+    private readonly Dictionary<Control, ErrorWindow> _windows = [];
     private Icon _icon = DefaultIcon;
     private IconRegion? _region;
     private int _itemIdCounter;
     private int _blinkRate;
     private ErrorBlinkStyle _blinkStyle;
-    private bool _showIcon = true; // used for blinking
-    private bool _inSetErrorManager;
-    private bool _setErrorManagerOnEndInit;
-    private bool _initializing;
+    private ErrorProviderStates _state = ErrorProviderStates.ShowIcon;
+    private bool ShowIcon
+    {
+        get => _state.HasFlag(ErrorProviderStates.ShowIcon);
+        set => _state.ChangeFlags(ErrorProviderStates.ShowIcon, value);
+    }
 
     [ThreadStatic]
     private static Icon? t_defaultIcon;
@@ -53,7 +55,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
 
     private EventHandler? _onRightToLeftChanged;
 
-    private bool _rightToLeft;
+    private int _errorCount;
 
     /// <summary>
     ///  Default constructor.
@@ -62,7 +64,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
     {
         _blinkRate = DefaultBlinkRate;
         _blinkStyle = DefaultBlinkStyle;
-        _currentChanged = new EventHandler(ErrorManager_CurrentChanged);
+        _currentChanged = ErrorManager_CurrentChanged;
     }
 
     public ErrorProvider(ContainerControl parentControl)
@@ -71,7 +73,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
         ArgumentNullException.ThrowIfNull(parentControl);
 
         _parentControl = parentControl;
-        _propChangedEvent = new EventHandler(ParentControl_BindingContextChanged);
+        _propChangedEvent = ParentControl_BindingContextChanged;
         parentControl.BindingContextChanged += _propChangedEvent;
     }
 
@@ -130,7 +132,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
             if (value == ErrorBlinkStyle.AlwaysBlink)
             {
                 // Need to start blinking on all the controlItems in our items dictionary.
-                _showIcon = true;
+                _state.ChangeFlags(ErrorProviderStates.ShowIcon, true);
                 _blinkStyle = ErrorBlinkStyle.AlwaysBlink;
                 foreach (ErrorWindow w in _windows.Values)
                 {
@@ -188,15 +190,9 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
     }
 
     /// <summary>
-    /// Gets a value that indicates if this <see cref="ErrorProvider"/> has any errors for any of the associated controls.
+    ///  Gets a value that indicates if this <see cref="ErrorProvider"/> has any errors for any of the associated controls.
     /// </summary>
-    public bool HasErrors
-    {
-        get
-        {
-            return _items.Count > 0;
-        }
-    }
+    public bool HasErrors => _errorCount > 0;
 
     /// <summary>
     ///  This is used for international applications where the language is written from RightToLeft.
@@ -208,15 +204,15 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
     [SRDescription(nameof(SR.ControlRightToLeftDescr))]
     public virtual bool RightToLeft
     {
-        get => _rightToLeft;
+        get => _state.HasFlag(ErrorProviderStates.RightToLeft);
         set
         {
-            if (value == _rightToLeft)
+            if (value == _state.HasFlag(ErrorProviderStates.RightToLeft))
             {
                 return;
             }
 
-            _rightToLeft = value;
+            _state.ChangeFlags(ErrorProviderStates.RightToLeft, value);
             OnRightToLeftChanged(EventArgs.Empty);
         }
     }
@@ -242,12 +238,12 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
 
     private void SetErrorManager(object? newDataSource, string? newDataMember, bool force)
     {
-        if (_inSetErrorManager)
+        if (_state.HasFlag(ErrorProviderStates.InSetErrorManager))
         {
             return;
         }
 
-        _inSetErrorManager = true;
+        _state.ChangeFlags(ErrorProviderStates.InSetErrorManager, true);
         try
         {
             bool dataSourceChanged = DataSource != newDataSource;
@@ -263,9 +259,9 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
             _dataSource = newDataSource;
             _dataMember = newDataMember;
 
-            if (_initializing)
+            if (_state.HasFlag(ErrorProviderStates.Initializing))
             {
-                _setErrorManagerOnEndInit = true;
+                _state.ChangeFlags(ErrorProviderStates.SetErrorManagerOnEndInit, true);
             }
             else
             {
@@ -295,7 +291,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
         }
         finally
         {
-            _inSetErrorManager = false;
+            _state.ChangeFlags(ErrorProviderStates.InSetErrorManager, false);
         }
     }
 
@@ -364,12 +360,12 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
         }
 
         listManager.CurrentChanged += _currentChanged;
-        listManager.BindingComplete += new BindingCompleteEventHandler(ErrorManager_BindingComplete);
+        listManager.BindingComplete += ErrorManager_BindingComplete;
 
         if (listManager is CurrencyManager currManager)
         {
-            currManager.ItemChanged += new ItemChangedEventHandler(ErrorManager_ItemChanged);
-            currManager.Bindings.CollectionChanged += new CollectionChangeEventHandler(ErrorManager_BindingsChanged);
+            currManager.ItemChanged += ErrorManager_ItemChanged;
+            currManager.Bindings.CollectionChanged += ErrorManager_BindingsChanged;
         }
     }
 
@@ -381,12 +377,12 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
         }
 
         listManager.CurrentChanged -= _currentChanged;
-        listManager.BindingComplete -= new BindingCompleteEventHandler(ErrorManager_BindingComplete);
+        listManager.BindingComplete -= ErrorManager_BindingComplete;
 
         if (listManager is CurrencyManager currManager)
         {
-            currManager.ItemChanged -= new ItemChangedEventHandler(ErrorManager_ItemChanged);
-            currManager.Bindings.CollectionChanged -= new CollectionChangeEventHandler(ErrorManager_BindingsChanged);
+            currManager.ItemChanged -= ErrorManager_ItemChanged;
+            currManager.Bindings.CollectionChanged -= ErrorManager_BindingsChanged;
         }
     }
 
@@ -551,8 +547,8 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
                 if (t_defaultIcon is null)
                 {
                     // Error provider uses small Icon.
-                    int width = PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CXSMICON);
-                    int height = PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYSMICON);
+                    int width = PInvokeCore.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CXSMICON);
+                    int height = PInvokeCore.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYSMICON);
                     using Icon defaultIcon = new(typeof(ErrorProvider), "Error");
                     t_defaultIcon = new Icon(defaultIcon, width, height);
                 }
@@ -580,7 +576,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
         {
             _icon = value.OrThrowIfNull();
             DisposeRegion();
-            ErrorWindow[] array = _windows.Values.ToArray();
+            ErrorWindow[] array = [.. _windows.Values];
             for (int i = 0; i < array.Length; i++)
             {
                 array[i].Update(timerCaused: false);
@@ -598,7 +594,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
     /// </summary>
     void ISupportInitialize.BeginInit()
     {
-        _initializing = true;
+        _state.ChangeFlags(ErrorProviderStates.Initializing, true);
     }
 
     /// <summary>
@@ -606,11 +602,11 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
     /// </summary>
     private void EndInitCore()
     {
-        _initializing = false;
+        _state.ChangeFlags(ErrorProviderStates.Initializing, false);
 
-        if (_setErrorManagerOnEndInit)
+        if (_state.HasFlag(ErrorProviderStates.SetErrorManagerOnEndInit))
         {
-            _setErrorManagerOnEndInit = false;
+            _state.ChangeFlags(ErrorProviderStates.SetErrorManagerOnEndInit, false);
             SetErrorManager(DataSource, DataMember, true);
         }
     }
@@ -624,7 +620,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
     {
         if (DataSource is ISupportInitializeNotification dsInit && !dsInit.IsInitialized)
         {
-            dsInit.Initialized += new EventHandler(DataSource_Initialized);
+            dsInit.Initialized += DataSource_Initialized;
         }
         else
         {
@@ -646,7 +642,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
 
         if (dsInit is not null)
         {
-            dsInit.Initialized -= new EventHandler(DataSource_Initialized);
+            dsInit.Initialized -= DataSource_Initialized;
         }
 
         EndInitCore();
@@ -657,7 +653,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
     /// </summary>
     public void Clear()
     {
-        ErrorWindow[] w = _windows.Values.ToArray();
+        ErrorWindow[] w = [.. _windows.Values];
         for (int i = 0; i < w.Length; i++)
         {
             w[i].Dispose();
@@ -670,6 +666,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
         }
 
         _items.Clear();
+        _errorCount = 0;
     }
 
     /// <summary>
@@ -677,7 +674,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
     /// </summary>
     public bool CanExtend(object? extendee)
     {
-        return extendee is Control && extendee is not Form;
+        return extendee is Control and not Form;
     }
 
     /// <summary>
@@ -717,7 +714,7 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
 
         if (!_items.TryGetValue(control, out ControlItem? item))
         {
-            item = new ControlItem(this, control, (IntPtr)(++_itemIdCounter));
+            item = new ControlItem(this, control, ++_itemIdCounter);
             _items[control] = item;
         }
 
@@ -783,8 +780,16 @@ public partial class ErrorProvider : Component, IExtenderProvider, ISupportIniti
     /// </summary>
     public void SetError(Control control, string? value)
     {
+        ControlItem controlItem = EnsureControlItem(control);
+        bool errorChanged = controlItem.Error != value
+            && (string.IsNullOrEmpty(controlItem.Error) != string.IsNullOrEmpty(value));
         EnsureControlItem(control).Error = value;
+        if (errorChanged)
+        {
+            _errorCount += string.IsNullOrEmpty(value) ? -1 : 1;
+        }
 
+        Debug.Assert(_errorCount >= 0, "Error count should not be less than zero");
         if (PInvoke.UiaClientsAreListening())
         {
             control.AccessibilityObject.RaiseAutomationNotification(

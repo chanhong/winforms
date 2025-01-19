@@ -6,17 +6,17 @@ using System.Drawing;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
+using System.Windows.Forms.Analyzers.Diagnostics;
 using System.Windows.Forms.VisualStyles;
-using Microsoft.Win32;
 using Microsoft.Office;
-using static Interop;
+using Microsoft.Win32;
 using Directory = System.IO.Directory;
 
 namespace System.Windows.Forms;
 
 /// <summary>
-///  Provides <see langword="static"/> methods and properties to manage an application, such as methods to run and quit an application,
-///  to process Windows messages, and properties to get information about an application.
+///  Provides <see langword="static"/> methods and properties to manage an application, such as methods
+///  to run and quit an application, to process Windows messages, and properties to get information about an application.
 ///  This class cannot be inherited.
 /// </summary>
 public sealed partial class Application
@@ -26,10 +26,13 @@ public sealed partial class Application
     /// </summary>
     private static EventHandlerList? s_eventHandlers;
     private static Font? s_defaultFont;
+    /// <summary>
+    ///  Scaled version of non system <see cref="s_defaultFont"/>.
+    /// </summary>
     private static Font? s_defaultFontScaled;
     private static string? s_startupPath;
     private static string? s_executablePath;
-    private static object? s_appFileVersion;
+    private static FileVersionInfo? s_appFileVersion;
     private static Type? s_mainType;
     private static string? s_companyName;
     private static string? s_productName;
@@ -38,8 +41,16 @@ public sealed partial class Application
     private static bool s_comCtlSupportsVisualStylesInitialized;
     private static bool s_comCtlSupportsVisualStyles;
     private static FormCollection? s_forms;
-    private static readonly object s_internalSyncObject = new();
+    private static readonly Lock s_internalSyncObject = new();
     private static bool s_useWaitCursor;
+
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+    private static SystemColorMode? s_colorMode;
+#pragma warning restore WFO5001
+
+    private const string DarkModeKeyPath = "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    private const string DarkModeKey = "AppsUseLightTheme";
+    private const int SystemDarkModeDisabled = 1;
 
     /// <summary>
     ///  Events the user can hook into
@@ -54,6 +65,8 @@ public sealed partial class Application
     // Used to avoid recursive exit
     private static bool s_exiting;
 
+    private static bool s_parkingWindowCreated;
+
     /// <summary>
     ///  This class is static, there is no need to ever create it.
     /// </summary>
@@ -62,18 +75,11 @@ public sealed partial class Application
     }
 
     /// <summary>
-    ///  Determines if the caller should be allowed to quit the application.  This will return false,
-    ///  for example, if being called from a windows forms control being hosted within a web browser.  The
+    ///  Determines if the caller should be allowed to quit the application. This will return false,
+    ///  for example, if being called from a windows forms control being hosted within a web browser. The
     ///  windows forms control should not attempt to quit the application.
     /// </summary>
-    public static bool AllowQuit
-        => ThreadContext.GetAllowQuit();
-
-    /// <summary>
-    ///  Returns True if it is OK to continue idle processing. Typically called in an Application.Idle event handler.
-    /// </summary>
-    internal static bool CanContinueIdle
-        => ThreadContext.FromCurrent().ComponentManager?.FContinueIdle() ?? false;
+    public static bool AllowQuit => ThreadContext.GetAllowQuit();
 
     /// <summary>
     ///  Typically, you shouldn't need to use this directly - use RenderWithVisualStyles instead.
@@ -143,8 +149,10 @@ public sealed partial class Application
     ///  Gets the path for the application data that is shared among all users.
     /// </summary>
     /// <remarks>
-    ///  Don't obsolete these. GetDataPath isn't on SystemInformation, and it provides
-    ///  the Windows logo required adornments to the directory (Company\Product\Version)
+    ///  <para>
+    ///   Don't obsolete these. GetDataPath isn't on SystemInformation, and it provides
+    ///   the Windows logo required adornments to the directory (Company\Product\Version).
+    ///  </para>
     /// </remarks>
     public static string CommonAppDataPath
         => GetDataPath(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData));
@@ -194,14 +202,7 @@ public sealed partial class Application
                             if (!string.IsNullOrEmpty(ns))
                             {
                                 int firstDot = ns.IndexOf('.');
-                                if (firstDot != -1)
-                                {
-                                    s_companyName = ns.Substring(0, firstDot);
-                                }
-                                else
-                                {
-                                    s_companyName = ns;
-                                }
+                                s_companyName = firstDot != -1 ? ns[..firstDot] : ns;
                             }
                             else
                             {
@@ -238,7 +239,172 @@ public sealed partial class Application
     internal static bool CustomThreadExceptionHandlerAttached
         => ThreadContext.FromCurrent().CustomThreadExceptionHandlerAttached;
 
-    internal static Font? DefaultFont => s_defaultFontScaled ?? s_defaultFont;
+    /// <summary>
+    ///  Gets the default color mode (dark mode) for the application.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This is the <see cref="SystemColorMode"/> which either has been set by <see cref="SetColorMode(SystemColorMode)"/>
+    ///   or its default value <see cref="SystemColorMode.Classic"/>. If it has been set to <see cref="SystemColorMode.System"/>,
+    ///   then the actual color mode is determined by the system settings (which can be retrieved by the
+    ///   static (shared in VB) <see cref="SystemColorMode"/> property.
+    ///  </para>
+    /// </remarks>
+    [Experimental(DiagnosticIDs.ExperimentalDarkMode, UrlFormat = DiagnosticIDs.UrlFormat)]
+    public static SystemColorMode ColorMode => s_colorMode ?? SystemColorMode.Classic;
+
+    /// <summary>
+    ///  True if the <see cref="ColorMode"/> has been set at least once.
+    /// </summary>
+    internal static bool ColorModeSet => s_colorMode is not null;
+
+    /// <summary>
+    ///  Sets the default color mode (dark mode) for the application.
+    /// </summary>
+    /// <param name="systemColorMode">The application's default color mode (dark mode) to set.</param>
+    /// <remarks>
+    ///  <para>
+    ///   You should use this method to set the default color mode (dark mode) for the application. Set it,
+    ///   before creating any UI elements, to ensure that the correct color mode is used. You can set it to
+    ///   dark mode (<see cref="SystemColorMode.Dark"/>), light mode (<see cref="SystemColorMode.Classic"/>)
+    ///   or to the system setting (<see cref="SystemColorMode.System"/>).
+    ///  </para>
+    ///  <para>
+    ///   If you set it to <see cref="SystemColorMode.System"/>, the actual color mode is determined by the
+    ///   Windows system settings. If the system setting is changed, the application will not automatically
+    ///   adapt to the new setting.
+    ///  </para>
+    ///  <para>
+    ///   Note that the dark color mode is only available from Windows 11 on or later versions. If the system
+    ///   is set to a high contrast mode, the dark mode is not available.
+    ///  </para>
+    ///  <para>
+    ///   <b>Note for Visual Basic:</b> If you are using the Visual Basic Application Framework, you should set the
+    ///   color mode by handling the Application Events (see "WindowsFormsApplicationBase.ApplyApplicationDefaults").
+    ///  </para>
+    /// </remarks>
+    [Experimental(DiagnosticIDs.ExperimentalDarkMode, UrlFormat = DiagnosticIDs.UrlFormat)]
+    public static void SetColorMode(SystemColorMode systemColorMode)
+    {
+        try
+        {
+            // Can't use the Generator here, since it cannot deal with [Experimental].
+            _ = systemColorMode switch
+            {
+                SystemColorMode.Classic => systemColorMode,
+                SystemColorMode.System => systemColorMode,
+                SystemColorMode.Dark => systemColorMode,
+                _ => throw new ArgumentOutOfRangeException(nameof(systemColorMode))
+            };
+
+            if (systemColorMode == s_colorMode)
+            {
+                return;
+            }
+
+            s_colorMode = systemColorMode;
+        }
+        finally
+        {
+            bool useAlternateColorSet = SystemColors.UseAlternativeColorSet;
+            bool darkModeEnabled = IsDarkModeEnabled;
+
+            if (useAlternateColorSet != darkModeEnabled)
+            {
+                SystemColors.UseAlternativeColorSet = darkModeEnabled;
+                NotifySystemEventsOfColorChange();
+            }
+        }
+
+        static void NotifySystemEventsOfColorChange()
+        {
+            string s_systemTrackerWindow = $".NET-BroadcastEventWindow.{AppDomain.CurrentDomain.GetHashCode():x}.0";
+
+            HWND hwnd = PInvoke.FindWindow(s_systemTrackerWindow, s_systemTrackerWindow);
+            if (hwnd.IsNull)
+            {
+                // Haven't created the window yet, so no need to notify.
+                return;
+            }
+
+            bool complete = false;
+            bool success = PInvoke.SendMessageCallback(hwnd, PInvokeCore.WM_SYSCOLORCHANGE + MessageId.WM_REFLECT, () => complete = true);
+            Debug.Assert(success);
+
+            if (!success)
+            {
+                return;
+            }
+
+            while (!complete)
+            {
+                DoEvents();
+                Thread.Yield();
+            }
+        }
+    }
+
+    internal static Font DefaultFont => s_defaultFontScaled ?? s_defaultFont!;
+
+    /// <summary>
+    ///  Gets the system color mode setting of the OS system environment.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   The color setting is determined based on the operating system version and its system settings.
+    ///   It returns <see cref="SystemColorMode.Dark"/> if the dark mode is enabled in the system settings,
+    ///   <see cref="SystemColorMode.Classic"/> if the color mode equals the light, standard color setting.
+    ///  </para>
+    ///  <para>
+    ///   SystemColorMode is supported on Windows 11 or later versions.
+    ///  </para>
+    ///  <para>
+    ///   SystemColorModes is not supported, if the Windows OS <c>High Contrast Mode</c> has been enabled in the system settings.
+    ///  </para>
+    /// </remarks>
+    [Experimental(DiagnosticIDs.ExperimentalDarkMode, UrlFormat = DiagnosticIDs.UrlFormat)]
+    public static SystemColorMode SystemColorMode =>
+        GetSystemColorModeInternal() == 0
+            ? SystemColorMode.Dark
+            : SystemColorMode.Classic;
+
+    // Returns 0 if dark mode is enabled in the system, otherwise -1 (SystemDarkModeDisabled)
+    private static int GetSystemColorModeInternal()
+    {
+        if (!IsSystemDarkModeAvailable)
+        {
+            return SystemDarkModeDisabled;
+        }
+
+        int systemColorMode = SystemDarkModeDisabled;
+
+        try
+        {
+            // 0 for dark mode and |1| for light mode.
+            systemColorMode = Math.Abs((Registry.GetValue(
+                keyName: DarkModeKeyPath,
+                valueName: DarkModeKey,
+                defaultValue: SystemDarkModeDisabled) as int?) ?? systemColorMode);
+        }
+        catch (Exception ex) when (!ex.IsCriticalException())
+        {
+        }
+
+        return systemColorMode;
+    }
+
+    private static bool IsSystemDarkModeAvailable =>
+        !SystemInformation.HighContrast && OsVersion.IsWindows11_OrGreater();
+
+    /// <summary>
+    ///  Gets a value indicating whether the application is running in a dark system color context.
+    ///  Note: In a high contrast mode, this will always return <see langword="false"/>.
+    /// </summary>
+    [Experimental(DiagnosticIDs.ExperimentalDarkMode, UrlFormat = DiagnosticIDs.UrlFormat)]
+    public static bool IsDarkModeEnabled =>
+        !SystemInformation.HighContrast
+        && (ColorMode == SystemColorMode.Dark
+            || (ColorMode == SystemColorMode.System && SystemColorMode == SystemColorMode.Dark));
 
     /// <summary>
     ///  Gets the path for the executable file that started the application.
@@ -250,15 +416,14 @@ public sealed partial class Application
     ///  Gets the current <see cref="HighDpiMode"/> mode for the process.
     /// </summary>
     /// <value>One of the enumeration values that indicates the high DPI mode.</value>
-    public static HighDpiMode HighDpiMode
-        => DpiHelper.GetWinformsApplicationDpiAwareness();
+    public static HighDpiMode HighDpiMode => ScaleHelper.GetThreadHighDpiMode();
 
     /// <summary>
     ///  Gets the path for the application data specific to a local, non-roaming user.
     /// </summary>
     /// <remarks>
-    ///  Don't obsolete these. GetDataPath isn't on SystemInformation, and it provides
-    ///  the Windows logo required adornments to the directory (Company\Product\Version)
+    ///  <para>Don't obsolete these. GetDataPath isn't on SystemInformation, and it provides
+    ///  the Windows logo required adornments to the directory (Company\Product\Version)</para>
     /// </remarks>
     public static string LocalUserAppDataPath
         => GetDataPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
@@ -272,7 +437,7 @@ public sealed partial class Application
     /// <summary>
     ///  Gets the forms collection associated with this application.
     /// </summary>
-    public static FormCollection OpenForms => s_forms ??= new FormCollection();
+    public static FormCollection OpenForms => s_forms ??= [];
 
     /// <summary>
     ///  Gets
@@ -282,64 +447,53 @@ public sealed partial class Application
     {
         get
         {
-            lock (s_internalSyncObject)
+            if (!string.IsNullOrEmpty(s_productName))
             {
-                if (s_productName is null)
-                {
-                    // Custom attribute
-                    Assembly? entryAssembly = Assembly.GetEntryAssembly();
-                    if (entryAssembly is not null)
-                    {
-                        object[] attrs = entryAssembly.GetCustomAttributes(typeof(AssemblyProductAttribute), false);
-                        if (attrs is not null && attrs.Length > 0)
-                        {
-                            s_productName = ((AssemblyProductAttribute)attrs[0]).Product;
-                        }
-                    }
-
-                    // Win32 version info
-                    if (s_productName is null || s_productName.Length == 0)
-                    {
-                        s_productName = GetAppFileVersionInfo().ProductName;
-                        if (s_productName is not null)
-                        {
-                            s_productName = s_productName.Trim();
-                        }
-                    }
-
-                    // fake it with namespace
-                    // won't work with MC++ see GetAppMainType.
-                    if (s_productName is null || s_productName.Length == 0)
-                    {
-                        Type? type = GetAppMainType();
-
-                        if (type is not null)
-                        {
-                            string? ns = type.Namespace;
-
-                            if (!string.IsNullOrEmpty(ns))
-                            {
-                                int lastDot = ns.LastIndexOf('.');
-                                if (lastDot != -1 && lastDot < ns.Length - 1)
-                                {
-                                    s_productName = ns.Substring(lastDot + 1);
-                                }
-                                else
-                                {
-                                    s_productName = ns;
-                                }
-                            }
-                            else
-                            {
-                                // last ditch... use the main type
-                                s_productName = type.Name;
-                            }
-                        }
-                    }
-                }
+                return s_productName;
             }
 
-            return s_productName;
+            lock (s_internalSyncObject)
+            {
+                if (s_productName is not null)
+                {
+                    return s_productName;
+                }
+
+                // Custom attribute
+                if (Assembly.GetEntryAssembly() is { } entryAssembly)
+                {
+                    object[] attrs = entryAssembly.GetCustomAttributes(typeof(AssemblyProductAttribute), inherit: false);
+                    if (attrs is not null && attrs.Length > 0)
+                    {
+                        s_productName = ((AssemblyProductAttribute)attrs[0]).Product;
+                    }
+                }
+
+                // Win32 version info
+                if (string.IsNullOrEmpty(s_productName) && GetAppFileVersionInfo().ProductName is { } productName)
+                {
+                    s_productName = productName.Trim();
+                }
+
+                // Try using the namespace
+                if (string.IsNullOrEmpty(s_productName) && GetAppMainType() is { } type)
+                {
+                    string? ns = type.Namespace;
+
+                    if (!string.IsNullOrEmpty(ns))
+                    {
+                        int lastDot = ns.LastIndexOf('.');
+                        s_productName = lastDot != -1 && lastDot < ns.Length - 1 ? ns[(lastDot + 1)..] : ns;
+                    }
+                    else
+                    {
+                        // Final fallback, use the main type.
+                        s_productName = type.Name;
+                    }
+                }
+
+                return s_productName;
+            }
         }
     }
 
@@ -465,8 +619,8 @@ public sealed partial class Application
     ///  Gets the path for the application data specific to the roaming user.
     /// </summary>
     /// <remarks>
-    ///  Don't obsolete these. GetDataPath isn't on SystemInformation, and it provides
-    ///  the Windows logo required adornments to the directory (Company\Product\Version)
+    ///  <para>Don't obsolete these. GetDataPath isn't on SystemInformation, and it provides
+    ///  the Windows logo required adornments to the directory (Company\Product\Version)</para>
     /// </remarks>
     public static string UserAppDataPath
         => GetDataPath(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
@@ -483,15 +637,19 @@ public sealed partial class Application
     /// </summary>
     /// <value><see langword="true" /> if visual styles are enabled; otherwise, <see langword="false" />.</value>
     /// <remarks>
-    ///  The visual styles can be enabled by calling <see cref="EnableVisualStyles"/>.
-    ///  The visual styles will not be enabled if the OS does not support them, or theming is disabled at the OS level.
+    ///  <para>
+    ///   The visual styles can be enabled by calling <see cref="EnableVisualStyles"/>.
+    ///   The visual styles will not be enabled if the OS does not support them, or theming is disabled at the OS level.
+    ///  </para>
     /// </remarks>
     public static bool UseVisualStyles { get; private set; }
 
     /// <remarks>
-    ///  Don't never ever change this name, since the window class and partner teams
-    ///  dependent on this. Changing this will introduce breaking changes.
-    ///  If there is some reason need to change this, notify any partner teams affected.
+    ///  <para>
+    ///   Don't never ever change this name, since the window class and partner teams
+    ///   dependent on this. Changing this will introduce breaking changes.
+    ///   If there is some reason need to change this, notify any partner teams affected.
+    ///  </para>
     /// </remarks>
     internal static string WindowsFormsVersion => "WindowsForms10";
 
@@ -524,7 +682,7 @@ public sealed partial class Application
 
                 // 248887 we need to send a WM_THEMECHANGED to the top level windows of this application.
                 // We do it this way to ensure that we get all top level windows -- whether we created them or not.
-                PInvoke.EnumWindows(SendThemeChanged);
+                PInvokeCore.EnumWindows(SendThemeChanged);
             }
         }
     }
@@ -560,10 +718,10 @@ public sealed partial class Application
     private static BOOL SendThemeChangedRecursive(HWND handle)
     {
         // First send to all children.
-        PInvoke.EnumChildWindows(handle, SendThemeChangedRecursive);
+        PInvokeCore.EnumChildWindows(handle, SendThemeChangedRecursive);
 
         // Then send to ourself.
-        PInvoke.SendMessage(handle, PInvoke.WM_THEMECHANGED);
+        PInvokeCore.SendMessage(handle, PInvokeCore.WM_THEMECHANGED);
 
         return true;
     }
@@ -614,7 +772,7 @@ public sealed partial class Application
     public static bool FilterMessage(ref Message message)
     {
         // Create copy of MSG structure
-        MSG msg = message;
+        MSG msg = message.ToMSG();
         bool processed = ThreadContext.FromCurrent().ProcessFilters(ref msg, out bool modified);
         if (modified)
         {
@@ -639,10 +797,7 @@ public sealed partial class Application
             lock (current)
             {
                 current._idleHandler += value;
-
-                // This just ensures that the component manager is hooked up.  We
-                // need it for idle time processing.
-                object? o = current.ComponentManager;
+                current.EnsureReadyForIdle();
             }
         }
         remove
@@ -704,7 +859,7 @@ public sealed partial class Application
     }
 
     /// <summary>
-    ///  Occurs when an untrapped thread exception is thrown.
+    ///  Occurs when an un-trapped thread exception is thrown.
     /// </summary>
     public static event ThreadExceptionEventHandler? ThreadException
     {
@@ -727,7 +882,7 @@ public sealed partial class Application
     }
 
     /// <summary>
-    ///  Occurs when a thread is about to shut down.  When the main thread for an
+    ///  Occurs when a thread is about to shut down. When the main thread for an
     ///  application is about to be shut down, this event will be raised first,
     ///  followed by an <see cref="ApplicationExit"/> event.
     /// </summary>
@@ -802,7 +957,7 @@ public sealed partial class Application
     /// <summary>
     ///  Informs all message pumps that they are to terminate and then closes all
     ///  application windows after the messages have been processed. e.Cancel indicates
-    ///  whether any of the open forms cancelled the exit call.
+    ///  whether any of the open forms canceled the exit call.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public static void Exit(CancelEventArgs? e)
@@ -825,11 +980,22 @@ public sealed partial class Application
             try
             {
                 // Raise the FormClosing and FormClosed events for each open form
-                if (s_forms is not null)
+                if (s_forms?.Count > 0)
                 {
-                    foreach (Form f in s_forms)
+                    HashSet<Form> processedForms = new(s_forms.Count);
+                    int version = s_forms.AddVersion;
+                    // We need to iterate in backward order to not violate MDI closing events rules
+                    for (int i = s_forms.Count - 1; i > -1; i--)
                     {
-                        if (f.RaiseFormClosingOnAppExit())
+                        Form? form = s_forms[i];
+                        if (form is null || processedForms.Contains(form))
+                        {
+                            continue;
+                        }
+
+                        processedForms.Add(form);
+                        // Here user can remove existing forms or add new
+                        if (form.RaiseFormClosingOnAppExit())
                         {
                             // A form refused to close
                             if (e is not null)
@@ -837,14 +1003,35 @@ public sealed partial class Application
                                 e.Cancel = true;
                             }
 
+                            processedForms.Clear();
                             return;
+                        }
+
+                        if (version != s_forms.AddVersion) // A new form was added, we need to iterate again
+                        {
+                            version = s_forms.AddVersion;
+                            i = s_forms.Count;
+                        }
+                        else
+                        {
+                            i = Math.Min(i, s_forms.Count); // Form can be removed from the collection, we need to check it
                         }
                     }
 
+                    processedForms.Clear();
                     while (s_forms.Count > 0)
                     {
-                        // OnFormClosed removes the form from the FormCollection
-                        s_forms[0]!.RaiseFormClosedOnAppExit();
+                        // We need to iterate in backward order to not violate MDI closing events rules
+                        Form? form = s_forms[^1];
+                        if (form is not null)
+                        {
+                            // OnFormClosed removes the form from the FormCollection
+                            form.RaiseFormClosedOnAppExit();
+                        }
+                        else
+                        {
+                            s_forms.RemoveAt(s_forms.Count - 1);
+                        }
                     }
                 }
 
@@ -896,23 +1083,28 @@ public sealed partial class Application
     [UnconditionalSuppressMessage("SingleFile", "IL3002", Justification = "Single-file case is handled")]
     private static FileVersionInfo GetAppFileVersionInfo()
     {
+        if (s_appFileVersion is { } fileVersion)
+        {
+            return fileVersion;
+        }
+
         lock (s_internalSyncObject)
         {
             if (s_appFileVersion is null)
             {
                 Type? type = GetAppMainType();
-                if (type is not null && type.Assembly.Location.Length > 0)
-                {
-                    s_appFileVersion = FileVersionInfo.GetVersionInfo(type.Module.FullyQualifiedName);
-                }
-                else
-                {
-                    s_appFileVersion = FileVersionInfo.GetVersionInfo(ExecutablePath);
-                }
+
+                // In a single-file, "Location" will be empty and it will fall back to ExecutablePath,
+                // which gives the desired result.
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
+                s_appFileVersion = type is not null && type.Assembly.Location.Length > 0
+                    ? FileVersionInfo.GetVersionInfo(type.Module.FullyQualifiedName)
+                    : FileVersionInfo.GetVersionInfo(ExecutablePath);
+#pragma warning restore IL3000
             }
         }
 
-        return (FileVersionInfo)s_appFileVersion;
+        return s_appFileVersion;
     }
 
     /// <summary>
@@ -946,7 +1138,7 @@ public sealed partial class Application
         ThreadContext? threadContext = ThreadContext.FromId(PInvoke.GetWindowThreadProcessId(handle.Handle, null));
         Debug.Assert(
             threadContext is not null,
-            "No thread context for handle.  This is expected if you saw a previous assert about the handle being invalid.");
+            "No thread context for handle. This is expected if you saw a previous assert about the handle being invalid.");
 
         GC.KeepAlive(handle);
         return threadContext;
@@ -1008,7 +1200,7 @@ public sealed partial class Application
     {
         Debug.Assert(PInvoke.IsWindow(handle), "Handle being parked is not a valid window handle");
         Debug.Assert(
-            ((WINDOW_STYLE)PInvoke.GetWindowLong(handle.Handle, WINDOW_LONG_PTR_INDEX.GWL_STYLE)).HasFlag(WINDOW_STYLE.WS_CHILD),
+            ((WINDOW_STYLE)PInvokeCore.GetWindowLong(handle.Handle, WINDOW_LONG_PTR_INDEX.GWL_STYLE)).HasFlag(WINDOW_STYLE.WS_CHILD),
             "Only WS_CHILD windows should be parked.");
 
         GetContextForHandle(handle)?.GetParkingWindow(dpiAwarenessContext).ParkHandle(handle);
@@ -1017,10 +1209,10 @@ public sealed partial class Application
     }
 
     /// <summary>
-    ///  Park control handle on a parkingwindow that has matching DpiAwareness.
+    ///  Park control handle on a parking window that has matching DpiAwareness.
     /// </summary>
-    /// <param name="cp"> create params for control handle</param>
-    /// <param name="dpiAwarenessContext"> dpi awareness</param>
+    /// <param name="cp">Create params for control handle.</param>
+    /// <param name="dpiAwarenessContext">DPI awareness.</param>
     internal static void ParkHandle(CreateParams cp, DPI_AWARENESS_CONTEXT dpiAwarenessContext)
     {
         ThreadContext threadContext = ThreadContext.FromCurrent();
@@ -1043,7 +1235,7 @@ public sealed partial class Application
         => ThreadContext.FromCurrent().OnThreadException(t);
 
     /// <summary>
-    ///  "Unparks" the given HWND to a temporary HWND.  This allows WS_CHILD windows to
+    ///  "Unparks" the given HWND to a temporary HWND. This allows WS_CHILD windows to
     ///  be parked.
     /// </summary>
     internal static void UnparkHandle(IHandle<HWND> handle, DPI_AWARENESS_CONTEXT context)
@@ -1086,11 +1278,14 @@ public sealed partial class Application
             string[] arguments = Environment.GetCommandLineArgs();
             Debug.Assert(arguments is not null && arguments.Length > 0);
 
-            ProcessStartInfo currentStartInfo = new();
-            currentStartInfo.FileName = ExecutablePath;
+            ProcessStartInfo currentStartInfo = new()
+            {
+                FileName = ExecutablePath
+            };
+
             if (arguments.Length >= 2)
             {
-                StringBuilder sb = new StringBuilder((arguments.Length - 1) * 16);
+                StringBuilder sb = new((arguments.Length - 1) * 16);
                 for (int argumentIndex = 1; argumentIndex < arguments.Length; argumentIndex++)
                 {
                     sb.Append($"\"{arguments[argumentIndex]}\" ");
@@ -1126,37 +1321,12 @@ public sealed partial class Application
         => ThreadContext.FromCurrent().RunMessageLoop(msoloop.Main, context);
 
     /// <summary>
-    ///  Runs a modal dialog.  This starts a special type of message loop that runs until
-    ///  the dialog has a valid DialogResult.  This is called internally by a form
+    ///  Runs a modal dialog. This starts a special type of message loop that runs until
+    ///  the dialog has a valid DialogResult. This is called internally by a form
     ///  when an application calls System.Windows.Forms.Form.ShowDialog().
     /// </summary>
     internal static void RunDialog(Form form)
         => ThreadContext.FromCurrent().RunMessageLoop(msoloop.ModalForm, new ModalApplicationContext(form));
-
-    /// <summary>
-    /// Scale the default font (if it is set) as per the Settings display text scale settings.
-    /// </summary>
-    /// <param name="textScaleFactor">The scaling factor in the range [1.0, 2.25].</param>
-    internal static void ScaleDefaultFont(float textScaleFactor)
-    {
-        if (s_defaultFont is null || !OsVersion.IsWindows10_1507OrGreater())
-        {
-            return;
-        }
-
-        if (s_defaultFontScaled is not null)
-        {
-            s_defaultFontScaled.Dispose();
-            s_defaultFontScaled = null;
-        }
-
-        // Restore the text scale if it isn't the default value in the valid text scale factor value
-        textScaleFactor = Math.Min(DpiHelper.MaxTextScaleFactorValue, textScaleFactor);
-        if (textScaleFactor > DpiHelper.MinTextScaleFactorValue)
-        {
-            s_defaultFontScaled = s_defaultFont.WithSize(s_defaultFont.Size * textScaleFactor);
-        }
-    }
 
     /// <summary>
     ///  Sets the static UseCompatibleTextRenderingDefault field on Control to the value passed in.
@@ -1198,25 +1368,51 @@ public sealed partial class Application
         if (NativeWindow.AnyHandleCreated)
             throw new InvalidOperationException(string.Format(SR.Win32WindowAlreadyCreated, nameof(SetDefaultFont)));
 
-        // If user made a prior call to this API with a different custom fonts, we want to clean it up.
-        if (s_defaultFont is not null)
+        s_defaultFont = font;
+        ScaleDefaultFont();
+    }
+
+    /// <summary>
+    ///  Scale <see cref="s_defaultFont"/> or <see cref="s_defaultFontScaled"/> if needed.
+    /// </summary>
+    internal static void ScaleDefaultFont()
+    {
+        if (s_defaultFont is null)
         {
-            s_defaultFont?.Dispose();
-            s_defaultFont = null;
-            s_defaultFontScaled?.Dispose();
-            s_defaultFontScaled = null;
+            return;
         }
 
-        if (font.IsSystemFont)
+        if (s_defaultFont.IsSystemFont)
         {
-            // The system font is managed the .NET runtime, and it is already scaled to the current text scale factor.
-            // We need to clone it because our reference will no longer be scaled by the .NET runtime.
-            s_defaultFont = (Font)font.Clone();
+            s_defaultFontScaled?.Dispose();
+            s_defaultFontScaled = null;
+            // Recreating the SystemFont will have it scaled to the right size for the current setting. This could be
+            // done more efficiently by querying the OS to see if this is necessary for the specific font.
+            //
+            // This should never return null.
+            Font newSystemFont = SystemFonts.GetFontByName(s_defaultFont.SystemFontName)!;
+            if (s_defaultFont.Equals(newSystemFont))
+            {
+                // No point in keeping an identical one, free the resource.
+                newSystemFont.Dispose();
+            }
+            else
+            {
+                s_defaultFont = newSystemFont;
+            }
         }
-        else
+        else // non system Font
         {
-            s_defaultFont = font;
-            ScaleDefaultFont(DpiHelper.GetTextScaleFactor());
+            Font? font = ScaleHelper.ScaleToSystemTextSize(s_defaultFont);
+            if (font is null || !font.Equals(s_defaultFontScaled)) // change s_defaultFontScaled only if needed
+            {
+                s_defaultFontScaled?.Dispose();
+                s_defaultFontScaled = font;
+            }
+            else
+            {
+                font.Dispose();
+            }
         }
     }
 
@@ -1228,8 +1424,7 @@ public sealed partial class Application
     public static bool SetHighDpiMode(HighDpiMode highDpiMode)
     {
         SourceGenerated.EnumValidator.Validate(highDpiMode, nameof(highDpiMode));
-
-        return !DpiHelper.FirstParkingWindowCreated && DpiHelper.SetWinformsApplicationDpiAwareness(highDpiMode);
+        return !s_parkingWindowCreated && ScaleHelper.SetProcessHighDpiMode(highDpiMode);
     }
 
     /// <summary>
@@ -1248,15 +1443,15 @@ public sealed partial class Application
 
     /// <summary>
     ///  This method can be used to modify the exception handling behavior of
-    ///  NativeWindow.  By default, NativeWindow will detect if an application
+    ///  NativeWindow. By default, NativeWindow will detect if an application
     ///  is running under a debugger, or is running on a machine with a debugger
-    ///  installed.  In this case, an unhandled exception in the NativeWindow's
-    ///  WndProc method will remain unhandled so the debugger can trap it.  If
+    ///  installed. In this case, an unhandled exception in the NativeWindow's
+    ///  WndProc method will remain unhandled so the debugger can trap it. If
     ///  there is no debugger installed NativeWindow will trap the exception
     ///  and route it to the Application class's unhandled exception filter.
     ///
     ///  You can control this behavior via a config file, or directly through
-    ///  code using this method.  Setting the unhandled exception mode does
+    ///  code using this method. Setting the unhandled exception mode does
     ///  not change the behavior of any NativeWindow objects that are currently
     ///  connected to window handles; it only affects new handle connections.
     ///

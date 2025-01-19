@@ -49,7 +49,7 @@ public partial class ComboBox
         {
             get
             {
-                _innerList ??= new List<Entry>();
+                _innerList ??= [];
 
                 return _innerList;
             }
@@ -194,7 +194,7 @@ public partial class ComboBox
 
             foreach (object item in items)
             {
-                // adding items one-by-one for performance (especially for sorted combobox)
+                // adding items one-by-one for performance (especially for sorted ComboBox)
                 // we can not rely on ArrayList.Sort since its worst case complexity is n*n
                 // AddInternal is based on BinarySearch and ensures n*log(n) complexity
                 AddInternal(item);
@@ -411,34 +411,36 @@ public partial class ComboBox
 
             // If the native control has been created, and the display text of the new list item object
             // is different to the current text in the native list item, recreate the native list item...
-            if (_owner.IsHandleCreated)
+            if (!_owner.IsHandleCreated)
             {
-                bool selected = (index == _owner.SelectedIndex);
+                return;
+            }
 
-                if (string.Compare(_owner.GetItemText(value), _owner.NativeGetItemText(index), true, CultureInfo.CurrentCulture) != 0)
+            bool selected = (index == _owner.SelectedIndex);
+
+            if (string.Compare(_owner.GetItemText(value), _owner.NativeGetItemText(index), true, CultureInfo.CurrentCulture) != 0)
+            {
+                _owner.NativeRemoveAt(index);
+                _owner.NativeInsert(index, value);
+                if (selected)
                 {
-                    _owner.NativeRemoveAt(index);
-                    _owner.NativeInsert(index, value);
-                    if (selected)
-                    {
-                        _owner.SelectedIndex = index;
-                        _owner.UpdateText();
-                    }
-
-                    if (_owner.AutoCompleteSource == AutoCompleteSource.ListItems)
-                    {
-                        _owner.SetAutoComplete(false, false);
-                    }
+                    _owner.SelectedIndex = index;
+                    _owner.UpdateText();
                 }
-                else
+
+                if (_owner.AutoCompleteSource == AutoCompleteSource.ListItems)
                 {
-                    // NEW - FOR COMPATIBILITY REASONS
-                    // Minimum compatibility fix
-                    if (selected)
-                    {
-                        _owner.OnSelectedItemChanged(EventArgs.Empty);   // we do this because set_SelectedIndex does this. (for consistency)
-                        _owner.OnSelectedIndexChanged(EventArgs.Empty);
-                    }
+                    _owner.SetAutoComplete(false, false);
+                }
+            }
+            else
+            {
+                // NEW - FOR COMPATIBILITY REASONS
+                // Minimum compatibility fix
+                if (selected)
+                {
+                    _owner.OnSelectedItemChanged(EventArgs.Empty);   // we do this because set_SelectedIndex does this. (for consistency)
+                    _owner.OnSelectedIndexChanged(EventArgs.Empty);
                 }
             }
         }

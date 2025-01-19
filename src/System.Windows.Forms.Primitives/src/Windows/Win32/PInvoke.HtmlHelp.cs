@@ -3,23 +3,45 @@
 
 using Windows.Win32.Data.HtmlHelp;
 
-namespace Windows.Win32
+namespace Windows.Win32;
+
+internal static partial class PInvoke
 {
-    internal static partial class PInvoke
+    /// <inheritdoc cref="HtmlHelp(HWND, string, HTML_HELP_COMMAND, nuint)" />
+    internal static unsafe HWND HtmlHelp<T>(T hwndCaller, string? pszFile, HTML_HELP_COMMAND uCommand, nuint dwData)
+        where T : IHandle<HWND>
     {
-        public static HWND HtmlHelp(HandleRef<HWND> hwndCaller, string? pszFile, HTML_HELP_COMMAND uCommand, nuint dwData)
+        HWND result = HtmlHelp(hwndCaller.Handle, pszFile, uCommand, dwData);
+        GC.KeepAlive(hwndCaller.Wrapper);
+        return result;
+    }
+
+    /// <inheritdoc cref="HtmlHelp(HWND, string, HTML_HELP_COMMAND, nuint)" />
+    internal static unsafe HWND HtmlHelp<T>(T hwndCaller, string? pszFile, HTML_HELP_COMMAND uCommand, string? dwData)
+        where T : IHandle<HWND>
+    {
+        fixed (void* d = dwData)
         {
-            HWND result = HtmlHelp(hwndCaller.Handle, pszFile, uCommand, dwData);
+            HWND result = HtmlHelp(hwndCaller.Handle, pszFile, uCommand, (nuint)d);
             GC.KeepAlive(hwndCaller.Wrapper);
             return result;
         }
+    }
 
-        public static unsafe HWND HtmlHelp(HandleRef<HWND> hwndCaller, string? pszFile, HTML_HELP_COMMAND uCommand, string data)
+    /// <inheritdoc cref="HtmlHelp(HWND, string, HTML_HELP_COMMAND, nuint)" />
+    internal static unsafe HWND HtmlHelp<TCaller, TData>(
+        TCaller hwndCaller,
+        string? pszFile,
+        HTML_HELP_COMMAND uCommand,
+        ref readonly TData dwData)
+        where TCaller : IHandle<HWND>
+        where TData : unmanaged
+    {
+        fixed (void* v = &dwData)
         {
-            fixed (char* dwData = data)
-            {
-                return HtmlHelp(hwndCaller, pszFile, uCommand, (nuint)dwData);
-            }
+            HWND result = HtmlHelp(hwndCaller.Handle, pszFile, uCommand, (nuint)v);
+            GC.KeepAlive(hwndCaller.Wrapper);
+            return result;
         }
     }
 }

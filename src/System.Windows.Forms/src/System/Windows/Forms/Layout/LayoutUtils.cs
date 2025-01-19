@@ -6,7 +6,7 @@ using System.Drawing;
 
 namespace System.Windows.Forms.Layout;
 
-// Utilities used by layout code.  If you use these outside of the layout
+// Utilities used by layout code. If you use these outside of the layout
 // namespace, you should probably move them to WindowsFormsUtils.
 internal partial class LayoutUtils
 {
@@ -25,15 +25,15 @@ internal partial class LayoutUtils
     public const AnchorStyles HorizontalAnchorStyles = AnchorStyles.Left | AnchorStyles.Right;
     public const AnchorStyles VerticalAnchorStyles = AnchorStyles.Top | AnchorStyles.Bottom;
 
-    private static readonly AnchorStyles[] s_dockingToAnchor = new AnchorStyles[]
-    {
+    private static readonly AnchorStyles[] s_dockingToAnchor =
+    [
         /* None   */ AnchorStyles.Top | AnchorStyles.Left,
         /* Top    */ AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
         /* Bottom */ AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
         /* Left   */ AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Bottom,
         /* Right  */ AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
         /* Fill   */ AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left
-    };
+    ];
 
     // A good, short test string for measuring control height.
     public const string TestString = "j^";
@@ -58,7 +58,7 @@ internal partial class LayoutUtils
 
     /*
      *  We can cut ContentAlignment from a max index of 1024 (12b) down to 11 (4b) through
-     *  bit twiddling.  The int result of this function maps to the ContentAlignment as indicated
+     *  bit twiddling. The int result of this function maps to the ContentAlignment as indicated
      *  by the table below:
      *
      *          Left      Center    Right
@@ -66,7 +66,7 @@ internal partial class LayoutUtils
      *  Middle  0100 0x4  0101 0x5  0110 0x6
      *  Bottom  1000 0x8  1001 0x9  1010 0xA
      *
-     *  (The high 2 bits determine T/M/B.  The low 2 bits determine L/C/R.)
+     *  (The high 2 bits determine T/M/B. The low 2 bits determine L/C/R.)
      */
 
     public static int ContentAlignmentToIndex(ContentAlignment alignment)
@@ -79,7 +79,7 @@ internal partial class LayoutUtils
          *  Middle  0x010   0x020   0x040
          *  Bottom  0x100   0x200   0x400
          *
-         *  (L/C/R determined bit 1,2,4.  T/M/B determined by 4 bit shift.)
+         *  (L/C/R determined bit 1,2,4. T/M/B determined by 4 bit shift.)
          */
 
         int topBits = xContentAlignmentToIndex(((int)alignment) & 0x0F);
@@ -96,7 +96,7 @@ internal partial class LayoutUtils
         // zero isn't used, so we can subtract 1 and start with index 0.
         result--;
 
-        Debug.Assert(result >= 0x00 && result <= 0x0A, "ContentAlignmentToIndex result out of range.");
+        Debug.Assert(result is >= 0x00 and <= 0x0A, "ContentAlignmentToIndex result out of range.");
         Debug.Assert(result != 0x00 || alignment == ContentAlignment.TopLeft, "Error detected in ContentAlignmentToIndex.");
         Debug.Assert(result != 0x01 || alignment == ContentAlignment.TopCenter, "Error detected in ContentAlignmentToIndex.");
         Debug.Assert(result != 0x02 || alignment == ContentAlignment.TopRight, "Error detected in ContentAlignmentToIndex.");
@@ -115,7 +115,7 @@ internal partial class LayoutUtils
     // Converts 0x00, 0x01, 0x02, 0x04 (3b flag) to 0, 1, 2, 3 (2b index)
     private static byte xContentAlignmentToIndex(int threeBitFlag)
     {
-        Debug.Assert(threeBitFlag >= 0x00 && threeBitFlag <= 0x04 && threeBitFlag != 0x03, "threeBitFlag out of range.");
+        Debug.Assert(threeBitFlag is >= 0x00 and <= 0x04 and not 0x03, "threeBitFlag out of range.");
         byte result = threeBitFlag == 0x04 ? (byte)3 : (byte)threeBitFlag;
         Debug.Assert((result & 0x03) == result, "Result out of range.");
         return result;
@@ -152,7 +152,7 @@ internal partial class LayoutUtils
     }
 
     /*
-     *  Maps an anchor to its opposite.  Does not support combinations.  None returns none.
+     *  Maps an anchor to its opposite. Does not support combinations. None returns none.
      *
      *  Top     = 0x01
      *  Bottom  = 0x02
@@ -160,7 +160,7 @@ internal partial class LayoutUtils
      *  Right   = 0x08
      */
 
-    // Returns the positive opposite of the given anchor (e.g., L -> R, LT -> RB, LTR -> LBR, etc.).  None return none.
+    // Returns the positive opposite of the given anchor (e.g., L -> R, LT -> RB, LTR -> LBR, etc.). None return none.
     private static AnchorStyles GetOppositeAnchor(AnchorStyles anchor)
     {
         AnchorStyles result = AnchorStyles.None;
@@ -353,7 +353,7 @@ internal partial class LayoutUtils
 
     public static Size Stretch(Size stretchThis, Size withinThis, AnchorStyles anchorStyles)
     {
-        Size stretchedSize = new Size(
+        Size stretchedSize = new(
             (anchorStyles & HorizontalAnchorStyles) == HorizontalAnchorStyles ? withinThis.Width : stretchThis.Width,
             (anchorStyles & VerticalAnchorStyles) == VerticalAnchorStyles ? withinThis.Height : stretchThis.Height);
         if (stretchedSize.Width > withinThis.Width)
@@ -433,9 +433,7 @@ internal partial class LayoutUtils
     public static Point FlipPoint(Point point)
     {
         // Point is a struct (passed by value, no need to make a copy)
-        int temp = point.X;
-        point.X = point.Y;
-        point.Y = temp;
+        (point.Y, point.X) = (point.X, point.Y);
         return point;
     }
 
@@ -455,9 +453,7 @@ internal partial class LayoutUtils
     public static Size FlipSize(Size size)
     {
         // Size is a struct (passed by value, no need to make a copy)
-        int temp = size.Width;
-        size.Width = size.Height;
-        size.Height = temp;
+        (size.Height, size.Width) = (size.Width, size.Height);
         return size;
     }
 
@@ -471,7 +467,7 @@ internal partial class LayoutUtils
         return !IsVerticalAlignment(align);
     }
 
-    // True if text & image should be lined up horizontally.  False if vertical or overlay.
+    // True if text & image should be lined up horizontally. False if vertical or overlay.
     public static bool IsHorizontalRelation(TextImageRelation relation)
     {
         return (relation & (TextImageRelation.TextBeforeImage | TextImageRelation.ImageBeforeText)) != 0;
@@ -483,7 +479,7 @@ internal partial class LayoutUtils
         return (align & (ContentAlignment.TopCenter | ContentAlignment.BottomCenter)) != 0;
     }
 
-    // True if text & image should be lined up vertically.  False if horizontal or overlay.
+    // True if text & image should be lined up vertically. False if horizontal or overlay.
     public static bool IsVerticalRelation(TextImageRelation relation)
     {
         return (relation & (TextImageRelation.TextAboveImage | TextImageRelation.ImageAboveText)) != 0;
@@ -538,7 +534,7 @@ internal partial class LayoutUtils
             "Regions do not add up to bounds.");
     }
 
-    // Expands adjacent regions to bounds.  region1Align indicates which way the adjacency occurs.
+    // Expands adjacent regions to bounds. region1Align indicates which way the adjacency occurs.
     public static void ExpandRegionsToFillBounds(Rectangle bounds, AnchorStyles region1Align, ref Rectangle region1, ref Rectangle region2)
     {
         switch (region1Align)

@@ -6,20 +6,20 @@ using System.Globalization;
 namespace System.Drawing.Printing;
 
 /// <summary>
-/// Specifies the size of a piece of paper.
+///  Specifies the size of a piece of paper.
 /// </summary>
 public partial class PaperSize
 {
     private PaperKind _kind;
     private string _name;
 
-    // standard hundredths of an inch units
+    // Standard hundredths of an inch units
     private int _width;
     private int _height;
     private readonly bool _createdByDefaultConstructor;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref='PaperSize'/> class with default properties.
+    ///  Initializes a new instance of the <see cref='PaperSize'/> class with default properties.
     /// </summary>
     public PaperSize()
     {
@@ -37,7 +37,7 @@ public partial class PaperSize
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref='System.Drawing.Printing.PaperSize'/> class.
+    ///  Initializes a new instance of the <see cref='PaperSize'/> class.
     /// </summary>
     public PaperSize(string name, int width, int height)
     {
@@ -48,7 +48,7 @@ public partial class PaperSize
     }
 
     /// <summary>
-    /// Gets or sets the height of the paper, in hundredths of an inch.
+    ///  Gets or sets the height of the paper, in hundredths of an inch.
     /// </summary>
     public int Height
     {
@@ -68,13 +68,13 @@ public partial class PaperSize
     ///  Gets the type of paper.
     /// </summary>
     public PaperKind Kind
-        => _kind is <= ((PaperKind)SafeNativeMethods.DMPAPER_LAST)
-            and not (((PaperKind)SafeNativeMethods.DMPAPER_RESERVED_48) or ((PaperKind)SafeNativeMethods.DMPAPER_RESERVED_49))
+        => _kind is <= ((PaperKind)PInvoke.DMPAPER_LAST)
+            and not (((PaperKind)PInvoke.DMPAPER_RESERVED_48) or ((PaperKind)PInvoke.DMPAPER_RESERVED_49))
             ? _kind
             : PaperKind.Custom;
 
     /// <summary>
-    /// Gets or sets the name of the type of paper.
+    ///  Gets or sets the name of the type of paper.
     /// </summary>
     public string PaperName
     {
@@ -91,16 +91,16 @@ public partial class PaperSize
     }
 
     /// <summary>
-    /// Same as Kind, but values larger than or equal to DMPAPER_LAST do not map to PaperKind.Custom.
+    ///  Same as Kind, but values larger than or equal to DMPAPER_LAST do not map to PaperKind.Custom.
     /// </summary>
     public int RawKind
     {
-        get => unchecked((int)_kind);
-        set => _kind = unchecked((PaperKind)value);
+        get => (int)_kind;
+        set => _kind = (PaperKind)value;
     }
 
     /// <summary>
-    /// Gets or sets the width of the paper, in hundredths of an inch.
+    ///  Gets or sets the width of the paper, in hundredths of an inch.
     /// </summary>
     public int Width
     {
@@ -116,8 +116,5 @@ public partial class PaperSize
         }
     }
 
-    /// <summary>
-    /// Provides some interesting information about the PaperSize in String form.
-    /// </summary>
     public override string ToString() => $"[PaperSize {PaperName} Kind={Kind} Height={Height.ToString(CultureInfo.InvariantCulture)} Width={Width.ToString(CultureInfo.InvariantCulture)}]";
 }

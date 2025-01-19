@@ -10,14 +10,14 @@ public partial class ToolTipBufferTests
     [WinFormsFact]
     public void ToolTipBuffer_Buffer_GetEmpty_ReturnsZero()
     {
-        var buffer = new ToolTipBuffer();
+        ToolTipBuffer buffer = default;
         Assert.Equal(IntPtr.Zero, buffer.Buffer);
     }
 
     [WinFormsFact]
     public void ToolTipBuffer_SetText_NoBuffer_Success()
     {
-        var buffer = new ToolTipBuffer();
+        ToolTipBuffer buffer = default;
         IntPtr memory1 = buffer.Buffer;
         Assert.Null(Marshal.PtrToStringUni(memory1));
 
@@ -32,7 +32,7 @@ public partial class ToolTipBufferTests
     [InlineData("")]
     public void ToolTipBuffer_SetText_EmptyNoBuffer_Success(string empty)
     {
-        var buffer = new ToolTipBuffer();
+        ToolTipBuffer buffer = default;
         IntPtr memory1 = buffer.Buffer;
         Assert.Null(Marshal.PtrToStringUni(memory1));
 
@@ -47,9 +47,8 @@ public partial class ToolTipBufferTests
     [InlineData("abcdef")]
     public void ToolTipBuffer_SetTextLonger_Success(string longer)
     {
-        var buffer = new ToolTipBuffer();
+        ToolTipBuffer buffer = default;
         buffer.SetText("text");
-        IntPtr memory1 = buffer.Buffer;
         Assert.Equal("text", Marshal.PtrToStringUni(buffer.Buffer));
 
         // Set longer.
@@ -67,7 +66,7 @@ public partial class ToolTipBufferTests
     [InlineData("abc", "abc")]
     public void ToolTipBuffer_SetTextShorter_Success(string shorter, string expected)
     {
-        var buffer = new ToolTipBuffer();
+        ToolTipBuffer buffer = default;
         buffer.SetText("text");
         IntPtr memory1 = buffer.Buffer;
         Assert.Equal("text", Marshal.PtrToStringUni(buffer.Buffer));
@@ -84,7 +83,7 @@ public partial class ToolTipBufferTests
     [InlineData("abcd")]
     public void ToolTipBuffer_SetTextSameLength_Success(string sameLength)
     {
-        var buffer = new ToolTipBuffer();
+        ToolTipBuffer buffer = default;
         buffer.SetText("text");
         IntPtr memory1 = buffer.Buffer;
         Assert.Equal("text", Marshal.PtrToStringUni(buffer.Buffer));

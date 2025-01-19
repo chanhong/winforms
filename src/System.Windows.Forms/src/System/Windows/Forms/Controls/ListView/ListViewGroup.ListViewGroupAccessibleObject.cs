@@ -10,7 +10,7 @@ namespace System.Windows.Forms;
 
 public partial class ListViewGroup
 {
-    internal class ListViewGroupAccessibleObject : AccessibleObject
+    internal sealed class ListViewGroupAccessibleObject : AccessibleObject
     {
         private readonly ListView _owningListView;
         private readonly ListViewAccessibleObject _owningListViewAccessibilityObject;
@@ -27,7 +27,7 @@ public partial class ListViewGroup
                     ? listView
                     : throw new InvalidOperationException(nameof(owningGroup.ListView)));
 
-            _owningListViewAccessibilityObject = _owningListView.AccessibilityObject as ListView.ListViewAccessibleObject
+            _owningListViewAccessibilityObject = _owningListView.AccessibilityObject as ListViewAccessibleObject
                 ?? throw new InvalidOperationException(nameof(_owningListView.AccessibilityObject));
 
             _owningGroupIsDefault = owningGroupIsDefault;
@@ -61,7 +61,7 @@ public partial class ListViewGroup
                 // Using the "top" property, we set which rectangle type of the group we want to get
                 // This is described in more detail in https://docs.microsoft.com/windows/win32/controls/lvm-getgrouprect
                 groupRect.top = (int)rectType;
-                PInvoke.SendMessage(_owningListView, PInvoke.LVM_GETGROUPRECT, (WPARAM)nativeGroupId, ref groupRect);
+                PInvokeCore.SendMessage(_owningListView, PInvoke.LVM_GETGROUPRECT, (WPARAM)nativeGroupId, ref groupRect);
 
                 // Using the following code, we limit the size of the ListViewGroup rectangle
                 // so that it does not go beyond the rectangle of the ListView
@@ -87,6 +87,10 @@ public partial class ListViewGroup
 
         public override string DefaultAction => SR.AccessibleActionDoubleClick;
 
+        private protected override bool IsInternal => true;
+
+        internal override bool CanGetDefaultActionInternal => false;
+
         internal override ExpandCollapseState ExpandCollapseState =>
             _owningGroup.CollapsedState == ListViewGroupCollapsedState.Collapsed
                 ? ExpandCollapseState.ExpandCollapseState_Collapsed
@@ -99,23 +103,26 @@ public partial class ListViewGroup
                 ? $"{_owningGroup.Header}. {_owningGroup.Subtitle}"
                 : _owningGroup.Header;
 
+        internal override bool CanGetNameInternal => false;
+
         public override AccessibleRole Role => AccessibleRole.Grouping;
 
         internal override int[] RuntimeId
         {
             get
             {
-                var owningListViewRuntimeId = _owningListViewAccessibilityObject.RuntimeId;
+                int[] id = _owningListViewAccessibilityObject.RuntimeId;
 
-                Debug.Assert(owningListViewRuntimeId.Length >= 2);
+                Debug.Assert(id.Length >= 2);
 
-                return new int[]
-                {
-                    owningListViewRuntimeId[0],
-                    owningListViewRuntimeId[1],
-                    4, // Win32-control specific RuntimeID constant, is used in similar Win32 controls and is used in WinForms controls for consistency.
+                return
+                [
+                    id[0],
+                    id[1],
+                    // Win32 control specific RuntimeID constant, is used in similar Win32 controls and is used in WinForms controls for consistency.
+                    4,
                     GetHashCode()
-                };
+                ];
             }
         }
 
@@ -160,7 +167,7 @@ public partial class ListViewGroup
                 return false;
             }
 
-            return (LIST_VIEW_GROUP_STATE_FLAGS)(uint)PInvoke.SendMessage(
+            return (LIST_VIEW_GROUP_STATE_FLAGS)(uint)PInvokeCore.SendMessage(
                 _owningListView,
                 PInvoke.LVM_GETGROUPSTATE,
                 (WPARAM)nativeGroupId,
@@ -169,7 +176,7 @@ public partial class ListViewGroup
 
         private int GetNativeGroupId()
         {
-            if (PInvoke.SendMessage(_owningListView, PInvoke.LVM_HASGROUP, (WPARAM)_owningGroup.ID) == 0)
+            if (PInvokeCore.SendMessage(_owningListView, PInvoke.LVM_HASGROUP, (WPARAM)_owningGroup.ID) == 0)
             {
                 return -1;
             }
@@ -190,7 +197,7 @@ public partial class ListViewGroup
 
         internal IReadOnlyList<ListViewItem> GetVisibleItems()
         {
-            List<ListViewItem> visibleItems = new();
+            List<ListViewItem> visibleItems = [];
             if (_owningGroupIsDefault)
             {
                 foreach (ListViewItem? listViewItem in _owningListView.Items)

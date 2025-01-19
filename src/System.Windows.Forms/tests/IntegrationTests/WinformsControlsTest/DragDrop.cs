@@ -3,11 +3,11 @@
 
 #nullable enable
 
-using System.ComponentModel;
 using System.Drawing;
 
-namespace WinformsControlsTest;
+namespace WinFormsControlsTest;
 
+[DesignerCategory("Default")]
 public partial class DragDrop : Form
 {
     private const string DragDropDataDirectory = @"Data\DragDrop";
@@ -28,14 +28,14 @@ public partial class DragDrop : Form
         InitializeComponent();
 
         _nyanCatAscii = ReadAsciiText();
-        _pictureBoxList = new()
-        {
+        _pictureBoxList =
+        [
             pictureBox1,
             pictureBox2,
             pictureBox3,
             pictureBox4,
             pictureBox5
-        };
+        ];
 
         AllowDrop = true;
         DragEnter += DragDrop_DragEnter;
@@ -80,8 +80,8 @@ public partial class DragDrop : Form
         richTextBox.DragEnter += RichTextBox_DragEnter;
         richTextBox.DragDrop += RichTextBox_DragDrop;
 
-        buttonOpenCats.Click += new EventHandler(ButtonOpenCats_Click);
-        buttonClear.Click += new EventHandler(ButtonClear_Click);
+        buttonOpenCats.Click += ButtonOpenCats_Click;
+        buttonClear.Click += ButtonClear_Click;
 
         CreateCatToolStrip();
     }
@@ -434,7 +434,7 @@ public partial class DragDrop : Form
             ImageScalingSize = new Size(75, 75)
         };
 
-        _catContextMenuStrip.Opening += new CancelEventHandler(ContextMenuStrip_Opening);
+        _catContextMenuStrip.Opening += ContextMenuStrip_Opening;
 
         ToolStrip toolStrip = new()
         {
@@ -459,7 +459,7 @@ public partial class DragDrop : Form
         ContextMenuStrip = _catContextMenuStrip;
     }
 
-    void ContextMenuStrip_Opening(object? sender, CancelEventArgs e)
+    private void ContextMenuStrip_Opening(object? sender, CancelEventArgs e)
     {
         if (_catContextMenuStrip is null)
         {

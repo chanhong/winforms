@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Drawing;
 using System.Runtime.InteropServices;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
@@ -26,6 +25,8 @@ public partial class MonthCalendar
 
         public override string DefaultAction => SR.AccessibleActionClick;
 
+        internal override bool CanGetDefaultActionInternal => false;
+
         public override void DoDefaultAction() => Invoke();
 
         internal override VARIANT GetPropertyValue(UIA_PROPERTY_ID propertyID)
@@ -45,6 +46,8 @@ public partial class MonthCalendar
             };
 
         public override AccessibleObject Parent => _monthCalendarAccessibleObject;
+
+        private protected override bool IsInternal => true;
 
         private void RaiseMouseClick()
         {
@@ -66,13 +69,13 @@ public partial class MonthCalendar
         private static void RaiseMouseClick(int x, int y)
         {
             BOOL setOldCursorPos = PInvoke.GetPhysicalCursorPos(out Point previousPosition);
-            bool mouseSwapped = PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_SWAPBUTTON) != 0;
+            bool mouseSwapped = PInvokeCore.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_SWAPBUTTON) != 0;
 
             SendMouseInput(x, y, MOUSE_EVENT_FLAGS.MOUSEEVENTF_MOVE | MOUSE_EVENT_FLAGS.MOUSEEVENTF_ABSOLUTE);
             SendMouseInput(0, 0, mouseSwapped ? MOUSE_EVENT_FLAGS.MOUSEEVENTF_RIGHTDOWN : MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTDOWN);
             SendMouseInput(0, 0, mouseSwapped ? MOUSE_EVENT_FLAGS.MOUSEEVENTF_RIGHTUP : MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTUP);
 
-            Threading.Thread.Sleep(50);
+            Thread.Sleep(50);
 
             // Set back the mouse position where it was.
             if (setOldCursorPos)
@@ -87,10 +90,10 @@ public partial class MonthCalendar
         {
             if ((flags & MOUSE_EVENT_FLAGS.MOUSEEVENTF_ABSOLUTE) != 0)
             {
-                int vscreenWidth = PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CXVIRTUALSCREEN);
-                int vscreenHeight = PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYVIRTUALSCREEN);
-                int vscreenLeft = PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_XVIRTUALSCREEN);
-                int vscreenTop = PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_YVIRTUALSCREEN);
+                int vscreenWidth = PInvokeCore.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CXVIRTUALSCREEN);
+                int vscreenHeight = PInvokeCore.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYVIRTUALSCREEN);
+                int vscreenLeft = PInvokeCore.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_XVIRTUALSCREEN);
+                int vscreenTop = PInvokeCore.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_YVIRTUALSCREEN);
 
                 const int DesktopNormalizedMax = 65536;
 

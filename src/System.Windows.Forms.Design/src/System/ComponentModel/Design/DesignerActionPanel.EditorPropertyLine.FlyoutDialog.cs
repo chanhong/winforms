@@ -98,13 +98,16 @@ internal sealed partial class DesignerActionPanel
             }
 
             /// <summary>
-            ///  General purpose method, based on Control.Contains()... Determines whether a given window (specified using native window handle) is a descendant of this control. This catches both contained descendants and 'owned' windows such as modal dialogs. Using window handles rather than Control objects allows it to catch un-managed windows as well.
+            ///  General purpose method, based on Control.Contains()...
+            ///  Determines whether a given window (specified using native window handle) is a descendant of this control.
+            ///  This catches both contained descendants and 'owned' windows such as modal dialogs.
+            ///  Using window handles rather than Control objects allows it to catch un-managed windows as well.
             /// </summary>
             private bool OwnsWindow(HWND hWnd)
             {
                 while (!hWnd.IsNull)
                 {
-                    hWnd = (HWND)PInvoke.GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT);
+                    hWnd = (HWND)PInvokeCore.GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT);
                     if (hWnd.IsNull)
                     {
                         return false;
@@ -121,9 +124,7 @@ internal sealed partial class DesignerActionPanel
 
             protected override bool ProcessDialogKey(Keys keyData)
             {
-                if ((keyData == (Keys.Alt | Keys.Down)) ||
-                    (keyData == (Keys.Alt | Keys.Up)) ||
-                    (keyData == Keys.F4))
+                if (keyData is (Keys.Alt | Keys.Down) or (Keys.Alt | Keys.Up) or Keys.F4)
                 {
                     // Any of these keys indicates the selection is accepted
                     Visible = false;
@@ -137,13 +138,13 @@ internal sealed partial class DesignerActionPanel
             {
                 try
                 {
-                    PInvoke.SetWindowLong(this, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT, parent.Handle);
+                    PInvokeCore.SetWindowLong(this, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT, parent.Handle);
 
-                    // Lifted directly from Form.ShowDialog()...
+                    // Lifted directly from Form.ShowDialog().
                     HWND hWndCapture = PInvoke.GetCapture();
                     if (!hWndCapture.IsNull)
                     {
-                        PInvoke.SendMessage(hWndCapture, PInvoke.WM_CANCELMODE);
+                        PInvokeCore.SendMessage(hWndCapture, PInvokeCore.WM_CANCELMODE);
                         PInvoke.ReleaseCapture();
                     }
 
@@ -153,9 +154,10 @@ internal sealed partial class DesignerActionPanel
                 }
                 finally
                 {
-                    PInvoke.SetWindowLong(this, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT, IntPtr.Zero);
+                    PInvokeCore.SetWindowLong(this, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT, IntPtr.Zero);
 
-                    // sometimes activation goes to LALA land - if our parent control is still  around, remind it to take focus.
+                    // sometimes activation goes to LALA land - if our parent control is still around,
+                    // remind it to take focus.
                     if (parent is not null && parent.Visible)
                     {
                         parent.Focus();
@@ -165,7 +167,7 @@ internal sealed partial class DesignerActionPanel
 
             protected override void WndProc(ref Message m)
             {
-                if (m.MsgInternal == PInvoke.WM_ACTIVATE
+                if (m.MsgInternal == PInvokeCore.WM_ACTIVATE
                     && Visible
                     && m.WParamInternal.LOWORD == PInvoke.WA_INACTIVE
                     && !OwnsWindow((HWND)m.LParamInternal))

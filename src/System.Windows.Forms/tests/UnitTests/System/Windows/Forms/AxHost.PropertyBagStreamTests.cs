@@ -12,12 +12,14 @@ public unsafe class AxHost_PropertyBagStreamTests
     [Fact]
     public void PropertyBagStream_WriteReadRoundTrip_FormatterEnabled()
     {
-        using var formatterScope = new BinaryFormatterScope(enable: true);
+        using BinaryFormatterScope formatterScope = new(enable: true);
         AxHost.PropertyBagStream bag = new();
-        HRESULT hr = bag.Write("Integer", (VARIANT)42);
+        // cs/deserialization-unexpected-subtypes
+        HRESULT hr = bag.Write("Integer", (VARIANT)42); // CodeQL[SM02229] : Testing legacy feature. This is a safe use of VARIANT because the data is trusted and the types are controlled and validated.
         Assert.True(hr.Succeeded);
         NameClass obj = new() { Name = "Hamlet" };
-        hr = bag.Write("Object", VARIANT.FromObject(obj));
+        // cs/deserialization-unexpected-subtypes
+        hr = bag.Write("Object", VARIANT.FromObject(obj)); // CodeQL[SM02229] : Testing legacy feature. This is a safe use of VARIANT because the data is trusted and the types are controlled and validated.
         Assert.True(hr.Succeeded);
 
         using MemoryStream stream = new();
@@ -27,12 +29,12 @@ public unsafe class AxHost_PropertyBagStreamTests
 
         AxHost.PropertyBagStream newBag = new(stream);
 
-        VARIANT integer = new();
+        VARIANT integer = default;
         hr = newBag.Read("Integer", ref integer, null);
         Assert.True(hr.Succeeded);
         Assert.Equal(42, (int)integer);
 
-        VARIANT dispatch = new();
+        VARIANT dispatch = default;
         hr = newBag.Read("Object", ref dispatch, null);
         Assert.True(hr.Succeeded);
         Assert.Equal(obj.Name, ((NameClass)dispatch.ToObject()).Name);
@@ -41,9 +43,11 @@ public unsafe class AxHost_PropertyBagStreamTests
     [Fact]
     public void PropertyBagStream_WriteReadRoundTrip_FormatterDisabled()
     {
-        using var formatterScope = new BinaryFormatterScope(enable: false);
+        using BinaryFormatterScope formatterScope = new(enable: false);
         AxHost.PropertyBagStream bag = new();
-        HRESULT hr = bag.Write("Integer", (VARIANT)42);
+
+        // cs/deserialization-unexpected-subtypes
+        HRESULT hr = bag.Write("Integer", (VARIANT)42); // CodeQL[SM02229] : Testing legacy feature. This is a safe use of VARIANT because the data is trusted and the types are controlled and validated.
         Assert.True(hr.Succeeded);
         NameClass obj = new() { Name = "Hamlet" };
         hr = bag.Write("Object", VARIANT.FromObject(obj));
@@ -58,14 +62,15 @@ public unsafe class AxHost_PropertyBagStreamTests
     [MemberData(nameof(TestData_PrimitiveValues))]
     public void PropertyBagStream_WriteReadRoundTrip_Primitives_FormatterDisabled(object value)
     {
-        using var formatterScope = new BinaryFormatterScope(enable: false);
+        using BinaryFormatterScope formatterScope = new(enable: false);
 
         AxHost.PropertyBagStream bag = new();
         using VARIANT variant = default;
         Marshal.GetNativeVariantForObject(value, (nint)(void*)&variant);
         string name = value.GetType().FullName!;
 
-        HRESULT hr = bag.Write(value.GetType().FullName!, variant);
+        // cs/deserialization-unexpected-subtypes
+        HRESULT hr = bag.Write(value.GetType().FullName!, variant); // CodeQL[SM02229] : Testing legacy feature. This is a safe use of VARIANT because the data is trusted and the types are controlled and validated.
         Assert.True(hr.Succeeded);
 
         using MemoryStream stream = new();
@@ -74,14 +79,14 @@ public unsafe class AxHost_PropertyBagStreamTests
         stream.Position = 0;
 
         IPropertyBag.Interface newBag = new AxHost.PropertyBagStream(stream);
-        using VARIANT result = new();
+        using VARIANT result = default;
         hr = newBag.Read(name, &result, null);
         Assert.True(hr.Succeeded);
         Assert.Equal(variant.ToObject(), result.ToObject());
     }
 
-    public static TheoryData<object> TestData_PrimitiveValues => new()
-    {
+    public static TheoryData<object> TestData_PrimitiveValues =>
+    [
         int.MaxValue,
         uint.MaxValue,
         long.MaxValue,
@@ -99,7 +104,7 @@ public unsafe class AxHost_PropertyBagStreamTests
         DateTime.MaxValue,
         decimal.MaxValue,
         "RightRound"
-    };
+    ];
 
     [Serializable]
     private class NameClass

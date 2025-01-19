@@ -14,23 +14,23 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
     public void ListViewSubItemAccessibleObject_GetChild_ReturnCorrectValue()
     {
         using ListView list = new();
-        ListViewItem listViewItem1 = new(new string[]
-        {
-        "Test 1",
-        "Item 1",
-        "Something 1"
-        }, -1);
+        ListViewItem listViewItem1 = new(
+        [
+            "Test 1",
+            "Item 1",
+            "Something 1"
+        ], -1);
 
         ColumnHeader columnHeader1 = new();
         ColumnHeader columnHeader2 = new();
         ColumnHeader columnHeader3 = new();
 
-        list.Columns.AddRange(new ColumnHeader[]
-        {
+        list.Columns.AddRange(
+        [
         columnHeader1,
         columnHeader2,
         columnHeader3
-        });
+        ]);
         list.HideSelection = false;
         list.Items.Add(listViewItem1);
         list.View = View.Details;
@@ -51,23 +51,23 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
     public void ListViewSubItemAccessibleObject_GetPropertyValue_returns_correct_values(bool labelEdit, int childId)
     {
         using ListView list = new();
-        ListViewItem listViewItem1 = new(new string[]
-        {
+        ListViewItem listViewItem1 = new(
+        [
         "Test 1",
         "Test 2",
         "Something 1"
-        }, -1);
+        ], -1);
 
         ColumnHeader columnHeader1 = new();
         ColumnHeader columnHeader2 = new();
         ColumnHeader columnHeader3 = new();
 
-        list.Columns.AddRange(new ColumnHeader[]
-        {
+        list.Columns.AddRange(
+        [
         columnHeader1,
         columnHeader2,
         columnHeader3
-        });
+        ]);
         list.HideSelection = false;
         list.Items.Add(listViewItem1);
         list.View = View.Details;
@@ -101,7 +101,7 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
     public void ListViewSubItemAccessibleObject_GetPropertyValue_GridTablePattern_ReturnsExpected(View view)
     {
         using ListView list = new() { View = view };
-        list.Items.Add(new ListViewItem(new string[] { "Test 1", "Test 2" }));
+        list.Items.Add(new ListViewItem(["Test 1", "Test 2"]));
 
         AccessibleObject accessibleObject = list.Items[0].SubItems[1].AccessibilityObject;
 
@@ -626,23 +626,23 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
     public void ListViewSubItemAccessibleObject_Bounds_ReturnCorrectValue()
     {
         using ListView list = new();
-        ListViewItem listViewItem1 = new(new string[]
-        {
+        ListViewItem listViewItem1 = new(
+        [
         "Test 1",
         "Item 1",
         "Something 1"
-        }, -1);
+        ], -1);
 
         ColumnHeader columnHeader1 = new();
         ColumnHeader columnHeader2 = new();
         ColumnHeader columnHeader3 = new();
 
-        list.Columns.AddRange(new ColumnHeader[]
-        {
+        list.Columns.AddRange(
+        [
         columnHeader1,
         columnHeader2,
         columnHeader3
-        });
+        ]);
         list.HideSelection = false;
         list.Items.Add(listViewItem1);
         list.View = View.Details;
@@ -662,8 +662,10 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
 
         Rectangle actualBounds = accessibleObject.Bounds;
         actualBounds.Location = new Point(0, 0);
-        Rectangle expectedBounds = new(subItem.Bounds.X, subItem.Bounds.Y, expectedWidth, expectedHeight);
-        expectedBounds.Location = new Point(0, 0);
+        Rectangle expectedBounds = new(subItem.Bounds.X, subItem.Bounds.Y, expectedWidth, expectedHeight)
+        {
+            Location = new Point(0, 0)
+        };
         Assert.Equal(expectedBounds, actualBounds);
         Assert.True(list.IsHandleCreated);
     }
@@ -674,20 +676,20 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
     public void ListViewSubItemAccessibleObject_ColumnProperty_ReturnCorrectValue(bool createControl)
     {
         using ListView list = new() { View = View.Details };
-        ListViewItem listViewItem1 = new(new string[]
-        {
+        ListViewItem listViewItem1 = new(
+        [
             "Test 1",
             "Item 1",
             "Something 1",
             "Something 2"
-        });
+        ]);
 
-        list.Columns.AddRange(new ColumnHeader[]
-        {
-            new ColumnHeader(),
-            new ColumnHeader(),
-            new ColumnHeader()
-        });
+        list.Columns.AddRange(
+        [
+            new(),
+            new(),
+            new()
+        ]);
 
         list.Items.Add(listViewItem1);
 
@@ -715,20 +717,20 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
     public void ListViewSubItemAccessibleObject_ColumnProperty_ReturnMinusOne_ForNotTableView(View view, bool createControl)
     {
         using ListView list = new() { View = view };
-        ListViewItem listViewItem1 = new(new string[]
-        {
+        ListViewItem listViewItem1 = new(
+        [
             "Test 1",
             "Item 1",
             "Something 1",
             "Something 2",
-        });
+        ]);
 
-        list.Columns.AddRange(new ColumnHeader[]
-        {
-            new ColumnHeader(),
-            new ColumnHeader(),
-            new ColumnHeader()
-        });
+        list.Columns.AddRange(
+        [
+            new(),
+            new(),
+            new()
+        ]);
 
         list.Items.Add(listViewItem1);
 
@@ -748,23 +750,23 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
     public void ListViewSubItemAccessibleObject_RowProperty_ReturnCorrectValue()
     {
         using ListView list = new();
-        ListViewItem listViewItem1 = new(new string[]
-        {
+        ListViewItem listViewItem1 = new(
+        [
         "Test 1",
         "Item 1",
         "Something 1"
-        }, -1);
+        ], -1);
 
         ColumnHeader columnHeader1 = new();
         ColumnHeader columnHeader2 = new();
         ColumnHeader columnHeader3 = new();
 
-        list.Columns.AddRange(new ColumnHeader[]
-        {
+        list.Columns.AddRange(
+        [
         columnHeader1,
         columnHeader2,
         columnHeader3
-        });
+        ]);
         list.HideSelection = false;
         list.Items.Add(listViewItem1);
         list.View = View.Details;
@@ -835,7 +837,7 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
         }
         else
         {
-            listView.Items.AddRange(new ListViewItem[] { listItem1, listItem2 });
+            listView.Items.AddRange((ListViewItem[])[listItem1, listItem2]);
         }
 
         if (createControl)
@@ -850,11 +852,13 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
     public void ListViewSubItemAccessibleObject_ProcessId_ReturnCorrectValue()
     {
         using ListView listView = new();
-        ListViewItem listViewItem = new("Test item");
-        listViewItem._listView = listView;
+        ListViewItem listViewItem = new("Test item")
+        {
+            _listView = listView
+        };
         ListViewItem.ListViewSubItem subItem = new(listViewItem, "Test subItem");
 
-        var actual = (int)subItem.AccessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ProcessIdPropertyId);
+        int actual = (int)subItem.AccessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ProcessIdPropertyId);
 
         Assert.Equal(Environment.ProcessId, actual);
         Assert.False(listView.IsHandleCreated);
@@ -870,7 +874,7 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
         };
 
         listView.CreateControl();
-        listView.Columns.AddRange(new ColumnHeader[] { new() { Width = 120, Text = "Column 1" }, new() { Width = 120, Text = "Column 2" } });
+        listView.Columns.AddRange([new() { Width = 120, Text = "Column 1" }, new() { Width = 120, Text = "Column 2" }]);
         listView.Items.Add(new ListViewItem("Test item 11"));
         listView.Items[0].SubItems.Add("Test item 12");
 
@@ -892,7 +896,7 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
 
         listView.CreateControl();
 
-        listView.Columns.AddRange(new ColumnHeader[] { new() { Width = 120, Text = "Column 1" }, new() { Width = 120, Text = "Column 2" } });
+        listView.Columns.AddRange([new() { Width = 120, Text = "Column 1" }, new() { Width = 120, Text = "Column 2" }]);
         listView.Items.Add(new ListViewItem("Test item 11"));
         listView.Items[0].SubItems.Add("Test item 12");
 
@@ -939,7 +943,7 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
         listView.Items.Add(listViewItem);
         ListViewItem.ListViewSubItem listViewSubItem = new(listViewItem, "Test subItem");
         ListViewSubItemAccessibleObject listViewSubItemAccessibleObject = new(listViewSubItem, listViewItem);
-        var actual = (bool)listViewSubItemAccessibleObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_IsOffscreenPropertyId);
+        bool actual = (bool)listViewSubItemAccessibleObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_IsOffscreenPropertyId);
 
         Assert.False(actual);
         Assert.False(listView.IsHandleCreated);
@@ -969,7 +973,7 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
         ListViewItem.ListViewSubItem listViewSubItem = new(listViewItem, "Test subItem");
         ListViewSubItemAccessibleObject accessibleObject = new(listViewSubItem, listViewItem);
         var result = accessibleObject.GetPropertyValue((UIA_PROPERTY_ID)propertyId);
-        Assert.Equal(expected, result.IsEmpty ? false : (bool)result);
+        Assert.Equal(expected, !result.IsEmpty && (bool)result);
         Assert.False(listView.IsHandleCreated);
     }
 
@@ -1014,7 +1018,7 @@ public class ListViewItem_ListViewSubItem_ListViewSubItemAccessibleObjectTests
             AccessibleObject columnHeaderAccessibleObject = columns[i].AccessibilityObject;
             IRawElementProviderSimple.Interface[] columnHeaderItems = subItemAccessibleObject.GetColumnHeaderItems();
 
-            Assert.Equal(1, columnHeaderItems.Length);
+            Assert.Single(columnHeaderItems);
             Assert.Same(columnHeaderAccessibleObject, columnHeaderItems[0]);
         }
     }

@@ -10,7 +10,7 @@ public class DataGridViewLinkCellAccessibleObjectTests : DataGridViewLinkCell
     [WinFormsFact]
     public void DataGridViewLinkCellAccessibleObject_Ctor_Default()
     {
-        var accessibleObject = new DataGridViewLinkCellAccessibleObject(null);
+        DataGridViewLinkCellAccessibleObject accessibleObject = new(null);
 
         Assert.Null(accessibleObject.Owner);
         Assert.Equal(AccessibleRole.Cell, accessibleObject.Role);
@@ -19,7 +19,7 @@ public class DataGridViewLinkCellAccessibleObjectTests : DataGridViewLinkCell
     [WinFormsFact]
     public void DataGridViewLinkCellAccessibleObject_DefaultAction_ReturnsExpected()
     {
-        var accessibleObject = new DataGridViewLinkCellAccessibleObject(null);
+        DataGridViewLinkCellAccessibleObject accessibleObject = new(null);
 
         Assert.Equal(SR.DataGridView_AccLinkCellDefaultAction, accessibleObject.DefaultAction);
     }
@@ -27,7 +27,7 @@ public class DataGridViewLinkCellAccessibleObjectTests : DataGridViewLinkCell
     [WinFormsFact]
     public void DataGridViewLinkCellAccessibleObject_GetChildCount_ReturnsExpected()
     {
-        var accessibleObject = new DataGridViewLinkCellAccessibleObject(null);
+        DataGridViewLinkCellAccessibleObject accessibleObject = new(null);
 
         Assert.Equal(0, accessibleObject.GetChildCount());
     }
@@ -35,7 +35,7 @@ public class DataGridViewLinkCellAccessibleObjectTests : DataGridViewLinkCell
     [WinFormsFact]
     public void DataGridViewLinkCellAccessibleObject_IsIAccessibleExSupported_ReturnsExpected()
     {
-        var accessibleObject = new DataGridViewLinkCellAccessibleObject(null);
+        DataGridViewLinkCellAccessibleObject accessibleObject = new(null);
 
         Assert.True(accessibleObject.IsIAccessibleExSupported());
     }
@@ -43,7 +43,7 @@ public class DataGridViewLinkCellAccessibleObjectTests : DataGridViewLinkCell
     [WinFormsFact]
     public void DataGridViewLinkCellAccessibleObject_ControlType_ReturnsExpected()
     {
-        var accessibleObject = new DataGridViewLinkCellAccessibleObject(null);
+        DataGridViewLinkCellAccessibleObject accessibleObject = new(null);
 
         UIA_CONTROLTYPE_ID expected = UIA_CONTROLTYPE_ID.UIA_HyperlinkControlTypeId;
 
@@ -63,6 +63,6 @@ public class DataGridViewLinkCellAccessibleObjectTests : DataGridViewLinkCell
         using DataGridViewLinkCell cell = new();
 
         Assert.Equal(-1, cell.RowIndex);
-        Assert.Throws<InvalidOperationException>(() => cell.AccessibilityObject.DoDefaultAction());
+        Assert.Throws<InvalidOperationException>(cell.AccessibilityObject.DoDefaultAction);
     }
 }

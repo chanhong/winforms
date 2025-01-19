@@ -3,21 +3,21 @@
 
 using System.ComponentModel;
 using System.ComponentModel.Design;
-using System.Drawing;
+using System.Formats.Nrbf;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
-using System.Windows.Forms;
-using System.Windows.Forms.BinaryFormat;
 using System.Xml;
+using System.Windows.Forms.Nrbf;
+using System.Windows.Forms.BinaryFormat;
 
 namespace System.Resources;
 
 public sealed class ResXDataNode : ISerializable
 {
-    private static readonly char[] s_specialChars = new char[] { ' ', '\r', '\n' };
+    private static readonly char[] s_specialChars = [' ', '\r', '\n'];
 
     private DataNodeInfo? _nodeInfo;
 
@@ -34,15 +34,15 @@ public sealed class ResXDataNode : ISerializable
     private ResXFileRef? _fileRef;
 
     [Obsolete(DiagnosticId = "SYSLIB0051")]
-    private IFormatter? _binaryFormatter;
+    private BinaryFormatter? _binaryFormatter;
 
     // This is going to be used to check if a ResXDataNode is of type ResXFileRef
-    private static readonly ITypeResolutionService s_internalTypeResolver
-        = new AssemblyNamesTypeResolutionService(new AssemblyName[] { new("System.Windows.Forms") });
+    private static readonly AssemblyNamesTypeResolutionService s_internalTypeResolver = new([new("System.Windows.Forms")]);
 
     // Callback function to get type name for multitargeting.
     // No public property to force using constructors for the following reasons:
-    // 1. one of the constructors needs this field (if used) to initialize the object, make it consistent with the other constructors to avoid errors.
+    // 1. one of the constructors needs this field (if used) to initialize the object, make it consistent with the
+    //    other constructors to avoid errors.
     // 2. once the object is constructed the delegate should not be changed to avoid getting inconsistent results.
     private Func<Type?, string>? _typeNameConverter;
 
@@ -76,10 +76,7 @@ public sealed class ResXDataNode : ISerializable
     public ResXDataNode(string name, object? value, Func<Type?, string>? typeNameConverter)
     {
         ArgumentNullException.ThrowIfNull(name);
-        if (name.Length == 0)
-        {
-            throw (new ArgumentException(nameof(name)));
-        }
+        ArgumentException.ThrowIfNullOrEmpty(name);
 
         _typeNameConverter = typeNameConverter;
 
@@ -162,7 +159,7 @@ public sealed class ResXDataNode : ISerializable
         }
         set
         {
-            ArgumentException.ThrowIfNullOrEmpty(value, nameof(Name));
+            ArgumentException.ThrowIfNullOrEmpty(value);
             _name = value;
         }
     }
@@ -198,7 +195,7 @@ public sealed class ResXDataNode : ISerializable
         if (raw.Length > lineWrap)
         {
             // Word wrap on lineWrap chars, \r\n
-            StringBuilder output = new StringBuilder(raw.Length + (raw.Length / lineWrap) * 3);
+            StringBuilder output = new(raw.Length + (raw.Length / lineWrap) * 3);
             int current = 0;
             for (; current < raw.Length - lineWrap; current += lineWrap)
             {
@@ -303,7 +300,7 @@ public sealed class ResXDataNode : ISerializable
                 bool success = false;
                 try
                 {
-                    success = BinaryFormatWriter.TryWriteFrameworkObject(stream, value);
+                    success = WinFormsBinaryFormatWriter.TryWriteObject(stream, value);
                 }
                 catch (Exception ex) when (!ex.IsCriticalException())
                 {
@@ -376,7 +373,7 @@ public sealed class ResXDataNode : ISerializable
         catch (NotSupportedException nse)
         {
             string newMessage = string.Format(SR.NotSupported, typeName, dataNodeInfo.ReaderPosition.Y, dataNodeInfo.ReaderPosition.X, nse.Message);
-            XmlException xml = new XmlException(newMessage, nse, dataNodeInfo.ReaderPosition.Y, dataNodeInfo.ReaderPosition.X);
+            XmlException xml = new(newMessage, nse, dataNodeInfo.ReaderPosition.Y, dataNodeInfo.ReaderPosition.X);
             throw new NotSupportedException(newMessage, xml);
         }
 
@@ -432,8 +429,8 @@ public sealed class ResXDataNode : ISerializable
 
         try
         {
-            BinaryFormattedObject format = new(stream, leaveOpen: true);
-            if (format.TryGetFrameworkObject(out object? value))
+            SerializationRecord rootRecord = stream.Decode();
+            if (rootRecord.TryGetResXObject(out object? value))
             {
                 return value;
             }
@@ -450,7 +447,12 @@ public sealed class ResXDataNode : ISerializable
             Binder = new ResXSerializationBinder(typeResolver)
         };
 
-        object? result = _binaryFormatter.Deserialize(stream);
+        // cs/dangerous-binary-deserialization
+#pragma warning disable CA2300 // Do not use insecure deserializer BinaryFormatter
+#pragma warning disable CA2302 // Ensure BinaryFormatter.Binder is set before calling BinaryFormatter.Deserialize
+        object? result = _binaryFormatter.Deserialize(stream); // CodeQL[SM03722] : BinaryFormatter is intended to be used as a fallback for unsupported types. Users must explicitly opt into this behavior
+#pragma warning restore CA2302
+#pragma warning restore CA2300
         if (result is ResXNullRef)
         {
             result = null;
@@ -622,7 +624,7 @@ public sealed class ResXDataNode : ISerializable
             return _nodeInfo.MimeType == ResXResourceWriter.BinSerializedObjectMimeType
                 ? GenerateObjectFromBinaryDataNodeInfo(_nodeInfo, typeResolver)
                 : GenerateObjectFromDataNodeInfo(_nodeInfo, typeResolver);
-#pragma warning restore SYSLIB0051 // Type or member is obsolete
+#pragma warning restore SYSLIB0051
         }
 
         // Schema is wrong and says minOccur for Value is 0, but it's too late to change it.
@@ -681,7 +683,7 @@ public sealed class ResXDataNode : ISerializable
             }
         }
 
-        return resolvedType ??= Type.GetType(typeName, throwOnError: false);
+        return resolvedType ?? Type.GetType(typeName, throwOnError: false);
     }
 
     void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)

@@ -54,9 +54,9 @@ internal sealed partial class DesignerActionPanel : ContainerControl
         SetStyle(ControlStyles.UserPaint, true);
 
         _serviceProvider = serviceProvider;
-        _lines = new List<Line>();
-        _lineHeights = new List<int>();
-        _lineYPositions = new List<int>();
+        _lines = [];
+        _lineHeights = [];
+        _lineYPositions = [];
         _toolTip = new ToolTip();
         // Try to get the font from the IUIService, otherwise, use the default
         IUIService? uiService = _serviceProvider.GetService<IUIService>();
@@ -122,11 +122,13 @@ internal sealed partial class DesignerActionPanel : ContainerControl
     public Color BorderColor { get; } = SystemColors.ActiveBorder;
 
     /// <summary>
-    ///  Returns the list of commands that should be filtered by the form that hosts this panel. This is done so that these specific commands will not get passed on to VS, and can instead be handled by the panel itself.
+    ///  Returns the list of commands that should be filtered by the form that hosts this panel.
+    ///  This is done so that these specific commands will not get passed on to VS,
+    ///  and can instead be handled by the panel itself.
     /// </summary>
     public CommandID[] FilteredCommandIDs =>
-        _filteredCommandIDs ??= new CommandID[]
-        {
+        _filteredCommandIDs ??=
+        [
             StandardCommands.Copy,
             StandardCommands.Cut,
             StandardCommands.Delete,
@@ -160,7 +162,7 @@ internal sealed partial class DesignerActionPanel : ContainerControl
             MenuCommands.KeySelectPrevious,
             MenuCommands.KeyShiftEnd,
             MenuCommands.KeyShiftHome,
-        };
+        ];
 
     /// <summary>
     ///  Gets the Line that currently has input focus.
@@ -210,13 +212,13 @@ internal sealed partial class DesignerActionPanel : ContainerControl
 
         if (!categories.TryGetValue(categoryName, out Dictionary<DesignerActionList, List<LineInfo>>? category))
         {
-            category = new Dictionary<DesignerActionList, List<LineInfo>>();
+            category = [];
             categories.Add(categoryName, category);
         }
 
         if (!category.TryGetValue(lineInfo.List, out List<LineInfo>? categoryList))
         {
-            categoryList = new List<LineInfo>();
+            categoryList = [];
             category.Add(lineInfo.List, categoryList);
         }
 
@@ -224,12 +226,15 @@ internal sealed partial class DesignerActionPanel : ContainerControl
     }
 
     /// <summary>
-    ///  Computes the best possible location (in desktop coordinates) to display the panel, given the size of the panel and the position of its anchor
+    ///  Computes the best possible location (in desktop coordinates) to display the panel,
+    ///  given the size of the panel and the position of its anchor.
     /// </summary>
     public static Point ComputePreferredDesktopLocation(Rectangle rectangleAnchor, Size sizePanel, out DockStyle edgeToDock)
     {
         Rectangle rectScreen = Screen.FromPoint(rectangleAnchor.Location).WorkingArea;
-        // Determine where we can draw the panel to minimize clipping. Start with the most preferred position, i.e. bottom-right of anchor For the purposes of computing the flags below, assume the anchor to be small enough to ignore its size.
+        // Determine where we can draw the panel to minimize clipping. Start with the most preferred position,
+        // i.e. bottom-right of anchor For the purposes of computing the flags below,
+        // assume the anchor to be small enough to ignore its size.
         bool fRightOfAnchor = true;
         bool fAlignToScreenLeft = false;
 
@@ -270,8 +275,10 @@ internal sealed partial class DesignerActionPanel : ContainerControl
             }
         }
 
-        // The flags give us a total of nine possible positions - {LeftOfAnchor, RightOfAnchor, AlignToScreenLeft} X {AboveAnchor, BelowAnchor, AlignToScreenTop}
-        // Out of these, we rule out one combination (AlignToScreenLeft, AlignToScreenTop) because this does not guarantee the alignment of an anchor edge with that of the panel edge
+        // The flags give us a total of nine possible positions
+        // - {LeftOfAnchor, RightOfAnchor, AlignToScreenLeft} X {AboveAnchor, BelowAnchor, AlignToScreenTop}
+        // Out of these, we rule out one combination (AlignToScreenLeft, AlignToScreenTop) because this does
+        // not guarantee the alignment of an anchor edge with that of the panel edge
         if (fAlignToScreenTop)
         {
             fAlignToScreenLeft = false;
@@ -386,7 +393,9 @@ internal sealed partial class DesignerActionPanel : ContainerControl
 
     public override Size GetPreferredSize(Size proposedSize)
     {
-        // REVIEW: WinForms calls this inside of PerformLayout() only in DEBUG code.From the comment it looks like it's calling it to verify their own cached preferred size, so we just ignore this call.
+        // REVIEW: WinForms calls this inside of PerformLayout() only in DEBUG code.
+        // From the comment it looks like it's calling it to verify their own cached preferred size,
+        // so we just ignore this call.
         if (proposedSize.IsEmpty)
         {
             return proposedSize;
@@ -417,7 +426,7 @@ internal sealed partial class DesignerActionPanel : ContainerControl
         ((EventHandler?)Events[s_eventFormActivated])?.Invoke(sender, e);
     }
 
-    private void OnFormClosing(object? sender, CancelEventArgs e)
+    private void OnFormClosing(object? sender, FormClosingEventArgs e)
     {
         if (!e.Cancel && TopLevelControl is not null)
         {
@@ -425,7 +434,7 @@ internal sealed partial class DesignerActionPanel : ContainerControl
             Form form = (Form)TopLevelControl;
             if (form is not null)
             {
-                form.Closing -= new CancelEventHandler(OnFormClosing);
+                form.FormClosing -= OnFormClosing;
             }
         }
     }
@@ -440,7 +449,7 @@ internal sealed partial class DesignerActionPanel : ContainerControl
         base.OnHandleCreated(e);
         if (TopLevelControl is Form form)
         {
-            form.Closing += new CancelEventHandler(OnFormClosing);
+            form.FormClosing += OnFormClosing;
         }
     }
 
@@ -465,25 +474,22 @@ internal sealed partial class DesignerActionPanel : ContainerControl
         Rectangle rect = Bounds;
         if (RightToLeft == RightToLeft.Yes)
         {
-            using (LinearGradientBrush gradientBrush = new LinearGradientBrush(rect, GradientDarkColor, GradientLightColor, LinearGradientMode.Horizontal))
-            {
-                e.Graphics.FillRectangle(gradientBrush, ClientRectangle);
-            }
+            using LinearGradientBrush gradientBrush = new(rect, GradientDarkColor, GradientLightColor, LinearGradientMode.Horizontal);
+            e.Graphics.FillRectangle(gradientBrush, ClientRectangle);
         }
         else
         {
-            using (LinearGradientBrush gradientBrush = new LinearGradientBrush(rect, GradientLightColor, GradientDarkColor, LinearGradientMode.Horizontal))
-            {
-                e.Graphics.FillRectangle(gradientBrush, ClientRectangle);
-            }
+            using LinearGradientBrush gradientBrush = new(rect, GradientLightColor, GradientDarkColor, LinearGradientMode.Horizontal);
+            e.Graphics.FillRectangle(gradientBrush, ClientRectangle);
         }
 
-        using (Pen borderPen = new Pen(BorderColor))
+        using (Pen borderPen = new(BorderColor))
         {
             e.Graphics.DrawRectangle(borderPen, new Rectangle(0, 0, Width - 1, Height - 1));
         }
 
         Rectangle originalClip = e.ClipRectangle;
+
         // Determine the first line index to paint
         int index = 0;
         while ((index < (_lineYPositions.Count - 1)) && (_lineYPositions[index + 1] <= originalClip.Top))
@@ -619,7 +625,7 @@ internal sealed partial class DesignerActionPanel : ContainerControl
             }
         }
 
-        List<StandardLineInfo> lineInfos = new List<StandardLineInfo>();
+        List<StandardLineInfo> lineInfos = [];
 
         if (relatedLists is not null)
         {
@@ -660,13 +666,13 @@ internal sealed partial class DesignerActionPanel : ContainerControl
         }
         else if (item is DesignerActionPropertyItem pti)
         {
-            PropertyDescriptor? pd = TypeDescriptor.GetProperties(list)[pti.MemberName];
-            if (pd is null)
-            {
-                throw new InvalidOperationException(string.Format(SR.DesignerActionPanel_CouldNotFindProperty, pti.MemberName, list.GetType().FullName));
-            }
+            PropertyDescriptor? pd = TypeDescriptor.GetProperties(list)[pti.MemberName]
+                ?? throw new InvalidOperationException(string.Format(
+                    SR.DesignerActionPanel_CouldNotFindProperty,
+                    pti.MemberName,
+                    list.GetType().FullName));
 
-            TypeDescriptorContext context = new TypeDescriptorContext(_serviceProvider, pd, list);
+            TypeDescriptorContext context = new(_serviceProvider, pd, list);
             bool standardValuesSupported = pd.Converter.GetStandardValuesSupported(context);
             if (pd.TryGetEditor(out UITypeEditor? _))
             {
@@ -747,7 +753,7 @@ internal sealed partial class DesignerActionPanel : ContainerControl
             return string.Empty;
         }
 
-        StringBuilder result = new StringBuilder(s.Length);
+        StringBuilder result = new(s.Length);
         for (int i = 0; i < s.Length; i++)
         {
             if (s[i] == '&')
@@ -808,15 +814,15 @@ internal sealed partial class DesignerActionPanel : ContainerControl
             }
 
             // Merge the categories from the lists and create controls for each of the items
-            Dictionary<string, Dictionary<DesignerActionList, List<LineInfo>>> categories = new();
+            Dictionary<string, Dictionary<DesignerActionList, List<LineInfo>>> categories = [];
             ProcessLists(actionLists, categories);
             ProcessLists(serviceActionLists, categories);
             // Create a flat list of lines w/ separators
-            List<LineInfo> newLines = new List<LineInfo>
-            {
+            List<LineInfo> newLines =
+            [
                 // Always add a special line for the header
                 new PanelHeaderLine.Info(new DesignerActionPanelHeaderItem(title, subtitle))
-            };
+            ];
             int categoriesIndex = 0;
             foreach (Dictionary<DesignerActionList, List<LineInfo>> category in categories.Values)
             {
@@ -873,7 +879,7 @@ internal sealed partial class DesignerActionPanel : ContainerControl
                     Line newLine = newLineInfo.CreateLine(_serviceProvider, this);
                     Debug.Assert(newLine.GetType() == newLineInfo.LineType);
                     List<Control> newControlList = newLine.GetControls();
-                    Control[] controls = newControlList.ToArray();
+                    Control[] controls = [.. newControlList];
                     Controls.AddRange(controls);
 
                     newLine.UpdateActionItem(newLineInfo, _toolTip, ref currentTabIndex);
@@ -905,8 +911,10 @@ internal sealed partial class DesignerActionPanel : ContainerControl
         {
             UpdateEditXPos();
             _updatingTasks = false;
-            // REVIEW: We should rely on the caller to actually perform layout since it our scenarios, the entire right pane will have to be layed out
-            // Actually, we do want to resume layout since invalidation causes an OnPaint, and OnPaint relies on everything being layed out already
+            // REVIEW: We should rely on the caller to actually perform layout since it our scenarios,
+            // the entire right pane will have to be layed out.
+            // Actually, we do want to resume layout since invalidation causes an OnPaint,
+            // and OnPaint relies on everything being layed out already
             ResumeLayout(true);
         }
 

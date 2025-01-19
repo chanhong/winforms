@@ -1,17 +1,21 @@
-﻿using System.Drawing;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Drawing;
 using System.Windows.Forms;
 using System.ComponentModel.Design;
 
 using DesignSurfaceExt;
 using Timer = System.Windows.Forms.Timer;
+using System.ComponentModel;
 
 namespace TestConsole;
 
 public partial class MainForm : Form
 {
-    ISelectionService _selectionService;
+    private ISelectionService _selectionService;
 
-    private List<IDesignSurfaceExt> _listOfDesignSurface = new();
+    private readonly List<IDesignSurfaceExt> _listOfDesignSurface = [];
 
     public MainForm()
     {
@@ -25,12 +29,14 @@ public partial class MainForm : Form
         CreateDesignSurface(3);
         CreateDesignSurface(4);
         CreateDesignSurface(5);
+        CreateDesignSurface(6);
 
         tabPage1.Text = "Use SnapLines";
         tabPage2.Text = "Use Grid (Snap to the grid)";
         tabPage3.Text = "Use Grid";
         tabPage4.Text = "Align control by hand";
         tabPage5.Text = "TabControl and TableLayoutPanel";
+        tabPage6.Text = "ToolStripContainer";
 
         // - enable the UndoEngines
         for (int i = 0; i < tabControl1.TabCount; i++)
@@ -47,12 +53,12 @@ public partial class MainForm : Form
             IDesignSurfaceExt isurf = _listOfDesignSurface[i];
             _selectionService = (ISelectionService)(isurf.GetIDesignerHost().GetService(typeof(ISelectionService)));
             if (_selectionService is not null)
-                _selectionService.SelectionChanged += new System.EventHandler(OnSelectionChanged);
+                _selectionService.SelectionChanged += OnSelectionChanged;
         }
     }
 
     // - When the selection changes this sets the PropertyGrid's selected component
-    private void OnSelectionChanged(object sender, System.EventArgs e)
+    private void OnSelectionChanged(object sender, EventArgs e)
     {
         if (_selectionService is null)
             return;
@@ -69,7 +75,7 @@ public partial class MainForm : Form
     {
         // - step.0
         // - create a DesignSurface and put it inside a Form in DesignTime
-        DesignSurfaceExt.DesignSurfaceExt surface = new DesignSurfaceExt.DesignSurfaceExt();
+        DesignSurfaceExt.DesignSurfaceExt surface = new();
         // -
         // -
         // - store for later use
@@ -84,15 +90,18 @@ public partial class MainForm : Form
                 surface.UseSnapLines();
                 break;
             case 2:
-                surface.UseGrid(new System.Drawing.Size(16, 16));
+                surface.UseGrid(new Size(16, 16));
                 break;
             case 3:
-                surface.UseGridWithoutSnapping(new System.Drawing.Size(32, 32));
+                surface.UseGridWithoutSnapping(new Size(32, 32));
                 break;
             case 4:
                 surface.UseNoGuides();
                 break;
             case 5:
+                surface.UseNoGuides();
+                break;
+            case 6:
                 surface.UseNoGuides();
                 break;
             default:
@@ -118,22 +127,35 @@ public partial class MainForm : Form
                         // - create some Controls at DesignTime
                         TextBox t1 = surface.CreateControl<TextBox>(new Size(200, 23), new Point(172, 12));
                         Button b1 = surface.CreateControl<Button>(new Size(200, 40), new Point(172, 63));
-                        CustomButton b2 = surface.CreateControl<CustomButton>(new Size(200, 40), new Point(100, 200));
+                        CustomButton b2 = surface.CreateControl<CustomButton>(new Size(200, 40), new Point(172, 200));
                         b1.Text = "I'm the first Button";
                         b2.Text = "I'm the second Button";
                         b1.BackColor = Color.LightGray;
                         b2.BackColor = Color.LightGreen;
 
-                        RadioButton rb1 = surface.CreateControl<RadioButton>(new Size(120, 22), new Point(12, 21));
+                        RadioButton rb1 = surface.CreateControl<RadioButton>(new Size(120, 22), new Point(12, 10));
                         rb1.Text = "Check me!";
-                        RadioButton rb2 = surface.CreateControl<RadioButton>(new Size(120, 22), new Point(12, 50));
+                        RadioButton rb2 = surface.CreateControl<RadioButton>(new Size(120, 22), new Point(12, 35));
                         rb2.Text = "No, check me!";
                         rb2.Checked = true;
 
-                        Panel pnl = surface.CreateControl<Panel>(new Size(130, 100), new Point(12, 21));
+                        CheckBox checkbox1 = surface.CreateControl<CheckBox>(new Size(120, 22), new Point(12, 60));
+                        checkbox1.Text = "I'm Unchecked!";
+                        CheckBox checkbox2 = surface.CreateControl<CheckBox>(new Size(120, 22), new Point(12, 85));
+                        checkbox2.Text = "I'm Indeterminate!";
+                        checkbox2.AutoSize = true;
+                        checkbox2.CheckState = CheckState.Indeterminate;
+                        CheckBox checkbox3 = surface.CreateControl<CheckBox>(new Size(120, 22), new Point(12, 110));
+                        checkbox3.Text = "I'm Checked!";
+                        checkbox3.CheckState = CheckState.Checked;
+
+                        Panel pnl = surface.CreateControl<Panel>(new Size(140, 140), new Point(12, 12));
                         pnl.BackColor = Color.Aquamarine;
                         rb1.Parent = pnl;
                         rb2.Parent = pnl;
+                        checkbox1.Parent = pnl;
+                        checkbox2.Parent = pnl;
+                        checkbox3.Parent = pnl;
 
                         Label l1 = surface.CreateControl<Label>(new Size(100, 25), new Point(12, 12));
                         Label l2 = surface.CreateControl<Label>(new Size(120, 25), new Point(12, 12));
@@ -148,7 +170,7 @@ public partial class MainForm : Form
                         l1.Parent = sct.Panel1;
                         l2.Parent = sct.Panel2;
 
-                        PictureBox pb1 = surface.CreateControl<PictureBox>(new Size(64, 64), new Point(24, 166));
+                        PictureBox pb1 = surface.CreateControl<PictureBox>(new Size(64, 64), new Point(12, 176));
                         pb1.Image = new Icon("painter.ico").ToBitmap();
 
                         ContextMenuStrip cm1 = surface.CreateComponent<ContextMenuStrip>();
@@ -265,6 +287,90 @@ public partial class MainForm : Form
                     }
 
                     break;
+                case 6:
+                    {
+                        rootComponent = surface.CreateRootComponent<Form>(new Size(800, 600));
+                        rootComponent.BackColor = Color.Pink;
+                        rootComponent.Text = "Root Component hosted by the DesignSurface N.6";
+
+                        ToolStripContainer toolStripContainer = surface.CreateControl<ToolStripContainer>(new Size(800, 200), new Point(0, 0));
+                        toolStripContainer.Dock = DockStyle.Fill;
+
+                        MenuStrip menuStrip1 = new();
+                        MenuStrip menuStrip2 = new();
+
+                        ToolStripMenuItem toolStripMenuItem1 = new("TopMenuItem1");
+                        ToolStripMenuItem toolStripMenuItem2 = new("TopMenuItem2");
+                        ToolStripMenuItem menu1 = new("BottomMenuItem1");
+                        ToolStripMenuItem menuNew1 = new("BottomMenuItem2");
+
+                        menuStrip1.Items.Add(toolStripMenuItem1);
+                        menuStrip1.Items.Add(toolStripMenuItem2);
+                        menuStrip2.Items.Add(menu1);
+                        menuStrip2.Items.Add(menuNew1);
+
+                        toolStripMenuItem1.DropDownItems.Add("DropDownItem1");
+                        toolStripMenuItem2.DropDownItems.Add("DropDownItem12");
+
+                        ToolStripPanel topToolStripPanel = surface.CreateControl<ToolStripPanel>(new(50, 50), new(0, 0));
+                        topToolStripPanel = toolStripContainer.TopToolStripPanel;
+                        topToolStripPanel.Join(menuStrip1);
+                        ToolStripPanel bottomToolStripPanel = surface.CreateControl<ToolStripPanel>(new(50, 50), new(0, 0));
+                        bottomToolStripPanel = toolStripContainer.BottomToolStripPanel;
+                        bottomToolStripPanel.Join(menuStrip2);
+
+                        SplitContainer splitContainer = surface.CreateControl<SplitContainer>(new(0, 0), new(0, 0));
+                        splitContainer.Dock = DockStyle.Fill;
+                        splitContainer.BackColor = Color.Red;
+
+                        RichTextBox richTextBox = surface.CreateControl<RichTextBox>(new Size(0, 0), new Point(0, 0));
+                        richTextBox.Dock = DockStyle.Fill;
+                        richTextBox.Width = toolStripContainer.Width;
+                        richTextBox.Text = "I'm a RichTextBox";
+
+                        MyUserControl userControl = surface.CreateControl<MyUserControl>(new Size(0, 0), new Point(0, 0));
+                        userControl.Dock = DockStyle.Fill;
+                        userControl.BackColor = Color.LightSkyBlue;
+
+                        MyScrollableControl scrollableControl = surface.CreateControl<MyScrollableControl>(new Size(0, 0), new Point(0, 0));
+                        scrollableControl.Dock = DockStyle.Fill;
+                        scrollableControl.InjectControl(userControl);
+
+                        SplitterPanel splitterPanel1 = splitContainer.Panel1;
+                        SplitterPanel splitterPanel2 = splitContainer.Panel2;
+                        splitterPanel1.Controls.Add(richTextBox);
+                        splitterPanel2.Controls.Add(scrollableControl);
+
+                        toolStripContainer.ContentPanel.Controls.AddRange(splitContainer);
+
+                        Component component = surface.CreateComponent<Component>();
+
+                        Splitter splitter = surface.CreateControl<Splitter>(new(5, 0), new(0, 0));
+                        splitter.BackColor = Color.Green;
+                        splitter.Dock = DockStyle.Bottom;
+
+                        Panel panel = surface.CreateControl<Panel>(new(0, tabPage6.Height / 2), new(0, 0));
+                        panel.Dock = DockStyle.Bottom;
+                        NumericUpDown numericUpDown = surface.CreateControl<NumericUpDown>(new(50, 10), new(10, 10));
+                        panel.Controls.Add(numericUpDown);
+
+                        BindingNavigator bindingNavigator = surface.CreateControl<BindingNavigator>(new(0, 0), new(0, 0));
+
+                        BindingSource bindingSource = new()
+                        {
+                            DataSource = new List<string> { "Item 1", "Item 2", "Item 3" }
+                        };
+
+                        bindingNavigator.Dock = DockStyle.Bottom;
+                        bindingNavigator.BindingSource = bindingSource;
+
+                        richTextBox.DataBindings.Add(new Binding("Text", bindingSource, "Text", true, DataSourceUpdateMode.OnPropertyChanged));
+
+                        panel.Controls.Add(bindingNavigator);
+                    }
+
+                    break;
+
                 default:
                     Console.WriteLine("Invalid selection");
                     break;
@@ -298,6 +404,9 @@ public partial class MainForm : Form
                 case 5:
                     view.Parent = tabPage5;
                     break;
+                case 6:
+                    view.Parent = tabPage6;
+                    break;
                 default:
                     Console.WriteLine("Invalid selection");
                     break;
@@ -315,7 +424,23 @@ public partial class MainForm : Form
         // - find out the DesignSurfaceExt control hosted by the TabPage
         IDesignSurfaceExt isurf = _listOfDesignSurface[tabControl1.SelectedIndex];
         if (isurf is not null)
-            propertyGrid.SelectedObject = isurf.GetIDesignerHost().RootComponent;
+        {
+            splitContainer.Panel2.Controls.Remove(propertyGrid);
+            propertyGrid.Dispose();
+            propertyGrid = new()
+            {
+                DesignerHost = isurf.GetIDesignerHost(),
+                Dock = DockStyle.Fill,
+                Location = new Point(0, 0),
+                Margin = new Padding(4),
+                Name = "propertyGrid",
+                Size = new Size(226, 502),
+                TabIndex = 0,
+                SelectedObject = isurf.GetIDesignerHost().RootComponent
+            };
+
+            splitContainer.Panel2.Controls.Add(propertyGrid);
+        }
     }
 
     private void undoToolStripMenuItem_Click(object sender, EventArgs e)
@@ -346,7 +471,7 @@ public partial class MainForm : Form
     {
         InitFormDesigner();
 
-        tabControl1.Selected += new System.Windows.Forms.TabControlEventHandler(OnTabPageSelected);
+        tabControl1.Selected += OnTabPageSelected;
 
         // - select into the propertygrid the current Form
         SelectRootComponent();

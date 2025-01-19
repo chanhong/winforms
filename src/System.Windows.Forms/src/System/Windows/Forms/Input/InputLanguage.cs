@@ -3,8 +3,7 @@
 
 using System.Globalization;
 using Microsoft.Win32;
-using Windows.Win32.UI.TextServices;
-using static Interop;
+using Windows.Win32.UI.Input.KeyboardAndMouse;
 
 namespace System.Windows.Forms;
 
@@ -61,7 +60,7 @@ public sealed class InputLanguage
         get
         {
             nint handle = 0;
-            PInvoke.SystemParametersInfo(SYSTEM_PARAMETERS_INFO_ACTION.SPI_GETDEFAULTINPUTLANG, ref handle);
+            PInvokeCore.SystemParametersInfo(SYSTEM_PARAMETERS_INFO_ACTION.SPI_GETDEFAULTINPUTLANG, ref handle);
             return new InputLanguage(handle);
         }
     }
@@ -81,7 +80,11 @@ public sealed class InputLanguage
             int size = PInvoke.GetKeyboardLayoutList(0, null);
 
             var handles = new HKL[size];
-            PInvoke.GetKeyboardLayoutList(handles);
+
+            fixed (HKL* h = handles)
+            {
+                PInvoke.GetKeyboardLayoutList(size, h);
+            }
 
             InputLanguage[] ils = new InputLanguage[size];
             for (int i = 0; i < size; i++)
@@ -110,12 +113,15 @@ public sealed class InputLanguage
     }
 
     /// <summary>
-    /// Returns the <see href="https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-getkeyboardlayoutnamew">
-    /// keyboard layout identifier</see> of the current input language.
+    ///  Returns the
+    ///  <see href="https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-getkeyboardlayoutnamew">
+    ///   keyboard layout identifier
+    ///  </see>
+    ///  of the current input language.
     /// </summary>
-    /// <seealso
-    /// href="https://learn.microsoft.com/windows-hardware/manufacture/desktop/windows-language-pack-default-values">
-    /// Keyboard identifiers and input method editors for Windows</seealso>
+    /// <seealso href="https://learn.microsoft.com/windows-hardware/manufacture/desktop/windows-language-pack-default-values">
+    ///  Keyboard identifiers and input method editors for Windows
+    /// </seealso>
     internal string LayoutId
     {
         get
@@ -174,8 +180,11 @@ public sealed class InputLanguage
     private const string UserProfileRegistryPath = @"Control Panel\International\User Profile";
 
     /// <summary>
-    ///  Returns the <see href="https://learn.microsoft.com/globalization/locale/standard-locale-names">BCP 47 language
-    ///  tag</see> of the current input language.
+    ///  Returns the
+    ///  <see href="https://learn.microsoft.com/globalization/locale/standard-locale-names">
+    ///   BCP 47 language tag
+    ///  </see>
+    ///  of the current input language.
     /// </summary>
     private string LanguageTag
     {
@@ -197,10 +206,10 @@ public sealed class InputLanguage
             // https://github.com/dotnet/winforms/pull/8573#issuecomment-1542600949
             //
             // NOTE: this logic may break in future versions of Windows since it is not documented.
-            if (langId == PInvoke.LOCALE_TRANSIENT_KEYBOARD1
-                || langId == PInvoke.LOCALE_TRANSIENT_KEYBOARD2
-                || langId == PInvoke.LOCALE_TRANSIENT_KEYBOARD3
-                || langId == PInvoke.LOCALE_TRANSIENT_KEYBOARD4)
+            if (langId is (int)PInvoke.LOCALE_TRANSIENT_KEYBOARD1
+                or (int)PInvoke.LOCALE_TRANSIENT_KEYBOARD2
+                or (int)PInvoke.LOCALE_TRANSIENT_KEYBOARD3
+                or (int)PInvoke.LOCALE_TRANSIENT_KEYBOARD4)
             {
                 using RegistryKey? key = Registry.CurrentUser.OpenSubKey(UserProfileRegistryPath);
                 if (key is not null && key.GetValue("Languages") is string[] languages)

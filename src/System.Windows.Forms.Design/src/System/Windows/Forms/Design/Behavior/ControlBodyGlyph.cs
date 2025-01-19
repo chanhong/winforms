@@ -20,7 +20,11 @@ public class ControlBodyGlyph : ComponentGlyph
     /// <summary>
     ///  Standard Constructor.
     /// </summary>
-    public ControlBodyGlyph(Rectangle bounds, Cursor? cursor, IComponent? relatedComponent, ControlDesigner? designer)
+    public ControlBodyGlyph(
+        Rectangle bounds,
+        Cursor? cursor,
+        IComponent? relatedComponent,
+        ControlDesigner designer)
         : base(relatedComponent, new ControlDesigner.TransparentBehavior(designer))
     {
         _bounds = bounds;
@@ -48,7 +52,8 @@ public class ControlBodyGlyph : ComponentGlyph
     /// </summary>
     public override Cursor? GetHitTest(Point p)
     {
-        bool isVisible = (_component is Control control) ? control.Visible : true; /*non-controls are always visible here*/
+        // non-controls are always visible here
+        bool isVisible = _component is not Control control || control.Visible;
 
         if (isVisible && _bounds.Contains(p))
         {

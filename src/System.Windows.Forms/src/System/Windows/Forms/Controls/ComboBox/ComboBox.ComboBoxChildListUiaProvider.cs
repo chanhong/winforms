@@ -5,14 +5,14 @@ using System.Drawing;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
 using static System.Windows.Forms.ComboBox.ObjectCollection;
-using static Interop;
 
 namespace System.Windows.Forms;
 
 public partial class ComboBox
 {
     /// <summary>
-    ///  Represents the ComboBox's child (inner) list native window control accessible object with UI Automation provider functionality.
+    ///  Represents the ComboBox's child (inner) list native window control accessible object
+    ///  with UI Automation provider functionality.
     /// </summary>
     internal sealed class ComboBoxChildListUiaProvider : ChildAccessibleObject
     {
@@ -33,7 +33,7 @@ public partial class ComboBox
         {
             get
             {
-                PInvoke.GetWindowRect(_owningComboBox.GetListNativeWindow(), out var rect);
+                PInvokeCore.GetWindowRect(_owningComboBox.GetListNativeWindow(), out var rect);
                 return rect;
             }
         }
@@ -75,7 +75,7 @@ public partial class ComboBox
                 case NavigateDirection.NavigateDirection_FirstChild:
                     return GetChildFragment(0);
                 case NavigateDirection.NavigateDirection_LastChild:
-                    var childFragmentCount = GetChildFragmentCount();
+                    int childFragmentCount = GetChildFragmentCount();
                     if (childFragmentCount > 0)
                     {
                         return GetChildFragment(childFragmentCount - 1);
@@ -148,6 +148,8 @@ public partial class ComboBox
             return GetChildFragment(selectedIndex);
         }
 
+        private protected override bool IsInternal => true;
+
         internal override IRawElementProviderSimple.Interface[] GetSelection()
         {
             if (!_owningComboBox.IsHandleCreated)
@@ -168,17 +170,11 @@ public partial class ComboBox
 
         internal override bool IsSelectionRequired => true;
 
-        internal override bool IsPatternSupported(UIA_PATTERN_ID patternId)
+        internal override bool IsPatternSupported(UIA_PATTERN_ID patternId) => patternId switch
         {
-            switch (patternId)
-            {
-                case UIA_PATTERN_ID.UIA_LegacyIAccessiblePatternId:
-                case UIA_PATTERN_ID.UIA_SelectionPatternId:
-                    return true;
-                default:
-                    return base.IsPatternSupported(patternId);
-            }
-        }
+            UIA_PATTERN_ID.UIA_LegacyIAccessiblePatternId or UIA_PATTERN_ID.UIA_SelectionPatternId => true,
+            _ => base.IsPatternSupported(patternId),
+        };
 
         internal override unsafe IRawElementProviderSimple* HostRawElementProvider
         {
@@ -189,13 +185,12 @@ public partial class ComboBox
             }
         }
 
-        internal override int[] RuntimeId
-            => new int[]
-            {
+        internal override int[] RuntimeId =>
+            [
                 RuntimeIDFirstItem,
-                PARAM.ToInt(_owningComboBox.InternalHandle),
+                (int)_owningComboBox.InternalHandle,
                 _owningComboBox.GetListNativeWindowRuntimeIdPart()
-            };
+            ];
 
         public override AccessibleStates State
         {

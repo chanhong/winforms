@@ -44,10 +44,7 @@ public abstract partial class UpDownBase : ContainerControl
     /// </summary>
     public UpDownBase()
     {
-        if (DpiHelper.IsScalingRequired)
-        {
-            _defaultButtonsWidth = LogicalToDeviceUnits(DefaultButtonsWidth);
-        }
+        _defaultButtonsWidth = LogicalToDeviceUnits(DefaultButtonsWidth);
 
         _upDownButtons = new UpDownButtons(this);
         _upDownEdit = new UpDownEdit(this)
@@ -55,20 +52,25 @@ public abstract partial class UpDownBase : ContainerControl
             BorderStyle = BorderStyle.None,
             AutoSize = false
         };
-        _upDownEdit.KeyDown += new KeyEventHandler(OnTextBoxKeyDown);
-        _upDownEdit.KeyPress += new KeyPressEventHandler(OnTextBoxKeyPress);
-        _upDownEdit.TextChanged += new EventHandler(OnTextBoxTextChanged);
-        _upDownEdit.LostFocus += new EventHandler(OnTextBoxLostFocus);
-        _upDownEdit.Resize += new EventHandler(OnTextBoxResize);
+
+        _upDownEdit.KeyDown += OnTextBoxKeyDown;
+        _upDownEdit.KeyPress += OnTextBoxKeyPress;
+        _upDownEdit.TextChanged += OnTextBoxTextChanged;
+        _upDownEdit.LostFocus += OnTextBoxLostFocus;
+        _upDownEdit.Resize += OnTextBoxResize;
         _upDownButtons.TabStop = false;
         _upDownButtons.Size = new Size(_defaultButtonsWidth, PreferredHeight);
-        _upDownButtons.UpDown += new UpDownEventHandler(OnUpDown);
+        _upDownButtons.UpDown += OnUpDown;
 
-        Controls.AddRange(new Control[] { _upDownButtons, _upDownEdit });
+        Controls.AddRange([_upDownButtons, _upDownEdit]);
 
         SetStyle(ControlStyles.Opaque | ControlStyles.FixedHeight | ControlStyles.ResizeRedraw, true);
         SetStyle(ControlStyles.StandardClick, false);
         SetStyle(ControlStyles.UseTextForAccessibility, false);
+
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
     }
 
     [Browsable(false)]
@@ -177,7 +179,7 @@ public abstract partial class UpDownBase : ContainerControl
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
     [DefaultValue(BorderStyle.Fixed3D)]
-    [DispId(PInvoke.DISPID_BORDERSTYLE)]
+    [DispId(PInvokeCore.DISPID_BORDERSTYLE)]
     [SRDescription(nameof(SR.UpDownBaseBorderStyleDescr))]
     public BorderStyle BorderStyle
     {
@@ -494,7 +496,7 @@ public abstract partial class UpDownBase : ContainerControl
     {
         base.OnHandleCreated(e);
         PositionControls();
-        SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(UserPreferenceChanged);
+        SystemEvents.UserPreferenceChanged += UserPreferenceChanged;
     }
 
     /// <summary>
@@ -502,7 +504,7 @@ public abstract partial class UpDownBase : ContainerControl
     /// </summary>
     protected override void OnHandleDestroyed(EventArgs e)
     {
-        SystemEvents.UserPreferenceChanged -= new UserPreferenceChangedEventHandler(UserPreferenceChanged);
+        SystemEvents.UserPreferenceChanged -= UserPreferenceChanged;
         base.OnHandleDestroyed(e);
     }
 
@@ -524,12 +526,12 @@ public abstract partial class UpDownBase : ContainerControl
                 Rectangle clipBounds = e.ClipRectangle;
 
                 // Draw a themed textbox-like border, which is what the spin control does
-                VisualStyleRenderer vsr = new VisualStyleRenderer(VisualStyleElement.TextBox.TextEdit.Normal);
+                VisualStyleRenderer vsr = new(VisualStyleElement.TextBox.TextEdit.Normal);
                 int border = ThemedBorderWidth;
-                Rectangle clipLeft = new Rectangle(bounds.Left, bounds.Top, border, bounds.Height);
-                Rectangle clipTop = new Rectangle(bounds.Left, bounds.Top, bounds.Width, border);
-                Rectangle clipRight = new Rectangle(bounds.Right - border, bounds.Top, border, bounds.Height);
-                Rectangle clipBottom = new Rectangle(bounds.Left, bounds.Bottom - border, bounds.Width, border);
+                Rectangle clipLeft = new(bounds.Left, bounds.Top, border, bounds.Height);
+                Rectangle clipTop = new(bounds.Left, bounds.Top, bounds.Width, border);
+                Rectangle clipRight = new(bounds.Right - border, bounds.Top, border, bounds.Height);
+                Rectangle clipBottom = new(bounds.Left, bounds.Bottom - border, bounds.Width, border);
                 clipLeft.Intersect(clipBounds);
                 clipTop.Intersect(clipBounds);
                 clipRight.Intersect(clipBounds);
@@ -547,7 +549,7 @@ public abstract partial class UpDownBase : ContainerControl
                 backRect.Y--;
                 backRect.Width += 2;
                 backRect.Height += 2;
-                using PInvoke.CreatePenScope hpen = new(backColor);
+                using CreatePenScope hpen = new(backColor);
                 hdc.DrawRectangle(backRect, hpen);
             }
         }
@@ -569,16 +571,16 @@ public abstract partial class UpDownBase : ContainerControl
             backRect.Width++;
             backRect.Height++;
             using DeviceContextHdcScope hdc = new(e);
-            using PInvoke.CreatePenScope hpen = new(backColor, width);
+            using CreatePenScope hpen = new(backColor, width);
             hdc.DrawRectangle(backRect, hpen);
         }
 
         if (!Enabled && BorderStyle != BorderStyle.None && !_upDownEdit.ShouldSerializeBackColor())
         {
-            // Draws a grayed rectangled around the upDownEdit, since otherwise we will have a white
+            // Draws a grayed rectangle around the upDownEdit, since otherwise we will have a white
             // border around the upDownEdit, which is inconsistent with Windows' behavior
             // we only want to do this when BackColor is not serialized, since otherwise
-            // we should display the backcolor instead of the usual grayed textbox.
+            // we should display the BackColor instead of the usual grayed textbox.
             editBounds.Inflate(1, 1);
             ControlPaint.DrawBorderSimple(e, editBounds, SystemColors.Control);
         }
@@ -648,7 +650,7 @@ public abstract partial class UpDownBase : ContainerControl
     {
         if (ChangingText)
         {
-            Debug.Assert(UserEdit == false, "OnTextBoxTextChanged() - UserEdit == true");
+            Debug.Assert(!UserEdit, "OnTextBoxTextChanged() - UserEdit == true");
             ChangingText = false;
         }
         else
@@ -832,7 +834,7 @@ public abstract partial class UpDownBase : ContainerControl
         Rectangle upDownEditBounds = Rectangle.Empty;
         Rectangle upDownButtonsBounds = Rectangle.Empty;
 
-        Rectangle clientArea = new Rectangle(Point.Empty, ClientSize);
+        Rectangle clientArea = new(Point.Empty, ClientSize);
         int totalClientWidth = clientArea.Width;
         bool themed = Application.RenderWithVisualStyles;
         BorderStyle borderStyle = BorderStyle;
@@ -942,7 +944,7 @@ public abstract partial class UpDownBase : ContainerControl
     {
         switch (m.MsgInternal)
         {
-            case PInvoke.WM_SETFOCUS:
+            case PInvokeCore.WM_SETFOCUS:
                 if (!HostedInWin32DialogManager)
                 {
                     if (ActiveControl is null)
@@ -965,7 +967,7 @@ public abstract partial class UpDownBase : ContainerControl
                 }
 
                 break;
-            case PInvoke.WM_KILLFOCUS:
+            case PInvokeCore.WM_KILLFOCUS:
                 DefWndProc(ref m);
                 break;
             default:
@@ -975,6 +977,18 @@ public abstract partial class UpDownBase : ContainerControl
     }
 
     internal override void SetToolTip(ToolTip toolTip)
+    {
+        if (toolTip is null)
+        {
+            return;
+        }
+
+        string? caption = toolTip.GetToolTip(this);
+        toolTip.SetToolTip(_upDownEdit, caption);
+        toolTip.SetToolTip(_upDownButtons, caption);
+    }
+
+    internal override void RemoveToolTip(ToolTip toolTip)
     {
         if (toolTip is null)
         {

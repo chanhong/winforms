@@ -4,7 +4,6 @@
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
 using System.Drawing;
-using System.Windows.Forms.TestUtilities;
 
 namespace System.Windows.Forms.Tests;
 
@@ -20,7 +19,7 @@ public class ListViewItemConverterTests
     [InlineData(typeof(string), false)]
     public void ListViewItemConverter_CanConvertFrom_Invoke_ReturnsExpected(Type sourceType, bool expected)
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         Assert.Equal(expected, converter.CanConvertFrom(sourceType));
     }
 
@@ -30,7 +29,7 @@ public class ListViewItemConverterTests
     [InlineData(null)]
     public void ListViewItemConverter_ConvertFrom_InvalidValue_ThrowsNotSupportedException(object value)
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         Assert.Throws<NotSupportedException>(() => converter.ConvertFrom(value));
     }
 
@@ -42,13 +41,13 @@ public class ListViewItemConverterTests
     [InlineData(null, false)]
     public void ListViewItemConverter_ConverterCanConvertTo_Invoke_ReturnsExpected(Type destinationType, bool expected)
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         Assert.Equal(expected, converter.CanConvertTo(destinationType));
     }
 
     public static IEnumerable<object[]> ConvertTo_InstanceDescriptor_TestData()
     {
-        var group = new ListViewGroup();
+        ListViewGroup group = new();
         var subItem1 = new ListViewItem.ListViewSubItem(null, "text1");
         var subItem2 = new ListViewItem.ListViewSubItem(null, "text2");
         var subItem3 = new ListViewItem.ListViewSubItem(null, "text3")
@@ -117,109 +116,109 @@ public class ListViewItemConverterTests
         // Item.
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1 }, "imageKey"),
+            new ListViewItem([subItem1], "imageKey"),
             new Type[] { typeof(string), typeof(string) },
             new object[] { "text1", "imageKey" }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1 }, 1),
+            new ListViewItem([subItem1], 1),
             new Type[] { typeof(string), typeof(int) },
             new object[] { "text1", 1 }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1 }, "imageKey", group),
+            new ListViewItem([subItem1], "imageKey", group),
             new Type[] { typeof(string), typeof(string) },
             new object[] { "text1", "imageKey" }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1 }, 1, group),
+            new ListViewItem([subItem1], 1, group),
             new Type[] { typeof(string), typeof(int) },
             new object[] { "text1", 1 }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1, subItem2 }, "imageKey"),
+            new ListViewItem([subItem1, subItem2], "imageKey"),
             new Type[] { typeof(string[]), typeof(string) },
             new object[] { new string[] { "text1", "text2" }, "imageKey" }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1, subItem2 }, 1),
+            new ListViewItem([subItem1, subItem2], 1),
             new Type[] { typeof(string[]), typeof(int) },
             new object[] { new string[] { "text1", "text2" }, 1 }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1, subItem2 }, "imageKey", group),
+            new ListViewItem([subItem1, subItem2], "imageKey", group),
             new Type[] { typeof(string[]), typeof(string) },
             new object[] { new string[] { "text1", "text2" }, "imageKey" }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1, subItem2 }, 1, group),
+            new ListViewItem([subItem1, subItem2], 1, group),
             new Type[] { typeof(string[]), typeof(int) },
             new object[] { new string[] { "text1", "text2" }, 1 }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1, subItem2, subItem3, subItem4, subItem5 }, "imageKey"),
+            new ListViewItem([subItem1, subItem2, subItem3, subItem4, subItem5], "imageKey"),
             new Type[] { typeof(ListViewItem.ListViewSubItem[]), typeof(string) },
             new object[] { new ListViewItem.ListViewSubItem[] { subItem1, subItem2, subItem3, subItem4, subItem5 }, "imageKey" }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1, subItem2, subItem3, subItem4, subItem5 }, 1),
+            new ListViewItem([subItem1, subItem2, subItem3, subItem4, subItem5], 1),
             new Type[] { typeof(ListViewItem.ListViewSubItem[]), typeof(int) },
             new object[] { new ListViewItem.ListViewSubItem[] { subItem1, subItem2, subItem3, subItem4, subItem5 }, 1 }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1, subItem2, subItem3, subItem4, subItem5 }, "imageKey", group),
+            new ListViewItem([subItem1, subItem2, subItem3, subItem4, subItem5], "imageKey", group),
             new Type[] { typeof(ListViewItem.ListViewSubItem[]), typeof(string) },
             new object[] { new ListViewItem.ListViewSubItem[] { subItem1, subItem2, subItem3, subItem4, subItem5 }, "imageKey" }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem1, subItem2, subItem3, subItem4, subItem5 }, 1, group),
+            new ListViewItem([subItem1, subItem2, subItem3, subItem4, subItem5], 1, group),
             new Type[] { typeof(ListViewItem.ListViewSubItem[]), typeof(int) },
             new object[] { new ListViewItem.ListViewSubItem[] { subItem1, subItem2, subItem3, subItem4, subItem5 }, 1 }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem3 }, 1),
+            new ListViewItem([subItem3], 1),
             new Type[] { typeof(string[]), typeof(int), typeof(Color), typeof(Color), typeof(Font) },
             new object[] { new string[] { "text3" }, 1, Color.Blue, Color.Empty, null }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem4 }, 1),
+            new ListViewItem([subItem4], 1),
             new Type[] { typeof(string[]), typeof(int), typeof(Color), typeof(Color), typeof(Font) },
             new object[] { new string[] { "text4" }, 1, Color.Empty, Color.Blue, null }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem5 }, 1),
+            new ListViewItem([subItem5], 1),
             new Type[] { typeof(string[]), typeof(int), typeof(Color), typeof(Color), typeof(Font) },
             new object[] { new string[] { "text5" }, 1, Color.Empty, Color.Empty, SystemFonts.MenuFont }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem3 }, "imageKey"),
+            new ListViewItem([subItem3], "imageKey"),
             new Type[] { typeof(string[]), typeof(string), typeof(Color), typeof(Color), typeof(Font) },
             new object[] { new string[] { "text3" }, "imageKey", Color.Blue, Color.Empty, null }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem4 }, "imageKey"),
+            new ListViewItem([subItem4], "imageKey"),
             new Type[] { typeof(string[]), typeof(string), typeof(Color), typeof(Color), typeof(Font) },
             new object[] { new string[] { "text4" }, "imageKey", Color.Empty, Color.Blue, null }
         };
         yield return new object[]
         {
-            new ListViewItem(new ListViewItem.ListViewSubItem[] { subItem5 }, "imageKey"),
+            new ListViewItem([subItem5], "imageKey"),
             new Type[] { typeof(string[]), typeof(string), typeof(Color), typeof(Color), typeof(Font) },
             new object[] { new string[] { "text5" }, "imageKey", Color.Empty, Color.Empty, SystemFonts.MenuFont }
         };
@@ -227,25 +226,25 @@ public class ListViewItemConverterTests
         // Custom style - text.
         yield return new object[]
         {
-            new ListViewItem(new string[] { "text" }, "imageKey", Color.Red, Color.Blue, SystemFonts.MenuFont),
+            new ListViewItem(["text"], "imageKey", Color.Red, Color.Blue, SystemFonts.MenuFont),
             new Type[] { typeof(string[]), typeof(string), typeof(Color), typeof(Color), typeof(Font) },
             new object[] { new string[] { "text" }, "imageKey", Color.Red, Color.Blue, SystemFonts.MenuFont }
         };
         yield return new object[]
         {
-            new ListViewItem(new string[] { "text" }, 1, Color.Red, Color.Blue, SystemFonts.MenuFont),
+            new ListViewItem(["text"], 1, Color.Red, Color.Blue, SystemFonts.MenuFont),
             new Type[] { typeof(string[]), typeof(int), typeof(Color), typeof(Color), typeof(Font) },
             new object[] { new string[] { "text" }, 1, Color.Red, Color.Blue, SystemFonts.MenuFont }
         };
         yield return new object[]
         {
-            new ListViewItem(new string[] { "text" }, "imageKey", Color.Red, Color.Blue, SystemFonts.MenuFont, group),
+            new ListViewItem(["text"], "imageKey", Color.Red, Color.Blue, SystemFonts.MenuFont, group),
             new Type[] { typeof(string[]), typeof(string), typeof(Color), typeof(Color), typeof(Font) },
             new object[] { new string[] { "text" }, "imageKey", Color.Red, Color.Blue, SystemFonts.MenuFont }
         };
         yield return new object[]
         {
-            new ListViewItem(new string[] { "text" }, 1, Color.Red, Color.Blue, SystemFonts.MenuFont, group),
+            new ListViewItem(["text"], 1, Color.Red, Color.Blue, SystemFonts.MenuFont, group),
             new Type[] { typeof(string[]), typeof(int), typeof(Color), typeof(Color), typeof(Font) },
             new object[] { new string[] { "text" }, 1, Color.Red, Color.Blue, SystemFonts.MenuFont }
         };
@@ -255,7 +254,7 @@ public class ListViewItemConverterTests
     [MemberData(nameof(ConvertTo_InstanceDescriptor_TestData))]
     public void ListViewItemConverter_ConvertTo_InstanceDescriptor_ReturnsExpected(ListViewItem value, Type[] parameterTypes, object[] arguments)
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         InstanceDescriptor descriptor = Assert.IsType<InstanceDescriptor>(converter.ConvertTo(value, typeof(InstanceDescriptor)));
         Assert.Equal(typeof(ListViewItem).GetConstructor(parameterTypes), descriptor.MemberInfo);
         Assert.Equal(arguments, descriptor.Arguments);
@@ -266,21 +265,21 @@ public class ListViewItemConverterTests
     [InlineData(1, "1")]
     public void ListViewItemConverter_ConvertTo_String_ReturnsExpected(object value, string expected)
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         Assert.Equal(expected, converter.ConvertTo(value, typeof(string)));
     }
 
     [Fact]
     public void ListViewItemConverter_ConvertTo_NullDestinationType_ThrowsArgumentNullException()
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         Assert.Throws<ArgumentNullException>("destinationType", () => converter.ConvertTo(new object(), null));
     }
 
     [Fact]
     public void ListViewItemConverter_ConvertTo_ValueNotThrowsNotSupportedException()
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         Assert.Throws<NotSupportedException>(() => converter.ConvertTo(1, typeof(InstanceDescriptor)));
     }
 
@@ -289,43 +288,43 @@ public class ListViewItemConverterTests
     [InlineData(typeof(int))]
     public void ListViewItemConverter_ConvertTo_InvalidDestinationType_ThrowsNotSupportedException(Type destinationType)
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         Assert.Throws<NotSupportedException>(() => converter.ConvertTo(new ListViewItem(), destinationType));
     }
 
     [Fact]
     public void ListViewItemConverter_GetPropertiesSupported_Invoke_ReturnsTrue()
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         Assert.True(converter.GetPropertiesSupported(null));
     }
 
     [Fact]
     public void ListViewItemConverter_GetProperties_Invoke_ReturnsExpected()
     {
-        var converter = new ListViewItemConverter();
-        var item = new ListViewItem();
+        ListViewItemConverter converter = new();
+        ListViewItem item = new();
         Assert.Equal(TypeDescriptor.GetProperties(item, null).Count, converter.GetProperties(null, item, null).Count);
     }
 
     [Fact]
     public void ListViewItemConverter_GetStandardValues_Invoke_ReturnsNull()
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         Assert.Null(converter.GetStandardValues(null));
     }
 
     [Fact]
     public void ListViewItemConverter_GetStandardValuesExclusive_Invoke_ReturnsFalse()
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         Assert.False(converter.GetStandardValuesExclusive(null));
     }
 
     [Fact]
     public void ListViewItemConverter_GetStandardValuesSupported_Invoke_ReturnsFalse()
     {
-        var converter = new ListViewItemConverter();
+        ListViewItemConverter converter = new();
         Assert.False(converter.GetStandardValuesSupported(null));
     }
 }

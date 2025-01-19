@@ -35,7 +35,7 @@ public class RichTextBoxTests : ControlTestBase
             richTextBox.LinkClicked += handler;
             try
             {
-                Point pt = richTextBox.PointToScreen(richTextBox.GetPositionFromCharIndex(richTextBox.Text.IndexOf("Click link #2")));
+                Point pt = richTextBox.PointToScreen(richTextBox.GetPositionFromCharIndex(richTextBox.Text.IndexOf("Click link #2", StringComparison.Ordinal)));
 
                 // Adjust point a bit to make sure we are clicking inside the character cell instead of on its edge.
                 pt.X += 2;
@@ -95,7 +95,7 @@ This is hidden text preceeding a \v #link3#\v0 custom link.\par
             richTextBox.LinkClicked += handler;
             try
             {
-                Point pt = richTextBox.PointToScreen(richTextBox.GetPositionFromCharIndex(richTextBox.Text.IndexOf("#link2#custom link")));
+                Point pt = richTextBox.PointToScreen(richTextBox.GetPositionFromCharIndex(richTextBox.Text.IndexOf("#link2#custom link", StringComparison.Ordinal)));
 
                 // Adjust point a bit to make sure we are clicking inside the character cell instead of on its edge.
                 pt.X += 2;
@@ -137,9 +137,9 @@ This is hidden text preceeding a \v #link3#\v0 custom link.\par
     {
         await RunTestAsync(async (form, richTextBox) =>
         {
-                    // This needs to be sufficiently different from the previous test so we don't click on the same location twice,
-                    // otherwise the tests may execute fast enough for the second test to register as a double click.
-                    richTextBox.Rtf = @"{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang4105{\fonttbl{\f0\fnil\fcharset0 Calibri;}}
+            // This needs to be sufficiently different from the previous test so we don't click on the same location twice,
+            // otherwise the tests may execute fast enough for the second test to register as a double click.
+            richTextBox.Rtf = @"{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang4105{\fonttbl{\f0\fnil\fcharset0 Calibri;}}
         {\*\generator Riched20 10.0.17134}\viewkind4\uc1\pard\sa200\sl276\slmult1\f0\fs22\lang9
         This is a custom link\v #link1#\v0  which is followed by hidden text.\par
         This is a custom link\v #link2#\v0  which is followed by hidden text.\par
@@ -155,7 +155,8 @@ This is hidden text preceeding a \v #link3#\v0 custom link.\par
             richTextBox.LinkClicked += handler;
             try
             {
-                Point pt = richTextBox.PointToScreen(richTextBox.GetPositionFromCharIndex(richTextBox.Text.IndexOf("custom link#link2#")));
+                Point pt = richTextBox.PointToScreen(richTextBox.GetPositionFromCharIndex(
+                    richTextBox.Text.IndexOf("custom link#link2#", StringComparison.Ordinal)));
 
                 // Adjust point a bit to make sure we are clicking inside the character cell instead of on its edge.
                 pt.X += 2;
@@ -194,7 +195,7 @@ This is hidden text preceeding a \v #link3#\v0 custom link.\par
 
     private unsafe void MakeLink(RichTextBox control, string text)
     {
-        control.Select(control.Text.IndexOf(text), text.Length);
+        control.Select(control.Text.IndexOf(text, StringComparison.Ordinal), text.Length);
 
         var format = new Richedit.CHARFORMAT2W
         {
@@ -203,7 +204,7 @@ This is hidden text preceeding a \v #link3#\v0 custom link.\par
             dwEffects = CFE_EFFECTS.CFE_LINK,
         };
 
-        PInvoke.SendMessage(control, PInvoke.EM_SETCHARFORMAT, (WPARAM)PInvoke.SCF_SELECTION, ref format);
+        PInvokeCore.SendMessage(control, PInvokeCore.EM_SETCHARFORMAT, (WPARAM)PInvoke.SCF_SELECTION, ref format);
 
         control.Select(0, 0);
     }
@@ -212,7 +213,7 @@ This is hidden text preceeding a \v #link3#\v0 custom link.\par
     {
         using ComScope<IRichEditOle> richEdit = new(null);
 
-        if (PInvoke.SendMessage(control, PInvoke.EM_GETOLEINTERFACE, 0, (void**)richEdit) != 0)
+        if (PInvokeCore.SendMessage(control, PInvokeCore.EM_GETOLEINTERFACE, 0, (void**)richEdit) != 0)
         {
             using var textDocument = richEdit.TryQuery<ITextDocument>(out HRESULT hr);
 
@@ -221,7 +222,7 @@ This is hidden text preceeding a \v #link3#\v0 custom link.\par
                 using ComScope<ITextRange> range = new(null);
                 textDocument.Value->Range(start, start + length, range).ThrowOnFailure();
                 transform?.Invoke((ITextRange*)range);
-                using BSTR text = new();
+                using BSTR text = default;
                 range.Value->GetText(&text).ThrowOnFailure();
                 return text.ToString();
             }

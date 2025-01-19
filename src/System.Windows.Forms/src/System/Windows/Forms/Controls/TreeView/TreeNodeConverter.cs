@@ -10,7 +10,7 @@ namespace System.Windows.Forms;
 
 /// <summary>
 ///  TreeNodeConverter is a class that can be used to convert
-///  TreeNode objects from one data type to another.  Access this
+///  TreeNode objects from one data type to another. Access this
 ///  class through the TypeDescriptor.
 /// </summary>
 public class TreeNodeConverter : TypeConverter
@@ -30,10 +30,10 @@ public class TreeNodeConverter : TypeConverter
     }
 
     /// <summary>
-    ///  Converts the given object to another type.  The most common types to convert
-    ///  are to and from a string object.  The default implementation will make a call
+    ///  Converts the given object to another type. The most common types to convert
+    ///  are to and from a string object. The default implementation will make a call
     ///  to ToString on the object if the object is valid and if the destination
-    ///  type is string.  If this cannot convert to the destination type, this will
+    ///  type is string. If this cannot convert to the destination type, this will
     ///  throw a NotSupportedException.
     /// </summary>
     public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
@@ -49,56 +49,56 @@ public class TreeNodeConverter : TypeConverter
             {
                 if (node.Nodes.Count == 0)
                 {
-                    info = typeof(TreeNode).GetConstructor(new Type[] { typeof(string) });
-                    args = new object[] { node.Text };
+                    info = typeof(TreeNode).GetConstructor([typeof(string)]);
+                    args = [node.Text];
                 }
                 else
                 {
-                    info = typeof(TreeNode).GetConstructor(new Type[] { typeof(string), typeof(TreeNode[]) });
+                    info = typeof(TreeNode).GetConstructor([typeof(string), typeof(TreeNode[])]);
 
                     TreeNode[] nodesArray = new TreeNode[node.Nodes.Count];
                     node.Nodes.CopyTo(nodesArray, 0);
 
-                    args = new object[] { node.Text, nodesArray };
+                    args = [node.Text, nodesArray];
                 }
             }
             else
             {
                 if (node.Nodes.Count == 0)
                 {
-                    info = typeof(TreeNode).GetConstructor(new Type[]
-                    {
+                    info = typeof(TreeNode).GetConstructor(
+                    [
                         typeof(string),
                         typeof(int),
                         typeof(int)
-                    });
-                    args = new object[]
-                    {
+                    ]);
+                    args =
+                    [
                         node.Text,
                         node.ImageIndex,
                         node.SelectedImageIndex
-                    };
+                    ];
                 }
                 else
                 {
-                    info = typeof(TreeNode).GetConstructor(new Type[]
-                    {
+                    info = typeof(TreeNode).GetConstructor(
+                    [
                         typeof(string),
                         typeof(int),
                         typeof(int),
                         typeof(TreeNode[])
-                    });
+                    ]);
 
                     TreeNode[] nodesArray = new TreeNode[node.Nodes.Count];
                     node.Nodes.CopyTo(nodesArray, 0);
 
-                    args = new object[]
-                    {
+                    args =
+                    [
                         node.Text,
                         node.ImageIndex,
                         node.SelectedImageIndex,
                         nodesArray
-                    };
+                    ];
                 }
             }
 

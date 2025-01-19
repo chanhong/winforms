@@ -3,13 +3,13 @@
 
 #nullable enable
 
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Drawing;
 using System.Drawing.Design;
 
-namespace WinformsControlsTest;
+namespace WinFormsControlsTest;
 
+[DesignerCategory("Default")]
 public partial class Dialogs : Form
 {
     private readonly ToolStripButton _btnOpen;
@@ -18,7 +18,8 @@ public partial class Dialogs : Form
     {
         InitializeComponent();
 
-        // expose ClientGuid to be configurable in the property grid by overriding the metadata, but only for these specific instance of the dialogs, not in general
+        // expose ClientGuid to be configurable in the property grid by overriding the metadata,
+        // but only for these specific instance of the dialogs, not in general
         TypeDescriptor.AddProvider(new AssociatedMetadataTypeTypeDescriptionProvider(openFileDialog1.GetType(), typeof(ExposedClientGuidMetadata)), openFileDialog1);
         TypeDescriptor.AddProvider(new AssociatedMetadataTypeTypeDescriptionProvider(saveFileDialog1.GetType(), typeof(ExposedClientGuidMetadata)), saveFileDialog1);
         TypeDescriptor.AddProvider(new AssociatedMetadataTypeTypeDescriptionProvider(folderBrowserDialog1.GetType(), typeof(ExposedClientGuidMetadata)), folderBrowserDialog1);
@@ -31,6 +32,13 @@ public partial class Dialogs : Form
 
         _btnOpen.Click += (s, e) =>
         {
+            if (propertyGrid1.SelectedObject is OpenFileDialog openFileDialog)
+            {
+                openFileDialog.ShowDialog(this);
+                MessageBox.Show(string.Join(',', openFileDialog.FileNames), "File Names");
+                return;
+            }
+
             if (propertyGrid1.SelectedObject is CommonDialog dialog)
             {
                 dialog.ShowDialog(this);
@@ -76,11 +84,8 @@ public partial class Dialogs : Form
         DisposeIfNeeded();
         propertyGrid1.SelectedObject = null;
 
-        Type? typeCustomColorDialog = typeof(ColorEditor).Assembly.GetTypes().SingleOrDefault(t => t.Name == "CustomColorDialog");
-        if (typeCustomColorDialog is null)
-        {
-            throw new Exception("Unable to locate 'CustomColorDialog' type.");
-        }
+        Type? typeCustomColorDialog = typeof(ColorEditor).Assembly.GetTypes().SingleOrDefault(t => t.Name == "CustomColorDialog")
+            ?? throw new InvalidOperationException("Unable to locate 'CustomColorDialog' type.");
 
         using ColorDialog dialog = (ColorDialog)Activator.CreateInstance(typeCustomColorDialog)!;
         dialog.ShowDialog(this);
@@ -115,7 +120,7 @@ public partial class Dialogs : Form
         DisposeIfNeeded();
         propertyGrid1.SelectedObject = null;
 
-        using ThreadExceptionDialog dialog = new(new Exception("Really long exception description string, because we want to see if it properly wraps around or is truncated."));
+        using ThreadExceptionDialog dialog = new(new InvalidOperationException("Really long exception description string, because we want to see if it properly wraps around or is truncated."));
         dialog.ShowDialog(this);
     }
 

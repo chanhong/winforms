@@ -10,6 +10,7 @@ namespace System.Windows.Forms.ComponentModel.Com2Interop;
 internal partial class Com2IPerPropertyBrowsingHandler
 {
     // This exists for perf reasons. We delay doing this until we are actually asked for the array of values.
+    [RequiresUnreferencedCode(ComNativeDescriptor.ComTypeDescriptorsMessage + " Uses Com2IPerPropertyBrowsingHandler which is not trim-compatible.")]
     private unsafe class Com2IPerPropertyBrowsingEnum : Com2Enum
     {
         private readonly string?[] _names;
@@ -64,7 +65,7 @@ internal partial class Com2IPerPropertyBrowsingHandler
 
                 if (hr.Failed)
                 {
-                    PopulateArrays(Array.Empty<string>(), Array.Empty<object>());
+                    PopulateArrays([], []);
                     return;
                 }
 
@@ -88,7 +89,7 @@ internal partial class Com2IPerPropertyBrowsingHandler
 
                 if (targetType is null)
                 {
-                    PopulateArrays(Array.Empty<string>(), Array.Empty<object>());
+                    PopulateArrays([], []);
                     return;
                 }
 
@@ -133,8 +134,8 @@ internal partial class Com2IPerPropertyBrowsingHandler
 
                     if (itemCount > 0)
                     {
-                        // Shorten the arrays to ignore the failed ones.  This isn't terribly
-                        // efficient but shouldn't happen very often.  It's rare for these to fail.
+                        // Shorten the arrays to ignore the failed ones. This isn't terribly
+                        // efficient but shouldn't happen very often. It's rare for these to fail.
                         Array.Copy(_names, i, _names, i + 1, itemCount);
                         Array.Copy(valueItems, i, valueItems, i + 1, itemCount);
                     }
@@ -147,7 +148,7 @@ internal partial class Com2IPerPropertyBrowsingHandler
             }
             catch (Exception ex)
             {
-                PopulateArrays(Array.Empty<string>(), Array.Empty<object>());
+                PopulateArrays([], []);
                 Debug.Fail($"Failed to build IPerPropertyBrowsing editor. {ex.GetType().Name}, {ex.Message}");
             }
         }

@@ -87,21 +87,23 @@ public partial class GroupBox : Control
         {
             SourceGenerated.EnumValidator.Validate(value);
 
-            if (GetAutoSizeMode() != value)
+            if (GetAutoSizeMode() == value)
             {
-                SetAutoSizeMode(value);
-                if (ParentInternal is not null)
-                {
-                    // DefaultLayout does not keep anchor information until it needs to.  When
-                    // AutoSize became a common property, we could no longer blindly call into
-                    // DefaultLayout, so now we do a special InitLayout just for DefaultLayout.
-                    if (ParentInternal.LayoutEngine == DefaultLayout.Instance)
-                    {
-                        ParentInternal.LayoutEngine.InitLayout(this, BoundsSpecified.Size);
-                    }
+                return;
+            }
 
-                    LayoutTransaction.DoLayout(ParentInternal, this, PropertyNames.AutoSize);
+            SetAutoSizeMode(value);
+            if (ParentInternal is not null)
+            {
+                // DefaultLayout does not keep anchor information until it needs to. When
+                // AutoSize became a common property, we could no longer blindly call into
+                // DefaultLayout, so now we do a special InitLayout just for DefaultLayout.
+                if (ParentInternal.LayoutEngine == DefaultLayout.Instance)
+                {
+                    ParentInternal.LayoutEngine.InitLayout(this, BoundsSpecified.Size);
                 }
+
+                LayoutTransaction.DoLayout(ParentInternal, this, PropertyNames.AutoSize);
             }
         }
     }
@@ -180,30 +182,32 @@ public partial class GroupBox : Control
             // valid values are 0x0 to 0x3
             SourceGenerated.EnumValidator.Validate(value);
 
-            if (_flatStyle != value)
+            if (_flatStyle == value)
             {
-                bool originalOwnerDraw = OwnerDraw;
-                _flatStyle = value;
+                return;
+            }
 
-                // In CreateParams, we pick our class style based on OwnerDraw
-                // if this has changed we need to recreate
-                bool needRecreate = (OwnerDraw != originalOwnerDraw);
+            bool originalOwnerDraw = OwnerDraw;
+            _flatStyle = value;
 
-                SetStyle(ControlStyles.ContainerControl, true);
+            // In CreateParams, we pick our class style based on OwnerDraw
+            // if this has changed we need to recreate
+            bool needRecreate = (OwnerDraw != originalOwnerDraw);
 
-                SetStyle(ControlStyles.SupportsTransparentBackColor |
-                         ControlStyles.UserPaint |
-                         ControlStyles.ResizeRedraw |
-                         ControlStyles.UserMouse, OwnerDraw);
+            SetStyle(ControlStyles.ContainerControl, true);
 
-                if (needRecreate)
-                {
-                    RecreateHandle();
-                }
-                else
-                {
-                    Refresh();
-                }
+            SetStyle(ControlStyles.SupportsTransparentBackColor |
+                     ControlStyles.UserPaint |
+                     ControlStyles.ResizeRedraw |
+                     ControlStyles.UserMouse, OwnerDraw);
+
+            if (needRecreate)
+            {
+                RecreateHandle();
+            }
+            else
+            {
+                Refresh();
             }
         }
     }
@@ -245,7 +249,7 @@ public partial class GroupBox : Control
             {
                 if (suspendRedraw && IsHandleCreated)
                 {
-                    PInvoke.SendMessage(this, PInvoke.WM_SETREDRAW, (WPARAM)(BOOL)false);
+                    PInvokeCore.SendMessage(this, PInvokeCore.WM_SETREDRAW, (WPARAM)(BOOL)false);
                 }
 
                 base.Text = value;
@@ -254,7 +258,7 @@ public partial class GroupBox : Control
             {
                 if (suspendRedraw && IsHandleCreated)
                 {
-                    PInvoke.SendMessage(this, PInvoke.WM_SETREDRAW, (WPARAM)(BOOL)true);
+                    PInvokeCore.SendMessage(this, PInvokeCore.WM_SETREDRAW, (WPARAM)(BOOL)true);
                 }
             }
 
@@ -270,8 +274,8 @@ public partial class GroupBox : Control
     [SRDescription(nameof(SR.UseCompatibleTextRenderingDescr))]
     public bool UseCompatibleTextRendering
     {
-        get => UseCompatibleTextRenderingInt;
-        set => UseCompatibleTextRenderingInt = value;
+        get => UseCompatibleTextRenderingInternal;
+        set => UseCompatibleTextRenderingInternal = value;
     }
 
     /// <summary>
@@ -420,15 +424,17 @@ public partial class GroupBox : Control
             // We only pass in the text color if it is explicitly set, else we let the renderer use the color
             // specified by the theme. This is a temporary workaround till we find a good solution for the
             // "default theme color" issue.
-            if (ShouldSerializeForeColor() || Enabled == false)
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+            if (ShouldSerializeForeColor() || Application.IsDarkModeEnabled || !Enabled)
             {
-                Color textcolor = Enabled ? ForeColor : TextRenderer.DisabledTextColor(BackColor);
+                Color textColor = Enabled ? ForeColor : TextRenderer.DisabledTextColor(BackColor);
+
                 GroupBoxRenderer.DrawGroupBox(
                     e,
                     new Rectangle(0, 0, Width, Height),
                     Text,
                     Font,
-                    textcolor,
+                    textColor,
                     textFlags,
                     gbState);
             }
@@ -442,6 +448,7 @@ public partial class GroupBox : Control
                     textFlags,
                     gbState);
             }
+#pragma warning restore WFO5001
         }
 
         base.OnPaint(e); // raise paint event
@@ -504,7 +511,7 @@ public partial class GroupBox : Control
                 flags |= DRAW_TEXT_FORMAT.DT_RIGHT;
             }
 
-            using var hfont = GdiCache.GetHFONT(Font);
+            using var hfont = GdiCache.GetHFONTScope(Font);
             textSize = hdc.HDC.MeasureText(Text, hfont, new Size(textRectangle.Width, int.MaxValue), (TextFormatFlags)flags);
 
             if (Enabled)
@@ -557,7 +564,7 @@ public partial class GroupBox : Control
             else
             {
                 using DeviceContextHdcScope hdc = new(e);
-                using PInvoke.CreatePenScope hpen = new(boxColor);
+                using CreatePenScope hpen = new(boxColor);
                 hdc.DrawLines(hpen, lines);
             }
         }
@@ -582,9 +589,9 @@ public partial class GroupBox : Control
             ];
 
             using DeviceContextHdcScope hdc = new(e);
-            using PInvoke.CreatePenScope hpenLight = new(ControlPaint.Light(backColor, 1.0f));
+            using CreatePenScope hpenLight = new(ControlPaint.Light(backColor, 1.0f));
             hdc.DrawLines(hpenLight, lightLines);
-            using PInvoke.CreatePenScope hpenDark = new(ControlPaint.Dark(backColor, 0f));
+            using CreatePenScope hpenDark = new(ControlPaint.Dark(backColor, 0f));
             hdc.DrawLines(hpenDark, darkLines);
         }
     }
@@ -653,7 +660,7 @@ public partial class GroupBox : Control
             return;
         }
 
-        PInvoke.GetClientRect(this, out RECT rect);
+        PInvokeCore.GetClientRect(this, out RECT rect);
         Color backColor = BackColor;
 
         if (backColor.HasTransparency())
@@ -664,7 +671,7 @@ public partial class GroupBox : Control
         }
         else
         {
-            using var hbrush = new PInvoke.CreateBrushScope(backColor);
+            using var hbrush = new CreateBrushScope(backColor);
             PInvoke.FillRect((HDC)m.WParamInternal, rect, hbrush);
         }
 
@@ -681,11 +688,11 @@ public partial class GroupBox : Control
 
         switch (m.MsgInternal)
         {
-            case PInvoke.WM_ERASEBKGND:
-            case PInvoke.WM_PRINTCLIENT:
+            case PInvokeCore.WM_ERASEBKGND:
+            case PInvokeCore.WM_PRINTCLIENT:
                 WmEraseBkgnd(ref m);
                 break;
-            case PInvoke.WM_GETOBJECT:
+            case PInvokeCore.WM_GETOBJECT:
                 base.WndProc(ref m);
 
                 // Force MSAA to always treat a group box as a custom window. This ensures its child controls

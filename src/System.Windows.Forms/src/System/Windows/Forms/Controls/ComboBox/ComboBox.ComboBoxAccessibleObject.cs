@@ -41,7 +41,7 @@ public partial class ComboBox
         internal override bool IsPatternSupported(UIA_PATTERN_ID patternId)
             => patternId == UIA_PATTERN_ID.UIA_ExpandCollapsePatternId && this.TryGetOwnerAs(out ComboBox? owner)
                 ? owner.DropDownStyle != ComboBoxStyle.Simple
-                : patternId == UIA_PATTERN_ID.UIA_ValuePatternId ? true : base.IsPatternSupported(patternId);
+                : patternId == UIA_PATTERN_ID.UIA_ValuePatternId || base.IsPatternSupported(patternId);
 
         internal override void Expand() => ComboBoxDefaultAction(true);
 
@@ -52,28 +52,8 @@ public partial class ComboBox
                 ? ExpandCollapseState.ExpandCollapseState_Expanded
                 : ExpandCollapseState.ExpandCollapseState_Collapsed;
 
-        internal override string? get_accNameInternal(object childID)
-        {
-            ValidateChildID(ref childID);
-
-            if ((int)childID == COMBOBOX_ACC_ITEM_INDEX)
-            {
-                return Name;
-            }
-
-            return base.get_accNameInternal(childID);
-        }
-
-        internal override string? get_accKeyboardShortcutInternal(object childID)
-        {
-            ValidateChildID(ref childID);
-            if ((int)childID == COMBOBOX_ACC_ITEM_INDEX)
-            {
-                return KeyboardShortcut;
-            }
-
-            return base.get_accKeyboardShortcutInternal(childID);
-        }
+        internal override bool IsValidSelfChildIDAdditionalCheck(VARIANT childId) =>
+            childId.vt is VARENUM.VT_I4 or VARENUM.VT_INT && childId.data.intVal == COMBOBOX_ACC_ITEM_INDEX;
 
         /// <summary>
         ///  Gets the collection of item accessible objects.
@@ -127,6 +107,8 @@ public partial class ComboBox
             }
         }
 
+        internal override bool CanGetDefaultActionInternal => false;
+
         internal override VARIANT GetPropertyValue(UIA_PROPERTY_ID propertyID) =>
             propertyID switch
             {
@@ -148,7 +130,7 @@ public partial class ComboBox
                 return;
             }
 
-            IReadOnlyList<Entry> entries = owner.Items.InnerList;
+            List<Entry> entries = owner.Items.InnerList;
             Debug.Assert(index < entries.Count);
 
             Entry item = entries[index];

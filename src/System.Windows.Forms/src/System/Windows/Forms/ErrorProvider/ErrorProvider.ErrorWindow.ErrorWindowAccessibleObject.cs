@@ -3,7 +3,6 @@
 
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
-using static Interop;
 
 namespace System.Windows.Forms;
 
@@ -51,6 +50,8 @@ public partial class ErrorProvider
 
                 return base.GetChild(index);
             }
+
+            private protected override bool IsInternal => true;
 
             public override int GetChildCount() => _owner.ControlItems.Count;
 
@@ -101,21 +102,23 @@ public partial class ErrorProvider
             [AllowNull]
             public override string Name
             {
-                get => string.IsNullOrEmpty(base.Name) ? SR.ErrorProviderDefaultAccessibleName : base.Name;
-                set => base.Name = value;
+                get
+                {
+                    string? name = base.Name;
+                    return string.IsNullOrEmpty(name) ? SR.ErrorProviderDefaultAccessibleName : name;
+                }
             }
+
+            internal override bool CanGetNameInternal => false;
 
             public override AccessibleRole Role => AccessibleRole.Grouping;
 
-            // We need to provide a unique ID. Others are implementing this in the same manner. First item is static - 0x2a (RuntimeIDFirstItem).
-            // Second item can be anything, but it's good to supply HWND.
-            internal override int[] RuntimeId
-                => new int[]
-                {
-                    RuntimeIDFirstItem,
-                    PARAM.ToInt(_owner.Handle),
-                    _owner.GetHashCode()
-                };
+            internal override int[] RuntimeId =>
+            [
+                RuntimeIDFirstItem,
+                (int)_owner.Handle,
+                _owner.GetHashCode()
+            ];
 
             public override AccessibleStates State => AccessibleStates.ReadOnly;
         }

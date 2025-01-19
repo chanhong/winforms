@@ -6,7 +6,6 @@ using Windows.Win32.System.Com;
 using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Accessibility;
 using static System.Windows.Forms.ComboBox.ObjectCollection;
-using static Interop;
 
 namespace System.Windows.Forms;
 
@@ -39,7 +38,7 @@ public partial class ComboBox
                 var listHandle = _owningComboBox.GetListHandle();
                 RECT itemRect = default;
 
-                int result = (int)PInvoke.SendMessage(
+                int result = (int)PInvokeCore.SendMessage(
                     listHandle,
                     PInvoke.LB_GETITEMRECT,
                     (WPARAM)currentIndex,
@@ -52,13 +51,17 @@ public partial class ComboBox
 
                 // Translate the item rect to screen coordinates
                 RECT translated = itemRect;
-                PInvoke.MapWindowPoints(listHandle, HWND.Null, ref translated);
+                PInvokeCore.MapWindowPoints(listHandle, HWND.Null, ref translated);
                 return translated;
             }
         }
 
-        public override string? DefaultAction
-            => _owningComboBox.ChildListAccessibleObject.SystemIAccessible.TryGetDefaultAction(GetChildId());
+        public override string? DefaultAction => GetDefaultActionInternal().ToNullableStringAndFree();
+
+        internal override BSTR GetDefaultActionInternal() =>
+            _owningComboBox.ChildListAccessibleObject.SystemIAccessible.TryGetDefaultAction(GetChildId());
+
+        private protected override bool IsInternal => true;
 
         internal override IRawElementProviderFragment.Interface? FragmentNavigate(NavigateDirection direction)
         {
@@ -119,40 +122,36 @@ public partial class ComboBox
                 _ => base.GetPropertyValue(propertyID)
             };
 
-        public override string? Help
-            => _owningComboBox.ChildListAccessibleObject.SystemIAccessible.TryGetHelp(GetChildId());
+        public override string? Help => GetHelpInternal().ToNullableStringAndFree();
+
+        internal override BSTR GetHelpInternal() => _owningComboBox.ChildListAccessibleObject.SystemIAccessible.TryGetHelp(GetChildId());
 
         internal override bool IsPatternSupported(UIA_PATTERN_ID patternId)
         {
-            switch (patternId)
+            return patternId switch
             {
-                case UIA_PATTERN_ID.UIA_LegacyIAccessiblePatternId:
-                case UIA_PATTERN_ID.UIA_InvokePatternId:
-                case UIA_PATTERN_ID.UIA_ScrollItemPatternId:
-                case UIA_PATTERN_ID.UIA_SelectionItemPatternId:
-                    return true;
-                default:
-                    return base.IsPatternSupported(patternId);
-            }
+                UIA_PATTERN_ID.UIA_LegacyIAccessiblePatternId
+                    or UIA_PATTERN_ID.UIA_InvokePatternId
+                    or UIA_PATTERN_ID.UIA_ScrollItemPatternId
+                    or UIA_PATTERN_ID.UIA_SelectionItemPatternId => true,
+                _ => base.IsPatternSupported(patternId),
+            };
         }
 
-        public override string? Name
-        {
-            get => _owningComboBox is null ? base.Name : _owningComboBox.GetItemText(_owningItem.Item);
-            set => base.Name = value;
-        }
+        public override string? Name => _owningComboBox is null ? base.Name : _owningComboBox.GetItemText(_owningItem.Item);
+
+        internal override bool CanGetNameInternal => _owningComboBox is null;
 
         public override AccessibleRole Role
             => _owningComboBox.ChildListAccessibleObject.SystemIAccessible.TryGetRole(GetChildId());
 
-        internal override int[] RuntimeId
-            => new int[]
-            {
-                RuntimeIDFirstItem,
-                PARAM.ToInt(_owningComboBox.InternalHandle),
-                _owningComboBox.GetListNativeWindowRuntimeIdPart(),
-                _owningItem.GetHashCode()
-            };
+        internal override int[] RuntimeId =>
+        [
+            RuntimeIDFirstItem,
+            (int)_owningComboBox.InternalHandle,
+            _owningComboBox.GetListNativeWindowRuntimeIdPart(),
+            _owningItem.GetHashCode()
+        ];
 
         public override AccessibleStates State
         {
@@ -183,7 +182,7 @@ public partial class ComboBox
                 return;
             }
 
-            PInvoke.SendMessage(_owningComboBox, PInvoke.CB_SETTOPINDEX, (WPARAM)GetCurrentIndex());
+            PInvokeCore.SendMessage(_owningComboBox, PInvoke.CB_SETTOPINDEX, (WPARAM)GetCurrentIndex());
         }
 
         internal override void SetFocus()

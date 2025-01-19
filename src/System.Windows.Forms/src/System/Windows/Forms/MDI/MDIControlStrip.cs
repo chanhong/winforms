@@ -15,8 +15,6 @@ internal partial class MdiControlStrip : MenuStrip
     private readonly ToolStripMenuItem _close;
     private readonly ToolStripMenuItem _minimize;
     private readonly ToolStripMenuItem _restore;
-    private MenuStrip? _mergedMenu;
-
     private IWin32Window _target;
 
     /// <summary>
@@ -39,12 +37,12 @@ internal partial class MdiControlStrip : MenuStrip
         // However in the event that the target handle changes we have to push the new handle into everyone.
         if (target is Control controlTarget)
         {
-            controlTarget.HandleCreated += new EventHandler(OnTargetWindowHandleRecreated);
-            controlTarget.Disposed += new EventHandler(OnTargetWindowDisposed);
+            controlTarget.HandleCreated += OnTargetWindowHandleRecreated;
+            controlTarget.Disposed += OnTargetWindowDisposed;
         }
 
         // add in opposite order to how you want it merged
-        Items.AddRange(new ToolStripItem[] { _minimize, _restore, _close, _system });
+        Items.AddRange(_minimize, _restore, _close, _system);
 
         SuspendLayout();
         foreach (ToolStripItem item in Items)
@@ -64,42 +62,25 @@ internal partial class MdiControlStrip : MenuStrip
         _system.Image = GetTargetWindowIcon();
         _system.Visible = GetTargetWindowIconVisibility();
         _system.Alignment = ToolStripItemAlignment.Left;
-        _system.DropDownOpening += new EventHandler(OnSystemMenuDropDownOpening);
+        _system.DropDownOpening += OnSystemMenuDropDownOpening;
         _system.ImageScaling = ToolStripItemImageScaling.None;
         _system.DoubleClickEnabled = true;
-        _system.DoubleClick += new EventHandler(OnSystemMenuDoubleClick);
+        _system.DoubleClick += OnSystemMenuDoubleClick;
         _system.Padding = Padding.Empty;
         _system.ShortcutKeys = Keys.Alt | Keys.OemMinus;
         ResumeLayout(false);
     }
 
-    public ToolStripMenuItem Close
-    {
-        get { return _close; }
-    }
+    public ToolStripMenuItem Close => _close;
 
-    internal MenuStrip? MergedMenu
-    {
-        get
-        {
-            return _mergedMenu;
-        }
-        set
-        {
-            _mergedMenu = value;
-        }
-    }
+    internal MenuStrip? MergedMenu { get; set; }
 
-    private Image GetTargetWindowIcon()
+    private Bitmap GetTargetWindowIcon()
     {
-        HICON hIcon = (HICON)PInvoke.SendMessage(GetSafeHandle(_target), PInvoke.WM_GETICON, (WPARAM)PInvoke.ICON_SMALL);
+        HICON hIcon = (HICON)PInvokeCore.SendMessage(GetSafeHandle(_target), PInvokeCore.WM_GETICON, (WPARAM)PInvoke.ICON_SMALL);
         Icon icon = !hIcon.IsNull ? Icon.FromHandle(hIcon) : Form.DefaultIcon;
-        Icon smallIcon = new Icon(icon, SystemInformation.SmallIconSize);
-
-        Image systemIcon = smallIcon.ToBitmap();
-        smallIcon.Dispose();
-
-        return systemIcon;
+        using Icon smallIcon = new(icon, SystemInformation.SmallIconSize);
+        return smallIcon.ToBitmap();
     }
 
     private bool GetTargetWindowIconVisibility() => _target is not Form formTarget || formTarget.ShowIcon;
@@ -113,7 +94,7 @@ internal partial class MdiControlStrip : MenuStrip
     protected internal override void OnItemAdded(ToolStripItemEventArgs e)
     {
         base.OnItemAdded(e);
-        Debug.Assert(Items.Count <= 4, "Too many items in the MDIControlStrip.  How did we get into this situation?");
+        Debug.Assert(Items.Count <= 4, "Too many items in the MDIControlStrip. How did we get into this situation?");
     }
 
     private void OnTargetWindowDisposed(object? sender, EventArgs e)
@@ -184,8 +165,8 @@ internal partial class MdiControlStrip : MenuStrip
         {
             if (_target is Control controlTarget)
             {
-                controlTarget.HandleCreated -= new EventHandler(OnTargetWindowHandleRecreated);
-                controlTarget.Disposed -= new EventHandler(OnTargetWindowDisposed);
+                controlTarget.HandleCreated -= OnTargetWindowHandleRecreated;
+                controlTarget.Disposed -= OnTargetWindowDisposed;
             }
 
             _target = null!;

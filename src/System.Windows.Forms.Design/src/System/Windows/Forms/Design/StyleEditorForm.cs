@@ -26,9 +26,9 @@ internal partial class StyleCollectionEditor
         private bool _performEnsure;
 
         // ListView subitem indices.
-        private const int s_memberIndex = 0;
-        private const int s_typeIndex = 1;
-        private const int s_valueIndex = 2;
+        private const int MemberIndex = 0;
+        private const int TypeIndex = 1;
+        private const int ValueIndex = 2;
 
         private readonly PropertyDescriptor _rowStyleProp;
         private readonly PropertyDescriptor _colStyleProp;
@@ -150,7 +150,7 @@ internal partial class StyleCollectionEditor
         /// </summary>
         private void InitializeComponent()
         {
-            ComponentResourceManager resources = new ComponentResourceManager(typeof(StyleCollectionEditor));
+            ComponentResourceManager resources = new(typeof(StyleCollectionEditor));
             _addRemoveInsertTableLayoutPanel = new TableLayoutPanel();
             _addButton = new Button();
             _removeButton = new Button();
@@ -303,12 +303,12 @@ internal partial class StyleCollectionEditor
 
             // columnsAndRowsListView
             resources.ApplyResources(_columnsAndRowsListView, "columnsAndRowsListView");
-            _columnsAndRowsListView.Columns.AddRange(new ColumnHeader[]
-            {
+            _columnsAndRowsListView.Columns.AddRange(
+            [
                  _membersColumnHeader,
                  _sizeTypeColumnHeader,
                  _valueColumnHeader
-            });
+            ]);
             _columnsAndRowsListView.FullRowSelect = true;
             _columnsAndRowsListView.HeaderStyle = ColumnHeaderStyle.Nonclickable;
             _columnsAndRowsListView.HideSelection = false;
@@ -348,19 +348,11 @@ internal partial class StyleCollectionEditor
             resources.ApplyResources(_infoPictureBox1, "infoPictureBox1");
             _infoPictureBox1.Name = "infoPictureBox1";
             _infoPictureBox1.TabStop = false;
-            if (DpiHelper.IsScalingRequired)
-            {
-                Bitmap bitmap = _infoPictureBox1.Image as Bitmap;
-                DpiHelper.ScaleBitmapLogicalToDevice(ref bitmap);
-                _infoPictureBox1.Image = bitmap;
-                bitmap = _infoPictureBox2.Image as Bitmap;
-                DpiHelper.ScaleBitmapLogicalToDevice(ref bitmap);
-                _infoPictureBox2.Image = bitmap;
-
-                _scaledUpDownLeftMargin = DpiHelper.LogicalToDeviceUnitsX(UpDownLeftMargin);
-                _scaledUpDownTopMargin = DpiHelper.LogicalToDeviceUnitsY(UpDownTopMargin);
-                _scaledLabelRightMargin = DpiHelper.LogicalToDeviceUnitsX(LabelRightMargin);
-            }
+            _infoPictureBox1.Image = ScaleHelper.ScaleToDpi(_infoPictureBox1.Image as Bitmap, ScaleHelper.InitialSystemDpi);
+            _infoPictureBox2.Image = ScaleHelper.ScaleToDpi(_infoPictureBox2.Image as Bitmap, ScaleHelper.InitialSystemDpi);
+            _scaledUpDownLeftMargin = ScaleHelper.ScaleToInitialSystemDpi(UpDownLeftMargin);
+            _scaledUpDownTopMargin = ScaleHelper.ScaleToInitialSystemDpi(UpDownTopMargin);
+            _scaledLabelRightMargin = ScaleHelper.ScaleToInitialSystemDpi(LabelRightMargin);
 
             // helperLinkLabel1
             resources.ApplyResources(_helperLinkLabel1, "helperLinkLabel1");
@@ -404,13 +396,8 @@ internal partial class StyleCollectionEditor
 
             // absoluteNumericUpDown
             resources.ApplyResources(_absoluteNumericUpDown, "absoluteNumericUpDown");
-            _absoluteNumericUpDown.Maximum = new decimal(new int[]
-            {
-                99999,
-                0,
-                0,
-                0
-            });
+            _absoluteNumericUpDown.Maximum = new decimal(99999u);
+
             _absoluteNumericUpDown.Name = "absoluteNumericUpDown";
             _absoluteNumericUpDown.Margin = new Padding(_scaledUpDownLeftMargin, _scaledUpDownTopMargin, 0, 0);
             _absoluteNumericUpDown.AutoScaleMode = AutoScaleMode.Font;
@@ -443,13 +430,7 @@ internal partial class StyleCollectionEditor
             // percentNumericUpDown
             resources.ApplyResources(_percentNumericUpDown, "percentNumericUpDown");
             _percentNumericUpDown.DecimalPlaces = 2;
-            _percentNumericUpDown.Maximum = new decimal(new int[]
-            {
-                9999,
-                0,
-                0,
-                0
-            });
+            _percentNumericUpDown.Maximum = new decimal(9999u);
             _percentNumericUpDown.Name = "percentNumericUpDown";
             _percentNumericUpDown.Margin = new Padding(_scaledUpDownLeftMargin, _scaledUpDownTopMargin, 0, 0);
             _percentNumericUpDown.AutoScaleMode = AutoScaleMode.Font;
@@ -616,7 +597,7 @@ internal partial class StyleCollectionEditor
                 }
 
                 // We add 1, since we want the Member to read <Column|Row>1,2,3...
-                _columnsAndRowsListView.Items.Add(new ListViewItem(new string[] { baseName + (i + 1).ToString(CultureInfo.InvariantCulture), sizeType, sizeValue }));
+                _columnsAndRowsListView.Items.Add(new ListViewItem([baseName + (i + 1).ToString(CultureInfo.InvariantCulture), sizeType, sizeValue]));
             }
 
             if (styleCount > 0)
@@ -630,9 +611,9 @@ internal partial class StyleCollectionEditor
 
         private void UpdateListViewItem(int index, string member, string type, string value)
         {
-            _columnsAndRowsListView.Items[index].SubItems[s_memberIndex].Text = member;
-            _columnsAndRowsListView.Items[index].SubItems[s_typeIndex].Text = type;
-            _columnsAndRowsListView.Items[index].SubItems[s_valueIndex].Text = value;
+            _columnsAndRowsListView.Items[index].SubItems[MemberIndex].Text = member;
+            _columnsAndRowsListView.Items[index].SubItems[TypeIndex].Text = type;
+            _columnsAndRowsListView.Items[index].SubItems[ValueIndex].Text = value;
         }
 
         private void UpdateListViewMember()
@@ -640,7 +621,7 @@ internal partial class StyleCollectionEditor
             // let's do a for loop rather than for-each, don't have to do the object creation
             for (int i = 0; i < _columnsAndRowsListView.Items.Count; ++i)
             {
-                _columnsAndRowsListView.Items[i].SubItems[s_memberIndex].Text = (_isRowCollection ? "Row" : "Column") + (i + 1).ToString(CultureInfo.InvariantCulture);
+                _columnsAndRowsListView.Items[i].SubItems[MemberIndex].Text = (_isRowCollection ? "Row" : "Column") + (i + 1).ToString(CultureInfo.InvariantCulture);
             }
         }
 
@@ -671,7 +652,7 @@ internal partial class StyleCollectionEditor
 
             _sizeTypeGroupBox.Enabled = true;
             _insertButton.Enabled = true;
-            _removeButton.Enabled = coll.Count == _columnsAndRowsListView.Items.Count ? false : _columnsAndRowsListView.Items.Count > 1;
+            _removeButton.Enabled = coll.Count != _columnsAndRowsListView.Items.Count && _columnsAndRowsListView.Items.Count > 1;
 
             if (coll.Count == 1)
             {
@@ -754,10 +735,10 @@ internal partial class StyleCollectionEditor
             // Unhook the event while we reset.
             // If we didn't the setting the value would cause OnValueChanged below to get called.
             // If we then go ahead and update the listView, which we don't want in the reset case.
-            _absoluteNumericUpDown.ValueChanged -= new EventHandler(OnValueChanged);
+            _absoluteNumericUpDown.ValueChanged -= OnValueChanged;
             _absoluteNumericUpDown.Enabled = false;
-            _absoluteNumericUpDown.Value = DesignerUtils.MINIMUMSTYLESIZE;
-            _absoluteNumericUpDown.ValueChanged += new EventHandler(OnValueChanged);
+            _absoluteNumericUpDown.Value = DesignerUtils.s_minimumStyleSize;
+            _absoluteNumericUpDown.ValueChanged += OnValueChanged;
         }
 
         private void ResetPercent()
@@ -765,10 +746,10 @@ internal partial class StyleCollectionEditor
             // Unhook the event while we reset.
             // If we didn't the setting the value would cause OnValueChanged below to get called.
             // If we then go ahead and update the listView, which we don't want in the reset case.
-            _percentNumericUpDown.ValueChanged -= new EventHandler(OnValueChanged);
+            _percentNumericUpDown.ValueChanged -= OnValueChanged;
             _percentNumericUpDown.Enabled = false;
-            _percentNumericUpDown.Value = DesignerUtils.MINIMUMSTYLEPERCENT;
-            _percentNumericUpDown.ValueChanged += new EventHandler(OnValueChanged);
+            _percentNumericUpDown.Value = DesignerUtils.s_minimumStylePercent;
+            _percentNumericUpDown.ValueChanged += OnValueChanged;
         }
 
         private void UpdateGroupBox(SizeType type, float value)
@@ -785,7 +766,7 @@ internal partial class StyleCollectionEditor
 
                     catch (ArgumentOutOfRangeException)
                     {
-                        _absoluteNumericUpDown.Value = DesignerUtils.MINIMUMSTYLESIZE;
+                        _absoluteNumericUpDown.Value = DesignerUtils.s_minimumStyleSize;
                     }
 
                     ResetPercent();
@@ -800,7 +781,7 @@ internal partial class StyleCollectionEditor
 
                     catch (ArgumentOutOfRangeException)
                     {
-                        _percentNumericUpDown.Value = DesignerUtils.MINIMUMSTYLEPERCENT;
+                        _percentNumericUpDown.Value = DesignerUtils.s_minimumStylePercent;
                     }
 
                     ResetAbsolute();
@@ -837,33 +818,30 @@ internal partial class StyleCollectionEditor
         /// </summary>
         private void AddItem(int index)
         {
-            string member = null;
             _tableLayoutPanelDesigner.InsertRowCol(_isRowCollection, index);
 
-            member = _isRowCollection
-                ? "Row" + _tableLayoutPanel.RowStyles.Count.ToString(CultureInfo.InvariantCulture)
-                : "Column" + _tableLayoutPanel.RowStyles.Count.ToString(CultureInfo.InvariantCulture);
+            string member = _isRowCollection
+                ? $"Row{_tableLayoutPanel.RowStyles.Count}"
+                : $"Column{_tableLayoutPanel.RowStyles.Count}";
 
-            if (member is not null)
-            {
-                _columnsAndRowsListView.Items.Insert(
-                    index,
-                    new ListViewItem(new string[]
-                    {
-                        member, SizeType.Absolute.ToString(),
-                        DesignerUtils.MINIMUMSTYLESIZE.ToString(CultureInfo.InvariantCulture)
-                     }));
+            _columnsAndRowsListView.Items.Insert(
+                index,
+                new ListViewItem(
+                [
+                    member, SizeType.Absolute.ToString(),
+                    DesignerUtils.s_minimumStyleSize.ToString(CultureInfo.InvariantCulture)
+                ]));
 
-                // If we inserted at the beginning, then we have to change the Member of string of all the existing listView items,
-                // so we might as well just update the entire listView.
-                UpdateListViewMember();
-                ClearAndSetSelectionAndFocus(index);
-            }
+            // If we inserted at the beginning, then we have to change the Member of string of all the existing listView items,
+            // so we might as well just update the entire listView.
+            UpdateListViewMember();
+            ClearAndSetSelectionAndFocus(index);
         }
 
         private void OnAddButtonClick(object sender, EventArgs e)
         {
             _isDialogDirty = true;
+
             // Add an item to the end of the listView
             AddItem(_columnsAndRowsListView.Items.Count);
         }
@@ -941,7 +919,7 @@ internal partial class StyleCollectionEditor
                     _tableLayoutPanel.ColumnStyles[index].Width = value;
                 }
 
-                UpdateListViewItem(index, _columnsAndRowsListView.Items[index].SubItems[s_memberIndex].Text, type.ToString(), FormatValueString(type, value));
+                UpdateListViewItem(index, _columnsAndRowsListView.Items[index].SubItems[MemberIndex].Text, type.ToString(), FormatValueString(type, value));
             }
         }
 
@@ -1011,7 +989,7 @@ internal partial class StyleCollectionEditor
                 }
             }
 
-            if (total == 100 || total == 0)
+            if (total is 100 or 0)
             {
                 return;
             }
@@ -1086,7 +1064,7 @@ internal partial class StyleCollectionEditor
                         {
                             foreach (object obj in _deleteList)
                             {
-                                List<IComponent> componentList = new();
+                                List<IComponent> componentList = [];
                                 DesignerUtils.GetAssociatedComponents((IComponent)obj, host, componentList);
                                 foreach (IComponent component in componentList)
                                 {

@@ -11,7 +11,6 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms.Layout;
 using System.Windows.Forms.VisualStyles;
 using Windows.Win32.UI.Accessibility;
-using static Interop;
 
 namespace System.Windows.Forms;
 
@@ -36,9 +35,9 @@ public partial class ListBox : ListControl
     /// </summary>
     public const int DefaultItemHeight = 13;
 
-    private static readonly object EVENT_SELECTEDINDEXCHANGED = new();
-    private static readonly object EVENT_DRAWITEM = new();
-    private static readonly object EVENT_MEASUREITEM = new();
+    private static readonly object s_selectedIndexChangedEvent = new();
+    private static readonly object s_drawItemEvent = new();
+    private static readonly object s_measureItemEvent = new();
 
     private SelectedObjectCollection? _selectedItems;
     private SelectedIndexCollection? _selectedIndices;
@@ -90,7 +89,7 @@ public partial class ListBox : ListControl
     private int _itemsCount;
 
     /// <summary>
-    ///  This value stores the array of custom tabstops in the listbox. the array should be populated by
+    ///  This value stores the array of custom tabstops in the listBox. the array should be populated by
     ///  integers in a ascending order.
     /// </summary>
     private IntegerCollection? _customTabOffsets;
@@ -98,59 +97,57 @@ public partial class ListBox : ListControl
     /// <summary>
     ///  Default start position of items in the checked list box
     /// </summary>
-    private const int defaultListItemStartPos = 1;
+    private const int DefaultListItemStartPos = 1;
 
     /// <summary>
     ///  Borders are 1 pixel height.
     /// </summary>
-    private const int defaultListItemBorderHeight = 1;
+    private const int DefaultListItemBorderHeight = 1;
 
     /// <summary>
     ///  Borders are 1 pixel width and a pixel buffer
     /// </summary>
-    private const int defaultListItemPaddingBuffer = 3;
+    private const int DefaultListItemPaddingBuffer = 3;
 
-    internal int scaledListItemStartPosition = defaultListItemStartPos;
-    internal int scaledListItemBordersHeight = 2 * defaultListItemBorderHeight;
-    internal int scaledListItemPaddingBuffer = defaultListItemPaddingBuffer;
+    private protected int _listItemStartPosition = DefaultListItemStartPos;
+    private protected int _listItemBordersHeight = 2 * DefaultListItemBorderHeight;
+    private protected int _listItemPaddingBuffer = DefaultListItemPaddingBuffer;
 
     /// <summary>
     ///  Creates a basic win32 list box with default values for everything.
     /// </summary>
     public ListBox() : base()
     {
-        SetStyle(ControlStyles.UserPaint |
-                 ControlStyles.StandardClick |
-                 ControlStyles.UseTextForAccessibility, false);
+        SetStyle(ControlStyles.UserPaint | ControlStyles.StandardClick | ControlStyles.UseTextForAccessibility, false);
 
-        // this class overrides GetPreferredSizeCore, let Control automatically cache the result
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
+
+        // This class overrides GetPreferredSizeCore, let Control automatically cache the result.
         SetExtendedState(ExtendedStates.UserPreferredSizeCache, true);
 
         SetBounds(0, 0, 120, 96);
-
         _requestedHeight = Height;
-
-        PrepareForDrawing();
     }
 
     protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew)
     {
         base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
-        PrepareForDrawing();
+        ScaleConstants();
     }
 
-    private void PrepareForDrawing()
+    private protected override void InitializeConstantsForInitialDpi(int initialDpi) => ScaleConstants();
+
+    private void ScaleConstants()
     {
         // Scale paddings
-        if (DpiHelper.IsScalingRequirementMet)
-        {
-            scaledListItemStartPosition = LogicalToDeviceUnits(defaultListItemStartPos);
+        _listItemStartPosition = LogicalToDeviceUnits(DefaultListItemStartPos);
 
-            // height include 2 borders ( top and bottom). we are using multiplication by 2 instead of scaling doubled value to get an even number
-            // that might helps us in positioning control in the center for list items.
-            scaledListItemBordersHeight = 2 * LogicalToDeviceUnits(defaultListItemBorderHeight);
-            scaledListItemPaddingBuffer = LogicalToDeviceUnits(defaultListItemPaddingBuffer);
-        }
+        // Height includes 2 borders (top and bottom). Multiplying by 2 instead of scaling twice guarantees an even
+        // number helps in positioning the control in the center for list items.
+        _listItemBordersHeight = 2 * LogicalToDeviceUnits(DefaultListItemBorderHeight);
+        _listItemPaddingBuffer = LogicalToDeviceUnits(DefaultListItemPaddingBuffer);
     }
 
     public override Color BackColor
@@ -202,12 +199,12 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Retrieves the current border style.  Values for this are taken from
+    ///  Retrieves the current border style. Values for this are taken from
     ///  The System.Windows.Forms.BorderStyle enumeration.
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
     [DefaultValue(BorderStyle.Fixed3D)]
-    [DispId(PInvoke.DISPID_BORDERSTYLE)]
+    [DispId(PInvokeCore.DISPID_BORDERSTYLE)]
     [SRDescription(nameof(SR.ListBoxBorderDescr))]
     public BorderStyle BorderStyle
     {
@@ -220,7 +217,7 @@ public partial class ListBox : ListControl
             {
                 _borderStyle = value;
                 RecreateHandle();
-                // Avoid the listbox and textbox behavior in Collection editors
+                // Avoid the listBox and textbox behavior in Collection editors
                 //
                 _integralHeightAdjust = true;
                 try
@@ -261,7 +258,7 @@ public partial class ListBox : ListControl
                 }
                 else if (IsHandleCreated)
                 {
-                    PInvoke.SendMessage(this, PInvoke.LB_SETCOLUMNWIDTH, (WPARAM)_columnWidth);
+                    PInvokeCore.SendMessage(this, PInvoke.LB_SETCOLUMNWIDTH, (WPARAM)_columnWidth);
                 }
             }
         }
@@ -385,8 +382,8 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Retrieves the style of the listbox.  This will indicate if the system
-    ///  draws it, or if the user paints each item manually.  It also indicates
+    ///  Retrieves the style of the listBox. This will indicate if the system
+    ///  draws it, or if the user paints each item manually. It also indicates
     ///  whether or not items have to be of the same height.
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
@@ -423,7 +420,7 @@ public partial class ListBox : ListControl
         }
     }
 
-    internal int FocusedIndex => IsHandleCreated ? (int)PInvoke.SendMessage(this, PInvoke.LB_GETCARETINDEX) : -1;
+    internal int FocusedIndex => IsHandleCreated ? (int)PInvokeCore.SendMessage(this, PInvoke.LB_GETCARETINDEX) : -1;
 
     // The scroll bars don't display properly when the IntegralHeight == false
     // and the control is resized before the font size is change and the new font size causes
@@ -437,7 +434,7 @@ public partial class ListBox : ListControl
         {
             base.Font = value;
 
-            if (_integralHeight == false)
+            if (!_integralHeight)
             {
                 // Refresh the list to force the scroll bars to display
                 // when the integral height is false.
@@ -513,12 +510,12 @@ public partial class ListBox : ListControl
 
                 // There seems to be a bug in the native ListBox in that the addition
                 // of the horizontal scroll bar does not get reflected in the control
-                // rightaway. So, we refresh the items here.
+                // right away. So, we refresh the items here.
 
                 RefreshItems();
 
                 // Only need to recreate the handle if not MultiColumn
-                // (HorizontalScrollbar has no effect on a MultiColumn listbox)
+                // (HorizontalScrollbar has no effect on a MultiColumn listBox)
                 //
                 if (!MultiColumn)
                 {
@@ -529,9 +526,9 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Indicates if the listbox should avoid showing partial Items.  If so,
-    ///  then only full items will be displayed, and the listbox will be resized
-    ///  to prevent partial items from being shown.  Otherwise, they will be
+    ///  Indicates if the listBox should avoid showing partial Items. If so,
+    ///  then only full items will be displayed, and the listBox will be resized
+    ///  to prevent partial items from being shown. Otherwise, they will be
     ///  shown
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
@@ -552,8 +549,7 @@ public partial class ListBox : ListControl
             {
                 _integralHeight = value;
                 RecreateHandle();
-                // Avoid the listbox and textbox behaviour in Collection editors
-                //
+                // Avoid the listBox and textbox behavior in Collection editors
 
                 _integralHeightAdjust = true;
                 try
@@ -580,8 +576,7 @@ public partial class ListBox : ListControl
     {
         get
         {
-            if (_drawMode == DrawMode.OwnerDrawFixed ||
-                _drawMode == DrawMode.OwnerDrawVariable)
+            if (_drawMode is DrawMode.OwnerDrawFixed or DrawMode.OwnerDrawVariable)
             {
                 return _itemHeight;
             }
@@ -591,10 +586,8 @@ public partial class ListBox : ListControl
 
         set
         {
-            if (value < 1 || value > 255)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidExBoundArgument, nameof(ItemHeight), value, 0, 256));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 255);
 
             if (_itemHeight != value)
             {
@@ -602,7 +595,7 @@ public partial class ListBox : ListControl
                 if (_drawMode == DrawMode.OwnerDrawFixed && IsHandleCreated)
                 {
                     BeginUpdate();
-                    PInvoke.SendMessage(this, PInvoke.LB_SETITEMHEIGHT, 0, value);
+                    PInvokeCore.SendMessage(this, PInvoke.LB_SETITEMHEIGHT, 0, value);
 
                     // Changing the item height might require a resize for IntegralHeight list boxes
                     if (IntegralHeight)
@@ -619,7 +612,7 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Collection of items in this listbox.
+    ///  Collection of items in this listBox.
     /// </summary>
     [SRCategory(nameof(SR.CatData))]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
@@ -678,7 +671,7 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Indicates if the listbox is multi-column
+    ///  Indicates if the listBox is multi-column
     ///  or not.
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
@@ -820,9 +813,9 @@ public partial class ListBox : ListControl
 
     /// <summary>
     ///  The index of the currently selected item in the list, if there
-    ///  is one.  If the value is -1, there is currently no selection.  If the
+    ///  is one. If the value is -1, there is currently no selection. If the
     ///  value is 0 or greater, than the value is the index of the currently
-    ///  selected item.  If the MultiSelect property on the ListBox is true,
+    ///  selected item. If the MultiSelect property on the ListBox is true,
     ///  then a non-zero value for this property is the index of the first
     ///  selection
     /// </summary>
@@ -843,7 +836,7 @@ public partial class ListBox : ListControl
 
             if (current == SelectionMode.One && IsHandleCreated)
             {
-                return (int)PInvoke.SendMessage(this, PInvoke.LB_GETCURSEL);
+                return (int)PInvokeCore.SendMessage(this, PInvoke.LB_GETCURSEL);
             }
 
             if (_itemsCollection is not null && SelectedItems.Count > 0)
@@ -855,12 +848,8 @@ public partial class ListBox : ListControl
         }
         set
         {
-            int itemCount = (_itemsCollection is null) ? 0 : _itemsCollection.Count;
-
-            if (value < -1 || value >= itemCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidArgument, nameof(SelectedIndex), value));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value, _itemsCollection?.Count ?? 0);
 
             if (_selectionMode == SelectionMode.None)
             {
@@ -935,7 +924,7 @@ public partial class ListBox : ListControl
 
     /// <summary>
     ///  The value of the currently selected item in the list, if there
-    ///  is one.  If the value is null, there is currently no selection.  If the
+    ///  is one. If the value is null, there is currently no selection. If the
     ///  value is non-null, then the value is that of the currently selected
     ///  item. If the MultiSelect property on the ListBox is true, then a
     ///  non-null return value for this method is the value of the first item
@@ -993,7 +982,7 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Controls how many items at a time can be selected in the listbox. Valid
+    ///  Controls how many items at a time can be selected in the listBox. Valid
     ///  values are from the System.Windows.Forms.SelectionMode enumeration.
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
@@ -1033,7 +1022,7 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Indicates if the ListBox is sorted or not.  'true' means that strings in
+    ///  Indicates if the ListBox is sorted or not. 'true' means that strings in
     ///  the list will be sorted alphabetically
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
@@ -1090,7 +1079,7 @@ public partial class ListBox : ListControl
         {
             base.Text = value;
 
-            // Scan through the list items looking for the supplied text string.  If we find it,
+            // Scan through the list items looking for the supplied text string. If we find it,
             // select it.
             if (SelectionMode != SelectionMode.None && value is not null && (SelectedItem is null || !value.Equals(GetItemText(SelectedItem))))
             {
@@ -1125,12 +1114,12 @@ public partial class ListBox : ListControl
     [SRDescription(nameof(SR.ListBoxTopIndexDescr))]
     public int TopIndex
     {
-        get => IsHandleCreated ? (int)PInvoke.SendMessage(this, PInvoke.LB_GETTOPINDEX) : _topIndex;
+        get => IsHandleCreated ? (int)PInvokeCore.SendMessage(this, PInvoke.LB_GETTOPINDEX) : _topIndex;
         set
         {
             if (IsHandleCreated)
             {
-                PInvoke.SendMessage(this, PInvoke.LB_SETTOPINDEX, (WPARAM)value);
+                PInvokeCore.SendMessage(this, PInvoke.LB_SETTOPINDEX, (WPARAM)value);
             }
             else
             {
@@ -1181,7 +1170,7 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Performs the work of adding the specified items to the Listbox
+    ///  Performs the work of adding the specified items to the ListBox
     /// </summary>
     [Obsolete("This method has been deprecated.  There is no replacement.  https://go.microsoft.com/fwlink/?linkid=14202")]
     protected virtual void AddItemsCore(object[] value)
@@ -1228,7 +1217,7 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  ListBox / CheckedListBox Onpaint.
+    ///  ListBox / CheckedListBox OnPaint.
     /// </summary>
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -1242,33 +1231,33 @@ public partial class ListBox : ListControl
     [SRDescription(nameof(SR.drawItemEventDescr))]
     public event DrawItemEventHandler? DrawItem
     {
-        add => Events.AddHandler(EVENT_DRAWITEM, value);
-        remove => Events.RemoveHandler(EVENT_DRAWITEM, value);
+        add => Events.AddHandler(s_drawItemEvent, value);
+        remove => Events.RemoveHandler(s_drawItemEvent, value);
     }
 
     [SRCategory(nameof(SR.CatBehavior))]
     [SRDescription(nameof(SR.measureItemEventDescr))]
     public event MeasureItemEventHandler? MeasureItem
     {
-        add => Events.AddHandler(EVENT_MEASUREITEM, value);
-        remove => Events.RemoveHandler(EVENT_MEASUREITEM, value);
+        add => Events.AddHandler(s_measureItemEvent, value);
+        remove => Events.RemoveHandler(s_measureItemEvent, value);
     }
 
     [SRCategory(nameof(SR.CatBehavior))]
     [SRDescription(nameof(SR.selectedIndexChangedEventDescr))]
     public event EventHandler? SelectedIndexChanged
     {
-        add => Events.AddHandler(EVENT_SELECTEDINDEXCHANGED, value);
-        remove => Events.RemoveHandler(EVENT_SELECTEDINDEXCHANGED, value);
+        add => Events.AddHandler(s_selectedIndexChangedEvent, value);
+        remove => Events.RemoveHandler(s_selectedIndexChangedEvent, value);
     }
 
     /// <summary>
     ///  While the preferred way to insert items is to set Items.All,
     ///  and set all the items at once, there are times when you may wish to
-    ///  insert each item one at a time.  To help with the performance of this,
+    ///  insert each item one at a time. To help with the performance of this,
     ///  it is desirable to prevent the ListBox from painting during these
-    ///  operations.  This method, along with EndUpdate, is the preferred
-    ///  way of doing this.  Don't forget to call EndUpdate when you're done,
+    ///  operations. This method, along with EndUpdate, is the preferred
+    ///  way of doing this. Don't forget to call EndUpdate when you're done,
     ///  or else the ListBox won't paint properly afterwards.
     /// </summary>
     public void BeginUpdate()
@@ -1357,10 +1346,10 @@ public partial class ListBox : ListControl
     /// <summary>
     ///  While the preferred way to insert items is to set Items.All,
     ///  and set all the items at once, there are times when you may wish to
-    ///  insert each item one at a time.  To help with the performance of this,
+    ///  insert each item one at a time. To help with the performance of this,
     ///  it is desirable to prevent the ListBox from painting during these
-    ///  operations.  This method, along with BeginUpdate, is the preferred
-    ///  way of doing this.  BeginUpdate should be called first, and this method
+    ///  operations. This method, along with BeginUpdate, is the preferred
+    ///  way of doing this. BeginUpdate should be called first, and this method
     ///  should be called when you want the control to start painting again.
     /// </summary>
     public void EndUpdate()
@@ -1433,7 +1422,7 @@ public partial class ListBox : ListControl
 
         if (IsHandleCreated)
         {
-            int height = (int)PInvoke.SendMessage(this, PInvoke.LB_GETITEMHEIGHT, (WPARAM)index);
+            int height = (int)PInvokeCore.SendMessage(this, PInvoke.LB_GETITEMHEIGHT, (WPARAM)index);
             if (height == -1)
             {
                 throw new Win32Exception();
@@ -1447,14 +1436,14 @@ public partial class ListBox : ListControl
 
     /// <summary>
     ///  Retrieves a Rectangle object which describes the bounding rectangle
-    ///  around an item in the list.  If the item in question is not visible,
+    ///  around an item in the list. If the item in question is not visible,
     ///  the rectangle will be empty.
     /// </summary>
     public Rectangle GetItemRectangle(int index)
     {
         CheckIndex(index);
         RECT rect = default;
-        if (PInvoke.SendMessage(this, PInvoke.LB_GETITEMRECT, (uint)index, ref rect) == 0)
+        if (PInvokeCore.SendMessage(this, PInvoke.LB_GETITEMRECT, (uint)index, ref rect) == 0)
         {
             return Rectangle.Empty;
         }
@@ -1469,7 +1458,7 @@ public partial class ListBox : ListControl
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     protected override Rectangle GetScaledBounds(Rectangle bounds, SizeF factor, BoundsSpecified specified)
     {
-        // update bounds' height to use the requested height, not the current height.  These
+        // update bounds' height to use the requested height, not the current height. These
         // can be different if integral height is turned on.
         bounds.Height = _requestedHeight;
         return base.GetScaledBounds(bounds, factor, specified);
@@ -1488,7 +1477,7 @@ public partial class ListBox : ListControl
     {
         if (IsHandleCreated)
         {
-            int selection = (int)PInvoke.SendMessage(this, PInvoke.LB_GETSEL, (WPARAM)index);
+            int selection = (int)PInvokeCore.SendMessage(this, PInvoke.LB_GETSEL, (WPARAM)index);
             if (selection == -1)
             {
                 throw new Win32Exception();
@@ -1521,11 +1510,11 @@ public partial class ListBox : ListControl
     public int IndexFromPoint(int x, int y)
     {
         // NT4 SP6A : SendMessage Fails. So First check whether the point is in Client Co-ordinates and then
-        // call Sendmessage.
-        PInvoke.GetClientRect(this, out RECT r);
+        // call SendMessage.
+        PInvokeCore.GetClientRect(this, out RECT r);
         if (r.left <= x && x < r.right && r.top <= y && y < r.bottom)
         {
-            int index = (int)PInvoke.SendMessage(this, PInvoke.LB_ITEMFROMPOINT, 0, PARAM.FromLowHigh(x, y));
+            int index = (int)PInvokeCore.SendMessage(this, PInvoke.LB_ITEMFROMPOINT, 0, PARAM.FromLowHigh(x, y));
             if (PARAM.HIWORD(index) == 0)
             {
                 // Inside ListBox client area
@@ -1542,7 +1531,7 @@ public partial class ListBox : ListControl
     private int NativeAdd(object item)
     {
         Debug.Assert(IsHandleCreated, "Shouldn't be calling Native methods before the handle is created.");
-        int insertIndex = (int)PInvoke.SendMessage(this, PInvoke.LB_ADDSTRING, 0, GetItemText(item));
+        int insertIndex = (int)PInvokeCore.SendMessage(this, PInvoke.LB_ADDSTRING, 0, GetItemText(item));
         if (insertIndex == PInvoke.LB_ERRSPACE)
         {
             throw new OutOfMemoryException();
@@ -1566,7 +1555,7 @@ public partial class ListBox : ListControl
     private void NativeClear()
     {
         Debug.Assert(IsHandleCreated, "Shouldn't be calling Native methods before the handle is created.");
-        PInvoke.SendMessage(this, PInvoke.LB_RESETCONTENT);
+        PInvokeCore.SendMessage(this, PInvoke.LB_RESETCONTENT);
     }
 
     /// <summary>
@@ -1575,7 +1564,7 @@ public partial class ListBox : ListControl
     [SkipLocalsInit]
     internal unsafe string NativeGetItemText(int index)
     {
-        int maxLength = (int)PInvoke.SendMessage(this, PInvoke.LB_GETTEXTLEN, (WPARAM)index);
+        int maxLength = (int)PInvokeCore.SendMessage(this, PInvoke.LB_GETTEXTLEN, (WPARAM)index);
         if (maxLength == PInvoke.LB_ERR)
         {
             return string.Empty;
@@ -1584,20 +1573,20 @@ public partial class ListBox : ListControl
         using BufferScope<char> buffer = new(stackalloc char[128], minimumLength: maxLength + 1);
         fixed (char* b = buffer)
         {
-            int actualLength = (int)PInvoke.SendMessage(this, PInvoke.LB_GETTEXT, (WPARAM)index, (LPARAM)b);
+            int actualLength = (int)PInvokeCore.SendMessage(this, PInvoke.LB_GETTEXT, (WPARAM)index, (LPARAM)b);
             Debug.Assert(actualLength != PInvoke.LB_ERR, "Should have validated the index above");
             return actualLength == PInvoke.LB_ERR ? string.Empty : buffer[..Math.Min(maxLength, actualLength)].ToString();
         }
     }
 
     /// <summary>
-    ///  Inserts the given item to the native List box at the index.  This asserts if the handle hasn't been
+    ///  Inserts the given item to the native List box at the index. This asserts if the handle hasn't been
     ///  created or if the resulting insert index doesn't match the passed in index.
     /// </summary>
     private int NativeInsert(int index, object item)
     {
         Debug.Assert(IsHandleCreated, "Shouldn't be calling Native methods before the handle is created.");
-        int insertIndex = (int)PInvoke.SendMessage(this, PInvoke.LB_INSERTSTRING, (uint)index, GetItemText(item));
+        int insertIndex = (int)PInvokeCore.SendMessage(this, PInvoke.LB_INSERTSTRING, (uint)index, GetItemText(item));
 
         if (insertIndex == PInvoke.LB_ERRSPACE)
         {
@@ -1624,10 +1613,10 @@ public partial class ListBox : ListControl
     {
         Debug.Assert(IsHandleCreated, "Shouldn't be calling Native methods before the handle is created.");
 
-        bool selected = (int)PInvoke.SendMessage(this, PInvoke.LB_GETSEL, (WPARAM)index) > 0;
-        PInvoke.SendMessage(this, PInvoke.LB_DELETESTRING, (WPARAM)index);
+        bool selected = (int)PInvokeCore.SendMessage(this, PInvoke.LB_GETSEL, (WPARAM)index) > 0;
+        PInvokeCore.SendMessage(this, PInvoke.LB_DELETESTRING, (WPARAM)index);
 
-        // If the item currently selected is removed then we should fire a Selectionchanged event
+        // If the item currently selected is removed then we should fire a SelectionChanged event
         // as the next time selected index returns -1.
 
         if (selected)
@@ -1637,7 +1626,7 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Sets the selection of the given index to the native window.  This does not change
+    ///  Sets the selection of the given index to the native window. This does not change
     ///  the collection; you must update the collection yourself.
     /// </summary>
     private void NativeSetSelected(int index, bool value)
@@ -1647,17 +1636,17 @@ public partial class ListBox : ListControl
 
         if (_selectionMode == SelectionMode.One)
         {
-            PInvoke.SendMessage(this, PInvoke.LB_SETCURSEL, (WPARAM)(value ? index : -1));
+            PInvokeCore.SendMessage(this, PInvoke.LB_SETCURSEL, (WPARAM)(value ? index : -1));
         }
         else
         {
-            PInvoke.SendMessage(this, PInvoke.LB_SETSEL, (WPARAM)(BOOL)value, (LPARAM)index);
+            PInvokeCore.SendMessage(this, PInvoke.LB_SETSEL, (WPARAM)(BOOL)value, (LPARAM)index);
         }
     }
 
     /// <summary>
     ///  This is called by the SelectedObjectCollection in response to the first
-    ///  query on that collection after we have called Dirty().  Dirty() is called
+    ///  query on that collection after we have called Dirty(). Dirty() is called
     ///  when we receive a LBN_SELCHANGE message.
     /// </summary>
     private unsafe void NativeUpdateSelection()
@@ -1674,7 +1663,7 @@ public partial class ListBox : ListControl
         switch (_selectionMode)
         {
             case SelectionMode.One:
-                int index = (int)PInvoke.SendMessage(this, PInvoke.LB_GETCURSEL);
+                int index = (int)PInvokeCore.SendMessage(this, PInvoke.LB_GETCURSEL);
                 if (index >= 0)
                 {
                     SelectedItems.SetSelected(index, true);
@@ -1684,13 +1673,13 @@ public partial class ListBox : ListControl
 
             case SelectionMode.MultiSimple:
             case SelectionMode.MultiExtended:
-                int count = (int)PInvoke.SendMessage(this, PInvoke.LB_GETSELCOUNT);
+                int count = (int)PInvokeCore.SendMessage(this, PInvoke.LB_GETSELCOUNT);
                 if (count > 0)
                 {
-                    var result = new int[count];
+                    int[] result = new int[count];
                     fixed (int* pResult = result)
                     {
-                        PInvoke.SendMessage(this, PInvoke.LB_GETSELITEMS, (WPARAM)count, (LPARAM)pResult);
+                        PInvokeCore.SendMessage(this, PInvoke.LB_GETSELITEMS, (WPARAM)count, (LPARAM)pResult);
                     }
 
                     foreach (int i in result)
@@ -1734,15 +1723,15 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Actually goes and fires the drawItem event.  Inheriting controls
+    ///  Actually goes and fires the drawItem event. Inheriting controls
     ///  should use this to know when the event is fired [this is preferable to
-    ///  adding an event handler yourself for this event].  They should,
+    ///  adding an event handler yourself for this event]. They should,
     ///  however, remember to call base.onDrawItem(e); to ensure the event is
     ///  still fired to external listeners
     /// </summary>
     protected virtual void OnDrawItem(DrawItemEventArgs e)
     {
-        ((DrawItemEventHandler?)Events[EVENT_DRAWITEM])?.Invoke(this, e);
+        ((DrawItemEventHandler?)Events[s_drawItemEvent])?.Invoke(this, e);
     }
 
     /// <summary>
@@ -1755,21 +1744,21 @@ public partial class ListBox : ListControl
         base.OnHandleCreated(e);
 
         // Get the current locale to set the Scrollbars
-        PInvoke.SendMessage(this, PInvoke.LB_SETLOCALE, (WPARAM)PInvoke.GetThreadLocale());
+        PInvokeCore.SendMessage(this, PInvoke.LB_SETLOCALE, (WPARAM)PInvokeCore.GetThreadLocale());
 
         if (_columnWidth != 0)
         {
-            PInvoke.SendMessage(this, PInvoke.LB_SETCOLUMNWIDTH, (WPARAM)_columnWidth);
+            PInvokeCore.SendMessage(this, PInvoke.LB_SETCOLUMNWIDTH, (WPARAM)_columnWidth);
         }
 
         if (_drawMode == DrawMode.OwnerDrawFixed)
         {
-            PInvoke.SendMessage(this, PInvoke.LB_SETITEMHEIGHT, (WPARAM)0, (LPARAM)ItemHeight);
+            PInvokeCore.SendMessage(this, PInvoke.LB_SETITEMHEIGHT, (WPARAM)0, (LPARAM)ItemHeight);
         }
 
         if (_topIndex != 0)
         {
-            PInvoke.SendMessage(this, PInvoke.LB_SETTOPINDEX, (WPARAM)_topIndex);
+            PInvokeCore.SendMessage(this, PInvoke.LB_SETTOPINDEX, (WPARAM)_topIndex);
         }
 
         if (UseCustomTabOffsets && CustomTabOffsets is not null)
@@ -1780,7 +1769,7 @@ public partial class ListBox : ListControl
 
             fixed (int* pOffsets = offsets)
             {
-                PInvoke.SendMessage(this, PInvoke.LB_SETTABSTOPS, (WPARAM)wpar, (LPARAM)pOffsets);
+                PInvokeCore.SendMessage(this, PInvoke.LB_SETTABSTOPS, (WPARAM)wpar, (LPARAM)pOffsets);
             }
         }
 
@@ -1813,7 +1802,7 @@ public partial class ListBox : ListControl
 
     /// <summary>
     ///  Overridden to make sure that we set up and clear out items
-    ///  correctly.  Inheriting controls should not forget to call
+    ///  correctly. Inheriting controls should not forget to call
     ///  base.OnHandleDestroyed()
     /// </summary>
     protected override void OnHandleDestroyed(EventArgs e)
@@ -1829,7 +1818,7 @@ public partial class ListBox : ListControl
 
     protected virtual void OnMeasureItem(MeasureItemEventArgs e)
     {
-        ((MeasureItemEventHandler?)Events[EVENT_MEASUREITEM])?.Invoke(this, e);
+        ((MeasureItemEventHandler?)Events[s_measureItemEvent])?.Invoke(this, e);
     }
 
     protected override void OnFontChanged(EventArgs e)
@@ -1839,7 +1828,7 @@ public partial class ListBox : ListControl
         // Changing the font causes us to resize, always rounding down.
         // Make sure we do this after base.OnPropertyChanged, which sends the WM_SETFONT message
 
-        // Avoid the listbox and textbox behaviour in Collection editors
+        // Avoid the listBox and textbox behavior in Collection editors
         UpdateFontCache();
     }
 
@@ -1849,7 +1838,7 @@ public partial class ListBox : ListControl
     protected override void OnParentChanged(EventArgs e)
     {
         base.OnParentChanged(e);
-        // No need to RecreateHandle if we are removing the Listbox from controls collection...
+        // No need to RecreateHandle if we are removing the ListBox from controls collection...
         // so check the parent before recreating the handle...
         if (ParentInternal is not null)
         {
@@ -1869,9 +1858,9 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Actually goes and fires the selectedIndexChanged event.  Inheriting controls
+    ///  Actually goes and fires the selectedIndexChanged event. Inheriting controls
     ///  should use this to know when the event is fired [this is preferable to
-    ///  adding an event handler on yourself for this event].  They should,
+    ///  adding an event handler on yourself for this event]. They should,
     ///  however, remember to call base.OnSelectedIndexChanged(e); to ensure the event is
     ///  still fired to external listeners
     /// </summary>
@@ -1915,7 +1904,7 @@ public partial class ListBox : ListControl
 
         // Call the handler after updating the DataManager's position so that
         // the DataManager's selected index will be correct in an event handler.
-        ((EventHandler?)Events[EVENT_SELECTEDINDEXCHANGED])?.Invoke(this, e);
+        ((EventHandler?)Events[s_selectedIndexChangedEvent])?.Invoke(this, e);
     }
 
     protected override void OnSelectedValueChanged(EventArgs e)
@@ -1959,21 +1948,14 @@ public partial class ListBox : ListControl
     {
         if (_drawMode == DrawMode.OwnerDrawVariable)
         {
-            // Fire MeasureItem for Each Item in the Listbox...
+            // Fire MeasureItem for Each Item in the ListBox...
             int cnt = Items.Count;
-            Graphics graphics = CreateGraphicsInternal();
+            using Graphics graphics = CreateGraphicsInternal();
 
-            try
+            for (int i = 0; i < cnt; i++)
             {
-                for (int i = 0; i < cnt; i++)
-                {
-                    MeasureItemEventArgs mie = new MeasureItemEventArgs(graphics, i, ItemHeight);
-                    OnMeasureItem(mie);
-                }
-            }
-            finally
-            {
-                graphics.Dispose();
+                MeasureItemEventArgs mie = new(graphics, i, ItemHeight);
+                OnMeasureItem(mie);
             }
         }
 
@@ -2099,7 +2081,7 @@ public partial class ListBox : ListControl
     /// </summary>
     protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
     {
-        // Avoid the listbox and textbox behaviour in Collection editors
+        // Avoid the listBox and textbox behavior in Collection editors
         if (!_integralHeightAdjust && height != Height)
         {
             _requestedHeight = height;
@@ -2133,11 +2115,11 @@ public partial class ListBox : ListControl
 
             if (IsHandleCreated)
             {
-                PInvoke.SendMessage(this, PInvoke.LB_SETCURSEL, (WPARAM)DataManager.Position);
+                PInvokeCore.SendMessage(this, PInvoke.LB_SETCURSEL, (WPARAM)DataManager.Position);
             }
 
             // if the list changed and we still did not fire the
-            // onselectedChanged event, then fire it now;
+            // onSelectedChanged event, then fire it now;
             if (!_selectedValueChangedFired)
             {
                 OnSelectedValueChanged(EventArgs.Empty);
@@ -2154,7 +2136,7 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  Allows the user to set an item as being selected or not.  This should
+    ///  Allows the user to set an item as being selected or not. This should
     ///  only be used with ListBoxes that allow some sort of multi-selection.
     /// </summary>
     public void SetSelected(int index, bool value)
@@ -2182,11 +2164,11 @@ public partial class ListBox : ListControl
     // ShouldSerialize and Reset Methods are being used by Designer via reflection.
     private bool ShouldSerializeItemHeight()
     {
-        return ItemHeight != DefaultListBoxItemHeight;
+        return ItemHeight != DefaultListBoxItemHeight && _drawMode != DrawMode.Normal;
     }
 
     /// <summary>
-    ///  Sorts the items in the listbox.
+    ///  Sorts the items in the listBox.
     /// </summary>
     protected virtual void Sort()
     {
@@ -2272,7 +2254,7 @@ public partial class ListBox : ListControl
                 width = MaxItemWidth;
             }
 
-            PInvoke.SendMessage(this, PInvoke.LB_SETHORIZONTALEXTENT, (WPARAM)width);
+            PInvokeCore.SendMessage(this, PInvoke.LB_SETHORIZONTALEXTENT, (WPARAM)width);
         }
     }
 
@@ -2329,7 +2311,7 @@ public partial class ListBox : ListControl
             CustomTabOffsets.CopyTo(offsets, 0);
             fixed (int* pOffsets = offsets)
             {
-                PInvoke.SendMessage(this, PInvoke.LB_SETTABSTOPS, (WPARAM)wpar, (nint)pOffsets);
+                PInvokeCore.SendMessage(this, PInvoke.LB_SETTABSTOPS, (WPARAM)wpar, (nint)pOffsets);
             }
 
             Invalidate();
@@ -2342,7 +2324,7 @@ public partial class ListBox : ListControl
         if (((nint)m.LParamInternal & PInvoke.PRF_NONCLIENT) != 0 && Application.RenderWithVisualStyles && BorderStyle == BorderStyle.Fixed3D)
         {
             using Graphics g = Graphics.FromHdc((HDC)m.WParamInternal);
-            Rectangle rect = new Rectangle(0, 0, Size.Width - 1, Size.Height - 1);
+            Rectangle rect = new(0, 0, Size.Width - 1, Size.Height - 1);
             using var pen = VisualStyleInformation.TextControlBorder.GetCachedPenScope();
             g.DrawRectangle(pen, rect);
             rect.Inflate(-1, -1);
@@ -2410,7 +2392,7 @@ public partial class ListBox : ListControl
     }
 
     /// <summary>
-    ///  The list's window procedure.  Inheriting classes can override this
+    ///  The list's window procedure. Inheriting classes can override this
     ///  to add extra functionality, but should not forget to call
     ///  base.wndProc(m); to ensure the list continues to function properly.
     /// </summary>
@@ -2427,14 +2409,14 @@ public partial class ListBox : ListControl
             case MessageId.WM_REFLECT_MEASUREITEM:
                 WmReflectMeasureItem(ref m);
                 break;
-            case PInvoke.WM_PRINT:
+            case PInvokeCore.WM_PRINT:
                 WmPrint(ref m);
                 break;
-            case PInvoke.WM_LBUTTONDOWN:
+            case PInvokeCore.WM_LBUTTONDOWN:
                 _selectedItems?.Dirty();
                 base.WndProc(ref m);
                 break;
-            case PInvoke.WM_LBUTTONUP:
+            case PInvokeCore.WM_LBUTTONUP:
                 Point point = PARAM.ToPoint(m.LParamInternal);
                 bool captured = Capture;
                 if (captured && PInvoke.WindowFromPoint(PointToScreen(point)) == HWND)
@@ -2476,7 +2458,7 @@ public partial class ListBox : ListControl
                 _doubleClickFired = false;
                 break;
 
-            case PInvoke.WM_RBUTTONUP:
+            case PInvokeCore.WM_RBUTTONUP:
                 if (Capture && PInvoke.WindowFromPoint(PointToScreen((Point)m.LParamInternal)) == HWND)
                 {
                     _selectedItems?.Dirty();
@@ -2485,15 +2467,15 @@ public partial class ListBox : ListControl
                 base.WndProc(ref m);
                 break;
 
-            case PInvoke.WM_LBUTTONDBLCLK:
-                // The Listbox gets  WM_LBUTTONDOWN - WM_LBUTTONUP -WM_LBUTTONDBLCLK - WM_LBUTTONUP sequence for
-                // doubleclick. The first WM_LBUTTONUP, resets the flag for double click so its necessary for us
+            case PInvokeCore.WM_LBUTTONDBLCLK:
+                // The ListBox gets  WM_LBUTTONDOWN - WM_LBUTTONUP -WM_LBUTTONDBLCLK - WM_LBUTTONUP sequence for
+                // doubleClick. The first WM_LBUTTONUP, resets the flag for double click so its necessary for us
                 // to set it again.
                 _doubleClickFired = true;
                 base.WndProc(ref m);
                 break;
 
-            case PInvoke.WM_WINDOWPOSCHANGED:
+            case PInvokeCore.WM_WINDOWPOSCHANGED:
                 base.WndProc(ref m);
                 if (_integralHeight && _fontIsChanged)
                 {

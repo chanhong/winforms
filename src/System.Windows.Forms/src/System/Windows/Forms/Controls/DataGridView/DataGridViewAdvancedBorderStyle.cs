@@ -57,7 +57,7 @@ public sealed class DataGridViewAdvancedBorderStyle : ICloneable
         }
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x7
+            // Sequential enum. Valid values are 0x0 to 0x7
             SourceGenerated.EnumValidator.Validate(value);
             if (value == DataGridViewAdvancedCellBorderStyle.NotSet ||
                 value == _banned1 ||
@@ -89,7 +89,7 @@ public sealed class DataGridViewAdvancedBorderStyle : ICloneable
         }
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x7
+            // Sequential enum. Valid values are 0x0 to 0x7
             SourceGenerated.EnumValidator.Validate(value);
             if (value == DataGridViewAdvancedCellBorderStyle.NotSet)
             {
@@ -134,7 +134,7 @@ public sealed class DataGridViewAdvancedBorderStyle : ICloneable
         }
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x7
+            // Sequential enum. Valid values are 0x0 to 0x7
             SourceGenerated.EnumValidator.Validate(value);
             if (value == DataGridViewAdvancedCellBorderStyle.NotSet)
             {
@@ -190,7 +190,7 @@ public sealed class DataGridViewAdvancedBorderStyle : ICloneable
         }
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x7
+            // Sequential enum. Valid values are 0x0 to 0x7
             SourceGenerated.EnumValidator.Validate(value);
             if (value == DataGridViewAdvancedCellBorderStyle.NotSet)
             {
@@ -236,7 +236,7 @@ public sealed class DataGridViewAdvancedBorderStyle : ICloneable
         }
         set
         {
-            // Sequential enum.  Valid values are 0x0 to 0x7
+            // Sequential enum. Valid values are 0x0 to 0x7
             SourceGenerated.EnumValidator.Validate(value);
             if (value == DataGridViewAdvancedCellBorderStyle.NotSet)
             {
@@ -296,7 +296,7 @@ public sealed class DataGridViewAdvancedBorderStyle : ICloneable
 
     object ICloneable.Clone()
     {
-        DataGridViewAdvancedBorderStyle dgvabs = new DataGridViewAdvancedBorderStyle(_owner, _banned1, _banned2, _banned3)
+        DataGridViewAdvancedBorderStyle dgvabs = new(_owner, _banned1, _banned2, _banned3)
         {
             _all = _all,
             _top = _top,

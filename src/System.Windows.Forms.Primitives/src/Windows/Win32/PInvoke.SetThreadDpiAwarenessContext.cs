@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Windows.Forms;
-
 namespace Windows.Win32;
 
 internal static partial class PInvoke
@@ -20,7 +18,7 @@ internal static partial class PInvoke
         {
             if (dpiContext == DPI_AWARENESS_CONTEXT.UNSPECIFIED_DPI_AWARENESS_CONTEXT)
             {
-                throw new ArgumentException(nameof(dpiContext), dpiContext.ToString());
+                throw new ArgumentException(dpiContext.ToString(), nameof(dpiContext));
             }
 
             return SetThreadDpiAwarenessContext(dpiContext);

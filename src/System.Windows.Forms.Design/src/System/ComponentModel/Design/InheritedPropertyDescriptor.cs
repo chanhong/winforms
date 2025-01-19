@@ -20,15 +20,17 @@ internal sealed class InheritedPropertyDescriptor : PropertyDescriptor
     /// <summary>
     ///  Initializes a new instance of the <see cref="InheritedPropertyDescriptor"/> class.
     /// </summary>
-    public InheritedPropertyDescriptor(PropertyDescriptor propertyDescriptor, object component) : base(propertyDescriptor, Array.Empty<Attribute>())
+    public InheritedPropertyDescriptor(PropertyDescriptor propertyDescriptor, object component) : base(propertyDescriptor, [])
     {
         Debug.Assert(propertyDescriptor is not InheritedPropertyDescriptor, $"Recursive inheritance propertyDescriptor {propertyDescriptor}");
         _propertyDescriptor = propertyDescriptor;
 
         InitInheritedDefaultValue(component);
 
-        // Check to see if this property points to a collection of objects that are not IComponents.  We cannot serialize the delta between two collections if they do not contain components, so if we detect this case we will make the property invisible to serialization.
-        // We only do this if there are already items in the collection.  Otherwise, it is safe.
+        // Check to see if this property points to a collection of objects that are not IComponents.
+        // We cannot serialize the delta between two collections if they do not contain components,
+        // so if we detect this case we will make the property invisible to serialization.
+        // We only do this if there are already items in the collection. Otherwise, it is safe.
         bool readOnlyCollection = false;
 
         if (typeof(ICollection).IsAssignableFrom(propertyDescriptor.PropertyType) &&
@@ -36,7 +38,8 @@ internal sealed class InheritedPropertyDescriptor : PropertyDescriptor
         {
             if (propertyDescriptor.GetValue(component) is ICollection { Count: > 0 } collection)
             {
-                // Trawl Add and AddRange methods looking for the first compatible serializable method.  All we need is the data type.
+                // Trawl Add and AddRange methods looking for the first compatible serializable method.
+                // All we need is the data type.
                 bool addComponentExists = false;
                 bool addNonComponentExists = false;
                 foreach (MethodInfo method in TypeDescriptor.GetReflectionType(collection).GetMethods(BindingFlags.Public | BindingFlags.Instance))
@@ -82,7 +85,8 @@ internal sealed class InheritedPropertyDescriptor : PropertyDescriptor
                         new EditorAttribute(typeof(UITypeEditor), typeof(UITypeEditor)),
                         new TypeConverterAttribute(typeof(ReadOnlyCollectionConverter))
                     };
-                    AttributeArray = attributes.ToArray();
+
+                    AttributeArray = [.. attributes];
                     readOnlyCollection = true;
                 }
             }
@@ -97,7 +101,7 @@ internal sealed class InheritedPropertyDescriptor : PropertyDescriptor
                     new DefaultValueAttribute(_defaultValue)
                 };
 
-                AttributeArray = attributes.ToArray();
+                AttributeArray = [.. attributes];
             }
         }
     }
@@ -148,7 +152,8 @@ internal sealed class InheritedPropertyDescriptor : PropertyDescriptor
     [return: NotNullIfNotNull(nameof(value))]
     private object? ClonedDefaultValue(object? value)
     {
-        // if we have a persist contents guy, we'll need to try to clone the value because otherwise we won't be able to tell when it's been modified.
+        // if we have a persist contents guy, we'll need to try to clone the value because otherwise
+        // we won't be able to tell when it's been modified.
         if (value is null ||
             !_propertyDescriptor.TryGetAttribute(out DesignerSerializationVisibilityAttribute? dsva) ||
             dsva.Visibility != DesignerSerializationVisibility.Content)
@@ -191,8 +196,11 @@ internal sealed class InheritedPropertyDescriptor : PropertyDescriptor
         try
         {
             object? currentValue;
-            // Don't just get the default value.  Check to see if the propertyDescriptor has indicated ShouldSerialize, and if it hasn't try to use the default value.
-            // We need to do this for properties that inherit from their parent.  If we are processing properties on the root component, we always favor the presence of a default value attribute.
+            // Don't just get the default value. Check to see if the propertyDescriptor has indicated ShouldSerialize,
+            // and if it hasn't try to use the default value.
+            // We need to do this for properties that inherit from their parent.
+            // If we are processing properties on the root component,
+            // we always favor the presence of a default value attribute.
             // The root component is always inherited but some values should always be written into code.
             if (!_propertyDescriptor.ShouldSerializeValue(component))
             {

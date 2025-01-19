@@ -1,8 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace WinformsControlsTest;
+namespace WinFormsControlsTest;
 
+[DesignerCategory("Default")]
 public partial class TrackBars : Form
 {
     public TrackBars()
@@ -70,7 +71,7 @@ public partial class TrackBars : Form
     private void numericMinimum_ValueChanged(object sender, EventArgs e)
     {
         trackBar1.Minimum = (int)Math.Max(numericMinimum.Value, int.MinValue);
-        numericMaximum.Minimum = numericMinimum.Value;        
+        numericMaximum.Minimum = numericMinimum.Value;
         numericFrequency.Maximum = (int)Math.Min(numericMaximum.Value - numericMaximum.Minimum, int.MaxValue);
         if (numericFrequency.Maximum == 0)
         {

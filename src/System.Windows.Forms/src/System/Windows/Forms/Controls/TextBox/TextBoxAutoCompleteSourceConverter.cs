@@ -7,9 +7,7 @@ namespace System.Windows.Forms;
 
 internal class TextBoxAutoCompleteSourceConverter : EnumConverter
 {
-    public TextBoxAutoCompleteSourceConverter(
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)]
-        Type type) : base(type)
+    public TextBoxAutoCompleteSourceConverter(Type type) : base(type)
     {
     }
 
@@ -20,12 +18,12 @@ internal class TextBoxAutoCompleteSourceConverter : EnumConverter
     public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
     {
         StandardValuesCollection values = base.GetStandardValues(context);
-        List<object> list = new();
+        List<object> list = [];
         for (int i = 0; i < values.Count; i++)
         {
             if (values[i] is object currentItem)
             {
-                if (string.Equals(currentItem.ToString(), "ListItems"))
+                if (!string.Equals(currentItem.ToString(), nameof(AutoCompleteSource.ListItems)))
                 {
                     list.Add(currentItem);
                 }

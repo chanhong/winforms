@@ -9,12 +9,13 @@ namespace System.Windows.Forms;
 
 internal static class Formatter
 {
-    private static readonly Type stringType = typeof(string);
-    private static readonly Type booleanType = typeof(bool);
-    private static readonly Type checkStateType = typeof(CheckState);
-    private static readonly object parseMethodNotFound = new();
-    private static readonly object defaultDataSourceNullValue = DBNull.Value;
+    internal const string ComponentModelTrimIncompatibilityMessage = "ComponentModel APIs are not trimming compatible.";
 
+    private static readonly Type s_stringType = typeof(string);
+    private static readonly Type s_booleanType = typeof(bool);
+    private static readonly Type s_checkStateType = typeof(CheckState);
+    private static readonly object s_parseMethodNotFound = new();
+    private static readonly object s_defaultDataSourceNullValue = DBNull.Value;
     /// <summary>
     ///  Converts a binary value into a format suitable for display to the end user.
     ///  Used when pushing a value from a back-end data source into a data-bound property on a control.
@@ -42,7 +43,7 @@ internal static class Formatter
         // simple null reference.
         //
 
-        if (Formatter.IsNullData(value, dataSourceNullValue))
+        if (IsNullData(value, dataSourceNullValue))
         {
             value = DBNull.Value;
         }
@@ -104,12 +105,12 @@ internal static class Formatter
             //
             // Convert DBNull or null to a specific 'known' representation of null (otherwise fail)
             //
-            if (targetType == stringType)
+            if (targetType == s_stringType)
             {
                 return string.Empty;
             }
 
-            if (targetType == checkStateType)
+            if (targetType == s_checkStateType)
             {
                 return CheckState.Indeterminate;
             }
@@ -123,7 +124,7 @@ internal static class Formatter
         // Special case conversions
         //
 
-        if (targetType == stringType)
+        if (targetType == s_stringType)
         {
             if (value is IFormattable valueAsFormattable && !string.IsNullOrEmpty(formatString))
             {
@@ -131,24 +132,45 @@ internal static class Formatter
             }
         }
 
-        // The converters for properties should take precedence.  Unfortunately, we don't know whether we have one.  Check vs. the
-        // type's TypeConverter.  We're punting the case where the property-provided converter is the same as the type's converter.
+        // The converters for properties should take precedence. Unfortunately, we don't know whether we have one. Check vs. the
+        // type's TypeConverter. We're punting the case where the property-provided converter is the same as the type's converter.
         Type sourceType = value.GetType();
-        TypeConverter sourceTypeTypeConverter = TypeDescriptor.GetConverter(sourceType);
+
+        TypeConverter sourceTypeTypeConverter;
+        if (!Control.UseComponentModelRegisteredTypes)
+        {
+            sourceTypeTypeConverter = TypeDescriptor.GetConverter(sourceType);
+        }
+        else
+        {
+            // Call the trim safe API
+            sourceTypeTypeConverter = TypeDescriptor.GetConverterFromRegisteredType(sourceType);
+        }
+
         if (sourceConverter is not null && sourceConverter != sourceTypeTypeConverter && sourceConverter.CanConvertTo(targetType))
         {
             return sourceConverter.ConvertTo(context: null, GetFormatterCulture(formatInfo), value, targetType);
         }
 
-        TypeConverter targetTypeTypeConverter = TypeDescriptor.GetConverter(targetType);
+        TypeConverter targetTypeTypeConverter;
+        if (!Control.UseComponentModelRegisteredTypes)
+        {
+            targetTypeTypeConverter = TypeDescriptor.GetConverter(targetType);
+        }
+        else
+        {
+            // Call the trim safe API
+            targetTypeTypeConverter = TypeDescriptor.GetConverterFromRegisteredType(targetType);
+        }
+
         if (targetConverter is not null && targetConverter != targetTypeTypeConverter && targetConverter.CanConvertFrom(sourceType))
         {
             return targetConverter.ConvertFrom(context: null, GetFormatterCulture(formatInfo), value);
         }
 
-        if (targetType == checkStateType)
+        if (targetType == s_checkStateType)
         {
-            if (sourceType == booleanType)
+            if (sourceType == s_booleanType)
             {
                 return ((bool)value) ? CheckState.Checked : CheckState.Unchecked;
             }
@@ -156,9 +178,9 @@ internal static class Formatter
             {
                 sourceConverter ??= sourceTypeTypeConverter;
 
-                if (sourceConverter is not null && sourceConverter.CanConvertTo(booleanType))
+                if (sourceConverter is not null && sourceConverter.CanConvertTo(s_booleanType))
                 {
-                    return (bool)sourceConverter.ConvertTo(context: null, GetFormatterCulture(formatInfo), value, booleanType)!
+                    return (bool)sourceConverter.ConvertTo(context: null, GetFormatterCulture(formatInfo), value, s_booleanType)!
                         ? CheckState.Checked
                         : CheckState.Unchecked;
                 }
@@ -222,9 +244,7 @@ internal static class Formatter
         object? formattedNullValue,
         object? dataSourceNullValue)
     {
-        //
         // Strip away any use of nullable types (eg. Nullable<int>), leaving just the 'real' types
-        //
 
         Type oldTargetType = targetType;
 
@@ -233,25 +253,14 @@ internal static class Formatter
         sourceConverter = NullableUnwrap(sourceConverter);
         targetConverter = NullableUnwrap(targetConverter);
 
-        bool isNullableTargetType = (targetType != oldTargetType);
-
-        //
         // Call the 'real' method to perform the conversion
-        //
 
         object? result = ParseObjectInternal(value, targetType, sourceType, targetConverter, sourceConverter, formatInfo, formattedNullValue);
 
-        //
         // On the way out, substitute DBNull with the appropriate representation of 'null' for the final target type.
         // For most types, this is just DBNull. But for a nullable type, its an instance of that type with no value.
-        //
 
-        if (result == DBNull.Value)
-        {
-            return Formatter.NullData(oldTargetType, dataSourceNullValue);
-        }
-
-        return result;
+        return result == DBNull.Value ? NullData(oldTargetType, dataSourceNullValue) : result;
     }
 
     /// <summary>
@@ -301,7 +310,7 @@ internal static class Formatter
         {
             // If target type has a suitable Parse method, use that to parse strings
             object? parseResult = InvokeStringParseMethod(value, targetType, formatInfo);
-            if (parseResult != parseMethodNotFound)
+            if (parseResult != s_parseMethodNotFound)
             {
                 return parseResult;
             }
@@ -314,14 +323,14 @@ internal static class Formatter
             }
 
             // Explicit conversion from CheckState to Boolean
-            if (targetType == booleanType)
+            if (targetType == s_booleanType)
             {
                 return (state == CheckState.Checked);
             }
 
             targetConverter ??= targetTypeTypeConverter;
 
-            if (targetConverter is not null && targetConverter.CanConvertFrom(booleanType))
+            if (targetConverter is not null && targetConverter.CanConvertFrom(s_booleanType))
             {
                 return targetConverter.ConvertFrom(context: null, GetFormatterCulture(formatInfo), state == CheckState.Checked);
             }
@@ -400,7 +409,7 @@ internal static class Formatter
         else
         {
             // Otherwise perform default comparison based on object types
-            return object.Equals(value, formattedNullValue);
+            return Equals(value, formattedNullValue);
         }
     }
 
@@ -431,7 +440,7 @@ internal static class Formatter
     /// <summary>
     ///  Converts a value to the specified type using best Parse() method on that type
     /// </summary>
-    public static object? InvokeStringParseMethod(object? value, Type targetType, IFormatProvider? formatInfo)
+    public static object? InvokeStringParseMethod(object? value, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type targetType, IFormatProvider? formatInfo)
     {
         try
         {
@@ -439,36 +448,36 @@ internal static class Formatter
                 "Parse",
                 BindingFlags.Public | BindingFlags.Static,
                 binder: null,
-                new Type[] { stringType, typeof(NumberStyles), typeof(IFormatProvider) },
+                [s_stringType, typeof(NumberStyles), typeof(IFormatProvider)],
                 modifiers: null);
             if (methodInfo is not null)
             {
-                return methodInfo.Invoke(obj: null, new object?[] { (string?)value, NumberStyles.Any, formatInfo });
+                return methodInfo.Invoke(obj: null, [(string?)value, NumberStyles.Any, formatInfo]);
             }
 
             methodInfo = targetType.GetMethod(
                 "Parse",
                 BindingFlags.Public | BindingFlags.Static,
                 binder: null,
-                new Type[] { stringType, typeof(IFormatProvider) },
+                [s_stringType, typeof(IFormatProvider)],
                 modifiers: null);
             if (methodInfo is not null)
             {
-                return methodInfo.Invoke(obj: null, new object?[] { (string?)value, formatInfo });
+                return methodInfo.Invoke(obj: null, [(string?)value, formatInfo]);
             }
 
             methodInfo = targetType.GetMethod(
                 "Parse",
                 BindingFlags.Public | BindingFlags.Static,
                 null,
-                new Type[] { stringType },
+                [s_stringType],
                 null);
             if (methodInfo is not null)
             {
-                return methodInfo.Invoke(obj: null, new object?[] { (string?)value });
+                return methodInfo.Invoke(obj: null, [(string?)value]);
             }
 
-            return parseMethodNotFound;
+            return s_parseMethodNotFound;
         }
         catch (TargetInvocationException ex)
         {
@@ -483,7 +492,7 @@ internal static class Formatter
     {
         return value is null ||
                value == DBNull.Value ||
-               object.Equals(value, NullData(value.GetType(), dataSourceNullValue));
+               Equals(value, NullData(value.GetType(), dataSourceNullValue));
     }
 
     /// <summary>
@@ -516,13 +525,13 @@ internal static class Formatter
     }
 
     /// <summary>
-    ///  Extract the inner type from a nullable type
+    ///  Extract the inner type from a nullable type.
     /// </summary>
-    private static Type NullableUnwrap(Type type)
+    public static Type NullableUnwrap(Type type)
     {
-        if (type == stringType) // ...performance optimization for the most common case
+        if (type == s_stringType) // ...performance optimization for the most common case
         {
-            return stringType;
+            return s_stringType;
         }
 
         Type? underlyingType = Nullable.GetUnderlyingType(type);
@@ -543,6 +552,6 @@ internal static class Formatter
     {
         return (type is not null && !type.IsValueType)
             ? null
-            : defaultDataSourceNullValue;
+            : s_defaultDataSourceNullValue;
     }
 }

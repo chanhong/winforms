@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.CodeDom;
-using System.Windows.Forms;
 
 namespace System.ComponentModel.Design.Serialization;
 
@@ -15,7 +14,7 @@ public sealed class RootContext
     /// <summary>
     ///  This object can be placed on the context stack to represent the
     ///  object that is the root of the serialization hierarchy. In addition
-    ///  to this instance, the RootContext also  contains an expression that
+    ///  to this instance, the RootContext also contains an expression that
     ///  can be used to reference the RootContext.
     /// </summary>
     public RootContext(CodeExpression expression, object value)

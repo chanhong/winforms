@@ -51,7 +51,10 @@ public class ButtonTests : ControlTestBase
         });
     }
 
+    [ActiveIssue("https://github.com/dotnet/winforms/issues/11324")]
     [WinFormsFact]
+    [SkipOnArchitecture(TestArchitectures.X64,
+        "Flaky tests, see: https://github.com/dotnet/winforms/issues/11324")]
     public async Task Button_DialogResult_SpaceToClickFocusedButtonAsync()
     {
         await RunTestAsync(async (form, button) =>
@@ -87,7 +90,10 @@ public class ButtonTests : ControlTestBase
         });
     }
 
+    [ActiveIssue("https://github.com/dotnet/winforms/issues/11326")]
     [WinFormsFact]
+    [SkipOnArchitecture(TestArchitectures.X64,
+        "Flaky tests, see: https://github.com/dotnet/winforms/issues/11326")]
     public async Task Button_CancelButton_EscapeClicksCancelButtonAsync()
     {
         await RunTestAsync(async (form, button) =>
@@ -111,7 +117,7 @@ public class ButtonTests : ControlTestBase
             var originalFormSize = form.DisplayRectangle.Size;
             var originalButtonPosition = button.DisplayRectangle;
 
-            var mouseDragHandleOnForm = new Point(form.DisplayRectangle.Right, form.DisplayRectangle.Top + form.DisplayRectangle.Height / 2);
+            Point mouseDragHandleOnForm = new(form.DisplayRectangle.Right, form.DisplayRectangle.Top + form.DisplayRectangle.Height / 2);
             await MoveMouseAsync(form, form.PointToScreen(mouseDragHandleOnForm));
 
             await InputSimulator.SendAsync(
@@ -135,7 +141,7 @@ public class ButtonTests : ControlTestBase
             var originalFormSize = form.DisplayRectangle.Size;
             var originalButtonPosition = button.DisplayRectangle;
 
-            var mouseDragHandleOnForm = new Point(form.DisplayRectangle.Left + form.DisplayRectangle.Width / 2, form.DisplayRectangle.Bottom);
+            Point mouseDragHandleOnForm = new(form.DisplayRectangle.Left + form.DisplayRectangle.Width / 2, form.DisplayRectangle.Bottom);
             await MoveMouseAsync(form, form.PointToScreen(mouseDragHandleOnForm));
 
             await InputSimulator.SendAsync(
@@ -161,7 +167,7 @@ public class ButtonTests : ControlTestBase
             var originalFormSize = form.DisplayRectangle.Size;
             var originalButtonPosition = button.DisplayRectangle;
 
-            var mouseDragHandleOnForm = new Point(form.DisplayRectangle.Right, form.DisplayRectangle.Top + form.DisplayRectangle.Height / 2);
+            Point mouseDragHandleOnForm = new(form.DisplayRectangle.Right, form.DisplayRectangle.Top + form.DisplayRectangle.Height / 2);
             await MoveMouseAsync(form, form.PointToScreen(mouseDragHandleOnForm));
 
             await InputSimulator.SendAsync(
@@ -191,7 +197,7 @@ public class ButtonTests : ControlTestBase
             var originalFormSize = form.DisplayRectangle.Size;
             var originalButtonPosition = button.DisplayRectangle;
 
-            var mouseDragHandleOnForm = new Point(form.DisplayRectangle.Left + form.DisplayRectangle.Width / 2, form.DisplayRectangle.Bottom);
+            Point mouseDragHandleOnForm = new(form.DisplayRectangle.Left + form.DisplayRectangle.Width / 2, form.DisplayRectangle.Bottom);
             await MoveMouseAsync(form, form.PointToScreen(mouseDragHandleOnForm));
 
             await InputSimulator.SendAsync(
@@ -321,7 +327,10 @@ public class ButtonTests : ControlTestBase
         });
     }
 
+    [ActiveIssue("https://github.com/dotnet/winforms/issues/11327")]
     [WinFormsFact]
+    [SkipOnArchitecture(TestArchitectures.X64,
+       "Flaky tests, see: https://github.com/dotnet/winforms/issues/11327")]
     public async Task Button_Press_Enter_Fires_OnClickAsync()
     {
         await RunTestAsync(async (form, button) =>
@@ -341,7 +350,10 @@ public class ButtonTests : ControlTestBase
         });
     }
 
+    [ActiveIssue("https://github.com/dotnet/winforms/issues/11325")]
     [WinFormsFact]
+    [SkipOnArchitecture(TestArchitectures.X64,
+       "Flaky tests, see: https://github.com/dotnet/winforms/issues/11325")]
     public async Task Button_Hotkey_Fires_OnClickAsync()
     {
         await RunTestAsync(async (form, button) =>

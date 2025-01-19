@@ -42,10 +42,12 @@ public abstract partial class TextBoxBase
 
             // Returns info about the selected text range.
             // If there is no selection, start and end parameters are the position of the caret.
-            PInvoke.SendMessage(Owner, PInvoke.EM_GETSEL, ref start, ref end);
+            PInvokeCore.SendMessage(Owner, PInvokeCore.EM_GETSEL, ref start, ref end);
 
             ComSafeArrayScope<ITextRangeProvider> result = new(1);
-            result[0] = ComHelpers.GetComPointer<ITextRangeProvider>(new UiaTextRange(Owner.AccessibilityObject, this, start, end));
+            // Adding to the SAFEARRAY adds a reference
+            using var selection = ComHelpers.GetComScope<ITextRangeProvider>(new UiaTextRange(Owner.AccessibilityObject, this, start, end));
+            result[0] = selection;
 
             *pRetVal = result;
             return HRESULT.S_OK;
@@ -67,7 +69,9 @@ public abstract partial class TextBoxBase
             GetVisibleRangePoints(out int start, out int end);
 
             ComSafeArrayScope<ITextRangeProvider> result = new(1);
-            result[0] = ComHelpers.GetComPointer<ITextRangeProvider>(new UiaTextRange(Owner.AccessibilityObject, this, start, end));
+            // Adding to the SAFEARRAY adds a reference
+            using var ranges = ComHelpers.GetComScope<ITextRangeProvider>(new UiaTextRange(Owner.AccessibilityObject, this, start, end));
+            result[0] = ranges;
 
             *pRetVal = result;
             return HRESULT.S_OK;
@@ -103,7 +107,7 @@ public abstract partial class TextBoxBase
 
             // Convert screen to client coordinates.
             // (Essentially ScreenToClient but MapWindowPoints accounts for window mirroring using WS_EX_LAYOUTRTL.)
-            if (PInvoke.MapWindowPoints((HWND)default, Owner, ref clientLocation) == 0)
+            if (PInvokeCore.MapWindowPoints((HWND)default, Owner, ref clientLocation) == 0)
             {
                 *pRetVal = ComHelpers.GetComPointer<ITextRangeProvider>(
                     new UiaTextRange(
@@ -203,15 +207,15 @@ public abstract partial class TextBoxBase
 
         public override int FirstVisibleLine
             => Owner is not null && Owner.IsHandleCreated
-                ? (int)PInvoke.SendMessage(Owner, PInvoke.EM_GETFIRSTVISIBLELINE)
+                ? (int)PInvokeCore.SendMessage(Owner, PInvokeCore.EM_GETFIRSTVISIBLELINE)
                 : -1;
 
-        public override bool IsMultiline => Owner is not null ? Owner.Multiline : false;
+        public override bool IsMultiline => Owner is not null && Owner.Multiline;
 
         public override bool IsReadingRTL
-            => Owner is not null ? Owner.IsHandleCreated && WindowExStyle.HasFlag(WINDOW_EX_STYLE.WS_EX_RTLREADING) : false;
+            => Owner is not null && Owner.IsHandleCreated && WindowExStyle.HasFlag(WINDOW_EX_STYLE.WS_EX_RTLREADING);
 
-        public override bool IsReadOnly => Owner is not null ? Owner.ReadOnly : false;
+        public override bool IsReadOnly => Owner is not null && Owner.ReadOnly;
 
         public override bool IsScrollable
         {
@@ -228,7 +232,7 @@ public abstract partial class TextBoxBase
 
         public override int LinesCount
             => Owner is not null && Owner.IsHandleCreated
-                ? (int)PInvoke.SendMessage(Owner, PInvoke.EM_GETLINECOUNT)
+                ? (int)PInvokeCore.SendMessage(Owner, PInvokeCore.EM_GETLINECOUNT)
                 : -1;
 
         public override int LinesPerPage
@@ -258,7 +262,7 @@ public abstract partial class TextBoxBase
 
         public override LOGFONTW Logfont
             => Owner is not null && Owner.IsHandleCreated
-                ? LOGFONTW.FromFont(Owner.Font)
+                ? Owner.Font.ToLogicalFont()
                 : default;
 
         public override string Text
@@ -270,8 +274,8 @@ public abstract partial class TextBoxBase
 
         private string PasswordString
             => Owner is not null
-                ? new string(Owner is TextBox
-                    ? ((TextBox)Owner).PasswordChar
+                ? new string(Owner is TextBox textBox
+                    ? textBox.PasswordChar
                     : ((MaskedTextBox)Owner).PasswordChar, Owner.Text.Length)
                 : string.Empty;
 
@@ -294,7 +298,7 @@ public abstract partial class TextBoxBase
 
         public override int GetLineIndex(int line)
             => Owner is not null && Owner.IsHandleCreated
-                ? (int)PInvoke.SendMessage(Owner, PInvoke.EM_LINEINDEX, (WPARAM)line)
+                ? (int)PInvokeCore.SendMessage(Owner, PInvokeCore.EM_LINEINDEX, (WPARAM)line)
                 : -1;
 
         public override Point GetPositionFromChar(int charIndex)
@@ -364,8 +368,8 @@ public abstract partial class TextBoxBase
 
             // Formatting rectangle is the boundary, which we need to inflate by 1
             // in order to read characters within the rectangle
-            Point ptStart = new Point(rectangle.X + 1, rectangle.Y + 1);
-            Point ptEnd = new Point(rectangle.Right - 1, rectangle.Bottom - 1);
+            Point ptStart = new(rectangle.X + 1, rectangle.Y + 1);
+            Point ptEnd = new(rectangle.Right - 1, rectangle.Bottom - 1);
 
             if (IsMultiline)
             {
@@ -395,9 +399,9 @@ public abstract partial class TextBoxBase
         public override bool LineScroll(int charactersHorizontal, int linesVertical)
             // Sends an EM_LINESCROLL message to scroll it horizontally and/or vertically.
             => Owner is not null && Owner.IsHandleCreated
-                && PInvoke.SendMessage(
+                && PInvokeCore.SendMessage(
                     Owner,
-                    PInvoke.EM_LINESCROLL,
+                    PInvokeCore.EM_LINESCROLL,
                     (WPARAM)charactersHorizontal,
                     (LPARAM)linesVertical) != 0;
 
@@ -420,7 +424,7 @@ public abstract partial class TextBoxBase
                 return;
             }
 
-            PInvoke.SendMessage(Owner, PInvoke.EM_SETSEL, (WPARAM)start, (LPARAM)end);
+            PInvokeCore.SendMessage(Owner, PInvokeCore.EM_SETSEL, (WPARAM)start, (LPARAM)end);
         }
 
         private RECT GetFormattingRectangle()
@@ -434,7 +438,7 @@ public abstract partial class TextBoxBase
 
             // Send an EM_GETRECT message to find out the bounding rectangle.
             RECT rectangle = default;
-            PInvoke.SendMessage(Owner, PInvoke.EM_GETRECT, (WPARAM)0, ref rectangle);
+            PInvokeCore.SendMessage(Owner, PInvokeCore.EM_GETRECT, (WPARAM)0, ref rectangle);
             return rectangle;
         }
 

@@ -13,14 +13,14 @@ public class ComboBox_ComboBoxAccessibleObjectTests
     [InlineData(false, AccessibleRole.None)]
     public void ComboBoxAccessibleObject_Ctor_Default(bool createControl, AccessibleRole expectedAccessibleRole)
     {
-        using ComboBox control = new ComboBox();
+        using ComboBox control = new();
         if (createControl)
         {
             control.CreateControl();
         }
 
         Assert.Equal(createControl, control.IsHandleCreated);
-        ComboBox.ComboBoxAccessibleObject accessibleObject = new ComboBox.ComboBoxAccessibleObject(control);
+        ComboBox.ComboBoxAccessibleObject accessibleObject = new(control);
         Assert.Equal(createControl, control.IsHandleCreated);
         Assert.NotNull(accessibleObject.Owner);
         Assert.Equal(expectedAccessibleRole, accessibleObject.Role);
@@ -97,7 +97,7 @@ public class ComboBox_ComboBoxAccessibleObjectTests
     [InlineData(null)]
     public void ComboBoxEditAccessibleObject_NameNotNull(string name)
     {
-        using ComboBox control = new ComboBox();
+        using ComboBox control = new();
         control.AccessibleName = name;
         control.CreateControl(false);
         object editAccessibleName = control.ChildEditAccessibleObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_NamePropertyId);
@@ -227,7 +227,7 @@ public class ComboBox_ComboBoxAccessibleObjectTests
     [WinFormsFact]
     public void ComboBoxAccessibleObject_ControlType_IsComboBox_IfAccessibleRoleIsDefault()
     {
-        using ComboBox control = new ComboBox();
+        using ComboBox control = new();
         // AccessibleRole is not set = Default
 
         VARIANT actual = control.AccessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ControlTypePropertyId);
@@ -255,7 +255,7 @@ public class ComboBox_ComboBoxAccessibleObjectTests
     [MemberData(nameof(ComboBoxAccessibleObject_GetPropertyValue_ControlType_IsExpected_ForCustomRole_TestData))]
     public void ComboBoxAccessibleObject_GetPropertyValue_ControlType_IsExpected_ForCustomRole(AccessibleRole role)
     {
-        using ComboBox comboBox = new ComboBox();
+        using ComboBox comboBox = new();
         comboBox.AccessibleRole = role;
 
         VARIANT actual = comboBox.AccessibilityObject.GetPropertyValue(UIA_PROPERTY_ID.UIA_ControlTypePropertyId);
@@ -299,7 +299,7 @@ public class ComboBox_ComboBoxAccessibleObjectTests
         ComboBox.ComboBoxAccessibleObject accessibleObject = (ComboBox.ComboBoxAccessibleObject)comboBox.AccessibilityObject;
         var result = accessibleObject.GetPropertyValue((UIA_PROPERTY_ID)propertyId);
 
-        Assert.Equal(expected, result.IsEmpty ? false : (bool)result);
+        Assert.Equal(expected, !result.IsEmpty && (bool)result);
         Assert.True(comboBox.IsHandleCreated);
     }
 
@@ -420,7 +420,7 @@ public class ComboBox_ComboBoxAccessibleObjectTests
 
         comboBox.ReleaseUiaProvider(comboBox.HWND);
 
-        Assert.Equal(0, accessibleObject.ItemAccessibleObjects.Count);
+        Assert.Empty(accessibleObject.ItemAccessibleObjects);
         Assert.True(comboBox.IsHandleCreated);
     }
 
@@ -436,7 +436,7 @@ public class ComboBox_ComboBoxAccessibleObjectTests
 
         comboBox.Items.Clear();
 
-        Assert.Equal(0, accessibleObject.ItemAccessibleObjects.Count);
+        Assert.Empty(accessibleObject.ItemAccessibleObjects);
         Assert.True(comboBox.IsHandleCreated);
     }
 
@@ -486,8 +486,8 @@ public class ComboBox_ComboBoxAccessibleObjectTests
     private ComboBox CreateComboBoxWithItems()
     {
         ComboBox comboBox = new();
-        comboBox.Items.AddRange(new object[]
-        {
+        comboBox.Items.AddRange(
+        [
             "a",
             "b",
             "c",
@@ -495,7 +495,7 @@ public class ComboBox_ComboBoxAccessibleObjectTests
             "e",
             "f",
             "g"
-        });
+        ]);
 
         return comboBox;
     }

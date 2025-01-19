@@ -3,25 +3,25 @@
 
 using System.ComponentModel;
 using System.Drawing;
-using static Interop;
 
 namespace System.Windows.Forms;
 
 /// <summary>
-/// Represents the container for multiple-document interface (MDI) child forms.
-/// This class cannot be inherited.
+///  Represents the container for multiple-document interface (MDI) child forms.
+///  This class cannot be inherited.
 /// </summary>
 /// <remarks>
-///  Don't create an <see cref="MdiClient"/> control.
-///  A form creates and uses the <see cref="MdiClient"/> when you set the <see cref="Form.IsMdiContainer"/> property to <see langword="true"/>.
+///  <para>
+///   Don't create an <see cref="MdiClient"/> control. A form creates and uses the <see cref="MdiClient"/> when you set
+///   the <see cref="Form.IsMdiContainer"/> property to <see langword="true"/>.
+///  </para>
 /// </remarks>
 [ToolboxItem(false)]
 [DesignTimeVisible(false)]
 public sealed partial class MdiClient : Control
 {
-    // kept in add order, not ZOrder. Need to return the correct
-    // array of items...
-    private readonly List<Form> _children = new();
+    // Kept in add order, not ZOrder. Need to return the correct array of items.
+    private readonly List<Form> _children = [];
 
     /// <summary>
     ///  Creates a new MdiClient.
@@ -29,7 +29,13 @@ public sealed partial class MdiClient : Control
     public MdiClient() : base()
     {
         SetStyle(ControlStyles.Selectable, false);
+
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+
         BackColor = SystemColors.AppWorkspace;
+#pragma warning restore WFO5001
+
         Dock = DockStyle.Fill;
     }
 
@@ -120,7 +126,7 @@ public sealed partial class MdiClient : Control
     {
         get
         {
-            return _children.ToArray();
+            return [.. _children];
         }
     }
 
@@ -143,16 +149,16 @@ public sealed partial class MdiClient : Control
         switch (value)
         {
             case MdiLayout.Cascade:
-                PInvoke.SendMessage(this, PInvoke.WM_MDICASCADE);
+                PInvokeCore.SendMessage(this, PInvokeCore.WM_MDICASCADE);
                 break;
             case MdiLayout.TileVertical:
-                PInvoke.SendMessage(this, PInvoke.WM_MDITILE, (WPARAM)(uint)TILE_WINDOWS_HOW.MDITILE_VERTICAL);
+                PInvokeCore.SendMessage(this, PInvokeCore.WM_MDITILE, (WPARAM)(uint)TILE_WINDOWS_HOW.MDITILE_VERTICAL);
                 break;
             case MdiLayout.TileHorizontal:
-                PInvoke.SendMessage(this, PInvoke.WM_MDITILE, (WPARAM)(uint)TILE_WINDOWS_HOW.MDITILE_HORIZONTAL);
+                PInvokeCore.SendMessage(this, PInvokeCore.WM_MDITILE, (WPARAM)(uint)TILE_WINDOWS_HOW.MDITILE_HORIZONTAL);
                 break;
             case MdiLayout.ArrangeIcons:
-                PInvoke.SendMessage(this, PInvoke.WM_MDIICONARRANGE);
+                PInvokeCore.SendMessage(this, PInvokeCore.WM_MDIICONARRANGE);
                 break;
         }
     }
@@ -180,7 +186,7 @@ public sealed partial class MdiClient : Control
     [EditorBrowsable(EditorBrowsableState.Never)]
     protected override void ScaleCore(float dx, float dy)
     {
-        // Don't scale child forms...
+        // Don't scale child forms.
 
         SuspendLayout();
         try
@@ -214,7 +220,7 @@ public sealed partial class MdiClient : Control
     protected override unsafe void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
     {
         if (!IsHandleCreated
-            || (ParentInternal as Form)?.MdiChildrenMinimizedAnchorBottom == false
+            || ParentInternal is Form { MdiChildrenMinimizedAnchorBottom: false }
             || ParentInternal?.Site?.DesignMode == true)
         {
             base.SetBoundsCore(x, y, width, height, specified);
@@ -271,7 +277,7 @@ public sealed partial class MdiClient : Control
     /// <summary>
     ///  This code is required to set the correct window region during the resize of the Form at design time.
     ///  There is case when the form contains a MainMenu and also has IsMdiContainer property set, in which, the MdiClient fails to
-    ///  resize and hence draw the correct backcolor.
+    ///  resize and hence draw the correct BackColor.
     /// </summary>
     private void SetWindowRgn()
     {
@@ -281,8 +287,8 @@ public sealed partial class MdiClient : Control
         AdjustWindowRectExForControlDpi(ref rect, (WINDOW_STYLE)cp.Style, false, (WINDOW_EX_STYLE)cp.ExStyle);
 
         Rectangle bounds = Bounds;
-        using PInvoke.RegionScope rgn1 = new(0, 0, bounds.Width, bounds.Height);
-        using PInvoke.RegionScope rgn2 = new(
+        using RegionScope rgn1 = new(0, 0, bounds.Width, bounds.Height);
+        using RegionScope rgn2 = new(
             -rect.left,
             -rect.top,
             bounds.Width - rect.right,
@@ -293,7 +299,7 @@ public sealed partial class MdiClient : Control
             throw new InvalidOperationException(SR.ErrorSettingWindowRegion);
         }
 
-        if ((RegionType)PInvoke.CombineRgn(rgn1, rgn1, rgn2, RGN_COMBINE_MODE.RGN_DIFF) == RegionType.ERROR)
+        if (PInvokeCore.CombineRgn(rgn1, rgn1, rgn2, RGN_COMBINE_MODE.RGN_DIFF) == GDI_REGION_TYPE.RGN_ERROR)
         {
             throw new InvalidOperationException(SR.ErrorSettingWindowRegion);
         }
@@ -309,20 +315,11 @@ public sealed partial class MdiClient : Control
         }
     }
 
-    internal override bool ShouldSerializeBackColor()
-    {
-        return BackColor != SystemColors.AppWorkspace;
-    }
+    internal override bool ShouldSerializeBackColor() => BackColor != SystemColors.AppWorkspace;
 
-    private static bool ShouldSerializeLocation()
-    {
-        return false;
-    }
+    private static bool ShouldSerializeLocation() => false;
 
-    internal override bool ShouldSerializeSize()
-    {
-        return false;
-    }
+    internal override bool ShouldSerializeSize() => false;
 
     /// <summary>
     ///  Processes Windows messages.
@@ -332,7 +329,7 @@ public sealed partial class MdiClient : Control
     {
         switch (m.MsgInternal)
         {
-            case PInvoke.WM_CREATE:
+            case PInvokeCore.WM_CREATE:
                 if (ParentInternal is not null && ParentInternal.Site is not null && ParentInternal.Site.DesignMode && Handle != IntPtr.Zero)
                 {
                     SetWindowRgn();
@@ -340,7 +337,7 @@ public sealed partial class MdiClient : Control
 
                 break;
 
-            case PInvoke.WM_SETFOCUS:
+            case PInvokeCore.WM_SETFOCUS:
                 InvokeGotFocus(ParentInternal, EventArgs.Empty);
                 Form? childForm = null;
                 if (ParentInternal is Form parentInternalAsForm)
@@ -364,7 +361,7 @@ public sealed partial class MdiClient : Control
                 DefWndProc(ref m);
                 InvokeGotFocus(this, EventArgs.Empty);
                 return;
-            case PInvoke.WM_KILLFOCUS:
+            case PInvokeCore.WM_KILLFOCUS:
                 InvokeLostFocus(ParentInternal, EventArgs.Empty);
                 break;
         }
@@ -374,12 +371,12 @@ public sealed partial class MdiClient : Control
 
     internal override void OnInvokedSetScrollPosition(object? sender, EventArgs e)
     {
-        Application.Idle += new EventHandler(OnIdle); // do this on idle (it must be mega-delayed).
+        Application.Idle += OnIdle; // do this on idle (it must be mega-delayed).
     }
 
     private void OnIdle(object? sender, EventArgs e)
     {
-        Application.Idle -= new EventHandler(OnIdle);
+        Application.Idle -= OnIdle;
         base.OnInvokedSetScrollPosition(sender, e);
     }
 }

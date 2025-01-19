@@ -11,7 +11,7 @@ public partial class MonthCalendar
     /// <summary>
     ///  Represents an accessible object for a calendar header in <see cref="MonthCalendar"/> control.
     /// </summary>
-    internal class CalendarHeaderAccessibleObject : CalendarButtonAccessibleObject
+    internal sealed class CalendarHeaderAccessibleObject : CalendarButtonAccessibleObject
     {
         // A calendar header is the first in the calendar accessibility tree.
         // Indices start at 1.
@@ -30,18 +30,14 @@ public partial class MonthCalendar
             _calendarAccessibleObject = calendarAccessibleObject;
             _monthCalendarAccessibleObject = monthCalendarAccessibleObject;
             _calendarIndex = calendarIndex;
+
             // Name and RuntimeId don't change if the calendar date range is not changed,
             // otherwise the calendar accessibility tree will be rebuilt.
             // So save these values one time to avoid sending messages to Windows every time
             // or recreating new structures and making extra calculations.
             _initName = _monthCalendarAccessibleObject.GetCalendarPartText(MCGRIDINFO_PART.MCGIP_CALENDARHEADER, _calendarIndex);
-            _initRuntimeId = new int[]
-            {
-                _calendarAccessibleObject.RuntimeId[0],
-                _calendarAccessibleObject.RuntimeId[1],
-                _calendarAccessibleObject.RuntimeId[2],
-                GetChildId()
-            };
+            int[] id = _calendarAccessibleObject.RuntimeId;
+            _initRuntimeId = [id[0], id[1], id[2], GetChildId()];
         }
 
         public override Rectangle Bounds
@@ -58,6 +54,8 @@ public partial class MonthCalendar
         internal override int GetChildId() => ChildId;
 
         public override string Name => _initName;
+
+        internal override bool CanGetNameInternal => false;
 
         public override AccessibleObject Parent => _calendarAccessibleObject;
 

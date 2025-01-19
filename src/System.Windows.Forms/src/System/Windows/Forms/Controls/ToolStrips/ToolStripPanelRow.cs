@@ -19,8 +19,7 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
     private int _suspendCount;
     private ToolStripPanelRowManager? _rowManager;
 
-    private const int MinAllowedWidth = 50;
-    private readonly int _minAllowedWidth = MinAllowedWidth;
+    private readonly int _minAllowedWidth;
 
     private static readonly int s_stateVisible = BitVector32.CreateMask();
     private static readonly int s_stateDisposing = BitVector32.CreateMask(s_stateVisible);
@@ -30,12 +29,6 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
     private static readonly int s_stateInLayout = BitVector32.CreateMask(s_stateCachedBoundsMode);
 
     private static readonly int s_propControlsCollection = PropertyStore.CreateKey();
-
-#if DEBUG
-    internal static TraceSwitch s_toolStripPanelRowCreationDebug = new("ToolStripPanelRowCreationDebug", "Debug code for rafting row creation");
-#else
-    internal static TraceSwitch? s_toolStripPanelRowCreationDebug;
-#endif
 
 #if DEBUG
     private static int s_rowCreationCount;
@@ -52,22 +45,17 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
 #if DEBUG
         _thisRowID = ++s_rowCreationCount;
 #endif
-        if (DpiHelper.IsScalingRequirementMet)
-        {
-            _minAllowedWidth = DpiHelper.LogicalToDeviceUnitsX(MinAllowedWidth);
-        }
+
+        const int LogicalMinAllowedWidth = 50;
+        _minAllowedWidth = ScaleHelper.ScaleToInitialSystemDpi(LogicalMinAllowedWidth);
 
         ToolStripPanel = parent;
         _state[s_stateVisible] = visible;
         _state[s_stateDisposing | s_stateLocked | s_stateInitialized] = false;
 
-        s_toolStripPanelRowCreationDebug.TraceVerbose("Created new ToolStripPanelRow");
-
-        using (LayoutTransaction lt = new LayoutTransaction(parent, this, null))
-        {
-            Margin = DefaultMargin;
-            CommonProperties.SetAutoSize(this, true);
-        }
+        using LayoutTransaction lt = new(parent, this, null);
+        Margin = DefaultMargin;
+        CommonProperties.SetAutoSize(this, true);
     }
 
     public Rectangle Bounds
@@ -101,36 +89,21 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
     {
         get
         {
-            ToolStripPanelRowControlCollection? controlsCollection = (ToolStripPanelRowControlCollection?)Properties.GetObject(s_propControlsCollection);
-
-            if (controlsCollection is null)
+            if (!Properties.TryGetValue(s_propControlsCollection, out ToolStripPanelRowControlCollection? controlsCollection))
             {
-                controlsCollection = CreateControlsInstance();
-                Properties.SetObject(s_propControlsCollection, controlsCollection);
+                controlsCollection = Properties.AddValue(s_propControlsCollection, CreateControlsInstance());
             }
 
             return controlsCollection;
         }
     }
 
-    internal ArrangedElementCollection Cells
-    {
-        get
-        {
-            return ControlsInternal.Cells;
-        }
-    }
+    internal ArrangedElementCollection Cells => ControlsInternal.Cells;
 
     internal bool CachedBoundsMode
     {
-        get
-        {
-            return _state[s_stateCachedBoundsMode];
-        }
-        set
-        {
-            _state[s_stateCachedBoundsMode] = value;
-        }
+        get => _state[s_stateCachedBoundsMode];
+        set => _state[s_stateCachedBoundsMode] = value;
     }
 
     private ToolStripPanelRowManager RowManager
@@ -258,7 +231,7 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
     ///  whose value is not always set, you should store it in here to save
     ///  space.
     /// </summary>
-    internal PropertyStore Properties { get; } = new PropertyStore();
+    internal PropertyStore Properties { get; } = new();
 
     public ToolStripPanel ToolStripPanel { get; }
 
@@ -305,7 +278,6 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
         {
             if (disposing)
             {
-                s_toolStripPanelRowCreationDebug.TraceVerbose("Disposed ToolStripPanelRow");
                 _state[s_stateDisposing] = true;
                 ControlsInternal.Clear();
             }
@@ -319,7 +291,7 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
 
     protected internal virtual void OnControlAdded(Control control, int index)
     {
-        // if previously added - remove.
+        // If previously added - remove.
 
         if (control is ISupportToolStripPanel controlToBeDragged)
         {
@@ -336,7 +308,7 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
 
     protected void OnBoundsChanged(Rectangle oldBounds, Rectangle newBounds)
     {
-        ((IArrangedElement)this).PerformLayout((IArrangedElement)this, PropertyNames.Size);
+        ((IArrangedElement)this).PerformLayout(this, PropertyNames.Size);
 
         RowManager.OnBoundsChanged(oldBounds, newBounds);
     }
@@ -380,12 +352,13 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
     {
         for (int i = 0; i < Cells.Count; i++)
         {
-            IArrangedElement element = Cells[i] as IArrangedElement;
+            IArrangedElement element = Cells[i];
             if (element.ParticipatesInLayout)
             {
                 ToolStripPanelCell cell = (ToolStripPanelCell)element;
                 element.SetBounds(cell.CachedBounds, BoundsSpecified.None);
-                // Debug.Assert( cell.Control is null || cell.CachedBounds.Location == cell.Control.Bounds.Location, "CachedBounds out of sync with bounds!");
+                // Debug.Assert( cell.Control is null || cell.CachedBounds.Location == cell.Control.Bounds.Location,
+                // "CachedBounds out of sync with bounds!");
             }
         }
     }
@@ -626,11 +599,11 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
 
     private void SetBounds(Rectangle bounds)
     {
-        if (bounds != this._bounds)
+        if (bounds != _bounds)
         {
-            Rectangle oldBounds = this._bounds;
+            Rectangle oldBounds = _bounds;
 
-            this._bounds = bounds;
+            _bounds = bounds;
             OnBoundsChanged(oldBounds, bounds);
         }
     }
@@ -713,8 +686,7 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
     // Sets the bounds for an element.
     void IArrangedElement.SetBounds(Rectangle bounds, BoundsSpecified specified)
     {
-        // in this case the parent is telling us to refresh our bounds - don't
-        // call PerformLayout
+        // In this case the parent is telling us to refresh our bounds - don't call PerformLayout.
         SetBounds(bounds);
     }
 
@@ -726,28 +698,12 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
         }
     }
 
-#region MouseStuff
-
-#if DEBUG
-    internal static readonly TraceSwitch ToolStripPanelMouseDebug = new("ToolStripPanelMouse", "Debug ToolStrip WM_MOUSEACTIVATE code");
-#else
-    internal static readonly TraceSwitch? ToolStripPanelMouseDebug;
-#endif
-
-    internal Rectangle DragBounds
-    {
-        get
-        {
-            return RowManager.DragBounds;
-        }
-    }
+    internal Rectangle DragBounds => RowManager.DragBounds;
 
     internal void MoveControl(ToolStrip movingControl, Point startClientLocation, Point endClientLocation)
     {
         RowManager.MoveControl(movingControl, startClientLocation, endClientLocation);
     }
-
-    //
 
     internal void JoinRow(ToolStrip toolStripToDrag, Point locationToDrag)
     {
@@ -763,6 +719,4 @@ public partial class ToolStripPanelRow : Component, IArrangedElement
             Dispose();
         }
     }
-
-#endregion
 }

@@ -12,8 +12,8 @@ public partial class MenuStrip : ToolStrip
 {
     private ToolStripMenuItem? _mdiWindowListItem;
 
-    private static readonly object EventMenuActivate = new();
-    private static readonly object EventMenuDeactivate = new();
+    private static readonly object s_menuActivateEvent = new();
+    private static readonly object s_menuDeactivateEvent = new();
 
     public MenuStrip()
     {
@@ -56,17 +56,16 @@ public partial class MenuStrip : ToolStrip
     protected override bool DefaultShowItemToolTips
         => false;
 
-    protected override Padding DefaultGripMargin
-        =>
-            // MenuStrip control is scaled by Control::ScaleControl()
-            // Ensure grip aligns properly when set visible.
-            DpiHelper.IsPerMonitorV2Awareness ?
-                   DpiHelper.LogicalToDeviceUnits(new Padding(2, 2, 0, 2), DeviceDpi) :
-                   new Padding(2, 2, 0, 2);
+    protected override Padding DefaultGripMargin =>
+        // MenuStrip control is scaled by Control::ScaleControl()
+        // Ensure grip aligns properly when set visible.
+        ScaleHelper.IsThreadPerMonitorV2Aware ?
+                ScaleHelper.ScaleToDpi(new Padding(2, 2, 0, 2), DeviceDpi) :
+                new Padding(2, 2, 0, 2);
 
-    protected override Size DefaultSize
-        => DpiHelper.IsPerMonitorV2Awareness ?
-           DpiHelper.LogicalToDeviceUnits(new Size(200, 24), DeviceDpi) :
+    protected override Size DefaultSize =>
+        ScaleHelper.IsThreadPerMonitorV2Aware ?
+           ScaleHelper.ScaleToDpi(new Size(200, 24), DeviceDpi) :
            new Size(200, 24);
 
     protected override Padding DefaultPadding
@@ -75,16 +74,13 @@ public partial class MenuStrip : ToolStrip
         {
             // MenuStrip control is scaled by Control::ScaleControl()
             // Scoot the grip over when present
-            if (GripStyle == ToolStripGripStyle.Visible)
-            {
-                return DpiHelper.IsPerMonitorV2Awareness ?
-                       DpiHelper.LogicalToDeviceUnits(new Padding(3, 2, 0, 2), DeviceDpi) :
-                       new Padding(3, 2, 0, 2);
-            }
-
-            return DpiHelper.IsPerMonitorV2Awareness ?
-                   DpiHelper.LogicalToDeviceUnits(new Padding(6, 2, 0, 2), DeviceDpi) :
-                   new Padding(6, 2, 0, 2);
+            return GripStyle == ToolStripGripStyle.Visible
+                ? ScaleHelper.IsThreadPerMonitorV2Aware
+                    ? ScaleHelper.ScaleToDpi(new Padding(3, 2, 0, 2), DeviceDpi)
+                    : new Padding(3, 2, 0, 2)
+                : ScaleHelper.IsThreadPerMonitorV2Aware
+                    ? ScaleHelper.ScaleToDpi(new Padding(6, 2, 0, 2), DeviceDpi)
+                    : new Padding(6, 2, 0, 2);
         }
     }
 
@@ -99,16 +95,16 @@ public partial class MenuStrip : ToolStrip
     [SRDescription(nameof(SR.MenuStripMenuActivateDescr))]
     public event EventHandler? MenuActivate
     {
-        add => Events.AddHandler(EventMenuActivate, value);
-        remove => Events.RemoveHandler(EventMenuActivate, value);
+        add => Events.AddHandler(s_menuActivateEvent, value);
+        remove => Events.RemoveHandler(s_menuActivateEvent, value);
     }
 
     [SRCategory(nameof(SR.CatBehavior))]
     [SRDescription(nameof(SR.MenuStripMenuDeactivateDescr))]
     public event EventHandler? MenuDeactivate
     {
-        add => Events.AddHandler(EventMenuDeactivate, value);
-        remove => Events.RemoveHandler(EventMenuDeactivate, value);
+        add => Events.AddHandler(s_menuDeactivateEvent, value);
+        remove => Events.RemoveHandler(s_menuDeactivateEvent, value);
     }
 
     [DefaultValue(false)]
@@ -179,7 +175,7 @@ public partial class MenuStrip : ToolStrip
             AccessibilityNotifyClients(AccessibleEvents.SystemMenuStart, (int)OBJECT_IDENTIFIER.OBJID_MENU, -1);
         }
 
-        ((EventHandler?)Events[EventMenuActivate])?.Invoke(this, e);
+        ((EventHandler?)Events[s_menuActivateEvent])?.Invoke(this, e);
     }
 
     protected virtual void OnMenuDeactivate(EventArgs e)
@@ -195,18 +191,17 @@ public partial class MenuStrip : ToolStrip
             }
         }
 
-        ((EventHandler?)Events[EventMenuDeactivate])?.Invoke(this, e);
+        ((EventHandler?)Events[s_menuDeactivateEvent])?.Invoke(this, e);
     }
 
     /// <summary>
-    ///  Called from ToolStripManager.ProcessMenuKey.  Fires MenuActivate event and sets focus.
+    ///  Called from ToolStripManager.ProcessMenuKey. Fires MenuActivate event and sets focus.
     /// </summary>
     internal bool OnMenuKey()
     {
         if (!(Focused || ContainsFocus))
         {
-            ToolStrip.s_snapFocusDebug.TraceVerbose("[ProcessMenuKey] set focus to menustrip");
-            ToolStripManager.ModalMenuFilter.SetActiveToolStrip(this, /*menuKeyPressed=*/true);
+            ToolStripManager.ModalMenuFilter.SetActiveToolStrip(this, menuKeyPressed: true);
 
             if (DisplayedItems.Count > 0)
             {
@@ -216,7 +211,7 @@ public partial class MenuStrip : ToolStrip
                 }
                 else
                 {
-                    // first alt should select "File".  Future keydowns of alt should restore focus.
+                    // first alt should select "File". Future keydowns of alt should restore focus.
                     SelectNextToolStripItem(null, forward: RightToLeft == RightToLeft.No);
                 }
             }
@@ -234,18 +229,16 @@ public partial class MenuStrip : ToolStrip
             // ALT, then space should dismiss the menu and activate the system menu.
             if (keyData == Keys.Space)
             {
-                // if we're focused it's ok to activate system menu
-                // if we're not focused - we should not activate if we contain focus - this means a text box or something
-                // has focus.
+                // If we're focused it's ok to activate system menu. If we're not focused - we should not activate if
+                // we contain focus - this means a text box or something has focus.
                 if (Focused || !ContainsFocus)
                 {
                     NotifySelectionChange(item: null);
-                    s_snapFocusDebug.TraceVerbose("[MenuStrip.ProcessCmdKey] Rolling up the menu and invoking the system menu");
                     ToolStripManager.ModalMenuFilter.ExitMenuMode();
 
                     // Send a WM_SYSCOMMAND SC_KEYMENU + Space to activate the system menu.
                     HWND ancestor = PInvoke.GetAncestor(this, GET_ANCESTOR_FLAGS.GA_ROOT);
-                    PInvoke.PostMessage(ancestor, PInvoke.WM_SYSCOMMAND, (WPARAM)PInvoke.SC_KEYMENU, (LPARAM)(int)Keys.Space);
+                    PInvokeCore.PostMessage(ancestor, PInvokeCore.WM_SYSCOMMAND, (WPARAM)PInvoke.SC_KEYMENU, (LPARAM)(int)Keys.Space);
                     return true;
                 }
             }
@@ -256,7 +249,7 @@ public partial class MenuStrip : ToolStrip
 
     protected override void WndProc(ref Message m)
     {
-        if (m.Msg == (int)PInvoke.WM_MOUSEACTIVATE && (ActiveDropDowns.Count == 0))
+        if (m.Msg == (int)PInvokeCore.WM_MOUSEACTIVATE && (ActiveDropDowns.Count == 0))
         {
             // call menu activate before we actually take focus.
             Point pt = PointToClient(WindowsFormsUtils.LastCursorPoint);

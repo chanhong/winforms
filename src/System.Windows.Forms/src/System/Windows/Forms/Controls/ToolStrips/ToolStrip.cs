@@ -8,6 +8,7 @@ using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows.Forms.Layout;
+using System.Windows.Forms.Primitives;
 using Microsoft.Win32;
 
 namespace System.Windows.Forms;
@@ -56,22 +57,21 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     private bool _alreadyHooked;
 
     private Size _imageScalingSize;
-    private const int IconDimension = 16;
-    private static int s_iconWidth = IconDimension;
-    private static int s_iconHeight = IconDimension;
+    private const int LogicalIconSize = 16;
+    private static int s_iconSize = LogicalIconSize;
 
     private Font? _defaultFont;
     private RestoreFocusMessageFilter? _restoreFocusFilter;
-    private static readonly Padding s_defaultPadding = new(0, 0, 1, 0);
-    private static readonly Padding s_defaultGripMargin = new(2);
-    private Padding _scaledDefaultPadding = s_defaultPadding;
-    private Padding _scaledDefaultGripMargin = s_defaultGripMargin;
+    private static readonly Padding s_logicalDefaultPadding = new(0, 0, 1, 0);
+    private static readonly Padding s_logicalDefaultGripMargin = new(2);
+    private Padding _defaultPadding = s_logicalDefaultPadding;
+    private Padding _defaultGripMargin = s_logicalDefaultGripMargin;
 
     private Point _mouseEnterWhenShown = s_invalidMouseEnter;
 
-    private const int InsertionBeamWidth = 6;
+    private const int LogicalInsertionBeamWidth = 6;
 
-    internal static int s_insertionBeamWidth = InsertionBeamWidth;
+    internal static int s_insertionBeamWidth = LogicalInsertionBeamWidth;
 
     private static readonly object s_eventPaintGrip = new();
     private static readonly object s_eventLayoutCompleted = new();
@@ -106,81 +106,48 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     internal const int STATE_LASTMOUSEDOWNEDITEMCAPTURE = 0x00004000;
     internal const int STATE_MENUACTIVE = 0x00008000;
 
-#if DEBUG
-    internal static readonly TraceSwitch s_selectionDebug = new("SelectionDebug", "Debug ToolStrip Selection code");
-    internal static readonly TraceSwitch s_dropTargetDebug = new("DropTargetDebug", "Debug ToolStrip Drop code");
-    internal static readonly TraceSwitch s_layoutDebugSwitch = new("Layout debug", "Debug ToolStrip layout code");
-    internal static readonly TraceSwitch s_mouseActivateDebug = new("ToolStripMouseActivate", "Debug ToolStrip WM_MOUSEACTIVATE code");
-    internal static readonly TraceSwitch s_mergeDebug = new("ToolStripMergeDebug", "Debug toolstrip merging");
-    internal static readonly TraceSwitch s_snapFocusDebug = new("SnapFocus", "Debug snapping/restoration of focus");
-    internal static readonly TraceSwitch s_flickerDebug = new("FlickerDebug", "Debug excessive calls to Invalidate()");
-    internal static readonly TraceSwitch s_itemReorderDebug = new("ItemReorderDebug", "Debug excessive calls to Invalidate()");
-    internal static readonly TraceSwitch s_mdiMergeDebug = new("MDIMergeDebug", "Debug toolstrip MDI merging");
-    internal static readonly TraceSwitch s_menuAutoExpandDebug = new("MenuAutoExpand", "Debug menu auto expand");
-    internal static readonly TraceSwitch s_controlTabDebug = new("ControlTab", "Debug ToolStrip Control+Tab selection");
-#else
-    internal static readonly TraceSwitch? s_selectionDebug;
-    internal static readonly TraceSwitch? s_dropTargetDebug;
-    internal static readonly TraceSwitch? s_layoutDebugSwitch;
-    internal static readonly TraceSwitch? s_mouseActivateDebug;
-    internal static readonly TraceSwitch? s_mergeDebug;
-    internal static readonly TraceSwitch? s_snapFocusDebug;
-    internal static readonly TraceSwitch? s_flickerDebug;
-    internal static readonly TraceSwitch? s_itemReorderDebug;
-    internal static readonly TraceSwitch? s_mdiMergeDebug;
-    internal static readonly TraceSwitch? s_menuAutoExpandDebug;
-    internal static readonly TraceSwitch? s_controlTabDebug;
-#endif
-
     private delegate void BooleanMethodInvoker(bool arg);
     internal Action<int, int>? _rescaleConstsCallbackDelegate;
 
     public ToolStrip()
     {
-        if (DpiHelper.IsPerMonitorV2Awareness)
+        if (ScaleHelper.IsThreadPerMonitorV2Aware)
         {
             ToolStripManager.CurrentDpi = DeviceDpi;
             _defaultFont = ToolStripManager.DefaultFont;
-            s_iconWidth = DpiHelper.LogicalToDeviceUnits(IconDimension, DeviceDpi);
-            s_iconHeight = DpiHelper.LogicalToDeviceUnits(IconDimension, DeviceDpi);
-            s_insertionBeamWidth = DpiHelper.LogicalToDeviceUnits(InsertionBeamWidth, DeviceDpi);
-            _scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(s_defaultPadding, DeviceDpi);
-            _scaledDefaultGripMargin = DpiHelper.LogicalToDeviceUnits(s_defaultGripMargin, DeviceDpi);
-        }
-        else if (DpiHelper.IsScalingRequired)
-        {
-            s_iconWidth = DpiHelper.LogicalToDeviceUnitsX(IconDimension);
-            s_iconHeight = DpiHelper.LogicalToDeviceUnitsY(IconDimension);
-            s_insertionBeamWidth = DpiHelper.LogicalToDeviceUnitsX(InsertionBeamWidth);
-            _scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(s_defaultPadding);
-            _scaledDefaultGripMargin = DpiHelper.LogicalToDeviceUnits(s_defaultGripMargin);
         }
 
-        _imageScalingSize = new Size(s_iconWidth, s_iconHeight);
+        s_insertionBeamWidth = ScaleHelper.ScaleToDpi(LogicalInsertionBeamWidth, DeviceDpi);
+        _defaultPadding = ScaleHelper.ScaleToDpi(s_logicalDefaultPadding, DeviceDpi);
+        _defaultGripMargin = ScaleHelper.ScaleToDpi(s_logicalDefaultGripMargin, DeviceDpi);
+        s_iconSize = ScaleHelper.ScaleToDpi(LogicalIconSize, DeviceDpi);
+        _imageScalingSize = new Size(s_iconSize, s_iconSize);
 
         SuspendLayout();
         CanOverflow = true;
         TabStop = false;
         MenuAutoExpand = false;
-        SetStyle(ControlStyles.OptimizedDoubleBuffer |
-                 ControlStyles.AllPaintingInWmPaint |
-                 ControlStyles.SupportsTransparentBackColor, true);
+        SetStyle(
+            ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.SupportsTransparentBackColor,
+            true);
 
         SetStyle(ControlStyles.Selectable, false);
         SetToolStripState(STATE_USEDEFAULTRENDERER | STATE_ALLOWMERGE, true);
 
-        SetExtendedState(ExtendedStates.MaintainsOwnCaptureMode // A toolstrip does not take capture on MouseDown.
-                  | ExtendedStates.UserPreferredSizeCache, // this class overrides GetPreferredSizeCore, let Control automatically cache the result
-                   true);
+        SetExtendedState(
+            // A toolstrip does not take capture on MouseDown.
+            ExtendedStates.MaintainsOwnCaptureMode
+                // This class overrides GetPreferredSizeCore, let Control automatically cache the result.
+                | ExtendedStates.UserPreferredSizeCache,
+                true);
 
-        // add a weak ref link in ToolstripManager
+        // Add a weak reference link in ToolstripManager.
         ToolStripManager.ToolStrips.Add(this);
 
         _layoutEngine = new ToolStripSplitStackLayout(this);
         Dock = DefaultDock;
         AutoSize = true;
         CausesValidation = false;
-        Size defaultSize = DefaultSize;
         SetAutoSizeMode(AutoSizeMode.GrowAndShrink);
         ShowItemToolTips = DefaultShowItemToolTips;
         ResumeLayout(true);
@@ -192,7 +159,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         Items.AddRange(items);
     }
 
-    internal List<ToolStripDropDown> ActiveDropDowns { get; } = new List<ToolStripDropDown>(1);
+    internal List<ToolStripDropDown> ActiveDropDowns { get; } = new(1);
 
     // returns true when entered into menu mode through this toolstrip/menustrip
     // this is only really supported for menustrip active event, but to prevent casting everywhere...
@@ -203,7 +170,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     }
 
     // This is only for use in determining whether to show scroll bars on
-    // ToolStripDropDownMenus.  No one else should be using it for anything.
+    // ToolStripDropDownMenus. No one else should be using it for anything.
     internal virtual bool AllItemsVisible
     {
         get
@@ -228,7 +195,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             if (IsInToolStripPanel && base.AutoSize && !value)
             {
                 // Restoring the bounds can change the location of the toolstrip -
-                // which would join it to a new row.  Set the specified bounds to the new location to
+                // which would join it to a new row. Set the specified bounds to the new location to
                 // prevent this.
                 Rectangle bounds = CommonProperties.GetSpecifiedBounds(this);
                 bounds.Location = Location;
@@ -288,6 +255,17 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         set => base.AutoScrollPosition = value;
     }
 
+    /// <summary>
+    ///  When <see langword="true"/> Allows the control to be interacted when window does not have focus.
+    /// </summary>
+    [Browsable(true)]
+    [DefaultValue(false)]
+    [SRDescription(nameof(SR.ToolStripAllowClickThrough))]
+    [SRCategory(nameof(SR.CatBehavior))]
+    [EditorBrowsable(EditorBrowsableState.Always)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+    public bool AllowClickThrough { get; set; }
+
     public override bool AllowDrop
     {
         get => base.AllowDrop;
@@ -334,7 +312,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
                 if (value)
                 {
-                    ToolStripSplitStackDragDropHandler dragDropHandler = new ToolStripSplitStackDragDropHandler(this);
+                    ToolStripSplitStackDragDropHandler dragDropHandler = new(this);
                     ItemReorderDropSource = dragDropHandler;
                     ItemReorderDropTarget = dragDropHandler;
 
@@ -402,29 +380,25 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     {
         get
         {
-            BindingContext? bc = (BindingContext?)Properties.GetObject(s_propBindingContext);
-            if (bc is not null)
+            if (Properties.TryGetValue(s_propBindingContext, out BindingContext? context))
             {
-                return bc;
+                return context;
             }
 
-            // try the parent
-            Control? parent = ParentInternal;
-            if (parent is not null && parent.CanAccessProperties)
+            // Try the parent.
+            if (ParentInternal is { } parent && parent.CanAccessProperties)
             {
                 return parent.BindingContext;
             }
 
-            // we don't have a binding context
+            // We don't have a binding context.
             return null;
         }
         set
         {
-            if (Properties.GetObject(s_propBindingContext) != value)
+            if (Properties.AddOrRemoveValue(s_propBindingContext, value) != value)
             {
-                Properties.SetObject(s_propBindingContext, value);
-
-                // re-wire the bindings
+                // Re-wire the bindings.
                 OnBindingContextChanged(EventArgs.Empty);
             }
         }
@@ -435,10 +409,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     [SRCategory(nameof(SR.CatLayout))]
     public bool CanOverflow
     {
-        get
-        {
-            return GetToolStripState(STATE_CANOVERFLOW);
-        }
+        get => GetToolStripState(STATE_CANOVERFLOW);
         set
         {
             if (GetToolStripState(STATE_CANOVERFLOW) != value)
@@ -452,7 +423,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// <summary> we can only shift selection when we're not focused (someone mousing over us)
     ///  or we are focused and one of our toolstripcontrolhosts do not have focus.
     ///  SCENARIO: put focus in combo box, move the mouse over another item... selection
-    ///  should not shift until the combobox relinquishes its focus.
+    ///  should not shift until the ComboBox relinquishes its focus.
     /// </summary>
     internal bool CanHotTrack
     {
@@ -461,7 +432,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             if (!Focused)
             {
                 // if  ContainsFocus in one of the children = false, someone is just mousing by, we can hot track
-                return (ContainsFocus == false);
+                return !ContainsFocus;
             }
             else
             {
@@ -547,7 +518,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     {
         get
         {
-            if (IsFontSet())
+            if (LocalAppContextSwitches.ApplyParentFontToMenus || IsFontSet())
             {
                 return base.Font;
             }
@@ -566,10 +537,9 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     ///  Deriving classes can override this to configure a default size for their control.
     ///  This is more efficient than setting the size in the control's constructor.
     /// </summary>
-    protected override Size DefaultSize
-        => DpiHelper.IsPerMonitorV2Awareness ?
-           DpiHelper.LogicalToDeviceUnits(new Size(100, 25), DeviceDpi) :
-           new Size(100, 25);
+    protected override Size DefaultSize => ScaleHelper.IsThreadPerMonitorV2Aware
+        ? ScaleHelper.ScaleToDpi(new Size(100, 25), DeviceDpi)
+        : new Size(100, 25);
 
     protected override Padding DefaultPadding
     {
@@ -577,45 +547,18 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         {
             // one pixel from the right edge to prevent the right border from painting over the
             // aligned-right toolstrip item.
-            return _scaledDefaultPadding;
+            return _defaultPadding;
         }
     }
 
-    protected override Padding DefaultMargin
-    {
-        get { return Padding.Empty; }
-    }
+    protected override Padding DefaultMargin => Padding.Empty;
 
-    protected virtual DockStyle DefaultDock
-    {
-        get
-        {
-            return DockStyle.Top;
-        }
-    }
+    protected virtual DockStyle DefaultDock => DockStyle.Top;
 
-    protected virtual Padding DefaultGripMargin
-    {
-        get
-        {
-            if (_toolStripGrip is not null)
-            {
-                return _toolStripGrip.DefaultMargin;
-            }
-            else
-            {
-                return _scaledDefaultGripMargin;
-            }
-        }
-    }
+    protected virtual Padding DefaultGripMargin =>
+        _toolStripGrip is not null ? _toolStripGrip.DefaultMargin : _defaultGripMargin;
 
-    protected virtual bool DefaultShowItemToolTips
-    {
-        get
-        {
-            return true;
-        }
-    }
+    protected virtual bool DefaultShowItemToolTips => true;
 
     [Browsable(false)]
     [SRDescription(nameof(SR.ToolStripDefaultDropDownDirectionDescr))]
@@ -707,7 +650,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 {
                     // We don't call base.Dock = value, because that would cause us to get 2 LocationChanged events.
                     // The first is when the parent gets a Layout due to the DockChange, and the second comes from when we
-                    // change the orientation.  Instead we've duplicated the logic of Control.Dock.set here, but with a
+                    // change the orientation. Instead we've duplicated the logic of Control.Dock.set here, but with a
                     // LayoutTransaction on the Parent as well.
                     DefaultLayout.SetDock(this, value);
                     UpdateLayoutStyle(Dock);
@@ -720,8 +663,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     }
 
     /// <summary>
-    ///  Returns an owner window that can be used to
-    ///  own a drop down.
+    ///  Returns an owner window that can be used to own a drop down.
     /// </summary>
     internal virtual NativeWindow DropDownOwnerWindow
     {
@@ -744,7 +686,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
     /// <summary>
     ///  Returns the drop target manager that all the hwndless
-    ///  items and this ToolStrip share.  this is necessary as
+    ///  items and this ToolStrip share. this is necessary as
     ///  RegisterDragDrop requires an HWND.
     /// </summary>
     [AllowNull]
@@ -819,7 +761,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     }
 
     /// <summary>
-    ///  [ToolStrip ForeColorChanged event, overriden to turn browsing off.]
+    ///  [ToolStrip ForeColorChanged event, overridden to turn browsing off.]
     /// </summary>
     [Browsable(false)]
     public new event EventHandler? ForeColorChanged
@@ -903,7 +845,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     }
 
     /// <summary>
-    ///  The boundaries of the grip on the ToolStrip.  If it is invisible - returns Rectangle.Empty.
+    ///  The boundaries of the grip on the ToolStrip. If it is invisible - returns Rectangle.Empty.
     /// </summary>
     [Browsable(false)]
     public Rectangle GripRectangle
@@ -1014,7 +956,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         {
             if (_imageList != value)
             {
-                EventHandler handler = new EventHandler(ImageListRecreateHandle);
+                EventHandler handler = new(ImageListRecreateHandle);
 
                 // Remove the previous imagelist handle recreate handler.
                 if (_imageList is not null)
@@ -1088,7 +1030,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// <summary>
     ///  The items that belong to this ToolStrip.
     ///  Note - depending on space and layout preferences, not all items
-    ///  in this collection will be displayed.  They may not even be displayed
+    ///  in this collection will be displayed. They may not even be displayed
     ///  on this ToolStrip (say in the case where we're overflowing the item).
     ///  The collection of _Displayed_ items is the DisplayedItems collection.
     ///  The displayed items collection also includes things like the OverflowButton
@@ -1136,9 +1078,9 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     ///  [ toolstrip double buffer hdc ] ← onpaint hands us this buffer, after we're done DBuf is copied to "main hdc"/
     ///  [tsi dc] ← we copy the background from the DBuf, then paint the item into this DC, then BitBlt back up to DBuf
     ///
-    ///  This is done because GDI won't honor GDI+ TranslateTransform.  We used to use DCMapping to change the viewport
+    ///  This is done because GDI won't honor GDI+ TranslateTransform. We used to use DCMapping to change the viewport
     ///  origin and clipping rect of the toolstrip double buffer hdc to paint each item, but this proves costly
-    ///  because you need to allocate GDI+ Graphics objects for every single item.  This method allows us to only
+    ///  because you need to allocate GDI+ Graphics objects for every single item. This method allows us to only
     ///  allocate 1 Graphics object and share it between all the items in OnPaint.
     /// </summary>
     private CachedItemHdcInfo ItemHdcInfo
@@ -1258,7 +1200,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 switch (value)
                 {
                     case ToolStripLayoutStyle.Flow:
-                        if (!(_layoutEngine is FlowLayout))
+                        if (_layoutEngine is not FlowLayout)
                         {
                             _layoutEngine = FlowLayout.Instance;
                         }
@@ -1268,7 +1210,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                         break;
                     case ToolStripLayoutStyle.Table:
 
-                        if (!(_layoutEngine is TableLayout))
+                        if (_layoutEngine is not TableLayout)
                         {
                             _layoutEngine = TableLayout.Instance;
                         }
@@ -1297,7 +1239,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                             }
                         }
 
-                        if (!(_layoutEngine is ToolStripSplitStackLayout))
+                        if (_layoutEngine is not ToolStripSplitStackLayout)
                         {
                             _layoutEngine = new ToolStripSplitStackLayout(this);
                         }
@@ -1446,25 +1388,11 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         remove => Events.RemoveHandler(s_eventPaintGrip, value);
     }
 
-    internal RestoreFocusMessageFilter RestoreFocusFilter
-    {
-        get
-        {
-            _restoreFocusFilter ??= new RestoreFocusMessageFilter(this);
+    internal RestoreFocusMessageFilter RestoreFocusFilter => _restoreFocusFilter ??= new RestoreFocusMessageFilter(this);
 
-            return _restoreFocusFilter;
-        }
-    }
+    internal ToolStripPanelCell? ToolStripPanelCell => ((ISupportToolStripPanel)this).ToolStripPanelCell;
 
-    internal ToolStripPanelCell? ToolStripPanelCell
-    {
-        get { return ((ISupportToolStripPanel)this).ToolStripPanelCell; }
-    }
-
-    internal ToolStripPanelRow? ToolStripPanelRow
-    {
-        get { return ((ISupportToolStripPanel)this).ToolStripPanelRow; }
-    }
+    internal ToolStripPanelRow? ToolStripPanelRow => ((ISupportToolStripPanel)this).ToolStripPanelRow;
 
     // fetches the Cell associated with this toolstrip.
     ToolStripPanelCell? ISupportToolStripPanel.ToolStripPanelCell
@@ -1472,13 +1400,9 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         get
         {
             ToolStripPanelCell? toolStripPanelCell = null;
-            if (!IsDropDown && !IsDisposed)
+            if (!IsDropDown && !IsDisposed && !Properties.TryGetValue(s_propToolStripPanelCell, out toolStripPanelCell))
             {
-                if (!Properties.TryGetObject(ToolStrip.s_propToolStripPanelCell, out toolStripPanelCell))
-                {
-                    toolStripPanelCell = new ToolStripPanelCell(this);
-                    Properties.SetObject(ToolStrip.s_propToolStripPanelCell, toolStripPanelCell);
-                }
+                toolStripPanelCell = Properties.AddValue(s_propToolStripPanelCell, new ToolStripPanelCell(this));
             }
 
             return toolStripPanelCell;
@@ -1487,47 +1411,46 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
     ToolStripPanelRow? ISupportToolStripPanel.ToolStripPanelRow
     {
-        get
-        {
-            return ToolStripPanelCell?.ToolStripPanelRow;
-        }
+        get => ToolStripPanelCell?.ToolStripPanelRow;
         set
         {
             ToolStripPanelRow? oldToolStripPanelRow = ToolStripPanelRow;
 
-            if (oldToolStripPanelRow != value)
+            if (oldToolStripPanelRow == value)
             {
-                ToolStripPanelCell? cell = ToolStripPanelCell;
-                if (cell is null)
-                {
-                    return;
-                }
+                return;
+            }
 
-                cell.ToolStripPanelRow = value;
+            ToolStripPanelCell? cell = ToolStripPanelCell;
+            if (cell is null)
+            {
+                return;
+            }
 
-                if (value is not null)
+            cell.ToolStripPanelRow = value;
+
+            if (value is not null)
+            {
+                if (oldToolStripPanelRow is null || oldToolStripPanelRow.Orientation != value.Orientation)
                 {
-                    if (oldToolStripPanelRow is null || oldToolStripPanelRow.Orientation != value.Orientation)
+                    if (_layoutStyle == ToolStripLayoutStyle.StackWithOverflow)
                     {
-                        if (_layoutStyle == ToolStripLayoutStyle.StackWithOverflow)
-                        {
-                            UpdateLayoutStyle(value.Orientation);
-                        }
-                        else
-                        {
-                            UpdateOrientation(value.Orientation);
-                        }
+                        UpdateLayoutStyle(value.Orientation);
+                    }
+                    else
+                    {
+                        UpdateOrientation(value.Orientation);
                     }
                 }
-                else
+            }
+            else
+            {
+                if (oldToolStripPanelRow is not null && oldToolStripPanelRow.ControlsInternal.Contains(this))
                 {
-                    if (oldToolStripPanelRow is not null && oldToolStripPanelRow.ControlsInternal.Contains(this))
-                    {
-                        oldToolStripPanelRow.ControlsInternal.Remove(this);
-                    }
-
-                    UpdateLayoutStyle(Dock);
+                    oldToolStripPanelRow.ControlsInternal.Remove(this);
                 }
+
+                UpdateLayoutStyle(Dock);
             }
         }
     }
@@ -1553,7 +1476,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     internal override bool SupportsUiaProviders => true;
 
     /// <summary>
-    ///  The renderer is used to paint the hwndless ToolStrip items.  If someone wanted to
+    ///  The renderer is used to paint the hwndless ToolStrip items. If someone wanted to
     ///  change the "Hot" look of all of their buttons to be a green triangle, they should
     ///  create a class that derives from ToolStripRenderer, assign it to this property and call
     ///  invalidate.
@@ -1634,17 +1557,11 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
             // check the type of the currently set renderer.
             // types are cached as this may be called frequently.
-            if (_currentRendererType == ToolStripManager.s_professionalRendererType)
-            {
-                return ToolStripRenderMode.Professional;
-            }
-
-            if (_currentRendererType == ToolStripManager.s_systemRendererType)
-            {
-                return ToolStripRenderMode.System;
-            }
-
-            return ToolStripRenderMode.Custom;
+            return _currentRendererType == ToolStripManager.s_professionalRendererType
+                ? ToolStripRenderMode.Professional
+                : _currentRendererType == ToolStripManager.s_systemRendererType
+                    ? ToolStripRenderMode.System
+                    : ToolStripRenderMode.Custom;
         }
         set
         {
@@ -1673,7 +1590,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
     /// <summary>
     ///  ToolStripItems need to access this to determine if they should be showing underlines
-    ///  for their accelerators.  Since they are not HWNDs, and this method is protected on control
+    ///  for their accelerators. Since they are not HWNDs, and this method is protected on control
     ///  we need a way for them to get at it.
     /// </summary>
     internal bool ShowKeyboardCuesInternal
@@ -1743,7 +1660,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
     [DefaultValue(false)]
-    [DispId(PInvoke.DISPID_TABSTOP)]
+    [DispId(PInvokeCore.DISPID_TABSTOP)]
     [SRDescription(nameof(SR.ControlTabStopDescr))]
     public new bool TabStop
     {
@@ -1758,10 +1675,9 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     {
         get
         {
-            if (!Properties.TryGetObject(ToolStrip.s_propToolTip, out ToolTip? toolTip) || toolTip is null)
+            if (!Properties.TryGetValue(s_propToolTip, out ToolTip? toolTip))
             {
-                toolTip = new ToolTip();
-                Properties.SetObject(ToolStrip.s_propToolTip, toolTip);
+                toolTip = Properties.AddValue(s_propToolTip, new ToolTip());
             }
 
             return toolTip;
@@ -1775,11 +1691,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     {
         get
         {
-            ToolStripTextDirection textDirection = ToolStripTextDirection.Inherit;
-            if (Properties.TryGetObject(ToolStrip.s_propTextDirection, out ToolStripTextDirection direction))
-            {
-                textDirection = direction;
-            }
+            ToolStripTextDirection textDirection = Properties.GetValueOrDefault(s_propTextDirection, ToolStripTextDirection.Horizontal);
 
             if (textDirection == ToolStripTextDirection.Inherit)
             {
@@ -1790,9 +1702,8 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         }
         set
         {
-            // valid values are 0x0 to 0x3
             SourceGenerated.EnumValidator.Validate(value);
-            Properties.SetObject(ToolStrip.s_propTextDirection, value);
+            Properties.AddOrRemoveValue(s_propTextDirection, value, defaultValue: ToolStripTextDirection.Horizontal);
 
             using (new LayoutTransaction(this, this, "TextDirection"))
             {
@@ -1809,86 +1720,63 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// </summary>
     [Browsable(false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public new VScrollProperties VerticalScroll
-    {
-        get => base.VerticalScroll;
-    }
+    public new VScrollProperties VerticalScroll => base.VerticalScroll;
 
-    void ISupportToolStripPanel.BeginDrag()
-    {
-        OnBeginDrag(EventArgs.Empty);
-    }
+    void ISupportToolStripPanel.BeginDrag() => OnBeginDrag(EventArgs.Empty);
 
-    // Internal so that it's not a public API.
     internal virtual void ChangeSelection(ToolStripItem? nextItem)
     {
-        if (nextItem is not null)
+        if (nextItem is null)
         {
-            ToolStripControlHost? controlHost = nextItem as ToolStripControlHost;
-            // if we contain focus, we should set focus to ourselves
-            // so we get the focus off the thing that's currently focused
-            // e.g. go from a text box to a toolstrip button
-            if (ContainsFocus && !Focused)
+            return;
+        }
+
+        ToolStripControlHost? controlHost = nextItem as ToolStripControlHost;
+        // if we contain focus, we should set focus to ourselves
+        // so we get the focus off the thing that's currently focused
+        // e.g. go from a text box to a toolstrip button
+        if (ContainsFocus && !Focused)
+        {
+            Focus();
+            if (controlHost is null)
             {
-                Focus();
-                if (controlHost is null)
-                {
-                    // if nextItem IS a toolstripcontrolhost, we're going to focus it anyways
-                    // we only fire KeyboardActive when "focusing" a non-hwnd backed item
-                    KeyboardActive = true;
-                }
-            }
-
-            if (controlHost is not null)
-            {
-                if (_hwndThatLostFocus == IntPtr.Zero)
-                {
-                    SnapFocus(PInvoke.GetFocus());
-                }
-
-                controlHost.Control.Select();
-                controlHost.Control.Focus();
-            }
-
-            nextItem.Select();
-
-            if (nextItem is ToolStripMenuItem tsNextItem && !IsDropDown)
-            {
-                // only toplevel menus auto expand when the selection changes.
-                tsNextItem.HandleAutoExpansion();
+                // if nextItem IS a toolstripcontrolhost, we're going to focus it anyways
+                // we only fire KeyboardActive when "focusing" a non-hwnd backed item
+                KeyboardActive = true;
             }
         }
-    }
 
-    protected virtual LayoutSettings? CreateLayoutSettings(ToolStripLayoutStyle layoutStyle)
-    {
-        switch (layoutStyle)
+        if (controlHost is not null)
         {
-            case ToolStripLayoutStyle.Flow:
-                return new FlowLayoutSettings(this);
-            case ToolStripLayoutStyle.Table:
-                return new TableLayoutSettings(this);
-            default:
-                return null;
+            if (_hwndThatLostFocus == IntPtr.Zero)
+            {
+                SnapFocus(PInvoke.GetFocus());
+            }
+
+            controlHost.Control.Select();
+            controlHost.Control.Focus();
+        }
+
+        nextItem.Select();
+
+        if (nextItem is ToolStripMenuItem tsNextItem && !IsDropDown)
+        {
+            // only toplevel menus auto expand when the selection changes.
+            tsNextItem.HandleAutoExpansion();
         }
     }
 
-    protected internal virtual ToolStripItem CreateDefaultItem(string? text, Image? image, EventHandler? onClick)
+    protected virtual LayoutSettings? CreateLayoutSettings(ToolStripLayoutStyle layoutStyle) => layoutStyle switch
     {
-        if (text == "-")
-        {
-            return new ToolStripSeparator();
-        }
-        else
-        {
-            return new ToolStripButton(text, image, onClick);
-        }
-    }
+        ToolStripLayoutStyle.Flow => new FlowLayoutSettings(this),
+        ToolStripLayoutStyle.Table => new TableLayoutSettings(this),
+        _ => null,
+    };
 
-    private void ClearAllSelections()
-    {
-        ClearAllSelectionsExcept(null);
-    }
+    protected internal virtual ToolStripItem CreateDefaultItem(string? text, Image? image, EventHandler? onClick) =>
+        text == "-" ? new ToolStripSeparator() : new ToolStripButton(text, image, onClick);
+
+    private void ClearAllSelections() => ClearAllSelectionsExcept(null);
 
     private void ClearAllSelectionsExcept(ToolStripItem? item)
     {
@@ -1920,7 +1808,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 if (displayedItems[i].Selected)
                 {
                     displayedItems[i].Unselect();
-                    s_selectionDebug.TraceVerbose($"[SelectDBG ClearAllSelectionsExcept] Unselecting {displayedItems[i].Text}");
                     invalidate = true;
                 }
 
@@ -1997,27 +1884,31 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 SuspendLayout();
                 overflow?.SuspendLayout();
 
-                // if there's a problem in config, don't be a leaker.
+                // If there's a problem in config, don't be a leaker.
                 SetToolStripState(STATE_DISPOSINGITEMS, true);
                 _lastMouseDownedItem = null;
 
-                HookStaticEvents(/*hook=*/false);
+                HookStaticEvents(hook: false);
 
-                if (Properties.GetObject(ToolStrip.s_propToolStripPanelCell) is ToolStripPanelCell toolStripPanelCell)
+                if (Properties.TryGetValue(s_propToolStripPanelCell, out ToolStripPanelCell? toolStripPanelCell))
                 {
                     toolStripPanelCell.Dispose();
+                    Properties.RemoveValue(s_propToolStripPanelCell);
                 }
 
                 _cachedItemHdcInfo?.Dispose();
 
                 _mouseHoverTimer?.Dispose();
 
-                ToolTip? toolTip = (ToolTip?)Properties.GetObject(ToolStrip.s_propToolTip);
-                toolTip?.Dispose();
+                if (Properties.TryGetValue(s_propToolTip, out ToolTip? toolTip))
+                {
+                    toolTip.Dispose();
+                    Properties.RemoveValue(s_propToolTip);
+                }
 
                 if (!Items.IsReadOnly)
                 {
-                    // only dispose the items we actually own.
+                    // Only dispose the items we actually own.
                     for (int i = Items.Count - 1; i >= 0; i--)
                     {
                         Items[i].Dispose();
@@ -2026,21 +1917,19 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                     Items.Clear();
                 }
 
-                // clean up items not in the Items list
+                // Clean up items not in the Items list.
                 _toolStripGrip?.Dispose();
 
                 _toolStripOverflowButton?.Dispose();
 
-                // remove the restore focus filter
+                // Remove the restore focus filter.
                 if (_restoreFocusFilter is not null)
                 {
-                    // PERF,
-
                     Application.ThreadContext.FromCurrent().RemoveMessageFilter(_restoreFocusFilter);
                     _restoreFocusFilter = null;
                 }
 
-                // exit menu mode if necessary.
+                // Exit menu mode if necessary.
                 bool exitMenuMode = false;
                 if (ToolStripManager.ModalMenuFilter.GetActiveToolStrip() == this)
                 {
@@ -2051,7 +1940,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 // if we were the last toolstrip in the queue, exit menu mode.
                 if (exitMenuMode && ToolStripManager.ModalMenuFilter.GetActiveToolStrip() is null)
                 {
-                    ToolStrip.s_snapFocusDebug.TraceVerbose("Exiting menu mode because we're the last toolstrip in the queue, and we've disposed.");
                     ToolStripManager.ModalMenuFilter.ExitMenuMode();
                 }
 
@@ -2175,7 +2063,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     }
 
     /// <remarks>
-    ///  Helper function for GetNextItem - do not directly call this.
+    ///  <para>Helper function for GetNextItem - do not directly call this.</para>
     /// </remarks>
     private ToolStripItem? GetNextItemHorizontal(ToolStripItem? start, bool forward)
     {
@@ -2195,12 +2083,8 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         int current = DisplayedItems.IndexOf(start);
         if (current == -1)
         {
-            s_selectionDebug.TraceVerbose("Started from a visible = false item");
             return null;
         }
-
-        Debug.WriteLineIf(s_selectionDebug!.TraceVerbose && (current != -1), $"[SelectDBG GetNextToolStripItem] Last selected item was {DisplayedItems[current].Text}");
-        Debug.WriteLineIf(s_selectionDebug!.TraceVerbose && (current == -1), "[SelectDBG GetNextToolStripItem] Last selected item was null");
 
         int count = DisplayedItems.Count;
 
@@ -2223,8 +2107,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
             if (DisplayedItems[current].CanKeyboardSelect)
             {
-                s_selectionDebug.TraceVerbose($"[SelectDBG GetNextToolStripItem] selecting {DisplayedItems[current].Text}");
-                // ClearAllSelectionsExcept(Items[current]);
                 return DisplayedItems[current];
             }
         }
@@ -2234,7 +2116,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     }
 
     /// <remarks>
-    ///  Helper function for GetNextItem - do not directly call this.
+    ///  <para>Helper function for GetNextItem - do not directly call this.</para>
     /// </remarks>
     private ToolStripItem? GetNextItemVertical(ToolStripItem? selectedItem, bool down)
     {
@@ -2255,7 +2137,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             return GetNextItemHorizontal(selectedItem, down);
         }
 
-        Point midPointOfCurrent = new Point(selectedItem.Bounds.X + selectedItem.Width / 2,
+        Point midPointOfCurrent = new(selectedItem.Bounds.X + selectedItem.Width / 2,
                                                 selectedItem.Bounds.Y + selectedItem.Height / 2);
 
         for (int i = 0; i < DisplayedItems.Count; i++)
@@ -2279,7 +2161,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
             // [ otherControl ]
             //       *
-            Point otherItemMidLocation = new Point(otherItem.Bounds.X + otherItem.Width / 2, (down) ? otherItem.Bounds.Top : otherItem.Bounds.Bottom);
+            Point otherItemMidLocation = new(otherItem.Bounds.X + otherItem.Width / 2, (down) ? otherItem.Bounds.Top : otherItem.Bounds.Bottom);
             int oppositeSide = otherItemMidLocation.X - midPointOfCurrent.X;
             int adjacentSide = otherItemMidLocation.Y - midPointOfCurrent.Y;
 
@@ -2289,12 +2171,13 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             double hypotenuse = Math.Sqrt(adjacentSide * adjacentSide + oppositeSide * oppositeSide);
 
             if (adjacentSide != 0)
-            { // avoid divide by zero - we don't do layered controls
-              //    _[o]
-              //    |/
-              //   [s]
-              //   get the angle between s and o by taking the arctan.
-              //   PERF consider using approximation instead
+            {
+                // avoid divide by zero - we don't do layered controls
+                //    _[o]
+                //    |/
+                //   [s]
+                //   get the angle between s and o by taking the arctan.
+                //   PERF consider using approximation instead
                 double tan = Math.Abs(Math.Atan(oppositeSide / adjacentSide));
 
                 // we want the thing with the smallest angle and smallest distance between midpoints
@@ -2332,7 +2215,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
           || (down && tanWinner.Bounds.Top > hypotenuseWinner.Bounds.Bottom))
         {
             // we prefer the case where the angle is smaller than
-            // the case where the hypotenuse is smaller.  The only
+            // the case where the hypotenuse is smaller. The only
             // scenarios where that is not the case is when the hypotenuse
             // winner is clearly closer than the angle winner.
 
@@ -2498,7 +2381,8 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             maxSize.Height += gripMargin.Vertical + toolStrip.Grip.GripThickness;
         }
 
-        // note here the difference in vertical - we want the strings to fit perfectly so we're not going to constrain by the specified size.
+        // note here the difference in vertical - we want the strings to fit perfectly
+        // so we're not going to constrain by the specified size.
         if (toolStrip.Size != maxSize)
         {
             CommonProperties.xClearPreferredSizeCache(toolStrip);
@@ -2552,8 +2436,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
     private void HandleMouseLeave()
     {
-        // If we had a particular item that was "entered"
-        // notify it that we have left.
+        // If we had a particular item that was "entered" notify it that we have left.
         if (_lastMouseActiveItem is not null)
         {
             if (!DesignMode)
@@ -2563,12 +2446,10 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
             try
             {
-                ToolStripItem.s_mouseDebugging.TraceVerbose($"firing mouse leave on {_lastMouseActiveItem}");
                 _lastMouseActiveItem.FireEvent(EventArgs.Empty, ToolStripItemEventType.MouseLeave);
             }
             finally
             {
-                ToolStripItem.s_mouseDebugging.TraceVerbose("setting last active item to null");
                 _lastMouseActiveItem = null;
             }
         }
@@ -2578,7 +2459,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
     internal void HandleItemClick(ToolStripItem dismissingItem)
     {
-        ToolStripItemClickedEventArgs e = new ToolStripItemClickedEventArgs(dismissingItem);
+        ToolStripItemClickedEventArgs e = new(dismissingItem);
         OnItemClicked(e);
         // Ensure both the overflow and the main toolstrip fire ItemClick event
         // otherwise the overflow won't dismiss.
@@ -2605,8 +2486,8 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             {
                 try
                 {
-                    ToolStripManager.RendererChanged += new EventHandler(OnDefaultRendererChanged);
-                    SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
+                    ToolStripManager.RendererChanged += OnDefaultRendererChanged;
+                    SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
                 }
                 finally
                 {
@@ -2618,8 +2499,8 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         {
             try
             {
-                ToolStripManager.RendererChanged -= new EventHandler(OnDefaultRendererChanged);
-                SystemEvents.UserPreferenceChanged -= new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
+                ToolStripManager.RendererChanged -= OnDefaultRendererChanged;
+                SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
             }
             finally
             {
@@ -2668,27 +2549,11 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         }
     }
 
-    protected override bool IsInputKey(Keys keyData)
-    {
-        ToolStripItem? item = GetSelectedItem();
-        if (item is not null && item.IsInputKey(keyData))
-        {
-            return true;
-        }
+    protected override bool IsInputKey(Keys keyData) =>
+        (GetSelectedItem() is { } item && item.IsInputKey(keyData)) || base.IsInputKey(keyData);
 
-        return base.IsInputKey(keyData);
-    }
-
-    protected override bool IsInputChar(char charCode)
-    {
-        ToolStripItem? item = GetSelectedItem();
-        if (item is not null && item.IsInputChar(charCode))
-        {
-            return true;
-        }
-
-        return base.IsInputChar(charCode);
-    }
+    protected override bool IsInputChar(char charCode) =>
+        (GetSelectedItem() is { } item && item.IsInputChar(charCode)) || base.IsInputChar(charCode);
 
     private static bool IsPseudoMnemonic(char charCode, string text)
     {
@@ -2727,7 +2592,8 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// <summary>
     ///  This override fires the LocationChanging event if
     ///  1) We are not currently Rafting .. since this cause this infinite times...
-    ///  2) If we haven't been called once .. Since the "LocationChanging" is listened to by the RaftingCell and calls "JOIN" which may call us back.
+    ///  2) If we haven't been called once .. Since the "LocationChanging" is listened to by the RaftingCell and
+    ///  calls "JOIN" which may call us back.
     /// </summary>
     protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
     {
@@ -2735,7 +2601,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
         if (!IsCurrentlyDragging && !IsLocationChanging && IsInToolStripPanel)
         {
-            ToolStripLocationCancelEventArgs cae = new ToolStripLocationCancelEventArgs(new Point(x, y), false);
+            ToolStripLocationCancelEventArgs cae = new(new Point(x, y), false);
             try
             {
                 if (location.X != x || location.Y != y)
@@ -2758,17 +2624,13 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         {
             if (IsCurrentlyDragging)
             {
-                Region? transparentRegion = Renderer.GetTransparentRegion(this);
-                if (transparentRegion is not null && (location.X != x || location.Y != y))
+                if (location.X != x || location.Y != y)
                 {
-                    try
+                    using Region? transparentRegion = Renderer.GetTransparentRegion(this);
+                    if (transparentRegion is not null)
                     {
                         Invalidate(transparentRegion);
                         Update();
-                    }
-                    finally
-                    {
-                        transparentRegion.Dispose();
                     }
                 }
             }
@@ -2783,23 +2645,23 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         return ProcessCmdKey(ref m, keyData);
     }
 
-    // This function will print to the PrinterDC. ToolStrip have there own buffered painting and doesnt play very well
+    // This function will print to the PrinterDC. ToolStrip have there own buffered painting and doesn't play very well
     // with the DC translations done by base Control class. Hence we do our own Painting and the BitBLT the DC into the printerDc.
     private protected override void PrintToMetaFileRecursive(HDC hDC, IntPtr lParam, Rectangle bounds)
     {
-        using Bitmap image = new Bitmap(bounds.Width, bounds.Height);
+        using Bitmap image = new(bounds.Width, bounds.Height);
         using Graphics g = Graphics.FromImage(image);
         using DeviceContextHdcScope imageHdc = new(g, applyGraphicsState: false);
 
         // Send the actual wm_print message
-        PInvoke.SendMessage(
+        PInvokeCore.SendMessage(
             this,
-            PInvoke.WM_PRINT,
+            PInvokeCore.WM_PRINT,
             (WPARAM)imageHdc,
             (LPARAM)(uint)(PInvoke.PRF_CHILDREN | PInvoke.PRF_CLIENT | PInvoke.PRF_ERASEBKGND | PInvoke.PRF_NONCLIENT));
 
         // Now BLT the result to the destination bitmap.
-        PInvoke.BitBlt(
+        PInvokeCore.BitBlt(
             hDC,
             bounds.X,
             bounds.Y,
@@ -2819,7 +2681,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             {
                 ClearAllSelections();
                 ToolStripManager.ModalMenuFilter.MenuKeyToggle = true;
-                s_snapFocusDebug.TraceVerbose("[ToolStrip.ProcessCmdKey] Detected a second ALT keypress while in Menu Mode.");
                 ToolStripManager.ModalMenuFilter.ExitMenuMode();
             }
         }
@@ -2853,22 +2714,13 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             bool isControlTab =
                 (keyData & Keys.Control) == Keys.Control && (keyData & Keys.KeyCode) == Keys.Tab;
 
-            if (isControlTab && !TabStop && HasKeyboardInput)
+            if (isControlTab
+                && !TabStop
+                && HasKeyboardInput
+                && ToolStripManager.SelectNextToolStrip(this, forward: (keyData & Keys.Shift) == Keys.None))
             {
-                bool handled = false;
-                if ((keyData & Keys.Shift) == Keys.None)
-                {
-                    handled = ToolStripManager.SelectNextToolStrip(this, forward: true);
-                }
-                else
-                {
-                    handled = ToolStripManager.SelectNextToolStrip(this, forward: false);
-                }
-
-                if (handled)
-                {
-                    return true;
-                }
+                // Handled
+                return true;
             }
         }
 
@@ -2904,12 +2756,12 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         // had focus.
         bool hasModifiers = ((keyData & (Keys.Alt | Keys.Control)) != Keys.None);
 
-        Keys keyCode = (Keys)keyData & Keys.KeyCode;
+        Keys keyCode = keyData & Keys.KeyCode;
         switch (keyCode)
         {
             case Keys.Back:
-                // if it's focused itself, process.  if it's not focused, make sure a child control
-                // doesnt have focus before processing
+                // if it's focused itself, process. if it's not focused, make sure a child control
+                // doesn't have focus before processing
                 if (!ContainsFocus)
                 {
                     // shift backspace/backspace work as backspace, which is the same as shift+tab
@@ -2950,26 +2802,19 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 break;
         }
 
-        if (retVal)
-        {
-            return retVal;
-        }
-
-        s_selectionDebug.TraceVerbose("[SelectDBG ProcessDialogKey] calling base");
-        return base.ProcessDialogKey(keyData);
+        return retVal ? retVal : base.ProcessDialogKey(keyData);
     }
 
     internal virtual void ProcessDuplicateMnemonic(ToolStripItem item, char charCode)
     {
         if (!CanProcessMnemonic())
-        {  // Checking again for security...
+        {
+            // Checking again for security.
             return;
         }
 
-        //
         if (item is not null)
         {
-            //
             SetFocusUnsafe();
             item.Select();
         }
@@ -2978,7 +2823,8 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// <summary>
     ///  Rules for parsing mnemonics
     ///  PASS 1: Real mnemonics
-    ///  Check items for the character after the &amp;. If it matches, perform the click event or open the dropdown (in the case that it has dropdown items)
+    ///  Check items for the character after the &amp;. If it matches, perform the click event or open the dropdown
+    ///  (in the case that it has dropdown items)
     ///  PASS 2: Fake mnemonics
     ///  Begin with the current selection and parse through the first character in the items in the menu.
     ///  If there is only one item that matches
@@ -3000,7 +2846,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         }
 
         bool inMenuMode = ToolStripManager.ModalMenuFilter.InMenuMode;
-        if (!inMenuMode && Control.ModifierKeys == Keys.Alt)
+        if (!inMenuMode && ModifierKeys == Keys.Alt)
         {
             // This is the case where someone hasnt released the ALT key yet, but has pushed another letter.
             // In some cases we can activate the menu that is not the MainMenuStrip...
@@ -3019,7 +2865,8 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     private bool ProcessMnemonicInternal(char charCode)
     {
         if (!CanProcessMnemonic())
-        {  // Checking again for security...
+        {
+            // Checking again for security.
             return false;
         }
 
@@ -3058,7 +2905,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             // second pass for fake mnemonics in that case.
             foundMenuItem = (foundMenuItem || (currentItem is ToolStripMenuItem));
 
-            if (Control.IsMnemonic(charCode, currentItem.Text))
+            if (IsMnemonic(charCode, currentItem.Text))
             {
                 if (firstMatch is null)
                 {
@@ -3118,7 +2965,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 continue;
             }
 
-            if (ToolStrip.IsPseudoMnemonic(charCode, currentItem.Text))
+            if (IsPseudoMnemonic(charCode, currentItem.Text))
             {
                 if (firstMatch is null)
                 {
@@ -3168,7 +3015,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             // TabStop = false
             // this means we don't want the toolstrip in the normal tab order (default).
             // We got focus to the toolstrip by putting focus into a control contained on the toolstrip or
-            // via a mnemonic e.g. Bold.  In this case we want to wrap.
+            // via a mnemonic e.g. Bold. In this case we want to wrap.
             // arrow keys would continue to wrap
             if (RightToLeft == RightToLeft.Yes)
             {
@@ -3191,7 +3038,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     internal virtual bool ProcessArrowKey(Keys keyCode)
     {
         bool retVal = false;
-        s_menuAutoExpandDebug.TraceVerbose("[ToolStrip.ProcessArrowKey] MenuTimer.Cancel called");
         ToolStripMenuItem.MenuTimer.Cancel();
 
         switch (keyCode)
@@ -3245,12 +3091,10 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     {
         if (item is null)
         {
-            s_selectionDebug.TraceVerbose("[SelectDBG NotifySelectionChange] none should be selected");
             ClearAllSelections();
         }
         else if (item.Selected)
         {
-            s_selectionDebug.TraceVerbose($"[SelectDBG NotifySelectionChange] Notify selection change: {item}: {item.Selected}");
             ClearAllSelectionsExcept(item);
         }
     }
@@ -3307,7 +3151,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     internal void OnDefaultFontChanged()
     {
         _defaultFont = null;
-        if (DpiHelper.IsPerMonitorV2Awareness)
+        if (ScaleHelper.IsThreadPerMonitorV2Aware)
         {
             ToolStripManager.CurrentDpi = DeviceDpi;
             _defaultFont = ToolStripManager.DefaultFont;
@@ -3327,39 +3171,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             Items[i].OnOwnerFontChanged(e);
         }
     }
-
-#if DEBUG
-#pragma warning disable RS0016 // Add public types and members to the declared API
-    protected override void OnInvalidated(InvalidateEventArgs e)
-    {
-        base.OnInvalidated(e);
-        // Debug code which is helpful for FlickerFest debugging.
-        if (s_flickerDebug.TraceVerbose)
-        {
-            string name = this.Name;
-            if (string.IsNullOrEmpty(name))
-            {
-                if (IsDropDown)
-                {
-                    ToolStripItem? item = ((ToolStripDropDown)this).OwnerItem;
-                    if (item is not null && item.Name is not null)
-                    {
-                        name = item.Name = ".DropDown";
-                    }
-                }
-
-                if (string.IsNullOrEmpty(name))
-                {
-                    name = GetType().Name;
-                }
-            }
-
-            // for debugging VS we want to filter out the propgrid toolstrip
-            Debug.WriteLineIf(ParentInternal is not PropertyGrid, $"Invalidate called on: {name}{new StackTrace()}");
-        }
-    }
-#pragma warning restore RS0016 // Add public types and members to the declared API
-#endif
 
     protected override void OnHandleCreated(EventArgs e)
     {
@@ -3477,15 +3288,11 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         ClearAllSelections();
     }
 
-    protected override void OnLeave(EventArgs e)
+    protected internal override void OnLeave(EventArgs e)
     {
         base.OnLeave(e);
         if (!IsDropDown)
         {
-            s_snapFocusDebug.TraceVerbose("uninstalling RestoreFocusFilter");
-
-            // PERF,
-
             Application.ThreadContext.FromCurrent().RemoveMessageFilter(RestoreFocusFilter);
         }
     }
@@ -3500,7 +3307,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// </summary>
     protected override void OnMouseDown(MouseEventArgs mea)
     {
-        // NEVER use this directly from another class.  Always use GetMouseID so that
+        // NEVER use this directly from another class. Always use GetMouseID so that
         // 0 is not returned to another class.
         _mouseDownID++;
 
@@ -3538,32 +3345,26 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// </summary>
     protected override void OnMouseMove(MouseEventArgs mea)
     {
-        ToolStripItem.s_mouseDebugging.TraceVerbose("OnMouseMove called");
-
         ToolStripItem? item = GetItemAt(mea.X, mea.Y);
 
         if (!Grip.MovingToolStrip)
         {
             // If we had a particular item that was "entered"
-            // notify it that we have entered.  It's fair to put
+            // notify it that we have entered. It's fair to put
             // this in the MouseMove event, as MouseEnter is fired during
             // control's WM_MOUSEMOVE. Waiting until this event gives us
             // the actual coordinates.
 
-            ToolStripItem.s_mouseDebugging.TraceVerbose($"Item to get mouse move: {(item is null ? "null" : item.ToString())}");
             if (item != _lastMouseActiveItem)
             {
-                ToolStripItem.s_mouseDebugging.TraceVerbose($"This is a new item - last item to get was {(_lastMouseActiveItem is null ? "null" : _lastMouseActiveItem.ToString())}");
-
-                // notify the item that we've moved on
+                // Notify the item that we've moved on.
                 HandleMouseLeave();
 
-                // track only items that don't get mouse events themselves.
+                // Track only items that don't get mouse events themselves.
                 _lastMouseActiveItem = (item is ToolStripControlHost) ? null : item;
 
                 if (_lastMouseActiveItem is not null)
                 {
-                    ToolStripItem.s_mouseDebugging.TraceVerbose($"Firing MouseEnter on: {_lastMouseActiveItem}");
                     item!.FireEvent(EventArgs.Empty, ToolStripItemEventType.MouseEnter);
                 }
 
@@ -3580,8 +3381,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
         if (item is not null)
         {
-            ToolStripItem.s_mouseDebugging.TraceVerbose($"Firing MouseMove on: {item}");
-
             // Fire mouse move on the item
             // Transpose this to "client coordinates" of the ToolStripItem.
             Point itemRelativePoint = item!.TranslatePoint(new Point(mea.X, mea.Y), ToolStripPointType.ToolStripCoords, ToolStripPointType.ToolStripItemCoords);
@@ -3590,8 +3389,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         }
         else
         {
-            ToolStripItem.s_mouseDebugging.TraceVerbose($"Firing MouseMove on: {(this is null ? "null" : ToString())}");
-
             base.OnMouseMove(mea);
         }
     }
@@ -3658,7 +3455,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         // Paint the items
         //
         // The idea here is to let items pretend they are controls. They should get paint events at 0,0 and have
-        // proper clipping regions set up for them.  We cannot use g.TranslateTransform as that does not translate
+        // proper clipping regions set up for them. We cannot use g.TranslateTransform as that does not translate
         // the GDI world, and things like Visual Styles and the TextRenderer only know how to speak GDI.
         //
         // The previous approach was to set up the GDI clipping region and allocate a graphics from that, but that
@@ -3666,7 +3463,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         //
         // So now we allocate an offscreen bitmap of size == MaxItemSize, copy the background of the toolstrip into
         // that bitmap, paint the item on top of the bitmap, then finally copy the contents of the bitmap back onto
-        // the toolstrip. This gives us our paint event starting at 0,0.  Combine this with double buffering of the
+        // the toolstrip. This gives us our paint event starting at 0,0. Combine this with double buffering of the
         // toolstrip and the entire toolstrip is updated after returning from this function.
 
         if (!LayoutUtils.IsZeroWidthOrHeight(bitmapSize))
@@ -3689,104 +3486,104 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             // using WindowsGraphics here because we want to preserve the clipping information.
 
             // calling GetHdc by itself does not set up the clipping info.
-            using (DeviceContextHdcScope toolStripHDC = new(toolstripGraphics, ApplyGraphicsProperties.Clipping))
+            using DeviceContextHdcScope toolStripHDC = new(toolstripGraphics, ApplyGraphicsProperties.Clipping);
+
+            // Get the cached item HDC.
+            HDC itemHDC = ItemHdcInfo.GetCachedItemDC(toolStripHDC, bitmapSize);
+
+            Graphics itemGraphics = itemHDC.CreateGraphics();
+            try
             {
-                // Get the cached item HDC.
-                HDC itemHDC = ItemHdcInfo.GetCachedItemDC(toolStripHDC, bitmapSize);
-
-                Graphics itemGraphics = itemHDC.CreateGraphics();
-                try
+                // Iterate through all the items, painting them one by one into the compatible offscreen DC,
+                // and then copy them back onto the main toolstrip.
+                for (int i = 0; i < DisplayedItems.Count; i++)
                 {
-                    // Iterate through all the items, painting them one by one into the compatible offscreen DC,
-                    // and then copy them back onto the main toolstrip.
-                    for (int i = 0; i < DisplayedItems.Count; i++)
+                    ToolStripItem item = DisplayedItems[i];
+                    if (item is not null)
                     {
-                        ToolStripItem item = DisplayedItems[i];
-                        if (item is not null)
+                        Rectangle clippingRect = e.ClipRectangle;
+                        Rectangle bounds = item.Bounds;
+
+                        if (!IsDropDown && item.Owner == this)
                         {
-                            Rectangle clippingRect = e.ClipRectangle;
-                            Rectangle bounds = item.Bounds;
-
-                            if (!IsDropDown && item.Owner == this)
-                            {
-                                // owned items should not paint outside the client
-                                // area. (this is mainly to prevent obscuring the grip
-                                // and overflowbutton - ToolStripDropDownMenu places items
-                                // outside of the display rectangle - so we need to allow for this
-                                // in dropdowns).
-                                clippingRect.Intersect(viewableArea);
-                            }
-
-                            // get the intersection of these two.
-                            clippingRect.Intersect(bounds);
-
-                            if (LayoutUtils.IsZeroWidthOrHeight(clippingRect))
-                            {
-                                continue;  // no point newing up a graphics object if there's nothing to paint.
-                            }
-
-                            Size itemSize = item.Size;
-
-                            // check if our item buffer is large enough to handle.
-                            if (!LayoutUtils.AreWidthAndHeightLarger(bitmapSize, itemSize))
-                            {
-                                // the cached HDC isn't big enough for this item.  make it bigger.
-                                _largestDisplayedItemSize = itemSize;
-                                bitmapSize = itemSize;
-                                // dispose the old graphics - create a new, bigger one.
-                                itemGraphics.Dispose();
-
-                                // calling this should take the existing DC and select in a bigger bitmap.
-                                itemHDC = ItemHdcInfo.GetCachedItemDC(toolStripHDC, bitmapSize);
-
-                                // allocate a new graphics.
-                                itemGraphics = itemHDC.CreateGraphics();
-                            }
-
-                            // since the item graphics object will have 0,0 at the
-                            // corner we need to actually shift the origin of the rect over
-                            // so it will be 0,0 too.
-                            clippingRect.Offset(-bounds.X, -bounds.Y);
-
-                            // PERF - consider - we only actually need to copy the clipping rect.
-                            // copy the background from the toolstrip onto the offscreen bitmap
-                            PInvoke.BitBlt(
-                                ItemHdcInfo,
-                                0,
-                                0,
-                                item.Size.Width,
-                                item.Size.Height,
-                                toolStripHDC,
-                                item.Bounds.X,
-                                item.Bounds.Y,
-                                ROP_CODE.SRCCOPY);
-
-                            // Paint the item into the offscreen bitmap
-                            using (PaintEventArgs itemPaintEventArgs = new PaintEventArgs(itemGraphics, clippingRect))
-                            {
-                                item.FireEvent(itemPaintEventArgs, ToolStripItemEventType.Paint);
-                            }
-
-                            // copy the item back onto the toolstrip
-                            PInvoke.BitBlt(
-                                toolStripHDC,
-                                item.Bounds.X,
-                                item.Bounds.Y,
-                                item.Size.Width,
-                                item.Size.Height,
-                                ItemHdcInfo,
-                                0,
-                                0,
-                                ROP_CODE.SRCCOPY);
-
-                            GC.KeepAlive(ItemHdcInfo);
+                            // owned items should not paint outside the client
+                            // area. (this is mainly to prevent obscuring the grip
+                            // and overflowbutton - ToolStripDropDownMenu places items
+                            // outside of the display rectangle - so we need to allow for this
+                            // in dropdowns).
+                            clippingRect.Intersect(viewableArea);
                         }
+
+                        // get the intersection of these two.
+                        clippingRect.Intersect(bounds);
+
+                        if (LayoutUtils.IsZeroWidthOrHeight(clippingRect))
+                        {
+                            continue;  // no point newing up a graphics object if there's nothing to paint.
+                        }
+
+                        Size itemSize = item.Size;
+
+                        // check if our item buffer is large enough to handle.
+                        if (!LayoutUtils.AreWidthAndHeightLarger(bitmapSize, itemSize))
+                        {
+                            // the cached HDC isn't big enough for this item. make it bigger.
+                            _largestDisplayedItemSize = itemSize;
+                            bitmapSize = itemSize;
+
+                            // dispose the old graphics - create a new, bigger one.
+                            itemGraphics.Dispose();
+
+                            // calling this should take the existing DC and select in a bigger bitmap.
+                            itemHDC = ItemHdcInfo.GetCachedItemDC(toolStripHDC, bitmapSize);
+
+                            // allocate a new graphics.
+                            itemGraphics = itemHDC.CreateGraphics();
+                        }
+
+                        // since the item graphics object will have 0,0 at the
+                        // corner we need to actually shift the origin of the rect over
+                        // so it will be 0,0 too.
+                        clippingRect.Offset(-bounds.X, -bounds.Y);
+
+                        // PERF - consider - we only actually need to copy the clipping rect.
+                        // copy the background from the toolstrip onto the offscreen bitmap
+                        PInvokeCore.BitBlt(
+                            ItemHdcInfo,
+                            0,
+                            0,
+                            item.Size.Width,
+                            item.Size.Height,
+                            toolStripHDC,
+                            item.Bounds.X,
+                            item.Bounds.Y,
+                            ROP_CODE.SRCCOPY);
+
+                        // Paint the item into the offscreen bitmap
+                        using (PaintEventArgs itemPaintEventArgs = new(itemGraphics, clippingRect))
+                        {
+                            item.FireEvent(itemPaintEventArgs, ToolStripItemEventType.Paint);
+                        }
+
+                        // copy the item back onto the toolstrip
+                        PInvokeCore.BitBlt(
+                            toolStripHDC,
+                            item.Bounds.X,
+                            item.Bounds.Y,
+                            item.Size.Width,
+                            item.Size.Height,
+                            ItemHdcInfo,
+                            0,
+                            0,
+                            ROP_CODE.SRCCOPY);
+
+                        GC.KeepAlive(ItemHdcInfo);
                     }
                 }
-                finally
-                {
-                    itemGraphics?.Dispose();
-                }
+            }
+            finally
+            {
+                itemGraphics.Dispose();
             }
         }
 
@@ -3927,7 +3724,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     protected override void RescaleConstantsForDpi(int deviceDpiOld, int deviceDpiNew)
     {
         base.RescaleConstantsForDpi(deviceDpiOld, deviceDpiNew);
-        if (DpiHelper.IsPerMonitorV2Awareness)
+        if (ScaleHelper.IsThreadPerMonitorV2Aware)
         {
             if (deviceDpiOld != deviceDpiNew)
             {
@@ -3943,7 +3740,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 // ToolStripItems are components and have Font property. Components do not receive WM_DPICHANGED messages, nor they have
                 // parent-child relationship with owners and, thus, do not get scaled by parent/Container. For these reasons, they need the font
                 // to be explicitly updated when Dpi changes (only if the font was set explicitly).
-                var factor = (float)deviceDpiNew / deviceDpiOld;
+                float factor = (float)deviceDpiNew / deviceDpiOld;
                 foreach (ToolStripItem item in Items)
                 {
                     if (item.TryGetExplicitlySetFont(out Font? local))
@@ -3965,12 +3762,11 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// <param name="newDpi">The new DPI passed by WmDpiChangedBeforeParent.</param>
     internal virtual void ResetScaling(int newDpi)
     {
-        s_iconWidth = DpiHelper.LogicalToDeviceUnits(IconDimension, newDpi);
-        s_iconHeight = DpiHelper.LogicalToDeviceUnits(IconDimension, newDpi);
-        s_insertionBeamWidth = DpiHelper.LogicalToDeviceUnits(InsertionBeamWidth, newDpi);
-        _scaledDefaultPadding = DpiHelper.LogicalToDeviceUnits(s_defaultPadding, newDpi);
-        _scaledDefaultGripMargin = DpiHelper.LogicalToDeviceUnits(s_defaultGripMargin, newDpi);
-        _imageScalingSize = new Size(s_iconWidth, s_iconHeight);
+        s_iconSize = ScaleHelper.ScaleToDpi(LogicalIconSize, newDpi);
+        s_insertionBeamWidth = ScaleHelper.ScaleToDpi(LogicalInsertionBeamWidth, newDpi);
+        _defaultPadding = ScaleHelper.ScaleToDpi(s_logicalDefaultPadding, newDpi);
+        _defaultGripMargin = ScaleHelper.ScaleToDpi(s_logicalDefaultGripMargin, newDpi);
+        _imageScalingSize = new Size(s_iconSize, s_iconSize);
     }
 
     /// <summary>
@@ -3986,27 +3782,26 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 int start = _lastInsertionMarkRect.X;
                 int verticalBeamStart = start + 2;
 
-                // draw two vertical lines
-                g.DrawLines(SystemPens.ControlText,
-                    new Point[]
-                    {
-                        new(verticalBeamStart, _lastInsertionMarkRect.Y), new(verticalBeamStart, _lastInsertionMarkRect.Bottom - 1), // first vertical line
-                        new(verticalBeamStart + 1, _lastInsertionMarkRect.Y), new(verticalBeamStart + 1, _lastInsertionMarkRect.Bottom - 1), // second  vertical line
-                    });
-                // then two top horizontal
-                g.DrawLines(SystemPens.ControlText,
-                    new Point[]
-                    {
-                        new(start, _lastInsertionMarkRect.Bottom - 1), new(start + widthOfBeam - 1, _lastInsertionMarkRect.Bottom - 1), // bottom line
-                        new(start + 1, _lastInsertionMarkRect.Bottom - 2), new(start + widthOfBeam - 2, _lastInsertionMarkRect.Bottom - 2), // bottom second line
-                    });
-                // then two bottom horizontal
-                g.DrawLines(SystemPens.ControlText,
-                     new Point[]
-                     {
-                         new(start, _lastInsertionMarkRect.Y), new(start + widthOfBeam - 1, _lastInsertionMarkRect.Y), // top line
-                         new(start + 1, _lastInsertionMarkRect.Y + 1), new(start + widthOfBeam - 2, _lastInsertionMarkRect.Y + 1) // top second line
-                     });
+                // Draw vertical lines.
+                g.DrawLines(SystemPens.ControlText, (ReadOnlySpan<Point>)
+                    [
+                        new(verticalBeamStart, _lastInsertionMarkRect.Y), new(verticalBeamStart, _lastInsertionMarkRect.Bottom - 1),
+                        new(verticalBeamStart + 1, _lastInsertionMarkRect.Y), new(verticalBeamStart + 1, _lastInsertionMarkRect.Bottom - 1)
+                    ]);
+
+                // Draw top horizontal lines.
+                g.DrawLines(SystemPens.ControlText, (ReadOnlySpan<Point>)
+                    [
+                        new(start, _lastInsertionMarkRect.Bottom - 1), new(start + widthOfBeam - 1, _lastInsertionMarkRect.Bottom - 1),
+                        new(start + 1, _lastInsertionMarkRect.Bottom - 2), new(start + widthOfBeam - 2, _lastInsertionMarkRect.Bottom - 2)
+                    ]);
+
+                // Draw bottom horizontal lines.
+                g.DrawLines(SystemPens.ControlText, (ReadOnlySpan<Point>)
+                     [
+                         new(start, _lastInsertionMarkRect.Y), new(start + widthOfBeam - 1, _lastInsertionMarkRect.Y),
+                         new(start + 1, _lastInsertionMarkRect.Y + 1), new(start + widthOfBeam - 2, _lastInsertionMarkRect.Y + 1)
+                     ]);
             }
             else
             {
@@ -4014,27 +3809,26 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 int start = _lastInsertionMarkRect.Y;
                 int horizontalBeamStart = start + 2;
 
-                // draw two horizontal lines
-                g.DrawLines(SystemPens.ControlText,
-                    new Point[]
-                    {
-                        new(_lastInsertionMarkRect.X, horizontalBeamStart), new(_lastInsertionMarkRect.Right - 1, horizontalBeamStart), // first vertical line
-                        new(_lastInsertionMarkRect.X, horizontalBeamStart + 1), new(_lastInsertionMarkRect.Right - 1, horizontalBeamStart + 1), // second  vertical line
-                    });
-                // then two left vertical
-                g.DrawLines(SystemPens.ControlText,
-                    new Point[]
-                    {
-                        new(_lastInsertionMarkRect.X, start), new(_lastInsertionMarkRect.X, start + widthOfBeam - 1), // left line
-                        new(_lastInsertionMarkRect.X + 1, start + 1), new(_lastInsertionMarkRect.X + 1, start + widthOfBeam - 2), // second left line
-                    });
-                // then two right vertical
-                g.DrawLines(SystemPens.ControlText,
-                     new Point[]
-                     {
-                         new(_lastInsertionMarkRect.Right - 1, start), new(_lastInsertionMarkRect.Right - 1, start + widthOfBeam - 1), // right line
-                         new(_lastInsertionMarkRect.Right - 2, start + 1), new(_lastInsertionMarkRect.Right - 2, start + widthOfBeam - 2), // second right line
-                     });
+                // Draw horizontal lines.
+                g.DrawLines(SystemPens.ControlText, (ReadOnlySpan<Point>)
+                    [
+                        new(_lastInsertionMarkRect.X, horizontalBeamStart), new(_lastInsertionMarkRect.Right - 1, horizontalBeamStart),
+                        new(_lastInsertionMarkRect.X, horizontalBeamStart + 1), new(_lastInsertionMarkRect.Right - 1, horizontalBeamStart + 1)
+                    ]);
+
+                // Draw left vertical lines.
+                g.DrawLines(SystemPens.ControlText, (ReadOnlySpan<Point>)
+                    [
+                        new(_lastInsertionMarkRect.X, start), new(_lastInsertionMarkRect.X, start + widthOfBeam - 1),
+                        new(_lastInsertionMarkRect.X + 1, start + 1), new(_lastInsertionMarkRect.X + 1, start + widthOfBeam - 2)
+                    ]);
+
+                // Draw right vertical lines.
+                g.DrawLines(SystemPens.ControlText, (ReadOnlySpan<Point>)
+                     [
+                         new(_lastInsertionMarkRect.Right - 1, start), new(_lastInsertionMarkRect.Right - 1, start + widthOfBeam - 1),
+                         new(_lastInsertionMarkRect.Right - 2, start + 1), new(_lastInsertionMarkRect.Right - 2, start + widthOfBeam - 2)
+                     ]);
             }
         }
     }
@@ -4075,7 +3869,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// </summary>
     public ToolStripItem? GetItemAt(Point point)
     {
-        Rectangle comparisonRect = new Rectangle(point, s_onePixel);
+        Rectangle comparisonRect = new(point, s_onePixel);
         Rectangle bounds;
 
         // Check the last item we had the mouse over
@@ -4139,7 +3933,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// <param name="items">contains ToolStrip or ToolStripDropDown items to disconnect</param>
     internal virtual void ReleaseToolStripItemsProviders(ToolStripItemCollection items)
     {
-        ToolStripItem[] itemsArray = items.Cast<ToolStripItem>().ToArray();
+        ToolStripItem[] itemsArray = [..items.Cast<ToolStripItem>()];
         foreach (ToolStripItem toolStripItem in itemsArray)
         {
             if (toolStripItem is ToolStripDropDownItem dropDownItem && dropDownItem.DropDownItems.Count > 0)
@@ -4154,7 +3948,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
     private void RestoreFocusInternal(bool wasInMenuMode)
     {
-        // This is called from the RestoreFocusFilter.  If the state of MenuMode has changed
+        // This is called from the RestoreFocusFilter. If the state of MenuMode has changed
         // since we posted this message, we do not know enough information about whether
         // we should exit menu mode.
         if (wasInMenuMode == ToolStripManager.ModalMenuFilter.InMenuMode)
@@ -4172,19 +3966,12 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         ClearAllSelections();
         _lastMouseDownedItem = null;
 
-        s_snapFocusDebug.TraceVerbose("[ToolStrip.RestoreFocus] Someone has called RestoreFocus, exiting MenuMode.");
         ToolStripManager.ModalMenuFilter.ExitMenuMode();
 
         if (!IsDropDown)
         {
-            // reset menu auto expansion.
-            s_snapFocusDebug.TraceVerbose("[ToolStrip.RestoreFocus] Setting menu auto expand to false");
-            s_snapFocusDebug.TraceVerbose("[ToolStrip.RestoreFocus] uninstalling RestoreFocusFilter");
-
-            // PERF,
-
+            // Reset menu auto expansion.
             Application.ThreadContext.FromCurrent().RemoveMessageFilter(RestoreFocusFilter);
-
             MenuAutoExpand = false;
 
             if (!DesignMode && !TabStop && (Focused || ContainsFocus))
@@ -4194,7 +3981,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         }
 
         // this matches the case where you click on a toolstrip control host
-        // then tab off of it, then hit ESC.  ESC would "restore focus" and
+        // then tab off of it, then hit ESC. ESC would "restore focus" and
         // we should cancel keyboard activation if this method has cancelled focus.
         if (KeyboardActive && !Focused && !ContainsFocus)
         {
@@ -4211,10 +3998,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         if (!_hwndThatLostFocus.IsNull && (_hwndThatLostFocus != Handle))
         {
             Control? control = FromHandle(_hwndThatLostFocus);
-
-            s_snapFocusDebug.TraceVerbose(
-                $"[ToolStrip RestoreFocus]: Will Restore Focus to: {WindowsFormsUtils.GetControlInformation(_hwndThatLostFocus)}");
-
             _hwndThatLostFocus = default;
 
             if ((control is not null) && control.Visible)
@@ -4329,19 +4112,15 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         // which could accidentally change selection.
         if (_mouseEnterWhenShown == s_invalidMouseEnter)
         {
-            ToolStripItem.s_mouseDebugging.TraceVerbose("[TS: ShouldSelectItem] MouseEnter already reset.");
             return true;
         }
 
         Point mousePosition = WindowsFormsUtils.LastCursorPoint;
         if (_mouseEnterWhenShown != mousePosition)
         {
-            ToolStripItem.s_mouseDebugging.TraceVerbose("[TS: ShouldSelectItem] Mouse position has changed - call Select().");
             _mouseEnterWhenShown = s_invalidMouseEnter;
             return true;
         }
-
-        ToolStripItem.s_mouseDebugging.TraceVerbose("[TS: ShouldSelectItem] Mouse hasnt actually moved yet.");
 
         return false;
     }
@@ -4377,13 +4156,11 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     {
         if (TabStop)
         {
-            s_snapFocusDebug.TraceVerbose("[ToolStrip.SetFocus] Focusing toolstrip.");
             Focus();
         }
         else
         {
-            s_snapFocusDebug.TraceVerbose("[ToolStrip.SetFocus] Entering menu mode.");
-            ToolStripManager.ModalMenuFilter.SetActiveToolStrip(this, /*menuKeyPressed=*/false);
+            ToolStripManager.ModalMenuFilter.SetActiveToolStrip(this, menuKeyPressed: false);
         }
     }
 
@@ -4471,7 +4248,9 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
             // For splitstack layout we re-arrange the items in the displayed items
             // collection so that we can easily tab through them in natural order
-            Rectangle displayRect = DisplayRectangle;
+
+            // We've historically called this virtual, still need to for compat.
+            _ = DisplayRectangle;
             int lastRightAlignedItem = -1;
 
             for (int pass = 0; pass < 2; pass++)
@@ -4546,9 +4325,8 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         }
         else
         {
-            // NOT a SplitStack layout.  We don't change the order of the displayed items collection
+            // NOT a SplitStack layout. We don't change the order of the displayed items collection
             // for custom keyboard handling override GetNextItem.
-            s_layoutDebugSwitch.TraceVerbose($"Setting Displayed Items: Current bounds: {Bounds}");
             Rectangle clientBounds = ClientRectangle;
 
             // for all other layout managers, we ignore overflow placement
@@ -4563,8 +4341,9 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                     bool boundsCheck = !IsDropDown;
                     bool intersects = item.Bounds.IntersectsWith(clientBounds);
 
-                    bool verticallyContained = clientBounds.Contains(clientBounds.X, item.Bounds.Top) &&
-                                            clientBounds.Contains(clientBounds.X, item.Bounds.Bottom);
+                    bool verticallyContained = clientBounds.Contains(clientBounds.X, item.Bounds.Top)
+                        && clientBounds.Contains(clientBounds.X, item.Bounds.Bottom);
+
                     if (!verticallyContained)
                     {
                         allContained = false;
@@ -4582,8 +4361,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 {
                     item.SetPlacement(ToolStripItemPlacement.None);
                 }
-
-                s_layoutDebugSwitch.TraceVerbose($"{item}{item.Bounds}");
             }
 
             // For performance we calculate this here, since we're already iterating over the items.
@@ -4623,9 +4400,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     /// </summary>
     private void SnapFocus(HWND otherHwnd)
     {
-#if DEBUG
-        Debug.WriteLineIf(s_snapFocusDebug.TraceVerbose, $"{!Environment.StackTrace.Contains("FocusInternal")}", "who is setting focus to us?");
-#endif
         // we need to know who sent us focus so we know who to send it back to later.
 
         if (!TabStop && !IsDropDown)
@@ -4658,9 +4432,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
                     if (thisHwndRoot == otherHwndRoot && !thisHwndRoot.IsNull)
                     {
-                        s_snapFocusDebug.TraceVerbose(
-                            $"[ToolStrip SnapFocus]: Caching for return focus:{WindowsFormsUtils.GetControlInformation(otherHwnd)}");
-
                         // We know we're in the same window heirarchy.
                         _hwndThatLostFocus = otherHwnd;
                     }
@@ -4688,7 +4459,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
     internal override bool ShouldSerializeMinimumSize()
     {
-        Size invalidDefaultSize = new Size(-1, -1);
+        Size invalidDefaultSize = new(-1, -1);
         return (CommonProperties.GetMinimumSize(this, invalidDefaultSize) != invalidDefaultSize);
     }
 
@@ -4700,7 +4471,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     internal virtual bool ShouldSerializeRenderMode()
     {
         // We should NEVER serialize custom.
-        return (RenderMode != ToolStripRenderMode.ManagerRenderMode && RenderMode != ToolStripRenderMode.Custom);
+        return (RenderMode is not ToolStripRenderMode.ManagerRenderMode and not ToolStripRenderMode.Custom);
     }
 
     public override string ToString()
@@ -4712,37 +4483,37 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     ///  Updates a tooltip for the given toolstrip item.
     /// </summary>
     /// <param name="item">The toolstrip item.</param>
-    /// <param name="refresh">see langword="true"/> to force-update the tooltip (if it is configured); otherwise <see langword="false"/>.</param>
+    /// <param name="refresh">
+    ///  see langword="true"/> to force-update the tooltip (if it is configured); otherwise <see langword="false"/>.
+    /// </param>
     internal void UpdateToolTip(ToolStripItem? item, bool refresh = false)
     {
-        if (ShowItemToolTips)
+        if (!ShowItemToolTips || (item == _currentlyActiveTooltipItem && !refresh) || ToolTip is null)
         {
-            if ((item != _currentlyActiveTooltipItem || refresh) && ToolTip is not null)
+            return;
+        }
+
+        if (item != _currentlyActiveTooltipItem)
+        {
+            ToolTip.Hide(this);
+            if (!refresh)
             {
-                if (item != _currentlyActiveTooltipItem)
-                {
-                    ToolTip.Hide(this);
-                    _currentlyActiveTooltipItem = item;
-                }
-
-                if (_currentlyActiveTooltipItem is not null && !GetToolStripState(STATE_DRAGGING))
-                {
-                    Cursor? currentCursor = Cursor.Current;
-
-                    if (currentCursor is not null)
-                    {
-                        Point cursorLocation = Cursor.Position;
-                        cursorLocation.Y += Cursor.Size.Height - currentCursor.HotSpot.Y;
-
-                        cursorLocation = WindowsFormsUtils.ConstrainToScreenBounds(new Rectangle(cursorLocation, s_onePixel)).Location;
-
-                        ToolTip.Show(_currentlyActiveTooltipItem.ToolTipText,
-                                    this,
-                                    PointToClient(cursorLocation),
-                                    ToolTip.AutoPopDelay);
-                    }
-                }
+                _currentlyActiveTooltipItem = item;
             }
+        }
+
+        if (_currentlyActiveTooltipItem is not null && !GetToolStripState(STATE_DRAGGING) && Cursor.Current is { } currentCursor)
+        {
+            Point cursorLocation = Cursor.Position;
+            cursorLocation.Y += Cursor.Size.Height - currentCursor.HotSpot.Y;
+
+            cursorLocation = WindowsFormsUtils.ConstrainToScreenBounds(new Rectangle(cursorLocation, s_onePixel)).Location;
+
+            ToolTip.Show(
+                _currentlyActiveTooltipItem.ToolTipText,
+                this,
+                PointToClient(cursorLocation),
+                ToolTip.AutoPopDelay);
         }
     }
 
@@ -4753,7 +4524,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
             using (new LayoutTransaction(this, this, PropertyNames.Orientation))
             {
                 // We want the ToolStrip to size appropriately when the dock has switched.
-                if (newDock == DockStyle.Left || newDock == DockStyle.Right)
+                if (newDock is DockStyle.Left or DockStyle.Right)
                 {
                     UpdateOrientation(Orientation.Vertical);
                 }
@@ -4774,7 +4545,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
     private void UpdateLayoutStyle(Orientation newRaftingRowOrientation)
     {
-        if (_layoutStyle != ToolStripLayoutStyle.HorizontalStackWithOverflow && _layoutStyle != ToolStripLayoutStyle.VerticalStackWithOverflow)
+        if (_layoutStyle is not ToolStripLayoutStyle.HorizontalStackWithOverflow and not ToolStripLayoutStyle.VerticalStackWithOverflow)
         {
             using (new LayoutTransaction(this, this, PropertyNames.Orientation))
             {
@@ -4797,27 +4568,22 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
     {
         if (newOrientation != Orientation)
         {
-            // snap our last dimensions before switching over.
-            // use specifed bounds so that if something is docked or anchored we don't take the extra stretching
-            // effects into account.
-            Size size = CommonProperties.GetSpecifiedBounds(this).Size;
             Orientation = newOrientation;
-            // since the Grip affects the DisplayRectangle, we need to re-adjust the size
             SetupGrip();
         }
     }
 
     protected override void WndProc(ref Message m)
     {
-        if (m.MsgInternal == PInvoke.WM_SETFOCUS)
+        if (m.MsgInternal == PInvokeCore.WM_SETFOCUS)
         {
             SnapFocus((HWND)(nint)m.WParamInternal);
         }
 
-        if (m.MsgInternal == PInvoke.WM_MOUSEACTIVATE)
+        if (!AllowClickThrough && m.MsgInternal == PInvokeCore.WM_MOUSEACTIVATE)
         {
             // We want to prevent taking focus if someone clicks on the toolstrip dropdown itself. The mouse message
-            // will still go through, but focus won't be taken. If someone clicks on a child control (combobox,
+            // will still go through, but focus won't be taken. If someone clicks on a child control (ComboBox,
             // textbox, etc) focus will be taken - but we'll handle that in WM_NCACTIVATE handler.
             Point pt = PointToClient(WindowsFormsUtils.LastCursorPoint);
             HWND hwndClicked = PInvoke.ChildWindowFromPointEx(
@@ -4857,8 +4623,6 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
                 SnapFocus(PInvoke.GetFocus());
                 if (!IsDropDown && !TabStop)
                 {
-                    s_snapFocusDebug.TraceVerbose("Installing restoreFocusFilter");
-                    // PERF
                     Application.ThreadContext.FromCurrent().AddMessageFilter(RestoreFocusFilter);
                 }
             }
@@ -4866,9 +4630,14 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
 
         base.WndProc(ref m);
 
-        if (m.Msg == (int)PInvoke.WM_NCDESTROY)
+        if (AllowClickThrough && m.MsgInternal == PInvokeCore.WM_MOUSEACTIVATE && m.ResultInternal == PInvoke.MA_ACTIVATEANDEAT)
         {
-            // Destroy the owner window, if we created one.  We
+            m.ResultInternal = (LRESULT)(nint)PInvoke.MA_ACTIVATE;
+        }
+
+        if (m.Msg == (int)PInvokeCore.WM_NCDESTROY)
+        {
+            // Destroy the owner window, if we created one. We
             // cannot do this in OnHandleDestroyed, because at
             // that point our handle is not actually destroyed so
             // destroying our parent actually causes a recursive
@@ -4877,7 +4646,7 @@ public partial class ToolStrip : ScrollableControl, IArrangedElement, ISupportTo
         }
     }
 
-    // Overriden to return Items instead of Controls.
+    // Overridden to return Items instead of Controls.
     ArrangedElementCollection IArrangedElement.Children
     {
         get { return Items; }

@@ -34,16 +34,16 @@ public class ByteViewer : TableLayoutPanel
     private const int DUMP_START_X = HEX_START_X + HEX_WIDTH + HEX_DUMP_GAP;
     private const int SCROLLBAR_START_X = DUMP_START_X + DUMP_WIDTH + HEX_DUMP_GAP;
 
-    private static readonly Font ADDRESS_FONT = new("Microsoft Sans Serif", 8.0f);
-    private static readonly Font HEXDUMP_FONT = new("Courier New", 8.0f);
+    private static readonly Font s_addressFont = new("Microsoft Sans Serif", 8.0f);
+    private static readonly Font s_hexDumpFont = new("Courier New", 8.0f);
 
-    private int SCROLLBAR_HEIGHT;
-    private int SCROLLBAR_WIDTH;
+    private int _scrollbarHeight;
+    private int _scrollbarWidth;
     private VScrollBar _scrollBar;
     private TextBox _edit;
     private readonly int _columnCount = DEFAULT_COLUMN_COUNT;
     private int _rowCount = DEFAULT_ROW_COUNT;
-    private byte[] _dataBuf = Array.Empty<byte>();
+    private byte[] _dataBuf = [];
     private int _startLine;
     private int _displayLinesCount;
     private int _linesCount;
@@ -75,7 +75,7 @@ public class ByteViewer : TableLayoutPanel
         SetStyle(ControlStyles.ResizeRedraw, true);
     }
 
-    // Stole this code from  XmlScanner
+    // Stole this code from XmlScanner
     private static int AnalyzeByteOrderMark(byte[] buffer, int index)
     {
         int c1 = buffer[index + 0] << 8 | buffer[index + 1];
@@ -111,7 +111,7 @@ public class ByteViewer : TableLayoutPanel
           /*4c6f*/ { 1   ,1   ,1   ,1    ,1   ,1   ,1   ,1   ,1    ,1    ,1    ,1    ,12  },
           /*a794*/ { 1   ,1   ,1   ,1    ,1   ,1   ,1   ,1   ,1    ,1    ,1    ,1    ,1   }
         };
-#pragma warning restore SA1001 // Commas should be spaced correctly
+#pragma warning restore SA1001
 
         return encodings[c4, c5];
     }
@@ -121,13 +121,13 @@ public class ByteViewer : TableLayoutPanel
     /// </summary>
     private void DrawAddress(Graphics g, int startLine, int line)
     {
-        Font font = ADDRESS_FONT;
+        Font font = s_addressFont;
 
         Span<char> hexChars = stackalloc char[8];
         bool success = ((startLine + line) * _columnCount).TryFormat(hexChars, out int charCount, "X8", CultureInfo.InvariantCulture);
         Debug.Assert(success && charCount == 8);
 
-        using var foreground = new SolidBrush(ForeColor);
+        using SolidBrush foreground = new(ForeColor);
         g.DrawString(hexChars, font, foreground, ADDRESS_START_X, LINE_START_Y + line * CELL_HEIGHT);
     }
 
@@ -139,33 +139,42 @@ public class ByteViewer : TableLayoutPanel
     {
         using (Brush brush = new SolidBrush(SystemColors.ControlLightLight))
         {
-            g.FillRectangle(brush, new Rectangle(HEX_START_X,
-                                                 CLIENT_START_Y,
-                                                 HEX_WIDTH + HEX_DUMP_GAP + DUMP_WIDTH + HEX_DUMP_GAP,
-                                                 _rowCount * CELL_HEIGHT));
+            g.FillRectangle(
+                brush,
+                new Rectangle(
+                    HEX_START_X,
+                    CLIENT_START_Y,
+                    HEX_WIDTH + HEX_DUMP_GAP + DUMP_WIDTH + HEX_DUMP_GAP,
+                    _rowCount * CELL_HEIGHT));
         }
 
-        using (Pen pen = new Pen(SystemColors.ControlDark))
-        {
-            g.DrawRectangle(pen, new Rectangle(HEX_START_X,
-                                               CLIENT_START_Y,
-                                               HEX_WIDTH + HEX_DUMP_GAP + DUMP_WIDTH + HEX_DUMP_GAP - 1,
-                                               _rowCount * CELL_HEIGHT - 1));
-            g.DrawLine(pen, DUMP_START_X - HEX_DUMP_GAP,
-                            CLIENT_START_Y,
-                            DUMP_START_X - HEX_DUMP_GAP,
-                            CLIENT_START_Y + _rowCount * CELL_HEIGHT - 1);
-        }
+        using Pen pen = new(SystemColors.ControlDark);
+        g.DrawRectangle(
+            pen,
+            new Rectangle(
+                HEX_START_X,
+                CLIENT_START_Y,
+                HEX_WIDTH + HEX_DUMP_GAP + DUMP_WIDTH + HEX_DUMP_GAP - 1,
+                _rowCount * CELL_HEIGHT - 1));
+
+        g.DrawLine(
+            pen,
+            DUMP_START_X - HEX_DUMP_GAP,
+            CLIENT_START_Y,
+            DUMP_START_X - HEX_DUMP_GAP,
+            CLIENT_START_Y + _rowCount * CELL_HEIGHT - 1);
     }
 
     // Char.IsPrintable is going away because it's a mostly meaningless concept.
-    // Copied code here to preserve semantics.  -- BrianGru, 10/3/2000
+    // Copied code here to preserve semantics. -- BrianGru, 10/3/2000
     private static bool CharIsPrintable(char c)
     {
         UnicodeCategory uc = char.GetUnicodeCategory(c);
-        return (!(uc == UnicodeCategory.Control) || (uc == UnicodeCategory.Format) ||
-                (uc == UnicodeCategory.LineSeparator) || (uc == UnicodeCategory.ParagraphSeparator) ||
-                (uc == UnicodeCategory.OtherNotAssigned));
+        return uc is not UnicodeCategory.Control
+            or UnicodeCategory.Format
+            or UnicodeCategory.LineSeparator
+            or UnicodeCategory.ParagraphSeparator
+            or UnicodeCategory.OtherNotAssigned;
     }
 
     /// <summary>
@@ -181,7 +190,7 @@ public class ByteViewer : TableLayoutPanel
             charsToDraw[i] = CharIsPrintable(c) ? c : '.';
         }
 
-        Font font = HEXDUMP_FONT;
+        Font font = s_hexDumpFont;
 
         using Brush foreground = new SolidBrush(ForeColor);
         g.DrawString(charsToDraw, font, foreground, DUMP_START_X, LINE_START_Y + line * CELL_HEIGHT);
@@ -193,7 +202,7 @@ public class ByteViewer : TableLayoutPanel
     /// <internalonly/>
     private void DrawHex(Graphics g, ReadOnlySpan<byte> lineBuffer, int line, Span<char> charsBuffer)
     {
-        Font font = HEXDUMP_FONT;
+        Font font = s_hexDumpFont;
 
         Debug.Assert(charsBuffer.Length >= lineBuffer.Length * 3 + 1);
         int charsWritten = 0;
@@ -362,39 +371,23 @@ public class ByteViewer : TableLayoutPanel
     /// </summary>
     public virtual DisplayMode GetDisplayMode() => _displayMode;
 
-    // Stole this code from  XmlScanner
-    private static int GetEncodingIndex(int c1)
+    // Stole this code from XmlScanner
+    private static int GetEncodingIndex(int c1) => c1 switch
     {
-        switch (c1)
-        {
-            case 0x0000:
-                return 1;
-            case 0xfeff:
-                return 2;
-            case 0xfffe:
-                return 3;
-            case 0xefbb:
-                return 4;
-            case 0x3c00:
-                return 5;
-            case 0x003c:
-                return 6;
-            case 0x3f00:
-                return 7;
-            case 0x003f:
-                return 8;
-            case 0x3c3f:
-                return 9;
-            case 0x786d:
-                return 10;
-            case 0x4c6f:
-                return 11;
-            case 0xa794:
-                return 12;
-            default:
-                return 0; // unknown
-        }
-    }
+        0x0000 => 1,
+        0xfeff => 2,
+        0xfffe => 3,
+        0xefbb => 4,
+        0x3c00 => 5,
+        0x003c => 6,
+        0x3f00 => 7,
+        0x003f => 8,
+        0x3c3f => 9,
+        0x786d => 10,
+        0x4c6f => 11,
+        0xa794 => 12,
+        _ => 0, // unknown
+    };
 
     /// <summary>
     ///  Initializes the ansi string variable that will be assigned to the edit box.
@@ -442,31 +435,35 @@ public class ByteViewer : TableLayoutPanel
     [MemberNotNull(nameof(_scrollBar))]
     private void InitUI()
     {
-        SCROLLBAR_HEIGHT = SystemInformation.HorizontalScrollBarHeight;
-        SCROLLBAR_WIDTH = SystemInformation.VerticalScrollBarWidth;
-        // For backwards compat
-        Size = new Size(SCROLLBAR_START_X + SCROLLBAR_WIDTH + BORDER_GAP + INSET_GAP,
-                             2 * (BORDER_GAP + INSET_GAP) + _rowCount * (CELL_HEIGHT));
+        _scrollbarHeight = SystemInformation.HorizontalScrollBarHeight;
+        _scrollbarWidth = SystemInformation.VerticalScrollBarWidth;
+
+        // For backwards compatibility
+        Size = new Size(
+            SCROLLBAR_START_X + _scrollbarWidth + BORDER_GAP + INSET_GAP,
+            2 * (BORDER_GAP + INSET_GAP) + _rowCount * (CELL_HEIGHT));
 
         _scrollBar = new VScrollBar();
-        _scrollBar.ValueChanged += new EventHandler(ScrollChanged);
+        _scrollBar.ValueChanged += ScrollChanged;
         _scrollBar.TabStop = true;
         _scrollBar.TabIndex = 0;
         _scrollBar.Dock = DockStyle.Right;
         _scrollBar.Visible = false;
 
-        _edit = new TextBox();
-        _edit.AutoSize = false;
-        _edit.BorderStyle = BorderStyle.None;
-        _edit.Multiline = true;
-        _edit.ReadOnly = true;
-        _edit.ScrollBars = ScrollBars.Both;
-        _edit.AcceptsTab = true;
-        _edit.AcceptsReturn = true;
-        _edit.Dock = DockStyle.Fill;
-        _edit.Margin = Padding.Empty;
-        _edit.WordWrap = false;
-        _edit.Visible = false;
+        _edit = new TextBox
+        {
+            AutoSize = false,
+            BorderStyle = BorderStyle.None,
+            Multiline = true,
+            ReadOnly = true,
+            ScrollBars = ScrollBars.Both,
+            AcceptsTab = true,
+            AcceptsReturn = true,
+            Dock = DockStyle.Fill,
+            Margin = Padding.Empty,
+            WordWrap = false,
+            Visible = false
+        };
 
         Controls.Add(_scrollBar, 0, 0);
         Controls.Add(_edit, 0, 0);
@@ -562,8 +559,9 @@ public class ByteViewer : TableLayoutPanel
         if (Dock == DockStyle.None)
         {
             // For backwards compatibility
-            Size = new Size(SCROLLBAR_START_X + SCROLLBAR_WIDTH + BORDER_GAP + INSET_GAP,
-                            2 * (BORDER_GAP + INSET_GAP) + _rowCount * (CELL_HEIGHT));
+            Size = new Size(
+                SCROLLBAR_START_X + _scrollbarWidth + BORDER_GAP + INSET_GAP,
+                2 * (BORDER_GAP + INSET_GAP) + _rowCount * (CELL_HEIGHT));
         }
 
         if (_scrollBar is not null)

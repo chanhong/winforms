@@ -43,7 +43,7 @@ public partial class ResXFileRef
                 return null;
             }
 
-            string[]? result = null;
+            string[]? result;
 
             stringValue = stringValue.Trim();
             string fileName;
@@ -53,14 +53,14 @@ public partial class ResXFileRef
                 int lastIndexOfQuote = stringValue.LastIndexOf('"');
                 if (lastIndexOfQuote - 1 < 0)
                 {
-                    throw new ArgumentException(nameof(stringValue));
+                    throw new ArgumentException(null, nameof(stringValue));
                 }
 
                 // Remove the quotes in " ..... "
                 fileName = stringValue[1..lastIndexOfQuote];
                 if (lastIndexOfQuote + 2 > stringValue.Length)
                 {
-                    throw new ArgumentException(nameof(stringValue));
+                    throw new ArgumentException(null, nameof(stringValue));
                 }
 
                 remainingString = stringValue[(lastIndexOfQuote + 2)..];
@@ -70,13 +70,13 @@ public partial class ResXFileRef
                 int nextSemiColumn = stringValue.IndexOf(';');
                 if (nextSemiColumn == -1)
                 {
-                    throw new ArgumentException(nameof(stringValue));
+                    throw new ArgumentException(null, nameof(stringValue));
                 }
 
                 fileName = stringValue[..nextSemiColumn];
                 if (nextSemiColumn + 1 > stringValue.Length)
                 {
-                    throw new ArgumentException(nameof(stringValue));
+                    throw new ArgumentException(null, nameof(stringValue));
                 }
 
                 remainingString = stringValue[(nextSemiColumn + 1)..];
@@ -84,8 +84,8 @@ public partial class ResXFileRef
 
             string[] parts = remainingString.Split(';');
             result = parts.Length > 1
-                ? (new string[] { fileName, parts[0], parts[1] })
-                : parts.Length > 0 ? (new string[] { fileName, parts[0] }) : (new string[] { fileName });
+                ? ([fileName, parts[0], parts[1]])
+                : parts.Length > 0 ? ([fileName, parts[0]]) : ([fileName]);
 
             return result;
         }
@@ -108,14 +108,9 @@ public partial class ResXFileRef
             if (toCreate == typeof(string))
             {
                 // We have a string, now we need to check the encoding.
-                Encoding textFileEncoding =
-                    parts.Length > 2
-                        ? Encoding.GetEncoding(parts[2])
-                        : Encoding.Default;
-                using (StreamReader sr = new StreamReader(fileName, textFileEncoding))
-                {
-                    return sr.ReadToEnd();
-                }
+                Encoding textFileEncoding = parts.Length > 2 ? Encoding.GetEncoding(parts[2]) : Encoding.Default;
+                using StreamReader sr = new(fileName, textFileEncoding);
+                return sr.ReadToEnd();
             }
 
             // This is a regular file, we call its constructor with a stream as a parameter
@@ -124,9 +119,8 @@ public partial class ResXFileRef
 
             using (FileStream fileStream = new(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                Debug.Assert(fileStream is not null, $"Couldn't open {fileName}");
                 temp = new byte[fileStream.Length];
-                fileStream.Read(temp, 0, (int)fileStream.Length);
+                fileStream.ReadExactly(temp, 0, (int)fileStream.Length);
             }
 
             if (toCreate == typeof(byte[]))
@@ -134,7 +128,7 @@ public partial class ResXFileRef
                 return temp;
             }
 
-            MemoryStream memoryStream = new MemoryStream(temp);
+            MemoryStream memoryStream = new(temp);
             if (toCreate == typeof(MemoryStream))
             {
                 return memoryStream;
@@ -144,7 +138,7 @@ public partial class ResXFileRef
             {
                 // We special case the .ico bitmaps because GDI+ destroy the alpha channel component and
                 // we don't want that to happen.
-                Icon ico = new Icon(memoryStream);
+                Icon ico = new(memoryStream);
                 return ico.ToBitmap();
             }
 
@@ -154,7 +148,7 @@ public partial class ResXFileRef
                     toCreate,
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance,
                     null,
-                    new object[] { memoryStream },
+                    [memoryStream],
                     null);
         }
     }

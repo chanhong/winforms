@@ -86,7 +86,7 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
     {
         get
         {
-            _accelerations ??= new NumericUpDownAccelerationCollection();
+            _accelerations ??= [];
 
             return _accelerations;
         }
@@ -96,7 +96,7 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
     ///  Gets or sets the number of decimal places to display in the up-down control.
     /// </summary>
     [SRCategory(nameof(SR.CatData))]
-    [DefaultValue(NumericUpDown.DefaultDecimalPlaces)]
+    [DefaultValue(DefaultDecimalPlaces)]
     [SRDescription(nameof(SR.NumericUpDownDecimalPlacesDescr))]
     public int DecimalPlaces
     {
@@ -107,10 +107,8 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
 
         set
         {
-            if (value < 0 || value > 99)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidBoundArgument, nameof(DecimalPlaces), value, 0, 99));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 99);
 
             _decimalPlaces = value;
             UpdateEditText();
@@ -123,7 +121,7 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
     ///  display the value it contains in hexadecimal format.
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
-    [DefaultValue(NumericUpDown.DefaultHexadecimal)]
+    [DefaultValue(DefaultHexadecimal)]
     [SRDescription(nameof(SR.NumericUpDownHexadecimalDescr))]
     public bool Hexadecimal
     {
@@ -160,14 +158,9 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
 
         set
         {
-            if (value < 0.0m)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidArgument, nameof(Increment), value));
-            }
-            else
-            {
-                _increment = value;
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+
+            _increment = value;
         }
     }
 
@@ -282,7 +275,7 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
     ///  separator is displayed in the up-down control when appropriate.
     /// </summary>
     [SRCategory(nameof(SR.CatData))]
-    [DefaultValue(NumericUpDown.DefaultThousandsSeparator)]
+    [DefaultValue(DefaultThousandsSeparator)]
     [Localizable(true)]
     [SRDescription(nameof(SR.NumericUpDownThousandsSeparatorDescr))]
     public bool ThousandsSeparator
@@ -429,7 +422,7 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
     /// </summary>
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        if (base.InterceptArrowKeys && (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down) && !Spinning)
+        if (InterceptArrowKeys && (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down) && !Spinning)
         {
             StartAcceleration();
         }
@@ -442,7 +435,7 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
     /// </summary>
     protected override void OnKeyUp(KeyEventArgs e)
     {
-        if (base.InterceptArrowKeys && (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down))
+        if (InterceptArrowKeys && (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down))
         {
             StopAcceleration();
         }
@@ -458,7 +451,7 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
     {
         base.OnTextBoxKeyPress(source, e);
 
-        NumberFormatInfo numberFormatInfo = System.Globalization.CultureInfo.CurrentCulture.NumberFormat;
+        NumberFormatInfo numberFormatInfo = CultureInfo.CurrentCulture.NumberFormat;
         string decimalSeparator = numberFormatInfo.NumberDecimalSeparator;
         string groupSeparator = numberFormatInfo.NumberGroupSeparator;
         string negativeSign = numberFormatInfo.NegativeSign;
@@ -752,7 +745,7 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
                          "DecimalValue lies outside of [minimum, maximum]");
 
             Text = GetNumberText(_currentValue);
-            Debug.Assert(ChangingText == false, "ChangingText should have been set to false");
+            Debug.Assert(!ChangingText, "ChangingText should have been set to false");
         }
     }
 
@@ -768,7 +761,7 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
     }
 
     // This is not a breaking change -- Even though this control previously autosized to height,
-    // it didn't actually have an AutoSize property.  The new AutoSize property enables the
+    // it didn't actually have an AutoSize property. The new AutoSize property enables the
     // smarter behavior.
     internal override Size GetPreferredSizeCore(Size proposedConstraints)
     {
@@ -776,7 +769,7 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
 
         int baseSize = Hexadecimal ? 16 : 10;
         int digit = GetLargestDigit(0, baseSize);
-        // The floor of log is intentionally 1 less than the number of digits.  We initialize
+        // The floor of log is intentionally 1 less than the number of digits. We initialize
         // testNumber to account for the missing digit.
         int numDigits = (int)Math.Floor(Math.Log(Math.Max(-(double)Minimum, (double)Maximum), baseSize));
         int maxDigits;
@@ -800,7 +793,7 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
         else
         {
             // zero can not be the leading digit if we need more than
-            // one digit.  (0*baseSize = 0 in the loop below)
+            // one digit. (0*baseSize = 0 in the loop below)
             testNumber = GetLargestDigit(1, baseSize);
         }
 

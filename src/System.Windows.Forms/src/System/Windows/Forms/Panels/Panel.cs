@@ -30,6 +30,10 @@ public partial class Panel : ScrollableControl
         TabStop = false;
         SetStyle(ControlStyles.Selectable | ControlStyles.AllPaintingInWmPaint, false);
         SetStyle(ControlStyles.SupportsTransparentBackColor, true);
+
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
     }
 
     /// <summary>
@@ -93,7 +97,7 @@ public partial class Panel : ScrollableControl
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
     [DefaultValue(BorderStyle.None)]
-    [DispId(PInvoke.DISPID_BORDERSTYLE)]
+    [DispId(PInvokeCore.DISPID_BORDERSTYLE)]
     [SRDescription(nameof(SR.PanelBorderStyleDescr))]
     public BorderStyle BorderStyle
     {

@@ -31,9 +31,9 @@ internal class MdiWindowListStrip : MenuStrip
         get
         {
             _mergeItem ??= new ToolStripMenuItem
-                {
-                    MergeAction = MergeAction.MatchOnly
-                };
+            {
+                MergeAction = MergeAction.MatchOnly
+            };
 
             if (_mergeItem.Owner is null)
             {
@@ -110,36 +110,38 @@ internal class MdiWindowListStrip : MenuStrip
                             // there's always room for activeMdiChild
                             string? text = WindowsFormsUtils.EscapeTextWithAmpersands(mdiParent.MdiChildren[i].Text);
                             text ??= string.Empty;
-                            ToolStripMenuItem windowListItem = new ToolStripMenuItem(mdiParent.MdiChildren[i])
+                            ToolStripMenuItem windowListItem = new(mdiParent.MdiChildren[i])
                             {
                                 Text = $"&{accel} {text}",
                                 MergeAction = MergeAction.Append,
                                 MergeIndex = accel
                             };
-                            windowListItem.Click += new EventHandler(OnWindowListItemClick);
+
+                            windowListItem.Click += OnWindowListItemClick;
+
                             if (forms[i].Equals(activeMdiChild))
-                            {  // if this the active one, check it off.
+                            {
+                                // If this the active one, check it off.
                                 windowListItem.Checked = true;
                                 activeFormAdded = true;
                             }
 
                             accel++;
                             formsAddedToMenu++;
-                            ToolStrip.s_mdiMergeDebug.TraceVerbose($"\tPopulateItems: Added {windowListItem.Text}");
                             mergeItem.DropDownItems.Add(windowListItem);
                         }
                     }
                 }
 
-                // show the More Windows... item if necessary.
+                // Show the "More Windows..." item if necessary.
                 if (visibleChildren > maxMenuForms)
                 {
                     ToolStripMenuItem moreWindowsMenuItem = new ToolStripMenuItem
                     {
                         Text = SR.MDIMenuMoreWindows
                     };
-                    ToolStrip.s_mdiMergeDebug.TraceVerbose($"\tPopulateItems: Added {moreWindowsMenuItem.Text}");
-                    moreWindowsMenuItem.Click += new EventHandler(OnMoreWindowsMenuItemClick);
+
+                    moreWindowsMenuItem.Click += OnMoreWindowsMenuItemClick;
                     moreWindowsMenuItem.MergeAction = MergeAction.Append;
                     mergeItem.DropDownItems.Add(moreWindowsMenuItem);
                 }
@@ -147,7 +149,7 @@ internal class MdiWindowListStrip : MenuStrip
         }
         finally
         {
-            // this is an invisible toolstrip don't even bother doing layout.
+            // This is an invisible toolstrip don't even bother doing layout.
             ResumeLayout(false);
             MergeItem.DropDown.ResumeLayout(false);
         }
@@ -160,24 +162,22 @@ internal class MdiWindowListStrip : MenuStrip
 
         if (forms is not null)
         {
-            using (MdiWindowDialog dialog = new MdiWindowDialog())
+            using MdiWindowDialog dialog = new();
+            dialog.SetItems(_mdiParent?.ActiveMdiChild, forms);
+            DialogResult result = dialog.ShowDialog();
+            if (result == DialogResult.OK)
             {
-                dialog.SetItems(_mdiParent?.ActiveMdiChild, forms);
-                DialogResult result = dialog.ShowDialog();
-                if (result == DialogResult.OK)
+                // AllWindows Assert above allows this...
+                dialog.ActiveChildForm?.Activate();
+                if (dialog.ActiveChildForm?.ActiveControl is not null && !dialog.ActiveChildForm.ActiveControl.Focused)
                 {
-                    // AllWindows Assert above allows this...
-                    dialog.ActiveChildForm?.Activate();
-                    if (dialog.ActiveChildForm?.ActiveControl is not null && !dialog.ActiveChildForm.ActiveControl.Focused)
-                    {
-                        dialog.ActiveChildForm.ActiveControl.Focus();
-                    }
+                    dialog.ActiveChildForm.ActiveControl.Focus();
                 }
             }
         }
     }
 
-    /// <summary> handler for 1 - 9.  This is similar to MenuItem.cs</summary>
+    /// <summary> handler for 1 - 9. This is similar to MenuItem.cs</summary>
     private void OnWindowListItemClick(object? sender, EventArgs e)
     {
         if (sender is ToolStripMenuItem windowListItem)

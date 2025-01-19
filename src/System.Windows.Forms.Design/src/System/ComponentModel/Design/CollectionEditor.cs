@@ -108,9 +108,22 @@ public partial class CollectionEditor : UITypeEditor
             }
         }
 
-        return itemType.UnderlyingSystemType == typeof(string)
-            ? string.Empty
-            : TypeDescriptor.CreateInstance(host, itemType, argTypes: null, args: null)!;
+        if (itemType.UnderlyingSystemType == typeof(string))
+        {
+            return string.Empty;
+        }
+
+        if (TypeDescriptor.CreateInstance(host, itemType, argTypes: null, args: null) is { } obj)
+        {
+            return obj;
+        }
+
+        throw new InvalidOperationException(
+            string.Format(
+            SR.CollectionEditorCreateInstanceError,
+            nameof(IDesignerHost),
+            nameof(TypeDescriptor),
+            itemType.FullName));
     }
 
     /// <summary>
@@ -176,7 +189,7 @@ public partial class CollectionEditor : UITypeEditor
     /// <summary>
     ///  Gets the data types this collection editor can create.
     /// </summary>
-    protected virtual Type[] CreateNewItemTypes() => new Type[] { CollectionItemType };
+    protected virtual Type[] CreateNewItemTypes() => [CollectionItemType];
 
     /// <summary>
     ///  Destroys the specified instance of the object.
@@ -201,7 +214,7 @@ public partial class CollectionEditor : UITypeEditor
     }
 
     /// <summary>
-    ///  Edits the specified object value using the editor style  provided by <see cref="GetEditStyle"/>.
+    ///  Edits the specified object value using the editor style provided by <see cref="GetEditStyle"/>.
     /// </summary>
     public override object? EditValue(ITypeDescriptorContext? context, IServiceProvider provider, object? value)
     {
@@ -213,7 +226,7 @@ public partial class CollectionEditor : UITypeEditor
         Context = context;
 
         // Child modal dialog - launching in SystemAware mode.
-        CollectionForm localCollectionForm = DpiHelper.CreateInstanceInSystemAwareContext(CreateCollectionForm);
+        CollectionForm localCollectionForm = ScaleHelper.InvokeInSystemAwareContext(CreateCollectionForm);
         ITypeDescriptorContext? lastContext = Context;
         localCollectionForm.EditValue = value;
         _ignoreChangingEvents = false;
@@ -284,7 +297,7 @@ public partial class CollectionEditor : UITypeEditor
         // If the object implements IComponent, and is not sited, check with the inheritance service (if it exists)
         // to see if this is a component that is being inherited from another class. If it is, then we do not want
         // to place it in the collection editor. If the inheritance service chose not to site the component, that
-        // indicates it should be hidden from  the user.
+        // indicates it should be hidden from the user.
 
         IInheritanceService? inheritanceService = null;
         bool isInheritanceServiceInitialized = false;
@@ -324,7 +337,7 @@ public partial class CollectionEditor : UITypeEditor
             return values;
         }
 
-        return Array.Empty<object>();
+        return [];
     }
 
     /// <summary>

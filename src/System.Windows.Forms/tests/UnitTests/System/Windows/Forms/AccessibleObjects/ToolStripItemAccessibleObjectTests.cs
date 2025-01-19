@@ -12,7 +12,7 @@ public class ToolStripItemAccessibleObjectTests
     [WinFormsFact]
     public void ToolStripItemAccessibleObject_Ctor_ToolStripItem()
     {
-        using var item = new SubToolStripItem
+        using SubToolStripItem item = new()
         {
             AccessibleDefaultActionDescription = "DefaultActionDescription",
             AccessibleDescription = "Description",
@@ -80,7 +80,7 @@ public class ToolStripItemAccessibleObjectTests
         item.AccessibleDescription = "Test Accessible Description";
         AccessibleObject toolStripItemAccessibleObject = item.AccessibilityObject;
 
-        var accessibleObjectDescription = toolStripItemAccessibleObject.Description;
+        string accessibleObjectDescription = toolStripItemAccessibleObject.Description;
 
         Assert.Equal("Test Accessible Description", accessibleObjectDescription);
     }
@@ -111,7 +111,7 @@ public class ToolStripItemAccessibleObjectTests
     [MemberData(nameof(ToolStripItemAccessibleObject_TestData))]
     public void ToolStripHostedControlAccessibleObject_GetPropertyValue_IsOffscreenPropertyId_ReturnExpected(Type type)
     {
-        using var toolStrip = new ToolStrip();
+        using ToolStrip toolStrip = new();
         toolStrip.CreateControl();
         using ToolStripItem item = ReflectionHelper.InvokePublicConstructor<ToolStripItem>(type);
         item.Size = new Size(0, 0);
@@ -165,7 +165,7 @@ public class ToolStripItemAccessibleObjectTests
 
         Assert.Equal(expected, actual);
         // Check if the method returns an exist UIA_ControlTypeId
-        Assert.True(actual >= UIA_CONTROLTYPE_ID.UIA_ButtonControlTypeId && actual <= UIA_CONTROLTYPE_ID.UIA_AppBarControlTypeId);
+        Assert.True(actual is >= UIA_CONTROLTYPE_ID.UIA_ButtonControlTypeId and <= UIA_CONTROLTYPE_ID.UIA_AppBarControlTypeId);
     }
 
     [WinFormsFact]
@@ -309,7 +309,7 @@ public class ToolStripItemAccessibleObjectTests
     {
         using ToolStrip toolStrip = new() { AutoSize = false, Size = new(300, 30) };
 
-        ToolStripItem CreateSkippedItem()
+        static ToolStripItem CreateSkippedItem()
         {
             return new ToolStripControlHost(new Label());
         }

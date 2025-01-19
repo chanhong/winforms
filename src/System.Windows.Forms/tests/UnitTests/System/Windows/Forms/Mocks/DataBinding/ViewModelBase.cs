@@ -1,4 +1,7 @@
-﻿using System.ComponentModel;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 #nullable enable
@@ -34,7 +37,7 @@ public abstract class ViewModelBase : INotifyPropertyChanged
     /// <see cref="CallerMemberNameAttribute"/>.</param>
     protected bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
     {
-        if (object.Equals(storage, value))
+        if (Equals(storage, value))
         {
             return false;
         }

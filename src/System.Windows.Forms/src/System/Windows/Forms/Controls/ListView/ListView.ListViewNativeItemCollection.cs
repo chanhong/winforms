@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using static Interop;
 
 namespace System.Windows.Forms;
 
@@ -35,35 +34,7 @@ public partial class ListView
 
         public ListViewItem this[int displayIndex]
         {
-            get
-            {
-                _owner.ApplyUpdateCachedItems();
-
-                if (_owner.VirtualMode)
-                {
-                    // if we are showing virtual items, we need to get the item from the user
-                    RetrieveVirtualItemEventArgs rVI = new RetrieveVirtualItemEventArgs(displayIndex);
-                    _owner.OnRetrieveVirtualItem(rVI);
-                    rVI.Item!.SetItemIndex(_owner, displayIndex);
-                    return rVI.Item;
-                }
-                else
-                {
-                    ArgumentOutOfRangeException.ThrowIfNegative(displayIndex);
-                    ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(displayIndex, _owner._itemCount);
-
-                    if (_owner.IsHandleCreated && !_owner.ListViewHandleDestroyed)
-                    {
-                        _owner._listItemsTable.TryGetValue(DisplayIndexToID(displayIndex), out ListViewItem? item);
-                        return item!;
-                    }
-                    else
-                    {
-                        Debug.Assert(_owner._listViewItems is not null, "listItemsArray is null, but the handle isn't created");
-                        return _owner._listViewItems[displayIndex];
-                    }
-                }
-            }
+            get => GetItemByIndexInternal(displayIndex, throwInVirtualMode: true)!;
             set
             {
                 _owner.ApplyUpdateCachedItems();
@@ -85,6 +56,44 @@ public partial class ListView
             }
         }
 
+        public ListViewItem? GetItemByIndex(int index) =>
+            GetItemByIndexInternal(index, throwInVirtualMode: false);
+
+        private ListViewItem? GetItemByIndexInternal(int index, [NotNullWhen(true)] bool throwInVirtualMode)
+        {
+            _owner.ApplyUpdateCachedItems();
+
+            if (_owner.VirtualMode)
+            {
+                // If we are showing virtual items, we need to get the item from the user.
+                RetrieveVirtualItemEventArgs rVI = new(index);
+                _owner.OnRetrieveVirtualItem(rVI);
+                if (rVI.Item is null)
+                {
+                    return !throwInVirtualMode ? null : throw new InvalidOperationException(SR.ListViewVirtualItemRequired);
+                }
+
+                rVI.Item.SetItemIndex(_owner, index);
+                return rVI.Item;
+            }
+            else
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _owner._itemCount);
+
+                if (_owner.IsHandleCreated && !_owner.ListViewHandleDestroyed)
+                {
+                    _owner._listItemsTable.TryGetValue(DisplayIndexToID(index), out ListViewItem? item);
+                    return item!;
+                }
+                else
+                {
+                    Debug.Assert(_owner._listViewItems is not null, "listItemsArray is null, but the handle isn't created");
+                    return _owner._listViewItems[index];
+                }
+            }
+        }
+
         public ListViewItem Add(ListViewItem value)
         {
             if (_owner.VirtualMode)
@@ -100,7 +109,7 @@ public partial class ListView
                 // This saves a call into NativeListView to retrieve the real index.
                 bool valueChecked = value.Checked;
 
-                _owner.InsertItems(_owner._itemCount, new ListViewItem[] { value }, true);
+                _owner.InsertItems(_owner._itemCount, [value], true);
 
                 if (_owner.IsHandleCreated && !_owner.CheckBoxes && valueChecked)
                 {
@@ -190,12 +199,12 @@ public partial class ListView
                     iItem = displayIndex
                 };
 
-                PInvoke.SendMessage(_owner, PInvoke.LVM_GETITEMW, (WPARAM)0, ref lvItem);
+                PInvokeCore.SendMessage(_owner, PInvoke.LVM_GETITEMW, (WPARAM)0, ref lvItem);
                 return PARAM.ToInt(lvItem.lParam);
             }
             else
             {
-                return this[displayIndex].ID;
+                return this[displayIndex]._id;
             }
         }
 
@@ -214,40 +223,42 @@ public partial class ListView
                 // We use the LVM_GETNEXTITEM message to see what the next selected item is
                 // so we can avoid checking selection for each one.
                 int count = _owner.Items.Count;
-                int nextSelected = (int)PInvoke.SendMessage(
+                int nextSelected = (int)PInvokeCore.SendMessage(
                     _owner,
                     PInvoke.LVM_GETNEXTITEM,
                     (WPARAM)(-1),
-                    (LPARAM)(uint)PInvoke.LVNI_SELECTED);
+                    (LPARAM)PInvoke.LVNI_SELECTED);
 
                 for (int i = 0; i < count; i++)
                 {
                     ListViewItem item = _owner.Items[i];
                     Debug.Assert(item is not null, $"Failed to get item at index {i}");
-                    if (item is not null)
+                    if (item is null)
                     {
-                        // If it's the one we're looking for, ask for the next one.
-                        if (i == nextSelected)
-                        {
-                            item.StateSelected = true;
-                            nextSelected = (int)PInvoke.SendMessage(
-                                _owner,
-                                PInvoke.LVM_GETNEXTITEM,
-                                (WPARAM)nextSelected, (LPARAM)(uint)PInvoke.LVNI_SELECTED);
-                        }
-                        else
-                        {
-                            // Otherwise it's false.
-                            item.StateSelected = false;
-                        }
-
-                        item.UnHost(i, false);
+                        continue;
                     }
+
+                    // If it's the one we're looking for, ask for the next one.
+                    if (i == nextSelected)
+                    {
+                        item.StateSelected = true;
+                        nextSelected = (int)PInvokeCore.SendMessage(
+                            _owner,
+                            PInvoke.LVM_GETNEXTITEM,
+                            (WPARAM)nextSelected, (LPARAM)PInvoke.LVNI_SELECTED);
+                    }
+                    else
+                    {
+                        // Otherwise it's false.
+                        item.StateSelected = false;
+                    }
+
+                    item.UnHost(i, false);
                 }
 
                 Debug.Assert(_owner._listViewItems is null, "listItemsArray not null, even though handle created");
 
-                PInvoke.SendMessage(_owner, PInvoke.LVM_DELETEALLITEMS);
+                PInvokeCore.SendMessage(_owner, PInvoke.LVM_DELETEALLITEMS);
 
                 // There's a problem in the list view that if it's in small icon, it won't pick up the small icon
                 // sizes until it changes from large icon, so we flip it twice here...
@@ -298,7 +309,7 @@ public partial class ListView
             _owner.ApplyUpdateCachedItems();
             if (_owner.IsHandleCreated && !_owner.ListViewHandleDestroyed)
             {
-                return _owner._listItemsTable.TryGetValue(item.ID, out ListViewItem? itemOut)
+                return _owner._listItemsTable.TryGetValue(item._id, out ListViewItem? itemOut)
                     && itemOut == item;
             }
             else
@@ -336,7 +347,7 @@ public partial class ListView
                 _owner.ApplyUpdateCachedItems();
             }
 
-            _owner.InsertItems(index, new ListViewItem[] { item }, true);
+            _owner.InsertItems(index, [item], true);
             if (_owner.IsHandleCreated && !_owner.CheckBoxes && item.Checked)
             {
                 _owner.UpdateSavedCheckedItems(item, true /*addItem*/);
@@ -407,7 +418,7 @@ public partial class ListView
             if (_owner.IsHandleCreated)
             {
                 Debug.Assert(_owner._listViewItems is null, "listItemsArray not null, even though handle created");
-                if (PInvoke.SendMessage(_owner, PInvoke.LVM_DELETEITEM, (WPARAM)index) == 0)
+                if (PInvokeCore.SendMessage(_owner, PInvoke.LVM_DELETEITEM, (WPARAM)index) == 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index, string.Format(SR.InvalidArgument, nameof(index), index));
                 }

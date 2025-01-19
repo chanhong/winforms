@@ -8,11 +8,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms.Layout;
 using Microsoft.Win32;
-using RichEdit = Windows.Win32.UI.Controls.RichEdit;
-using static Interop;
-using static Interop.Richedit;
-using Windows.Win32.UI.Controls.RichEdit;
 using Windows.Win32.UI.Controls.Dialogs;
+using Windows.Win32.UI.Controls.RichEdit;
+using static Interop.Richedit;
 
 namespace System.Windows.Forms;
 
@@ -25,18 +23,6 @@ namespace System.Windows.Forms;
 [SRDescription(nameof(SR.DescriptionRichTextBox))]
 public partial class RichTextBox : TextBoxBase
 {
-    private static TraceSwitch? s_richTextDbg;
-
-    private static TraceSwitch RichTextDbg
-    {
-        get
-        {
-            s_richTextDbg ??= new TraceSwitch("RichTextDbg", "Debug info about RichTextBox");
-
-            return s_richTextDbg;
-        }
-    }
-
     /// <summary>
     ///  Paste special flags.
     /// </summary>
@@ -58,14 +44,13 @@ public partial class RichTextBox : TextBoxBase
     private const int CHAR_BUFFER_LEN = 512;
 
     // Event objects
-    //
-    private static readonly object EVENT_HSCROLL = new();
-    private static readonly object EVENT_LINKACTIVATE = new();
-    private static readonly object EVENT_IMECHANGE = new();
-    private static readonly object EVENT_PROTECTED = new();
-    private static readonly object EVENT_REQUESTRESIZE = new();
-    private static readonly object EVENT_SELCHANGE = new();
-    private static readonly object EVENT_VSCROLL = new();
+    private static readonly object s_hscrollEvent = new();
+    private static readonly object s_linkActivateEvent = new();
+    private static readonly object s_imeChangeEvent = new();
+    private static readonly object s_protectedEvent = new();
+    private static readonly object s_requestSizeEvent = new();
+    private static readonly object s_selectionChangeEvent = new();
+    private static readonly object s_vscrollEvent = new();
 
     // Persistent state
     //
@@ -93,19 +78,19 @@ public partial class RichTextBox : TextBoxBase
     private static int s_richEditMajorVersion = 3;
 
     private BitVector32 _richTextBoxFlags;
-    private static readonly BitVector32.Section autoWordSelectionSection = BitVector32.CreateSection(1);
-    private static readonly BitVector32.Section showSelBarSection = BitVector32.CreateSection(1, autoWordSelectionSection);
-    private static readonly BitVector32.Section autoUrlDetectSection = BitVector32.CreateSection(1, showSelBarSection);
-    private static readonly BitVector32.Section fInCtorSection = BitVector32.CreateSection(1, autoUrlDetectSection);
-    private static readonly BitVector32.Section protectedErrorSection = BitVector32.CreateSection(1, fInCtorSection);
-    private static readonly BitVector32.Section linkcursorSection = BitVector32.CreateSection(1, protectedErrorSection);
-    private static readonly BitVector32.Section allowOleDropSection = BitVector32.CreateSection(1, linkcursorSection);
-    private static readonly BitVector32.Section suppressTextChangedEventSection = BitVector32.CreateSection(1, allowOleDropSection);
-    private static readonly BitVector32.Section callOnContentsResizedSection = BitVector32.CreateSection(1, suppressTextChangedEventSection);
-    private static readonly BitVector32.Section richTextShortcutsEnabledSection = BitVector32.CreateSection(1, callOnContentsResizedSection);
-    private static readonly BitVector32.Section allowOleObjectsSection = BitVector32.CreateSection(1, richTextShortcutsEnabledSection);
-    private static readonly BitVector32.Section scrollBarsSection = BitVector32.CreateSection((short)RichTextBoxScrollBars.ForcedBoth, allowOleObjectsSection);
-    private static readonly BitVector32.Section enableAutoDragDropSection = BitVector32.CreateSection(1, scrollBarsSection);
+    private static readonly BitVector32.Section s_autoWordSelectionSection = BitVector32.CreateSection(1);
+    private static readonly BitVector32.Section s_showSelBarSection = BitVector32.CreateSection(1, s_autoWordSelectionSection);
+    private static readonly BitVector32.Section s_autoUrlDetectSection = BitVector32.CreateSection(1, s_showSelBarSection);
+    private static readonly BitVector32.Section s_fInCtorSection = BitVector32.CreateSection(1, s_autoUrlDetectSection);
+    private static readonly BitVector32.Section s_protectedErrorSection = BitVector32.CreateSection(1, s_fInCtorSection);
+    private static readonly BitVector32.Section s_linkcursorSection = BitVector32.CreateSection(1, s_protectedErrorSection);
+    private static readonly BitVector32.Section s_allowOleDropSection = BitVector32.CreateSection(1, s_linkcursorSection);
+    private static readonly BitVector32.Section s_suppressTextChangedEventSection = BitVector32.CreateSection(1, s_allowOleDropSection);
+    private static readonly BitVector32.Section s_callOnContentsResizedSection = BitVector32.CreateSection(1, s_suppressTextChangedEventSection);
+    private static readonly BitVector32.Section s_richTextShortcutsEnabledSection = BitVector32.CreateSection(1, s_callOnContentsResizedSection);
+    private static readonly BitVector32.Section s_allowOleObjectsSection = BitVector32.CreateSection(1, s_richTextShortcutsEnabledSection);
+    private static readonly BitVector32.Section s_scrollBarsSection = BitVector32.CreateSection((short)RichTextBoxScrollBars.ForcedBoth, s_allowOleObjectsSection);
+    private static readonly BitVector32.Section s_enableAutoDragDropSection = BitVector32.CreateSection(1, s_scrollBarsSection);
 
     /// <summary>
     ///  Constructs a new RichTextBox.
@@ -113,7 +98,7 @@ public partial class RichTextBox : TextBoxBase
     public RichTextBox()
     {
         InConstructor = true;
-        _richTextBoxFlags[autoWordSelectionSection] = 0; // This is false by default
+        _richTextBoxFlags[s_autoWordSelectionSection] = 0; // This is false by default
         DetectUrls = true;
         ScrollBars = RichTextBoxScrollBars.Both;
         RichTextShortcutsEnabled = true;
@@ -131,20 +116,20 @@ public partial class RichTextBox : TextBoxBase
     [Browsable(false)]
     public override bool AllowDrop
     {
-        get => _richTextBoxFlags[allowOleDropSection] != 0;
+        get => _richTextBoxFlags[s_allowOleDropSection] != 0;
         set
         {
-            _richTextBoxFlags[allowOleDropSection] = value ? 1 : 0;
+            _richTextBoxFlags[s_allowOleDropSection] = value ? 1 : 0;
             UpdateOleCallback();
         }
     }
 
     internal bool AllowOleObjects
     {
-        get => _richTextBoxFlags[allowOleObjectsSection] != 0;
+        get => _richTextBoxFlags[s_allowOleObjectsSection] != 0;
         set
         {
-            _richTextBoxFlags[allowOleObjectsSection] = value ? 1 : 0;
+            _richTextBoxFlags[s_allowOleObjectsSection] = value ? 1 : 0;
         }
     }
 
@@ -175,15 +160,15 @@ public partial class RichTextBox : TextBoxBase
     [SRDescription(nameof(SR.RichTextBoxAutoWordSelection))]
     public bool AutoWordSelection
     {
-        get => _richTextBoxFlags[autoWordSelectionSection] != 0;
+        get => _richTextBoxFlags[s_autoWordSelectionSection] != 0;
         set
         {
-            _richTextBoxFlags[autoWordSelectionSection] = value ? 1 : 0;
+            _richTextBoxFlags[s_autoWordSelectionSection] = value ? 1 : 0;
             if (IsHandleCreated)
             {
-                PInvoke.SendMessage(
+                PInvokeCore.SendMessage(
                     this,
-                    PInvoke.EM_SETOPTIONS,
+                    PInvokeCore.EM_SETOPTIONS,
                     (WPARAM)(int)(value ? PInvoke.ECOOP_OR : PInvoke.ECOOP_XOR),
                     (LPARAM)(int)PInvoke.ECO_AUTOWORDSELECTION);
             }
@@ -236,10 +221,7 @@ public partial class RichTextBox : TextBoxBase
 
         set
         {
-            if (value < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidArgument, nameof(BulletIndent), value));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
             _bulletIndent = value;
 
@@ -253,8 +235,8 @@ public partial class RichTextBox : TextBoxBase
 
     private bool CallOnContentsResized
     {
-        get => _richTextBoxFlags[callOnContentsResizedSection] != 0;
-        set => _richTextBoxFlags[callOnContentsResizedSection] = value ? 1 : 0;
+        get => _richTextBoxFlags[s_callOnContentsResizedSection] != 0;
+        set => _richTextBoxFlags[s_callOnContentsResizedSection] = value ? 1 : 0;
     }
 
     internal override bool CanRaiseTextChangedEvent => !SuppressTextChangedEvent;
@@ -265,7 +247,7 @@ public partial class RichTextBox : TextBoxBase
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     [SRDescription(nameof(SR.RichTextBoxCanRedoDescr))]
-    public bool CanRedo => IsHandleCreated && (int)PInvoke.SendMessage(this, PInvoke.EM_CANREDO) != 0;
+    public bool CanRedo => IsHandleCreated && (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_CANREDO) != 0;
 
     protected override CreateParams CreateParams
     {
@@ -274,17 +256,16 @@ public partial class RichTextBox : TextBoxBase
             // Check for library
             if (s_moduleHandle == IntPtr.Zero)
             {
-                string richEditControlDllVersion = Libraries.RichEdit41;
-                s_moduleHandle = PInvoke.LoadLibraryFromSystemPathIfAvailable(richEditControlDllVersion);
+                s_moduleHandle = PInvoke.LoadLibraryFromSystemPathIfAvailable(Libraries.RichEdit41);
 
                 int lastWin32Error = Marshal.GetLastWin32Error();
 
                 // This code has been here since the inception of the project,
                 // we can't determine why we have to compare w/ 32 here.
                 // This fails on 3-GB mode, (once the dll is loaded above 3GB memory space)
-                if ((ulong)s_moduleHandle < (ulong)32)
+                if ((ulong)s_moduleHandle < 32)
                 {
-                    throw new Win32Exception(lastWin32Error, string.Format(SR.LoadDLLError, richEditControlDllVersion));
+                    throw new Win32Exception(lastWin32Error, string.Format(SR.LoadDLLError, Libraries.RichEdit41));
                 }
 
                 string path = PInvoke.GetModuleFileNameLongPath(new HINSTANCE(s_moduleHandle));
@@ -351,15 +332,15 @@ public partial class RichTextBox : TextBoxBase
     [SRDescription(nameof(SR.RichTextBoxDetectURLs))]
     public bool DetectUrls
     {
-        get => _richTextBoxFlags[autoUrlDetectSection] != 0;
+        get => _richTextBoxFlags[s_autoUrlDetectSection] != 0;
         set
         {
             if (value != DetectUrls)
             {
-                _richTextBoxFlags[autoUrlDetectSection] = value ? 1 : 0;
+                _richTextBoxFlags[s_autoUrlDetectSection] = value ? 1 : 0;
                 if (IsHandleCreated)
                 {
-                    PInvoke.SendMessage(this, PInvoke.EM_AUTOURLDETECT, (WPARAM)(BOOL)(value));
+                    PInvokeCore.SendMessage(this, PInvokeCore.EM_AUTOURLDETECT, (WPARAM)(BOOL)(value));
                     RecreateHandle();
                 }
             }
@@ -377,10 +358,10 @@ public partial class RichTextBox : TextBoxBase
     [SRDescription(nameof(SR.RichTextBoxEnableAutoDragDrop))]
     public bool EnableAutoDragDrop
     {
-        get => _richTextBoxFlags[enableAutoDragDropSection] != 0;
+        get => _richTextBoxFlags[s_enableAutoDragDropSection] != 0;
         set
         {
-            _richTextBoxFlags[enableAutoDragDropSection] = value ? 1 : 0;
+            _richTextBoxFlags[s_enableAutoDragDropSection] = value ? 1 : 0;
             UpdateOleCallback();
         }
     }
@@ -410,7 +391,7 @@ public partial class RichTextBox : TextBoxBase
         get => base.Font;
         set
         {
-            if (!IsHandleCreated || PInvoke.GetWindowTextLength(this) <= 0)
+            if (!IsHandleCreated || PInvokeCore.GetWindowTextLength(this) <= 0)
             {
                 base.Font = value;
                 return;
@@ -467,8 +448,8 @@ public partial class RichTextBox : TextBoxBase
 
     private bool InConstructor
     {
-        get => _richTextBoxFlags[fInCtorSection] != 0;
-        set => _richTextBoxFlags[fInCtorSection] = value ? 1 : 0;
+        get => _richTextBoxFlags[s_fInCtorSection] != 0;
+        set => _richTextBoxFlags[s_fInCtorSection] = value ? 1 : 0;
     }
 
     /// <summary>
@@ -481,7 +462,7 @@ public partial class RichTextBox : TextBoxBase
     public RichTextBoxLanguageOptions LanguageOption
     {
         get => IsHandleCreated
-            ? (RichTextBoxLanguageOptions)(int)PInvoke.SendMessage(this, PInvoke.EM_GETLANGOPTIONS)
+            ? (RichTextBoxLanguageOptions)(int)PInvokeCore.SendMessage(this, PInvokeCore.EM_GETLANGOPTIONS)
             : _languageOption;
         set
         {
@@ -490,7 +471,7 @@ public partial class RichTextBox : TextBoxBase
                 _languageOption = value;
                 if (IsHandleCreated)
                 {
-                    PInvoke.SendMessage(this, PInvoke.EM_SETLANGOPTIONS, 0, (nint)value);
+                    PInvokeCore.SendMessage(this, PInvokeCore.EM_SETLANGOPTIONS, 0, (nint)value);
                 }
             }
         }
@@ -498,8 +479,8 @@ public partial class RichTextBox : TextBoxBase
 
     private bool LinkCursor
     {
-        get => _richTextBoxFlags[linkcursorSection] != 0;
-        set => _richTextBoxFlags[linkcursorSection] = value ? 1 : 0;
+        get => _richTextBoxFlags[s_linkcursorSection] != 0;
+        set => _richTextBoxFlags[s_linkcursorSection] = value ? 1 : 0;
     }
 
     [DefaultValue(int.MaxValue)]
@@ -518,8 +499,8 @@ public partial class RichTextBox : TextBoxBase
 
     private bool ProtectedError
     {
-        get => _richTextBoxFlags[protectedErrorSection] != 0;
-        set => _richTextBoxFlags[protectedErrorSection] = value ? 1 : 0;
+        get => _richTextBoxFlags[s_protectedErrorSection] != 0;
+        set => _richTextBoxFlags[s_protectedErrorSection] = value ? 1 : 0;
     }
 
     private protected override void RaiseAccessibilityTextChangedEvent()
@@ -547,7 +528,7 @@ public partial class RichTextBox : TextBoxBase
                 return string.Empty;
             }
 
-            int n = (int)PInvoke.SendMessage(this, PInvoke.EM_GETREDONAME);
+            int n = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_GETREDONAME);
             return GetEditorActionName(n);
         }
     }
@@ -558,33 +539,30 @@ public partial class RichTextBox : TextBoxBase
     [EditorBrowsable(EditorBrowsableState.Never)]
     public bool RichTextShortcutsEnabled
     {
-        get => _richTextBoxFlags[richTextShortcutsEnabledSection] != 0;
+        get => _richTextBoxFlags[s_richTextShortcutsEnabledSection] != 0;
         set
         {
-            s_shortcutsToDisable ??= new int[] { (int)Shortcut.CtrlL, (int)Shortcut.CtrlR, (int)Shortcut.CtrlE, (int)Shortcut.CtrlJ };
+            s_shortcutsToDisable ??= [(int)Shortcut.CtrlL, (int)Shortcut.CtrlR, (int)Shortcut.CtrlE, (int)Shortcut.CtrlJ];
 
-            _richTextBoxFlags[richTextShortcutsEnabledSection] = value ? 1 : 0;
+            _richTextBoxFlags[s_richTextShortcutsEnabledSection] = value ? 1 : 0;
         }
     }
 
     /// <summary>
-    ///  The right margin of a RichTextBox control.  A nonzero margin implies WordWrap.
+    ///  The right margin of a RichTextBox control. A nonzero margin implies WordWrap.
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
     [DefaultValue(0)]
     [Localizable(true)]
     [SRDescription(nameof(SR.RichTextBoxRightMargin))]
-    public int RightMargin
+    public unsafe int RightMargin
     {
         get => _rightMargin;
         set
         {
             if (_rightMargin != value)
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(RightMargin), value, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 _rightMargin = value;
 
@@ -596,8 +574,8 @@ public partial class RichTextBox : TextBoxBase
                 }
                 else if (IsHandleCreated)
                 {
-                    using PInvoke.CreateDcScope hdc = new("DISPLAY");
-                    PInvoke.SendMessage(this, PInvoke.EM_SETTARGETDEVICE, (WPARAM)hdc, Pixel2Twip(value, true));
+                    using CreateDcScope hdc = new("DISPLAY");
+                    PInvokeCore.SendMessage(this, PInvokeCore.EM_SETTARGETDEVICE, (WPARAM)hdc, Pixel2Twip(value, true));
                 }
             }
         }
@@ -657,7 +635,7 @@ public partial class RichTextBox : TextBoxBase
     [SRDescription(nameof(SR.RichTextBoxScrollBars))]
     public RichTextBoxScrollBars ScrollBars
     {
-        get => (RichTextBoxScrollBars)_richTextBoxFlags[scrollBarsSection];
+        get => (RichTextBoxScrollBars)_richTextBoxFlags[s_scrollBarsSection];
         set
         {
             SourceGenerated.EnumValidator.Validate(value);
@@ -666,7 +644,7 @@ public partial class RichTextBox : TextBoxBase
             {
                 using (LayoutTransaction.CreateTransactionIf(AutoSize, ParentInternal, this, PropertyNames.ScrollBars))
                 {
-                    _richTextBoxFlags[scrollBarsSection] = (int)value;
+                    _richTextBoxFlags[s_scrollBarsSection] = (int)value;
                     RecreateHandle();
                 }
             }
@@ -693,7 +671,7 @@ public partial class RichTextBox : TextBoxBase
             };
 
             // Get the format for our currently selected paragraph.
-            PInvoke.SendMessage(this, PInvoke.EM_GETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_GETPARAFORMAT, 0, ref pf);
 
             // check if alignment has been set yet
             if ((PFM.ALIGNMENT & pf.dwMask) != 0)
@@ -744,7 +722,7 @@ public partial class RichTextBox : TextBoxBase
             }
 
             // Set the format for our current paragraph or selection.
-            PInvoke.SendMessage(this, PInvoke.EM_SETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETPARAFORMAT, 0, ref pf);
         }
     }
 
@@ -769,7 +747,7 @@ public partial class RichTextBox : TextBoxBase
             };
 
             // Get the format for our currently selected paragraph.
-            PInvoke.SendMessage(this, PInvoke.EM_GETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_GETPARAFORMAT, 0, ref pf);
 
             // check if alignment has been set yet
             if ((PFM.NUMBERING & pf.dwMask) != 0)
@@ -809,7 +787,7 @@ public partial class RichTextBox : TextBoxBase
             }
 
             // Set the format for our current paragraph or selection.
-            PInvoke.SendMessage(this, PInvoke.EM_SETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETPARAFORMAT, 0, ref pf);
         }
     }
 
@@ -832,13 +810,8 @@ public partial class RichTextBox : TextBoxBase
         }
         set
         {
-            if (value > 2000 || value < -2000)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidBoundArgument, nameof(SelectionCharOffset), value, -2000, 2000));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 2000);
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, -2000);
 
             ForceHandleCreate();
             CHARFORMAT2W cf = new()
@@ -853,7 +826,7 @@ public partial class RichTextBox : TextBoxBase
             // SendMessage will force the handle to be created if it hasn't already. Normally,
             // we would cache property values until the handle is created - but for this property,
             // it's far more simple to just create the handle.
-            PInvoke.SendMessage(this, PInvoke.EM_SETCHARFORMAT, PInvoke.SCF_SELECTION, ref cf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETCHARFORMAT, PInvoke.SCF_SELECTION, ref cf);
         }
     }
 
@@ -889,7 +862,7 @@ public partial class RichTextBox : TextBoxBase
             cf.crTextColor = ColorTranslator.ToWin32(value);
 
             // Set the format information.
-            PInvoke.SendMessage(this, PInvoke.EM_SETCHARFORMAT, (WPARAM)PInvoke.SCF_SELECTION, ref cf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETCHARFORMAT, (WPARAM)PInvoke.SCF_SELECTION, ref cf);
         }
     }
 
@@ -948,7 +921,7 @@ public partial class RichTextBox : TextBoxBase
                     cf2.crBackColor = ColorTranslator.ToWin32(value);
                 }
 
-                PInvoke.SendMessage(this, PInvoke.EM_SETCHARFORMAT, (WPARAM)PInvoke.SCF_SELECTION, ref cf2);
+                PInvokeCore.SendMessage(this, PInvokeCore.EM_SETCHARFORMAT, (WPARAM)PInvoke.SCF_SELECTION, ref cf2);
             }
         }
     }
@@ -956,7 +929,7 @@ public partial class RichTextBox : TextBoxBase
     /// <summary>
     ///  The font used to display the currently selected text
     ///  or the characters(s) immediately following the insertion point in the
-    ///  RichTextBox control.  Null if the selection has more than one font.
+    ///  RichTextBox control. Null if the selection has more than one font.
     /// </summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -990,7 +963,7 @@ public partial class RichTextBox : TextBoxBase
             };
 
             // Get the format for our currently selected paragraph.
-            PInvoke.SendMessage(this, PInvoke.EM_GETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_GETPARAFORMAT, 0, ref pf);
 
             // Check if alignment has been set yet.
             if ((PFM.OFFSET & pf.dwMask) != 0)
@@ -1012,7 +985,7 @@ public partial class RichTextBox : TextBoxBase
             };
 
             // Set the format for our current paragraph or selection.
-            PInvoke.SendMessage(this, PInvoke.EM_SETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETPARAFORMAT, 0, ref pf);
         }
     }
 
@@ -1038,7 +1011,7 @@ public partial class RichTextBox : TextBoxBase
             };
 
             // Get the format for our currently selected paragraph.
-            PInvoke.SendMessage(this, PInvoke.EM_GETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_GETPARAFORMAT, 0, ref pf);
 
             // Check if alignment has been set yet.
             if ((PFM.STARTINDENT & pf.dwMask) != 0)
@@ -1060,7 +1033,7 @@ public partial class RichTextBox : TextBoxBase
             };
 
             // Set the format for our current paragraph or selection.
-            PInvoke.SendMessage(this, PInvoke.EM_SETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETPARAFORMAT, 0, ref pf);
         }
     }
 
@@ -1160,7 +1133,7 @@ public partial class RichTextBox : TextBoxBase
             };
 
             // Get the format for our currently selected paragraph.
-            PInvoke.SendMessage(this, PInvoke.EM_GETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_GETPARAFORMAT, 0, ref pf);
 
             // Check if alignment has been set yet.
             if ((PFM.RIGHTINDENT & pf.dwMask) != 0)
@@ -1172,13 +1145,7 @@ public partial class RichTextBox : TextBoxBase
         }
         set
         {
-            if (value < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidLowBoundArgumentEx, nameof(SelectionRightIndent), value, 0));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
             ForceHandleCreate();
             PARAFORMAT pf = new()
@@ -1189,7 +1156,7 @@ public partial class RichTextBox : TextBoxBase
             };
 
             // Set the format for our current paragraph or selection.
-            PInvoke.SendMessage(this, PInvoke.EM_SETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETPARAFORMAT, 0, ref pf);
         }
     }
 
@@ -1204,7 +1171,7 @@ public partial class RichTextBox : TextBoxBase
     {
         get
         {
-            int[] selTabs = Array.Empty<int>();
+            int[] selTabs = [];
 
             ForceHandleCreate();
             PARAFORMAT pf = new()
@@ -1213,7 +1180,7 @@ public partial class RichTextBox : TextBoxBase
             };
 
             // get the format for our currently selected paragraph
-            PInvoke.SendMessage(this, PInvoke.EM_GETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_GETPARAFORMAT, 0, ref pf);
 
             // check if alignment has been set yet
             if ((PFM.TABSTOPS & pf.dwMask) != 0)
@@ -1243,7 +1210,7 @@ public partial class RichTextBox : TextBoxBase
 
             // get the format for our currently selected paragraph because
             // we need to get the number of tabstops to copy
-            PInvoke.SendMessage(this, PInvoke.EM_GETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_GETPARAFORMAT, 0, ref pf);
 
             pf.cTabCount = (short)((value is null) ? 0 : value.Length);
             pf.dwMask = PFM.TABSTOPS;
@@ -1253,7 +1220,7 @@ public partial class RichTextBox : TextBoxBase
             }
 
             // Set the format for our current paragraph or selection.
-            PInvoke.SendMessage(this, PInvoke.EM_SETPARAFORMAT, 0, ref pf);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETPARAFORMAT, 0, ref pf);
         }
     }
 
@@ -1296,7 +1263,7 @@ public partial class RichTextBox : TextBoxBase
             ForceHandleCreate();
             if (SelectionLength > 0)
             {
-                int n = (int)PInvoke.SendMessage(this, PInvoke.EM_SELECTIONTYPE);
+                int n = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_SELECTIONTYPE);
                 return (RichTextBoxSelectionTypes)n;
             }
             else
@@ -1315,17 +1282,17 @@ public partial class RichTextBox : TextBoxBase
     [SRDescription(nameof(SR.RichTextBoxSelMargin))]
     public bool ShowSelectionMargin
     {
-        get { return _richTextBoxFlags[showSelBarSection] != 0; }
+        get { return _richTextBoxFlags[s_showSelBarSection] != 0; }
         set
         {
             if (value != ShowSelectionMargin)
             {
-                _richTextBoxFlags[showSelBarSection] = value ? 1 : 0;
+                _richTextBoxFlags[s_showSelBarSection] = value ? 1 : 0;
                 if (IsHandleCreated)
                 {
-                    PInvoke.SendMessage(
+                    PInvokeCore.SendMessage(
                         this,
-                        PInvoke.EM_SETOPTIONS,
+                        PInvokeCore.EM_SETOPTIONS,
                         (WPARAM)(int)(value ? PInvoke.ECOOP_OR : PInvoke.ECOOP_XOR),
                         (LPARAM)(int)PInvoke.ECO_SELECTIONBAR);
                 }
@@ -1390,7 +1357,7 @@ public partial class RichTextBox : TextBoxBase
 
                     StreamIn(value, PInvoke.SF_TEXT | PInvoke.SF_UNICODE);
                     // reset Modified
-                    PInvoke.SendMessage(this, PInvoke.EM_SETMODIFY);
+                    PInvokeCore.SendMessage(this, PInvokeCore.EM_SETMODIFY);
                 }
             }
         }
@@ -1398,13 +1365,13 @@ public partial class RichTextBox : TextBoxBase
 
     private bool SuppressTextChangedEvent
     {
-        get { return _richTextBoxFlags[suppressTextChangedEventSection] != 0; }
+        get { return _richTextBoxFlags[s_suppressTextChangedEventSection] != 0; }
         set
         {
             bool oldValue = SuppressTextChangedEvent;
             if (value != oldValue)
             {
-                _richTextBoxFlags[suppressTextChangedEventSection] = value ? 1 : 0;
+                _richTextBoxFlags[s_suppressTextChangedEventSection] = value ? 1 : 0;
                 CommonProperties.xClearPreferredSizeCache(this);
             }
         }
@@ -1421,7 +1388,7 @@ public partial class RichTextBox : TextBoxBase
                 codepage = 1200u /* CP_UNICODE */
             };
 
-            return (int)PInvoke.SendMessage(this, PInvoke.EM_GETTEXTLENGTHEX, (WPARAM)(&gtl));
+            return (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_GETTEXTLENGTHEX, (WPARAM)(&gtl));
         }
     }
 
@@ -1445,7 +1412,7 @@ public partial class RichTextBox : TextBoxBase
                 return string.Empty;
             }
 
-            int n = (int)PInvoke.SendMessage(this, PInvoke.EM_GETUNDONAME);
+            int n = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_GETUNDONAME);
             return GetEditorActionName(n);
         }
     }
@@ -1474,7 +1441,7 @@ public partial class RichTextBox : TextBoxBase
 
     /// <summary>
     ///  The current zoom level for the RichTextBox control. This may be between 1/64 and 64. 1.0 indicates
-    ///  no zoom (i.e. normal viewing).  Zoom works best with TrueType fonts;
+    ///  no zoom (i.e. normal viewing). Zoom works best with TrueType fonts;
     ///  for non-TrueType fonts, ZoomFactor will be treated as the nearest whole number.
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
@@ -1489,7 +1456,7 @@ public partial class RichTextBox : TextBoxBase
             {
                 int numerator = 0;
                 int denominator = 0;
-                PInvoke.SendMessage(this, PInvoke.EM_GETZOOM, (WPARAM)(&numerator), ref denominator);
+                PInvokeCore.SendMessage(this, PInvokeCore.EM_GETZOOM, (WPARAM)(&numerator), ref denominator);
                 if ((numerator != 0) && (denominator != 0))
                 {
                     _zoomMultiplier = numerator / ((float)denominator);
@@ -1509,12 +1476,10 @@ public partial class RichTextBox : TextBoxBase
 
         set
         {
-            if (value <= 0.015625f || value >= 64.0f)
+            if (!float.IsNaN(value))
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(value),
-                    value,
-                    string.Format(SR.InvalidExBoundArgument, nameof(ZoomFactor), value, 0.015625f, 64.0f));
+                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(value, 0.015625f);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value, 64.0f);
             }
 
             if (value != _zoomMultiplier)
@@ -1528,8 +1493,8 @@ public partial class RichTextBox : TextBoxBase
     [SRDescription(nameof(SR.RichTextBoxContentsResized))]
     public event ContentsResizedEventHandler? ContentsResized
     {
-        add => Events.AddHandler(EVENT_REQUESTRESIZE, value);
-        remove => Events.RemoveHandler(EVENT_REQUESTRESIZE, value);
+        add => Events.AddHandler(s_requestSizeEvent, value);
+        remove => Events.RemoveHandler(s_requestSizeEvent, value);
     }
 
     /// <summary>
@@ -1590,48 +1555,48 @@ public partial class RichTextBox : TextBoxBase
     [SRDescription(nameof(SR.RichTextBoxHScroll))]
     public event EventHandler? HScroll
     {
-        add => Events.AddHandler(EVENT_HSCROLL, value);
-        remove => Events.RemoveHandler(EVENT_HSCROLL, value);
+        add => Events.AddHandler(s_hscrollEvent, value);
+        remove => Events.RemoveHandler(s_hscrollEvent, value);
     }
 
     [SRCategory(nameof(SR.CatBehavior))]
     [SRDescription(nameof(SR.RichTextBoxLinkClick))]
     public event LinkClickedEventHandler? LinkClicked
     {
-        add => Events.AddHandler(EVENT_LINKACTIVATE, value);
-        remove => Events.RemoveHandler(EVENT_LINKACTIVATE, value);
+        add => Events.AddHandler(s_linkActivateEvent, value);
+        remove => Events.RemoveHandler(s_linkActivateEvent, value);
     }
 
     [SRCategory(nameof(SR.CatBehavior))]
     [SRDescription(nameof(SR.RichTextBoxIMEChange))]
     public event EventHandler? ImeChange
     {
-        add => Events.AddHandler(EVENT_IMECHANGE, value);
-        remove => Events.RemoveHandler(EVENT_IMECHANGE, value);
+        add => Events.AddHandler(s_imeChangeEvent, value);
+        remove => Events.RemoveHandler(s_imeChangeEvent, value);
     }
 
     [SRCategory(nameof(SR.CatBehavior))]
     [SRDescription(nameof(SR.RichTextBoxProtected))]
     public event EventHandler? Protected
     {
-        add => Events.AddHandler(EVENT_PROTECTED, value);
-        remove => Events.RemoveHandler(EVENT_PROTECTED, value);
+        add => Events.AddHandler(s_protectedEvent, value);
+        remove => Events.RemoveHandler(s_protectedEvent, value);
     }
 
     [SRCategory(nameof(SR.CatBehavior))]
     [SRDescription(nameof(SR.RichTextBoxSelChange))]
     public event EventHandler? SelectionChanged
     {
-        add => Events.AddHandler(EVENT_SELCHANGE, value);
-        remove => Events.RemoveHandler(EVENT_SELCHANGE, value);
+        add => Events.AddHandler(s_selectionChangeEvent, value);
+        remove => Events.RemoveHandler(s_selectionChangeEvent, value);
     }
 
     [SRCategory(nameof(SR.CatBehavior))]
     [SRDescription(nameof(SR.RichTextBoxVScroll))]
     public event EventHandler? VScroll
     {
-        add => Events.AddHandler(EVENT_VSCROLL, value);
-        remove => Events.RemoveHandler(EVENT_VSCROLL, value);
+        add => Events.AddHandler(s_vscrollEvent, value);
+        remove => Events.RemoveHandler(s_vscrollEvent, value);
     }
 
     /// <summary>
@@ -1639,9 +1604,9 @@ public partial class RichTextBox : TextBoxBase
     ///  given clipboard format.
     /// </summary>
     public bool CanPaste(DataFormats.Format clipFormat)
-        => PInvoke.SendMessage(this, PInvoke.EM_CANPASTE, (WPARAM)clipFormat.Id) != 0;
+        => PInvokeCore.SendMessage(this, PInvokeCore.EM_CANPASTE, (WPARAM)clipFormat.Id) != 0;
 
-    // DrawToBitmap doesn't work for this control, so we should hide it.  We'll
+    // DrawToBitmap doesn't work for this control, so we should hide it. We'll
     // still call base so that this has a chance to work if it can.
     [EditorBrowsable(EditorBrowsableState.Never)]
     public new void DrawToBitmap(Bitmap bitmap, Rectangle targetBounds)
@@ -1649,7 +1614,7 @@ public partial class RichTextBox : TextBoxBase
         base.DrawToBitmap(bitmap, targetBounds);
     }
 
-    private unsafe int EditStreamProc(IntPtr dwCookie, IntPtr buf, int cb, out int transferred)
+    private unsafe int EditStreamProc(nint dwCookie, nint buf, int cb, out int transferred)
     {
         int ret = 0;    // assume that everything is Okay
 
@@ -1662,18 +1627,18 @@ public partial class RichTextBox : TextBoxBase
         {
             switch (cookieVal & DIRECTIONMASK)
             {
-                case RichTextBox.OUTPUT:
+                case OUTPUT:
                     {
                         _editStream ??= new MemoryStream();
 
                         switch (cookieVal & KINDMASK)
                         {
-                            case RichTextBox.RTF:
-                            case RichTextBox.TEXTCRLF:
+                            case RTF:
+                            case TEXTCRLF:
                                 Marshal.Copy(buf, bytes, 0, cb);
                                 _editStream.Write(bytes, 0, cb);
                                 break;
-                            case RichTextBox.TEXTLF:
+                            case TEXTLF:
                                 // Strip out \r characters so that we consistently return
                                 // \n for linefeeds. In a future version the RichEdit control
                                 // may support a SF_NOXLATCRLF flag which would do this for
@@ -1715,7 +1680,7 @@ public partial class RichTextBox : TextBoxBase
 
                                     fixed (byte* pb = bytes)
                                     {
-                                        byte* pChars = (byte*)pb;
+                                        byte* pChars = pb;
                                         byte* pBuffer = (byte*)(long)buf;
 
                                         for (int i = 0; i < requestedCharCount; i++)
@@ -1744,7 +1709,7 @@ public partial class RichTextBox : TextBoxBase
                         break;
                     }
 
-                case RichTextBox.INPUT:
+                case INPUT:
                     {
                         // Several customers complained that they were getting Random NullReference exceptions inside EditStreamProc.
                         // We had a case of a customer using Everett bits and another case of a customer using Whidbey Beta1 bits.
@@ -1824,79 +1789,8 @@ public partial class RichTextBox : TextBoxBase
     {
         ArgumentNullException.ThrowIfNull(str);
 
-        int textLen = TextLength;
-        ArgumentOutOfRangeException.ThrowIfNegative(start);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(start, textLen);
-
-        if (end < -1)
-        {
-            throw new ArgumentOutOfRangeException(nameof(end), end, string.Format(SR.RichTextFindEndInvalid, end));
-        }
-
-        if (end == -1)
-        {
-            end = textLen;
-        }
-
-        if (start > end)
-        {
-            throw new ArgumentException(string.Format(SR.RichTextFindEndInvalid, end));
-        }
-
-        FINDTEXTW ft = default;
-        if ((options & RichTextBoxFinds.Reverse) != RichTextBoxFinds.Reverse)
-        {
-            // normal
-            ft.chrg.cpMin = start;
-            ft.chrg.cpMax = end;
-        }
-        else
-        {
-            // reverse
-            ft.chrg.cpMin = end;
-            ft.chrg.cpMax = start;
-        }
-
-        // force complete search if we ended up with a zero length search
-        if (ft.chrg.cpMin == ft.chrg.cpMax)
-        {
-            if ((options & RichTextBoxFinds.Reverse) != RichTextBoxFinds.Reverse)
-            {
-                ft.chrg.cpMin = 0;
-                ft.chrg.cpMax = -1;
-            }
-            else
-            {
-                ft.chrg.cpMin = textLen;
-                ft.chrg.cpMax = 0;
-            }
-        }
-
-        // set up the options for the search
-        FINDREPLACE_FLAGS findOptions = 0;
-        if ((options & RichTextBoxFinds.WholeWord) == RichTextBoxFinds.WholeWord)
-        {
-            findOptions |= FINDREPLACE_FLAGS.FR_WHOLEWORD;
-        }
-
-        if ((options & RichTextBoxFinds.MatchCase) == RichTextBoxFinds.MatchCase)
-        {
-            findOptions |= FINDREPLACE_FLAGS.FR_MATCHCASE;
-        }
-
-        if ((options & RichTextBoxFinds.Reverse) != RichTextBoxFinds.Reverse)
-        {
-            // The default for RichEdit 2.0 is to search in reverse
-            findOptions |= FINDREPLACE_FLAGS.FR_DOWN;
-        }
-
         // Perform the find, will return ubyte position
-        int position;
-        fixed (char* pText = str)
-        {
-            ft.lpstrText = pText;
-            position = (int)PInvoke.SendMessage(this, PInvoke.EM_FINDTEXT, (WPARAM)(uint)findOptions, ref ft);
-        }
+        int position = FindInternal(str, start, end, options);
 
         // if we didn't find anything, or we don't have to select what was found,
         // we're done
@@ -1909,14 +1803,16 @@ public partial class RichTextBox : TextBoxBase
                 cpMin = position
             };
 
-            // Look for kashidas in the string.  A kashida is an arabic visual justification character
-            // that's not semantically meaningful.  Searching for ABC might find AB_C (where A,B, and C
-            // represent Arabic characters and _ represents a kashida).  We should highlight the text
+            // Look for kashidas in the string. A kashida is an Arabic visual justification character
+            // that's not semantically meaningful. Searching for ABC might find AB_C (where A,B, and C
+            // represent Arabic characters and _ represents a kashida). We should highlight the text
             // including the kashida.
-            char kashida = (char)0x640;
-            string text = Text;
-            string foundString = text.Substring(position, str.Length);
-            int startIndex = foundString.IndexOf(kashida);
+            const char kashida = (char)0x640;
+            ReadOnlySpan<char> kashidaString = [kashida];
+
+            // Using FindInternal here because RichEdit handles position/length differently than .NET strings
+            // depending on characters and text formatting elements involved.
+            int startIndex = FindInternal(kashidaString, position, position + str.Length, options);
             if (startIndex == -1)
             {
                 // No kashida in the string
@@ -1930,7 +1826,7 @@ public partial class RichTextBox : TextBoxBase
                 for (searchingCursor = startIndex, foundCursor = position + startIndex; searchingCursor < str.Length;
                     searchingCursor++, foundCursor++)
                 {
-                    while (text[foundCursor] == kashida && str[searchingCursor] != kashida)
+                    while (FindInternal(kashidaString, foundCursor, foundCursor + 1, options) != -1 && str[searchingCursor] != kashida)
                     {
                         foundCursor++;
                     }
@@ -1939,11 +1835,90 @@ public partial class RichTextBox : TextBoxBase
                 chrg.cpMax = foundCursor;
             }
 
-            PInvoke.SendMessage(this, PInvoke.EM_EXSETSEL, 0, ref chrg);
-            PInvoke.SendMessage(this, PInvoke.EM_SCROLLCARET);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_EXSETSEL, 0, ref chrg);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SCROLLCARET);
         }
 
         return position;
+
+        unsafe int FindInternal(ReadOnlySpan<char> str, int start, int end, RichTextBoxFinds options)
+        {
+            int textLen = TextLength;
+            ArgumentOutOfRangeException.ThrowIfNegative(start);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(start, textLen);
+
+            if (end < -1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(end), end, string.Format(SR.RichTextFindEndInvalid, end));
+            }
+
+            if (end == -1)
+            {
+                end = textLen;
+            }
+
+            if (start > end)
+            {
+                throw new ArgumentException(string.Format(SR.RichTextFindEndInvalid, end));
+            }
+
+            FINDTEXTW ft = default;
+            if ((options & RichTextBoxFinds.Reverse) != RichTextBoxFinds.Reverse)
+            {
+                // normal
+                ft.chrg.cpMin = start;
+                ft.chrg.cpMax = end;
+            }
+            else
+            {
+                // reverse
+                ft.chrg.cpMin = end;
+                ft.chrg.cpMax = start;
+            }
+
+            // force complete search if we ended up with a zero length search
+            if (ft.chrg.cpMin == ft.chrg.cpMax)
+            {
+                if ((options & RichTextBoxFinds.Reverse) != RichTextBoxFinds.Reverse)
+                {
+                    ft.chrg.cpMin = 0;
+                    ft.chrg.cpMax = -1;
+                }
+                else
+                {
+                    ft.chrg.cpMin = textLen;
+                    ft.chrg.cpMax = 0;
+                }
+            }
+
+            // set up the options for the search
+            FINDREPLACE_FLAGS findOptions = 0;
+            if ((options & RichTextBoxFinds.WholeWord) == RichTextBoxFinds.WholeWord)
+            {
+                findOptions |= FINDREPLACE_FLAGS.FR_WHOLEWORD;
+            }
+
+            if ((options & RichTextBoxFinds.MatchCase) == RichTextBoxFinds.MatchCase)
+            {
+                findOptions |= FINDREPLACE_FLAGS.FR_MATCHCASE;
+            }
+
+            if ((options & RichTextBoxFinds.Reverse) != RichTextBoxFinds.Reverse)
+            {
+                // The default for RichEdit 2.0 is to search in reverse
+                findOptions |= FINDREPLACE_FLAGS.FR_DOWN;
+            }
+
+            // Perform the find, will return ubyte position
+            int position;
+            fixed (char* pText = str)
+            {
+                ft.lpstrText = pText;
+                position = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_FINDTEXT, (WPARAM)(uint)findOptions, ref ft);
+            }
+
+            return position;
+        }
     }
 
     /// <summary>
@@ -1979,9 +1954,9 @@ public partial class RichTextBox : TextBoxBase
         ArgumentOutOfRangeException.ThrowIfNegative(start);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(start, textLength);
 
-        if (end < start && end != -1)
+        if (end != -1)
         {
-            throw new ArgumentOutOfRangeException(nameof(end), end, string.Format(SR.InvalidLowBoundArgumentEx, nameof(end), end, nameof(start)));
+            ArgumentOutOfRangeException.ThrowIfLessThan(end, start);
         }
 
         // Don't do anything if we get nothing to look for
@@ -1990,7 +1965,7 @@ public partial class RichTextBox : TextBoxBase
             return -1;
         }
 
-        textLength = PInvoke.GetWindowTextLength(this);
+        textLength = PInvokeCore.GetWindowTextLength(this);
         if (start == end)
         {
             start = 0;
@@ -2017,9 +1992,9 @@ public partial class RichTextBox : TextBoxBase
         };
 
         // Characters we have slurped into memory in order to search
-        var charBuffer = new UnicodeCharBuffer(CHAR_BUFFER_LEN + 1);
+        UnicodeCharBuffer charBuffer = new(CHAR_BUFFER_LEN + 1);
         txrg.lpstrText = charBuffer.AllocCoTaskMem();
-        if (txrg.lpstrText == IntPtr.Zero)
+        if (txrg.lpstrText == 0)
         {
             throw new OutOfMemoryException();
         }
@@ -2028,7 +2003,7 @@ public partial class RichTextBox : TextBoxBase
         {
             bool done = false;
 
-            // We want to loop as long as it takes.  This loop will grab a
+            // We want to loop as long as it takes. This loop will grab a
             // chunk of text out from the control as directed by txrg.chrg;
             while (!done)
             {
@@ -2063,7 +2038,7 @@ public partial class RichTextBox : TextBoxBase
 
                 // go get the text in this range, if we didn't get any text then punt
                 int len;
-                len = (int)PInvoke.SendMessage(this, PInvoke.EM_GETTEXTRANGE, 0, ref txrg);
+                len = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_GETTEXTRANGE, 0, ref txrg);
                 if (len == 0)
                 {
                     chrg.cpMax = chrg.cpMin = -1; // Hit end of control without finding what we wanted
@@ -2157,7 +2132,7 @@ public partial class RichTextBox : TextBoxBase
             cbSize = (uint)sizeof(CHARFORMAT2W)
         };
 
-        PInvoke.SendMessage(this, PInvoke.EM_GETCHARFORMAT, (WPARAM)(uint)(fSelection ? PInvoke.SCF_SELECTION : PInvoke.SCF_DEFAULT), ref cf);
+        PInvokeCore.SendMessage(this, PInvokeCore.EM_GETCHARFORMAT, (WPARAM)(fSelection ? PInvoke.SCF_SELECTION : PInvoke.SCF_DEFAULT), ref cf);
         return cf;
     }
 
@@ -2196,7 +2171,7 @@ public partial class RichTextBox : TextBoxBase
         float fontSize = 13;
         if ((cf.dwMask & CFM_MASK.CFM_SIZE) != 0)
         {
-            fontSize = (float)cf.yHeight / (float)20.0;
+            fontSize = cf.yHeight / (float)20.0;
             if (fontSize == 0 && cf.yHeight > 0)
             {
                 fontSize = 1;
@@ -2241,7 +2216,7 @@ public partial class RichTextBox : TextBoxBase
     public override int GetCharIndexFromPosition(Point pt)
     {
         Point wpt = new(pt.X, pt.Y);
-        int index = (int)PInvoke.SendMessage(this, PInvoke.EM_CHARFROMPOS, 0, ref wpt);
+        int index = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_CHARFROMPOS, 0, ref wpt);
 
         string t = Text;
         // EM_CHARFROMPOS will return an invalid number if the last character in the RichEdit
@@ -2278,7 +2253,7 @@ public partial class RichTextBox : TextBoxBase
     ///  return 1 and not 0.
     /// </summary>
     public override int GetLineFromCharIndex(int index)
-        => (int)PInvoke.SendMessage(this, PInvoke.EM_EXLINEFROMCHAR, 0, index);
+        => (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_EXLINEFROMCHAR, 0, index);
 
     /// <summary>
     ///  Returns the location of the character at the given index.
@@ -2296,7 +2271,7 @@ public partial class RichTextBox : TextBoxBase
         }
 
         Point position = default;
-        PInvoke.SendMessage(this, PInvoke.EM_POSFROMCHAR, (WPARAM)(&position), index);
+        PInvokeCore.SendMessage(this, PInvokeCore.EM_POSFROMCHAR, (WPARAM)(&position), index);
         return position;
     }
 
@@ -2327,7 +2302,7 @@ public partial class RichTextBox : TextBoxBase
         // valid values are 0x0 to 0x4
         SourceGenerated.EnumValidator.Validate(fileType, nameof(fileType));
 
-        Stream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        FileStream file = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         try
         {
             LoadFile(file, fileType);
@@ -2371,7 +2346,7 @@ public partial class RichTextBox : TextBoxBase
     {
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.EM_SETBKGNDCOLOR, 0, BackColor.ToWin32());
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETBKGNDCOLOR, 0, BackColor.ToWin32());
         }
 
         base.OnBackColorChanged(e);
@@ -2383,18 +2358,18 @@ public partial class RichTextBox : TextBoxBase
         // When the RTL property is changed, here's what happens. Let's assume that we change from
         // RTL.No to RTL.Yes.
 
-        // 1.   RecreateHandle is called.
-        // 2.   In RTB.OnHandleDestroyed, we cache off any RTF that might have been set.
-        //      The RTB has been set to the empty string, so we do get RTF back. The RTF
-        //      contains formatting info, but doesn't contain any reading-order info,
-        //      so RichEdit defaults to LTR reading order.
-        // 3.   In RTB.OnHandleCreated, we check if we have any cached RTF, and if so,
-        //      we want to set the RTF to that value. This is to ensure that the original
-        //      text doesn't get lost.
-        // 4.   In the RTF setter, we get the current RTF, compare it to the old RTF, and
-        //      since those are not equal, we set the RichEdit content to the old RTF.
-        // 5.   But... since the original RTF had no reading-order info, the reading-order
-        //      will default to LTR.
+        // 1. RecreateHandle is called.
+        // 2. In RTB.OnHandleDestroyed, we cache off any RTF that might have been set.
+        //     The RTB has been set to the empty string, so we do get RTF back. The RTF
+        //     contains formatting info, but doesn't contain any reading-order info,
+        //     so RichEdit defaults to LTR reading order.
+        // 3. In RTB.OnHandleCreated, we check if we have any cached RTF, and if so,
+        //     we want to set the RTF to that value. This is to ensure that the original
+        //     text doesn't get lost.
+        // 4. In the RTF setter, we get the current RTF, compare it to the old RTF, and
+        //     since those are not equal, we set the RichEdit content to the old RTF.
+        // 5. But... since the original RTF had no reading-order info, the reading-order
+        //     will default to LTR.
 
         // That's why in Everett we set the text back since that clears the RTF, thus restoring
         // the reading order to that of the window style. The problem here is that when there's
@@ -2419,7 +2394,7 @@ public partial class RichTextBox : TextBoxBase
     /// </summary>
     protected virtual void OnContentsResized(ContentsResizedEventArgs e)
     {
-        ((ContentsResizedEventHandler?)Events[EVENT_REQUESTRESIZE])?.Invoke(this, e);
+        ((ContentsResizedEventHandler?)Events[s_requestSizeEvent])?.Invoke(this, e);
     }
 
     protected override void OnGotFocus(EventArgs e)
@@ -2451,9 +2426,9 @@ public partial class RichTextBox : TextBoxBase
 
         // This is needed so that the control will fire change and update events
         // even if it is hidden
-        PInvoke.SendMessage(
+        PInvokeCore.SendMessage(
             this,
-            PInvoke.EM_SETEVENTMASK,
+            PInvokeCore.EM_SETEVENTMASK,
             0,
             (nint)(PInvoke.ENM_PROTECTED | PInvoke.ENM_SELCHANGE |
                      PInvoke.ENM_DROPFILES | PInvoke.ENM_REQUESTRESIZE |
@@ -2466,7 +2441,7 @@ public partial class RichTextBox : TextBoxBase
         _rightMargin = 0;
         RightMargin = rm;
 
-        PInvoke.SendMessage(this, PInvoke.EM_AUTOURLDETECT, (WPARAM)(DetectUrls ? 1 : 0));
+        PInvokeCore.SendMessage(this, PInvokeCore.EM_AUTOURLDETECT, (WPARAM)(DetectUrls ? 1 : 0));
         if (_selectionBackColorToSetOnHandleCreated != Color.Empty)
         {
             SelectionBackColor = _selectionBackColorToSetOnHandleCreated;
@@ -2474,11 +2449,13 @@ public partial class RichTextBox : TextBoxBase
 
         // Initialize colors before initializing RTF, otherwise CFE_AUTOCOLOR will be in effect
         // and our text will all be Color.WindowText.
-        AutoWordSelection = AutoWordSelection;
-        PInvoke.SendMessage(this, PInvoke.EM_SETBKGNDCOLOR, (WPARAM)0, (LPARAM)BackColor);
+        bool autoWordSelection = AutoWordSelection;
+        AutoWordSelection = autoWordSelection;
+
+        PInvokeCore.SendMessage(this, PInvokeCore.EM_SETBKGNDCOLOR, (WPARAM)0, (LPARAM)BackColor);
         InternalSetForeColor(ForeColor);
 
-        // base sets the Text property.  It's important to do this *after* setting EM_AUTOUrlDETECT.
+        // base sets the Text property. It's important to do this *after* setting EM_AUTOUrlDETECT.
         base.OnHandleCreated(e);
 
         // For some reason, we need to set the OleCallback before setting the RTF property.
@@ -2515,10 +2492,10 @@ public partial class RichTextBox : TextBoxBase
         if (ShowSelectionMargin)
         {
             // If you call SendMessage instead of PostMessage, the control
-            // will resize itself to the size of the parent's client area.  Don't know why...
-            PInvoke.PostMessage(
+            // will resize itself to the size of the parent's client area. Don't know why...
+            PInvokeCore.PostMessage(
                 this,
-                PInvoke.EM_SETOPTIONS,
+                PInvokeCore.EM_SETOPTIONS,
                 (WPARAM)(int)PInvoke.ECOOP_OR,
                 (LPARAM)(int)PInvoke.ECO_SELECTIONBAR);
         }
@@ -2532,7 +2509,7 @@ public partial class RichTextBox : TextBoxBase
 
         SendZoomFactor(_zoomMultiplier);
 
-        SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(UserPreferenceChangedHandler);
+        SystemEvents.UserPreferenceChanged += UserPreferenceChangedHandler;
     }
 
     protected override void OnHandleDestroyed(EventArgs e)
@@ -2549,25 +2526,23 @@ public partial class RichTextBox : TextBoxBase
         }
 
         _oleCallback = null;
-        SystemEvents.UserPreferenceChanged -= new UserPreferenceChangedEventHandler(UserPreferenceChangedHandler);
+        SystemEvents.UserPreferenceChanged -= UserPreferenceChangedHandler;
     }
 
     /// <summary>
-    ///  Fires an event when the user clicks a RichTextBox control's horizontal
-    ///  scroll bar.
+    ///  Fires an event when the user clicks a RichTextBox control's horizontal scroll bar.
     /// </summary>
     protected virtual void OnHScroll(EventArgs e)
     {
-        ((EventHandler?)Events[EVENT_HSCROLL])?.Invoke(this, e);
+        ((EventHandler?)Events[s_hscrollEvent])?.Invoke(this, e);
     }
 
     /// <summary>
-    ///  Fires an event when the user clicks on a link
-    ///  in a rich-edit control.
+    ///  Fires an event when the user clicks on a link in a rich-edit control.
     /// </summary>
     protected virtual void OnLinkClicked(LinkClickedEventArgs e)
     {
-        ((LinkClickedEventHandler?)Events[EVENT_LINKACTIVATE])?.Invoke(this, e);
+        ((LinkClickedEventHandler?)Events[s_linkActivateEvent])?.Invoke(this, e);
     }
 
     /// <summary>
@@ -2575,7 +2550,7 @@ public partial class RichTextBox : TextBoxBase
     /// </summary>
     protected virtual void OnImeChange(EventArgs e)
     {
-        ((EventHandler?)Events[EVENT_IMECHANGE])?.Invoke(this, e);
+        ((EventHandler?)Events[s_imeChangeEvent])?.Invoke(this, e);
     }
 
     /// <summary>
@@ -2585,7 +2560,7 @@ public partial class RichTextBox : TextBoxBase
     protected virtual void OnProtected(EventArgs e)
     {
         ProtectedError = true;
-        ((EventHandler?)Events[EVENT_PROTECTED])?.Invoke(this, e);
+        ((EventHandler?)Events[s_protectedEvent])?.Invoke(this, e);
     }
 
     /// <summary>
@@ -2594,7 +2569,7 @@ public partial class RichTextBox : TextBoxBase
     /// </summary>
     protected virtual void OnSelectionChanged(EventArgs e)
     {
-        ((EventHandler?)Events[EVENT_SELCHANGE])?.Invoke(this, e);
+        ((EventHandler?)Events[s_selectionChangeEvent])?.Invoke(this, e);
     }
 
     /// <summary>
@@ -2603,7 +2578,7 @@ public partial class RichTextBox : TextBoxBase
     /// </summary>
     protected virtual void OnVScroll(EventArgs e)
     {
-        ((EventHandler?)Events[EVENT_VSCROLL])?.Invoke(this, e);
+        ((EventHandler?)Events[s_vscrollEvent])?.Invoke(this, e);
     }
 
     /// <summary>
@@ -2611,12 +2586,12 @@ public partial class RichTextBox : TextBoxBase
     /// </summary>
     public void Paste(DataFormats.Format clipFormat)
     {
-        PInvoke.SendMessage(this, PInvoke.EM_PASTESPECIAL, (WPARAM)clipFormat.Id);
+        PInvokeCore.SendMessage(this, PInvokeCore.EM_PASTESPECIAL, (WPARAM)clipFormat.Id);
     }
 
     protected override bool ProcessCmdKey(ref Message m, Keys keyData)
     {
-        if (RichTextShortcutsEnabled == false)
+        if (!RichTextShortcutsEnabled)
         {
             foreach (int shortcutValue in s_shortcutsToDisable!)
             {
@@ -2633,7 +2608,7 @@ public partial class RichTextBox : TextBoxBase
     /// <summary>
     ///  Redoes the last undone editing operation.
     /// </summary>
-    public void Redo() => PInvoke.SendMessage(this, PInvoke.EM_REDO);
+    public void Redo() => PInvokeCore.SendMessage(this, PInvokeCore.EM_REDO);
 
     // NOTE: Undo is implemented on TextBox
 
@@ -2653,7 +2628,7 @@ public partial class RichTextBox : TextBoxBase
         // valid values are 0x0 to 0x4
         SourceGenerated.EnumValidator.Validate(fileType, nameof(fileType));
 
-        Stream file = File.Create(path);
+        FileStream file = File.Create(path);
         try
         {
             SaveFile(file, fileType);
@@ -2669,29 +2644,17 @@ public partial class RichTextBox : TextBoxBase
     /// </summary>
     public void SaveFile(Stream data, RichTextBoxStreamType fileType)
     {
-        uint flags;
-        switch (fileType)
+        uint flags = fileType switch
         {
-            case RichTextBoxStreamType.RichText:
-                flags = PInvoke.SF_RTF;
-                break;
-            case RichTextBoxStreamType.PlainText:
-                flags = PInvoke.SF_TEXT;
-                break;
-            case RichTextBoxStreamType.UnicodePlainText:
-                flags = PInvoke.SF_UNICODE | PInvoke.SF_TEXT;
-                break;
-            case RichTextBoxStreamType.RichNoOleObjs:
-                flags = PInvoke.SF_RTFNOOBJS;
-                break;
-            case RichTextBoxStreamType.TextTextOleObjs:
-                flags = PInvoke.SF_TEXTIZED;
-                break;
-            default:
-                throw new InvalidEnumArgumentException(nameof(fileType), (int)fileType, typeof(RichTextBoxStreamType));
-        }
+            RichTextBoxStreamType.RichText => PInvoke.SF_RTF,
+            RichTextBoxStreamType.PlainText => PInvoke.SF_TEXT,
+            RichTextBoxStreamType.UnicodePlainText => PInvoke.SF_UNICODE | PInvoke.SF_TEXT,
+            RichTextBoxStreamType.RichNoOleObjs => PInvoke.SF_RTFNOOBJS,
+            RichTextBoxStreamType.TextTextOleObjs => PInvoke.SF_TEXTIZED,
+            _ => throw new InvalidEnumArgumentException(nameof(fileType), (int)fileType, typeof(RichTextBoxStreamType)),
+        };
 
-        StreamOut(data, flags, true);
+        StreamOut(data, flags, includeCrLfs: true);
     }
 
     /// <summary>
@@ -2720,12 +2683,12 @@ public partial class RichTextBox : TextBoxBase
 
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.EM_SETZOOM, (WPARAM)numerator, (LPARAM)denominator);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETZOOM, (WPARAM)numerator, (LPARAM)denominator);
         }
 
         if (numerator != 0)
         {
-            _zoomMultiplier = ((float)numerator) / ((float)denominator);
+            _zoomMultiplier = numerator / ((float)denominator);
         }
         else
         {
@@ -2741,23 +2704,17 @@ public partial class RichTextBox : TextBoxBase
             CHARFORMAT2W cf = new()
             {
                 cbSize = (uint)sizeof(CHARFORMAT2W),
-                dwMask = mask
+                dwMask = mask,
+                dwEffects = charFormat switch
+                {
+                    RichTextBoxSelectionAttribute.All => effect,
+                    RichTextBoxSelectionAttribute.None => 0,
+                    _ => throw new ArgumentException(SR.UnknownAttr),
+                }
             };
 
-            switch (charFormat)
-            {
-                case RichTextBoxSelectionAttribute.All:
-                    cf.dwEffects = effect;
-                    break;
-                case RichTextBoxSelectionAttribute.None:
-                    cf.dwEffects = 0;
-                    break;
-                default:
-                    throw new ArgumentException(SR.UnknownAttr);
-            }
-
             // Set the format information.
-            return PInvoke.SendMessage(this, PInvoke.EM_SETCHARFORMAT, (WPARAM)PInvoke.SCF_SELECTION, ref cf) != 0;
+            return PInvokeCore.SendMessage(this, PInvokeCore.EM_SETCHARFORMAT, (WPARAM)PInvoke.SCF_SELECTION, ref cf) != 0;
         }
 
         return false;
@@ -2765,7 +2722,7 @@ public partial class RichTextBox : TextBoxBase
 
     private bool SetCharFormat(uint charRange, CHARFORMAT2W cf)
     {
-        return PInvoke.SendMessage(this, PInvoke.EM_SETCHARFORMAT, (WPARAM)charRange, ref cf) != 0;
+        return PInvokeCore.SendMessage(this, PInvokeCore.EM_SETCHARFORMAT, (WPARAM)charRange, ref cf) != 0;
     }
 
     private unsafe void SetCharFormatFont(bool selectionOnly, Font value)
@@ -2797,7 +2754,7 @@ public partial class RichTextBox : TextBoxBase
             dwEffects |= CFE_EFFECTS.CFE_UNDERLINE;
         }
 
-        LOGFONTW logFont = LOGFONTW.FromFont(value);
+        LOGFONTW logFont = value.ToLogicalFont();
         CHARFORMAT2W charFormat = new()
         {
             cbSize = (uint)sizeof(CHARFORMAT2W),
@@ -2805,22 +2762,22 @@ public partial class RichTextBox : TextBoxBase
             dwEffects = dwEffects,
             yHeight = (int)(value.SizeInPoints * 20),
             bCharSet = (byte)logFont.lfCharSet,
-            bPitchAndFamily = (byte)logFont.lfPitchAndFamily,
+            bPitchAndFamily = logFont.lfPitchAndFamily,
             FaceName = logFont.FaceName
         };
 
-        PInvoke.SendMessage(
+        PInvokeCore.SendMessage(
             this,
-            PInvoke.EM_SETCHARFORMAT,
-            (WPARAM)(uint)(selectionOnly ? PInvoke.SCF_SELECTION : PInvoke.SCF_ALL),
+            PInvokeCore.EM_SETCHARFORMAT,
+            (WPARAM)(selectionOnly ? PInvoke.SCF_SELECTION : PInvoke.SCF_ALL),
             ref charFormat);
     }
 
     private static void SetupLogPixels()
     {
         using var dc = GetDcScope.ScreenDC;
-        s_logPixelsX = PInvoke.GetDeviceCaps(dc, GET_DEVICE_CAPS_INDEX.LOGPIXELSX);
-        s_logPixelsY = PInvoke.GetDeviceCaps(dc, GET_DEVICE_CAPS_INDEX.LOGPIXELSY);
+        s_logPixelsX = PInvokeCore.GetDeviceCaps(dc, GET_DEVICE_CAPS_INDEX.LOGPIXELSX);
+        s_logPixelsY = PInvokeCore.GetDeviceCaps(dc, GET_DEVICE_CAPS_INDEX.LOGPIXELSY);
     }
 
     private static int Pixel2Twip(int v, bool xDirection)
@@ -2834,7 +2791,7 @@ public partial class RichTextBox : TextBoxBase
     {
         SetupLogPixels();
         int logP = xDirection ? s_logPixelsX : s_logPixelsY;
-        return (int)(((((double)v) / 20.0) / 72.0) * logP);
+        return (int)(((v / 20.0) / 72.0) * logP);
     }
 
     private void StreamIn(string str, uint flags)
@@ -2844,13 +2801,13 @@ public partial class RichTextBox : TextBoxBase
             // Destroy the selection if callers was setting selection text
             if ((PInvoke.SFF_SELECTION & flags) != 0)
             {
-                PInvoke.SendMessage(this, PInvoke.WM_CLEAR);
+                PInvokeCore.SendMessage(this, PInvokeCore.WM_CLEAR);
                 ProtectedError = false;
                 return;
             }
 
             // WM_SETTEXT is allowed even if we have protected text
-            PInvoke.SendMessage(this, PInvoke.WM_SETTEXT, 0, string.Empty);
+            PInvokeCore.SendMessage(this, PInvokeCore.WM_SETTEXT, 0, string.Empty);
             return;
         }
 
@@ -2859,7 +2816,7 @@ public partial class RichTextBox : TextBoxBase
         int nullTerminatedLength = str.IndexOf((char)0);
         if (nullTerminatedLength != -1)
         {
-            str = str.Substring(0, nullTerminatedLength);
+            str = str[..nullTerminatedLength];
         }
 
         // Get the string into a byte array
@@ -2886,7 +2843,7 @@ public partial class RichTextBox : TextBoxBase
         if ((flags & PInvoke.SFF_SELECTION) == 0)
         {
             CHARRANGE range = default;
-            PInvoke.SendMessage(this, PInvoke.EM_EXSETSEL, 0, ref range);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_EXSETSEL, 0, ref range);
         }
 
         try
@@ -2895,13 +2852,24 @@ public partial class RichTextBox : TextBoxBase
             Debug.Assert(data is not null, "StreamIn passed a null stream");
 
             // If SF_RTF is requested then check for the RTF tag at the start
-            // of the file.  We don't load if the tag is not there.
+            // of the file. We don't load if the tag is not there.
 
             if ((flags & PInvoke.SF_RTF) != 0)
             {
                 long streamStart = _editStream.Position;
+
                 byte[] bytes = new byte[SZ_RTF_TAG.Length];
-                _editStream.Read(bytes, (int)streamStart, SZ_RTF_TAG.Length);
+                try
+                {
+                    // When we reading with `ReadExactly`, we usually will get overshoot at this point anyway in most cases
+                    // and then know that the format cannot be correct. So, we're packing this and throw, but we still need
+                    // to throw an `ArgumentException` to not introduce a breaking change.
+                    _editStream.ReadExactly(bytes, (int)streamStart, SZ_RTF_TAG.Length);
+                }
+                catch (EndOfStreamException ex)
+                {
+                    throw new ArgumentException(SR.InvalidFileFormat, ex);
+                }
 
                 // Encode using the default encoding.
                 string str = (CodePagesEncodingProvider.Instance.GetEncoding(0) ?? Encoding.UTF8).GetString(bytes);
@@ -2941,12 +2909,12 @@ public partial class RichTextBox : TextBoxBase
             EDITSTREAMCALLBACK callback = EditStreamProc;
             es.pfnCallback = Marshal.GetFunctionPointerForDelegate(callback);
 
-            // gives us TextBox compatible behavior, programatic text change shouldn't
+            // gives us TextBox compatible behavior, programmatic text change shouldn't
             // be limited...
-            PInvoke.SendMessage(this, PInvoke.EM_EXLIMITTEXT, 0, int.MaxValue);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_EXLIMITTEXT, 0, int.MaxValue);
 
             // go get the text for the control
-            PInvoke.SendMessage(this, PInvoke.EM_STREAMIN, (WPARAM)(uint)flags, ref es);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_STREAMIN, (WPARAM)flags, ref es);
             GC.KeepAlive(callback);
 
             UpdateMaxLength();
@@ -2965,10 +2933,10 @@ public partial class RichTextBox : TextBoxBase
             }
 
             // set the modify tag on the control
-            PInvoke.SendMessage(this, PInvoke.EM_SETMODIFY, (WPARAM)(-1));
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETMODIFY, (WPARAM)(-1));
 
             // EM_GETLINECOUNT will cause the RichTextBox to recalculate its line indexes
-            PInvoke.SendMessage(this, PInvoke.EM_GETLINECOUNT);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_GETLINECOUNT);
         }
         finally
         {
@@ -2979,7 +2947,7 @@ public partial class RichTextBox : TextBoxBase
 
     private string StreamOut(uint flags)
     {
-        Stream stream = new MemoryStream();
+        MemoryStream stream = new();
         StreamOut(stream, flags, false);
         stream.Position = 0;
         int streamLength = (int)stream.Length;
@@ -3004,9 +2972,9 @@ public partial class RichTextBox : TextBoxBase
             // We should consider removing this in the future, but it would need to
             // be checked against input strings with a trailing null.
 
-            if (!string.IsNullOrEmpty(result) && (result[result.Length - 1] == '\0'))
+            if (!string.IsNullOrEmpty(result) && (result[^1] == '\0'))
             {
-                result = result.Substring(0, result.Length - 1);
+                result = result[..^1];
             }
         }
 
@@ -3046,7 +3014,7 @@ public partial class RichTextBox : TextBoxBase
             es.pfnCallback = Marshal.GetFunctionPointerForDelegate(callback);
 
             // Get Text
-            PInvoke.SendMessage(this, PInvoke.EM_STREAMOUT, (WPARAM)(uint)flags, ref es);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_STREAMOUT, (WPARAM)flags, ref es);
             GC.KeepAlive(callback);
 
             // check to make sure things went well
@@ -3082,7 +3050,7 @@ public partial class RichTextBox : TextBoxBase
         }
 
         GETTEXTLENGTHEX* pGtl = &gtl;
-        int expectedLength = (int)PInvoke.SendMessage(this, PInvoke.EM_GETTEXTLENGTHEX, (WPARAM)pGtl);
+        int expectedLength = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_GETTEXTLENGTHEX, (WPARAM)pGtl);
         if (expectedLength == (int)HRESULT.E_INVALIDARG)
             throw new Win32Exception(expectedLength);
 
@@ -3102,12 +3070,13 @@ public partial class RichTextBox : TextBoxBase
         GETTEXTEX* pGt = &gt;
         fixed (char* b = buffer)
         {
-            int actualLength = (int)PInvoke.SendMessage(this, PInvoke.EM_GETTEXTEX, (WPARAM)pGt, (LPARAM)b);
+            int actualLength = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_GETTEXTEX, (WPARAM)pGt, (LPARAM)b);
 
-            // The default behaviour of EM_GETTEXTEX is to normalise line endings to '\r'
+            // The default behavior of EM_GETTEXTEX is to normalize line endings to '\r'
             // (see: GT_DEFAULT, https://docs.microsoft.com/windows/win32/api/richedit/ns-richedit-gettextex#members),
-            // whereas previously we would normalise to '\n'. Unfortunately we can only ask for '\r\n' line endings via GT.USECRLF,
-            // but unable to ask for '\n'. Unless GT.USECRLF was set, convert '\r' with '\n' to retain the original behaviour.
+            // whereas previously we would normalize to '\n'. Unfortunately we can only ask for '\r\n' line endings
+            // via GT.USECRLF, but unable to ask for '\n'. Unless GT.USECRLF was set,
+            // convert '\r' with '\n' to retain the original behavior.
             if (!flags.HasFlag(GETTEXTEX_FLAGS.GT_USECRLF))
             {
                 int index = 0;
@@ -3128,7 +3097,6 @@ public partial class RichTextBox : TextBoxBase
 
     private void UpdateOleCallback()
     {
-        RichTextDbg.TraceVerbose($"update ole callback ({AllowDrop})");
         if (!IsHandleCreated)
         {
             return;
@@ -3136,13 +3104,11 @@ public partial class RichTextBox : TextBoxBase
 
         if (_oleCallback is null)
         {
-            RichTextDbg.TraceVerbose("binding ole callback");
-
             AllowOleObjects = true;
 
             _oleCallback = CreateRichEditOleCallback();
-            using var oleCallback = ComHelpers.GetComScope<RichEdit.IRichEditOleCallback>(_oleCallback);
-            PInvoke.SendMessage(this, PInvoke.EM_SETOLECALLBACK, 0, (nint)oleCallback);
+            using var oleCallback = ComHelpers.GetComScope<IRichEditOleCallback>(_oleCallback);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETOLECALLBACK, 0, (nint)oleCallback);
         }
 
         PInvoke.DragAcceptFiles(this, fAccept: false);
@@ -3156,7 +3122,7 @@ public partial class RichTextBox : TextBoxBase
         {
             if (BackColor.IsSystemColor)
             {
-                PInvoke.SendMessage(this, PInvoke.EM_SETBKGNDCOLOR, 0, BackColor.ToWin32());
+                PInvokeCore.SendMessage(this, PInvokeCore.EM_SETBKGNDCOLOR, 0, BackColor.ToWin32());
             }
 
             if (ForeColor.IsSystemColor)
@@ -3185,12 +3151,12 @@ public partial class RichTextBox : TextBoxBase
 
         switch ((uint)enlink.msg)
         {
-            case PInvoke.WM_SETCURSOR:
+            case PInvokeCore.WM_SETCURSOR:
                 LinkCursor = true;
                 m.ResultInternal = (LRESULT)1;
                 return;
             // Mouse-down triggers Url; this matches Outlook 2000's behavior.
-            case PInvoke.WM_LBUTTONDOWN:
+            case PInvokeCore.WM_LBUTTONDOWN:
                 string linktext = CharRangeToString(enlink.charrange);
                 if (!string.IsNullOrEmpty(linktext))
                 {
@@ -3209,13 +3175,15 @@ public partial class RichTextBox : TextBoxBase
     ///  Converts a CHARRANGE to a string.
     /// </summary>
     /// <remarks>
-    ///  The behavior of this is dependent on the current window class name being used.
-    ///  We have to create a CharBuffer of the type of RichTextBox DLL we're using,
-    ///  not based on the SystemCharWidth.
+    ///  <para>
+    ///   The behavior of this is dependent on the current window class name being used.
+    ///   We have to create a CharBuffer of the type of RichTextBox DLL we're using,
+    ///   not based on the SystemCharWidth.
+    ///  </para>
     /// </remarks>
     private string CharRangeToString(CHARRANGE c)
     {
-        Richedit.TEXTRANGE txrg = new()
+        TEXTRANGE txrg = new()
         {
             chrg = c
         };
@@ -3228,17 +3196,17 @@ public partial class RichTextBox : TextBoxBase
 
         int characters = (c.cpMax - c.cpMin) + 1; // +1 for null termination
         UnicodeCharBuffer charBuffer = new(characters);
-        IntPtr unmanagedBuffer = charBuffer.AllocCoTaskMem();
-        if (unmanagedBuffer == IntPtr.Zero)
+        nint unmanagedBuffer = charBuffer.AllocCoTaskMem();
+        if (unmanagedBuffer == 0)
         {
             throw new OutOfMemoryException(SR.OutOfMemory);
         }
 
         txrg.lpstrText = unmanagedBuffer;
-        int len = (int)PInvoke.SendMessage(this, PInvoke.EM_GETTEXTRANGE, 0, ref txrg);
+        int len = (int)PInvokeCore.SendMessage(this, PInvokeCore.EM_GETTEXTRANGE, 0, ref txrg);
         Debug.Assert(len != 0, "CHARRANGE from RichTextBox was bad! - impossible?");
         charBuffer.PutCoTaskMem(unmanagedBuffer);
-        if (txrg.lpstrText != IntPtr.Zero)
+        if (txrg.lpstrText != 0)
         {
             Marshal.FreeCoTaskMem(unmanagedBuffer);
         }
@@ -3251,7 +3219,7 @@ public partial class RichTextBox : TextBoxBase
     {
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.EM_EXLIMITTEXT, 0, (IntPtr)MaxLength);
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_EXLIMITTEXT, 0, (IntPtr)MaxLength);
         }
     }
 
@@ -3298,7 +3266,7 @@ public partial class RichTextBox : TextBoxBase
                 HDROP endropfiles = (HDROP)((ENDROPFILES*)m.LParamInternal)->hDrop;
 
                 // Only look at the first file.
-                using (BufferScope<char> buffer = new(PInvoke.MAX_PATH + 1))
+                using (BufferScope<char> buffer = new((int)PInvokeCore.MAX_PATH + 1))
                 {
                     fixed (char* b = buffer)
                     {
@@ -3358,7 +3326,7 @@ public partial class RichTextBox : TextBoxBase
 
                     switch ((uint)enprotected.msg)
                     {
-                        case PInvoke.EM_SETCHARFORMAT:
+                        case PInvokeCore.EM_SETCHARFORMAT:
                             // Allow change of protected style
                             CHARFORMAT2W* charFormat = (CHARFORMAT2W*)enprotected.lParam;
                             if ((charFormat->dwMask & CFM_MASK.CFM_PROTECTED) != 0)
@@ -3370,11 +3338,11 @@ public partial class RichTextBox : TextBoxBase
                             break;
 
                         // Throw an exception for the following
-                        case PInvoke.EM_SETPARAFORMAT:
-                        case PInvoke.EM_REPLACESEL:
+                        case PInvokeCore.EM_SETPARAFORMAT:
+                        case PInvokeCore.EM_REPLACESEL:
                             break;
 
-                        case PInvoke.EM_STREAMIN:
+                        case PInvokeCore.EM_STREAMIN:
                             // Don't allow STREAMIN to replace protected selection
                             if ((unchecked((uint)(long)enprotected.wParam) & PInvoke.SFF_SELECTION) != 0)
                             {
@@ -3385,9 +3353,9 @@ public partial class RichTextBox : TextBoxBase
                             return;
 
                         // Allow the following
-                        case PInvoke.WM_COPY:
-                        case PInvoke.WM_SETTEXT:
-                        case PInvoke.EM_EXLIMITTEXT:
+                        case PInvokeCore.WM_COPY:
+                        case PInvokeCore.WM_SETTEXT:
+                        case PInvokeCore.EM_EXLIMITTEXT:
                             m.ResultInternal = (LRESULT)0;
                             return;
 
@@ -3408,7 +3376,7 @@ public partial class RichTextBox : TextBoxBase
         }
     }
 
-    private void WmSelectionChange(Richedit.SELCHANGE selChange)
+    private void WmSelectionChange(SELCHANGE selChange)
     {
         int selStart = selChange.chrg.cpMin;
         int selEnd = selChange.chrg.cpMax;
@@ -3429,18 +3397,18 @@ public partial class RichTextBox : TextBoxBase
         // remove the last completed character typed.
 
         // Is either the Hangul or HangulFull IME currently in use?
-        if (ImeMode == ImeMode.Hangul || ImeMode == ImeMode.HangulFull)
+        if (ImeMode is ImeMode.Hangul or ImeMode.HangulFull)
         {
             // Is the IME CompositionWindow open?
-            LRESULT compMode = PInvoke.SendMessage(this, PInvoke.EM_GETIMECOMPMODE);
+            LRESULT compMode = PInvokeCore.SendMessage(this, PInvokeCore.EM_GETIMECOMPMODE);
             if (compMode != PInvoke.ICM_NOTOPEN)
             {
-                int textLength = PInvoke.GetWindowTextLength(this);
+                int textLength = PInvokeCore.GetWindowTextLength(this);
                 if (selStart == selEnd && textLength == MaxLength)
                 {
-                    PInvoke.SendMessage(this, PInvoke.WM_KILLFOCUS);
-                    PInvoke.SendMessage(this, PInvoke.WM_SETFOCUS);
-                    PInvoke.PostMessage(this, PInvoke.EM_SETSEL, (WPARAM)(selEnd - 1), (LPARAM)selEnd);
+                    PInvokeCore.SendMessage(this, PInvokeCore.WM_KILLFOCUS);
+                    PInvokeCore.SendMessage(this, PInvokeCore.WM_SETFOCUS);
+                    PInvokeCore.PostMessage(this, PInvokeCore.EM_SETSEL, (WPARAM)(selEnd - 1), (LPARAM)selEnd);
                 }
             }
         }
@@ -3485,7 +3453,7 @@ public partial class RichTextBox : TextBoxBase
                 WmReflectCommand(ref m);
                 break;
 
-            case PInvoke.WM_SETCURSOR:
+            case PInvokeCore.WM_SETCURSOR:
                 // NOTE: RichTextBox uses the WM_SETCURSOR message over links to allow us to
                 //      change the cursor to a hand. It does this through a synchronous notification
                 //      message. So we have to pass the message to the DefWndProc first, and
@@ -3507,24 +3475,24 @@ public partial class RichTextBox : TextBoxBase
 
                 break;
 
-            case PInvoke.WM_SETFONT:
+            case PInvokeCore.WM_SETFONT:
                 WmSetFont(ref m);
                 break;
 
-            case PInvoke.WM_IME_NOTIFY:
+            case PInvokeCore.WM_IME_NOTIFY:
                 OnImeChange(EventArgs.Empty);
                 base.WndProc(ref m);
                 break;
 
-            case PInvoke.WM_GETDLGCODE:
+            case PInvokeCore.WM_GETDLGCODE:
                 base.WndProc(ref m);
                 m.ResultInternal = (LRESULT)(AcceptsTab ? m.ResultInternal | (nint)PInvoke.DLGC_WANTTAB : m.ResultInternal & ~(nint)PInvoke.DLGC_WANTTAB);
                 break;
 
-            case PInvoke.WM_GETOBJECT:
+            case PInvokeCore.WM_GETOBJECT:
                 base.WndProc(ref m);
 
-                // OLEACC.DLL uses window class names to identify standard control types. But WinForm controls use app-specific window
+                // OLEACC.DLL uses window class names to identify standard control types. But WinForms controls use app-specific window
                 // classes. Usually this doesn't matter, because system controls always identify their window class explicitly through
                 // the WM_GETOBJECT+OBJID_QUERYCLASSNAMEIDX message. But RICHEDIT20 doesn't do that - so we must do it ourselves.
                 // Otherwise OLEACC will treat rich edit controls as custom controls, so the accessible Role and Value will be wrong.
@@ -3535,7 +3503,7 @@ public partial class RichTextBox : TextBoxBase
 
                 break;
 
-            case PInvoke.WM_RBUTTONUP:
+            case PInvokeCore.WM_RBUTTONUP:
                 // since RichEdit eats up the WM_CONTEXTMENU message, we need to force DefWndProc
                 // to spit out this message again on receiving WM_RBUTTONUP message. By setting UserMouse
                 // style to true, we effectively let the WmMouseUp method in Control.cs to generate
@@ -3546,7 +3514,7 @@ public partial class RichTextBox : TextBoxBase
                 SetStyle(ControlStyles.UserMouse, oldStyle);
                 break;
 
-            case PInvoke.WM_VSCROLL:
+            case PInvokeCore.WM_VSCROLL:
                 {
                     base.WndProc(ref m);
                     SCROLLBAR_COMMAND loWord = (SCROLLBAR_COMMAND)m.WParamInternal.LOWORD;
@@ -3562,7 +3530,7 @@ public partial class RichTextBox : TextBoxBase
                     break;
                 }
 
-            case PInvoke.WM_HSCROLL:
+            case PInvokeCore.WM_HSCROLL:
                 {
                     base.WndProc(ref m);
                     SCROLLBAR_COMMAND loWord = (SCROLLBAR_COMMAND)m.WParamInternal.LOWORD;

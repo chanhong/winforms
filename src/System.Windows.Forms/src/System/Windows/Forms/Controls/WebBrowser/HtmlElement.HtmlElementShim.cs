@@ -13,13 +13,13 @@ public sealed partial class HtmlElement
     ///          and our CLR callbacks.
     ///
     ///  HTMLElementEvents2: we create an IConnectionPoint (via ConnectionPointCookie) between us and MSHTML and it calls back
-    ///              on our an instance of HTMLElementEvents2.  The HTMLElementEvents2 class then fires the event.
+    ///              on our an instance of HTMLElementEvents2. The HTMLElementEvents2 class then fires the event.
     ///
     /// </summary>
     internal unsafe class HtmlElementShim : HtmlShim
     {
         private static readonly Type[] s_dispInterfaceTypes =
-        {
+        [
             typeof(Interop.Mshtml.DHTMLElementEvents2),
             typeof(Interop.Mshtml.DHTMLAnchorEvents2),
             typeof(Interop.Mshtml.DHTMLAreaEvents2),
@@ -41,7 +41,7 @@ public sealed partial class HtmlElement
             typeof(Interop.Mshtml.DHTMLTableEvents2),
             typeof(Interop.Mshtml.DHTMLTextContainerEvents2),
             typeof(Interop.Mshtml.DHTMLScriptEvents2)
-        };
+        ];
 
         private readonly AgileComPointer<IHTMLWindow2>? _associatedWindow;
         private AxHost.ConnectionPointCookie? _cookie;   // To hook up events from the native HtmlElement

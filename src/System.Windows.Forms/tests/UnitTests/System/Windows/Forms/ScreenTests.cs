@@ -33,16 +33,16 @@ public class ScreenTests
 
     public static IEnumerable<object[]> Equals_Screen_TestData()
     {
-        var screen = new Screen((HMONITOR)1);
+        Screen screen = new((HMONITOR)(nint)1);
         yield return new object[] { screen, screen, true };
-        yield return new object[] { screen, new Screen((HMONITOR)1), true };
-        yield return new object[] { screen, new Screen((HMONITOR)2), false };
+        yield return new object[] { screen, new Screen((HMONITOR)(nint)1), true };
+        yield return new object[] { screen, new Screen((HMONITOR)(nint)2), false };
     }
 
     public static IEnumerable<object[]> Equals_Object_TestData()
     {
-        var screen = new Screen((HMONITOR)1);
-        yield return new object[] { screen, new object(), false };
+        Screen screen = new((HMONITOR)(nint)1);
+        yield return new object[] { screen, new(), false };
         yield return new object[] { screen, null, false };
     }
 
@@ -65,7 +65,7 @@ public class ScreenTests
     {
         yield return new object[] { new Control() };
 
-        var createdControl = new Control();
+        Control createdControl = new();
         Assert.NotEqual(IntPtr.Zero, createdControl.Handle);
         yield return new object[] { createdControl };
     }
@@ -85,17 +85,19 @@ public class ScreenTests
         Assert.Throws<ArgumentNullException>("control", () => Screen.FromControl(null));
     }
 
-    public static IEnumerable<object[]> FromHandle_TestData()
+    [Fact]
+    public void Screen_FromHandle_ZeroHandle_ReturnsExpected()
     {
-        yield return new object[] { IntPtr.Zero };
-        yield return new object[] { new Control().Handle };
+        Screen screen = Screen.FromHandle(IntPtr.Zero);
+        Assert.NotNull(screen);
+        VerifyScreen(screen);
     }
 
-    [Theory]
-    [MemberData(nameof(FromHandle_TestData))]
-    public void Screen_FromHandle_Invoke_ReturnsExpected(IntPtr handle)
+    [WinFormsFact]
+    public void Screen_FromHandle_RealHandle_ReturnsExpected()
     {
-        Screen screen = Screen.FromHandle(handle);
+        using Control control = new();
+        Screen screen = Screen.FromHandle(control.Handle);
         Assert.NotNull(screen);
         VerifyScreen(screen);
     }
@@ -204,8 +206,8 @@ public class ScreenTests
     private static void VerifyScreen(Screen screen)
     {
         Assert.Contains(screen.BitsPerPixel, new int[] { 1, 2, 4, 8, 16, 24, 32, 48, 64 });
-        Assert.True(screen.Bounds.Width != 0);
-        Assert.True(screen.Bounds.Height != 0);
+        Assert.NotEqual(0, screen.Bounds.Width);
+        Assert.NotEqual(0, screen.Bounds.Height);
         Assert.InRange(screen.DeviceName.Length, 1, 32);
         Assert.Equal(screen.DeviceName, screen.DeviceName.Trim('\0'));
         Assert.InRange(screen.WorkingArea.Width, 0, screen.Bounds.Width);

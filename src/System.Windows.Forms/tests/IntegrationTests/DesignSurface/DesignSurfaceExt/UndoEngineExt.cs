@@ -1,33 +1,36 @@
-﻿using System.ComponentModel.Design;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.ComponentModel.Design;
 
 namespace DesignSurfaceExt;
 
 public class UndoEngineExt : UndoEngine
 {
-    private Stack<UndoEngine.UndoUnit> undoStack = new();
-    private Stack<UndoEngine.UndoUnit> redoStack = new();
+    private readonly Stack<UndoUnit> _undoStack = new();
+    private readonly Stack<UndoUnit> _redoStack = new();
 
     public UndoEngineExt(IServiceProvider provider) : base(provider) { }
 
     public bool EnableUndo
     {
-        get { return undoStack.Count > 0; }
+        get { return _undoStack.Count > 0; }
     }
 
     public bool EnableRedo
     {
-        get { return redoStack.Count > 0; }
+        get { return _redoStack.Count > 0; }
     }
 
     public void Undo()
     {
-        if (undoStack.Count > 0)
+        if (_undoStack.Count > 0)
         {
             try
             {
-                UndoEngine.UndoUnit unit = undoStack.Pop();
+                UndoUnit unit = _undoStack.Pop();
                 unit.Undo();
-                redoStack.Push(unit);
+                _redoStack.Push(unit);
                 // Log("::Undo - undo action performed: " + unit.Name);
             }
             catch
@@ -43,13 +46,13 @@ public class UndoEngineExt : UndoEngine
 
     public void Redo()
     {
-        if (redoStack.Count > 0)
+        if (_redoStack.Count > 0)
         {
             try
             {
-                UndoEngine.UndoUnit unit = redoStack.Pop();
+                UndoUnit unit = _redoStack.Pop();
                 unit.Undo();
-                undoStack.Push(unit);
+                _undoStack.Push(unit);
                 // Log("::Redo - redo action performed: " + unit.Name);
             }
             catch
@@ -63,9 +66,8 @@ public class UndoEngineExt : UndoEngine
         }
     }
 
-    protected override void AddUndoUnit(UndoEngine.UndoUnit unit)
+    protected override void AddUndoUnit(UndoUnit unit)
     {
-        undoStack.Push(unit);
+        _undoStack.Push(unit);
     }
 }
-

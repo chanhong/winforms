@@ -3,15 +3,15 @@
 
 using System.Drawing;
 
-namespace WinformsControlsTest;
+namespace WinFormsControlsTest;
 
+[DesignerCategory("Default")]
 public partial class ComboBoxesWithScrollBars : Form
 {
     public ComboBoxesWithScrollBars()
     {
         InitializeComponent();
 
-        // Init comboboxes
         for (int i = 0; i <= 40; i++)
         {
             comboBox1.Items.Add(i);
@@ -134,7 +134,7 @@ public partial class ComboBoxesWithScrollBars : Form
         }
 
         e.DrawBackground();
-        using SolidBrush brush = new SolidBrush(e.ForeColor);
+        using SolidBrush brush = new(e.ForeColor);
         e.Graphics.DrawString(
             control.Items[e.Index].ToString(),
             e.Font,

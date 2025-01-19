@@ -33,7 +33,7 @@ public static class CommonTestHelperEx
 
     public static TheoryData<Image> GetImageTheoryData()
     {
-        var data = new TheoryData<Image>
+        TheoryData<Image> data = new()
         {
             new Bitmap(10, 10),
             null
@@ -43,7 +43,7 @@ public static class CommonTestHelperEx
 
     public static TheoryData<Font> GetFontTheoryData()
     {
-        var data = new TheoryData<Font>
+        TheoryData<Font> data = new()
         {
             SystemFonts.MenuFont,
             null
@@ -53,7 +53,7 @@ public static class CommonTestHelperEx
 
     public static TheoryData<Type> GetTypeWithNullTheoryData()
     {
-        var data = new TheoryData<Type>
+        TheoryData<Type> data = new()
         {
             null,
             typeof(int)
@@ -74,9 +74,9 @@ public static class CommonTestHelperEx
 
     public static TheoryData<Padding> GetPaddingTheoryData()
     {
-        var data = new TheoryData<Padding>
+        TheoryData<Padding> data = new()
         {
-            new(),
+            default,
             new(1, 2, 3, 4),
             new(1),
             new(-1, -2, -3, -4)
@@ -88,7 +88,7 @@ public static class CommonTestHelperEx
     {
         var data = new TheoryData<Padding, Padding>
         {
-            { new Padding(), new Padding() },
+            { default, default },
             { new Padding(1, 2, 3, 4), new Padding(1, 2, 3, 4) },
             { new Padding(1), new Padding(1) },
             { new Padding(-1, -2, -3, -4), Padding.Empty }
@@ -98,17 +98,17 @@ public static class CommonTestHelperEx
 
     public static TheoryData<Cursor> GetCursorTheoryData()
     {
-        var data = new TheoryData<Cursor>
+        TheoryData<Cursor> data = new()
         {
             null,
-            new((IntPtr)1)
+            new(1)
         };
         return data;
     }
 
     public static TheoryData<PaintEventArgs> GetPaintEventArgsTheoryData()
     {
-        var image = new Bitmap(10, 10);
+        Bitmap image = new(10, 10);
         Graphics graphics = Graphics.FromImage(image);
         return new TheoryData<PaintEventArgs>
         {
@@ -128,7 +128,7 @@ public static class CommonTestHelperEx
 
     public static TheoryData<KeyPressEventArgs> GetKeyPressEventArgsTheoryData()
     {
-        var data = new TheoryData<KeyPressEventArgs>
+        TheoryData<KeyPressEventArgs> data = new()
         {
             null,
             new('1')
@@ -138,7 +138,7 @@ public static class CommonTestHelperEx
 
     public static TheoryData<LayoutEventArgs> GetLayoutEventArgsTheoryData()
     {
-        var data = new TheoryData<LayoutEventArgs>
+        TheoryData<LayoutEventArgs> data = new()
         {
             null,
             new(null, null),
@@ -159,15 +159,15 @@ public static class CommonTestHelperEx
 
     public static TheoryData<IServiceProvider, object> GetEditValueInvalidProviderTestData()
     {
-        var nullServiceProviderMock = new Mock<IServiceProvider>(MockBehavior.Strict);
+        Mock<IServiceProvider> nullServiceProviderMock = new(MockBehavior.Strict);
         nullServiceProviderMock
             .Setup(p => p.GetService(typeof(IWindowsFormsEditorService)))
             .Returns(null);
-        var invalidServiceProviderMock = new Mock<IServiceProvider>(MockBehavior.Strict);
+        Mock<IServiceProvider> invalidServiceProviderMock = new(MockBehavior.Strict);
         invalidServiceProviderMock
             .Setup(p => p.GetService(typeof(IWindowsFormsEditorService)))
             .Returns(new object());
-        var value = new object();
+        object value = new();
         return new TheoryData<IServiceProvider, object>
         {
             { null, null },

@@ -66,14 +66,18 @@ internal unsafe class LabelEditAccessibleObject : AccessibleObject
     };
 
     public override string? Name => _labelEdit.TryGetTarget(out var target)
-        ? PInvoke.GetWindowText(target)
+        ? PInvokeCore.GetWindowText(target)
         : null;
 
+    private protected override bool IsInternal => true;
+
+    internal override bool CanGetNameInternal => false;
+
     internal override int[] RuntimeId => _runtimeId ??=
-        [
-            RuntimeIDFirstItem,
-            _labelEdit.TryGetTarget(out var target) ? (int)target.HWND : (int)HWND.Null
-        ];
+    [
+        RuntimeIDFirstItem,
+        _labelEdit.TryGetTarget(out var target) ? (int)target.HWND : (int)HWND.Null
+    ];
 
     internal override ITextRangeProvider* DocumentRangeInternal
         => _textProvider.DocumentRange;

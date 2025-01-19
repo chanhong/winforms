@@ -8,12 +8,11 @@ using System.Drawing.Design;
 using System.Text;
 using System.Windows.Forms.Layout;
 using Windows.Win32.UI.Accessibility;
-using static Interop;
 
 namespace System.Windows.Forms;
 
 /// <summary>
-///  The TabControl.  This control has a lot of the functionality of a TabStrip
+///  The TabControl. This control has a lot of the functionality of a TabStrip
 ///  but manages a list of TabPages which are the 'pages' that appear on each tab.
 /// </summary>
 [DefaultProperty(nameof(TabPages))]
@@ -22,16 +21,16 @@ namespace System.Windows.Forms;
 [SRDescription(nameof(SR.DescriptionTabControl))]
 public partial class TabControl : Control
 {
-    private static readonly Size DefaultItemSize = Size.Empty;
-    private static readonly Point DefaultPaddingPoint = new(6, 3);
+    private static readonly Size s_defaultItemSize = Size.Empty;
+    private static readonly Point s_defaultPaddingPoint = new(6, 3);
 
     // Properties
     private readonly TabPageCollection _tabCollection;
     private TabAlignment _alignment = TabAlignment.Top;
     private TabDrawMode _drawMode = TabDrawMode.Normal;
     private ImageList? _imageList;
-    private Size _itemSize = DefaultItemSize;
-    private Point _padding = DefaultPaddingPoint;
+    private Size _itemSize = s_defaultItemSize;
+    private Point _padding = s_defaultPaddingPoint;
     private TabSizeMode _sizeMode = TabSizeMode.Normal;
     private TabAppearance _appearance = TabAppearance.Normal;
     private Rectangle _cachedDisplayRect;
@@ -50,22 +49,22 @@ public partial class TabControl : Control
     private static readonly object s_selectedEvent = new();
     private static readonly object s_rightToLeftLayoutChangedEvent = new();
 
-    // Perf: take all the bools and put them into a state variable: see TabControlState consts above
+    // Perf: take all the bools and put them into a state variable: see TabControlState constants above
     private BitVector32 _tabControlState;
 
     private const string TabBaseReLayoutMessageName = "_TabBaseReLayout";
 
     /// <summary>
     ///  This message is posted by the control to itself after a TabPage is
-    ///  added to it.  On certain occasions, after items are added to a
+    ///  added to it. On certain occasions, after items are added to a
     ///  TabControl in quick succession, TCM_ADJUSTRECT calls return the wrong
-    ///  display rectangle.  When the message is received, the control calls
+    ///  display rectangle. When the message is received, the control calls
     ///  updateTabSelection() to layout the TabPages correctly.
     /// </summary>
     private readonly MessageId _tabBaseReLayoutMessage = PInvoke.RegisterWindowMessage($"{Application.WindowMessagesVersion}{TabBaseReLayoutMessageName}");
 
     // State
-    private readonly List<TabPage> _tabPages = new();
+    private readonly List<TabPage> _tabPages = [];
     private int _lastSelection;
     private short _windowId;
 
@@ -80,15 +79,18 @@ public partial class TabControl : Control
     public TabControl()
         : base()
     {
-        _tabControlState = new Collections.Specialized.BitVector32(0x00000000);
+        _tabControlState = new BitVector32(0x00000000);
 
         _tabCollection = new TabPageCollection(this);
         SetStyle(ControlStyles.UserPaint, false);
+#pragma warning disable WFO5001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        SetStyle(ControlStyles.ApplyThemingImplicitly, true);
+#pragma warning restore WFO5001
     }
 
     /// <summary>
     ///  Returns on what area of the control the tabs reside on (A TabAlignment value).
-    ///  The possibilities are Top (the default), Bottom, Left, and Right.  When alignment
+    ///  The possibilities are Top (the default), Bottom, Left, and Right. When alignment
     ///  is left or right, the Multiline property is ignored and Multiline is implicitly on.
     ///  If the alignment is anything other than top, TabAppearance.FlatButtons degenerates
     ///  to TabAppearance.Buttons.
@@ -113,7 +115,7 @@ public partial class TabControl : Control
                 SourceGenerated.EnumValidator.Validate(value);
 
                 _alignment = value;
-                if (_alignment == TabAlignment.Left || _alignment == TabAlignment.Right)
+                if (_alignment is TabAlignment.Left or TabAlignment.Right)
                 {
                     SetState(State.Multiline, true);
                 }
@@ -124,7 +126,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Indicates whether the tabs in the tabstrip look like regular tabs, or if they look
+    ///  Indicates whether the tabs in the TabStrip look like regular tabs, or if they look
     ///  like buttons as seen in the Windows 95 taskbar.
     ///  If the alignment is anything other than top, TabAppearance.FlatButtons degenerates
     ///  to TabAppearance.Buttons.
@@ -170,7 +172,7 @@ public partial class TabControl : Control
         get
         {
             // The tab control can only be rendered in 1 color: System's Control color.
-            // So, always return this value... otherwise, we're inheriting the forms backcolor
+            // So, always return this value... otherwise, we're inheriting the forms BackColor
             // and passing it on to the pab pages.
             return SystemColors.Control;
         }
@@ -259,8 +261,8 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Returns the parameters needed to create the handle.  Inheriting classes
-    ///  can override this to provide extra functionality.  They should not,
+    ///  Returns the parameters needed to create the handle. Inheriting classes
+    ///  can override this to provide extra functionality. They should not,
     ///  however, forget to call base.getCreateParams() first to get the struct
     ///  filled up with the basic info.
     /// </summary>
@@ -288,14 +290,14 @@ public partial class TabControl : Control
                 cp.Style |= (int)PInvoke.TCS_TOOLTIPS;
             }
 
-            if (_alignment == TabAlignment.Bottom ||
-                _alignment == TabAlignment.Right)
+            if (_alignment is TabAlignment.Bottom or
+                TabAlignment.Right)
             {
                 cp.Style |= (int)PInvoke.TCS_BOTTOM;
             }
 
-            if (_alignment == TabAlignment.Left ||
-                _alignment == TabAlignment.Right)
+            if (_alignment is TabAlignment.Left or
+                TabAlignment.Right)
             {
                 cp.Style |= (int)PInvoke.TCS_VERTICAL | (int)PInvoke.TCS_MULTILINE;
             }
@@ -345,7 +347,7 @@ public partial class TabControl : Control
 
     /// <summary>
     ///  The rectangle that represents the Area of the tab strip not
-    ///  taken up by the tabs, borders, or anything else owned by the Tab.  This
+    ///  taken up by the tabs, borders, or anything else owned by the Tab. This
     ///  is typically the rectangle you want to use to place the individual
     ///  children of the tab strip.
     /// </summary>
@@ -376,7 +378,7 @@ public partial class TabControl : Control
 
                 if (IsHandleCreated)
                 {
-                    PInvoke.SendMessage(this, PInvoke.TCM_ADJUSTRECT, 0, ref rect);
+                    PInvokeCore.SendMessage(this, PInvoke.TCM_ADJUSTRECT, 0, ref rect);
                 }
             }
 
@@ -392,7 +394,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  The drawing mode of the tabs in the tab strip.  This will indicate
+    ///  The drawing mode of the tabs in the tab strip. This will indicate
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
     [DefaultValue(TabDrawMode.Normal)]
@@ -440,7 +442,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Returns the imageList the control points at.  This is where tabs that have imageIndex
+    ///  Returns the imageList the control points at. This is where tabs that have imageIndex
     ///  set will get there images from.
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
@@ -457,8 +459,8 @@ public partial class TabControl : Control
         {
             if (_imageList != value)
             {
-                EventHandler recreateHandler = new EventHandler(ImageListRecreateHandle);
-                EventHandler disposedHandler = new EventHandler(DetachImageList);
+                EventHandler recreateHandler = new(ImageListRecreateHandle);
+                EventHandler disposedHandler = new(DetachImageList);
 
                 if (_imageList is not null)
                 {
@@ -470,7 +472,7 @@ public partial class TabControl : Control
                 IntPtr handle = (value is not null) ? value.Handle : IntPtr.Zero;
                 if (IsHandleCreated)
                 {
-                    PInvoke.SendMessage(this, PInvoke.TCM_SETIMAGELIST, 0, handle);
+                    PInvokeCore.SendMessage(this, PInvoke.TCM_SETIMAGELIST, 0, handle);
                 }
 
                 // Update the image list in the tab pages.
@@ -501,14 +503,14 @@ public partial class TabControl : Control
         {
             if (_itemSize.IsEmpty)
             {
-                // Obtain the current itemsize of the first tab from the winctl control
+                // Obtain the current ItemSize of the first tab from the winctl control
                 if (IsHandleCreated)
                 {
                     SetState(State.GetTabRectfromItemSize, true);
                     return GetTabRect(0).Size;
                 }
 
-                return DefaultItemSize;
+                return s_defaultItemSize;
             }
 
             return _itemSize;
@@ -529,8 +531,9 @@ public partial class TabControl : Control
 
     /// <summary>
     ///  This private property is set by the TabPageCollection when the user calls "InsertItem".
-    ///  The problem is when InsertItem is called then we add this item to the ControlsCollection (in addition to the TabPageCollection)
-    ///  to keep both the collections is sync. But the controlCollection.Add is overriden to again ADD the item to the TabPageCollection.
+    ///  The problem is when InsertItem is called then we add this item to the ControlsCollection
+    ///  (in addition to the TabPageCollection) to keep both the collections is sync. But the controlCollection.
+    ///  Add is overridden to again ADD the item to the TabPageCollection.
     ///  So we keep this flag in order to avoid repeated addition (only during insert)
     ///  When the Add ends ... we reset this flag.
     /// </summary>
@@ -541,10 +544,10 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Indicates if there can be more than one row of tabs.  By default [when
+    ///  Indicates if there can be more than one row of tabs. By default [when
     ///  this property is false], if there are more tabs than available display
     ///  space, arrows are shown to let the user navigate between the extra
-    ///  tabs, but only one row is shown.  If this property is set to true, then
+    ///  tabs, but only one row is shown. If this property is set to true, then
     ///  Windows spills extra tabs over on to second rows.
     /// </summary>
     [SRCategory(nameof(SR.CatBehavior))]
@@ -558,7 +561,7 @@ public partial class TabControl : Control
             if (Multiline != value)
             {
                 SetState(State.Multiline, value);
-                if (Multiline == false && (_alignment == TabAlignment.Left || _alignment == TabAlignment.Right))
+                if (!Multiline && (_alignment == TabAlignment.Left || _alignment == TabAlignment.Right))
                 {
                     _alignment = TabAlignment.Top;
                 }
@@ -630,7 +633,7 @@ public partial class TabControl : Control
 
     /// <summary>
     ///  The number of rows currently being displayed in
-    ///  the tab strip.  This is most commonly used when the Multiline property
+    ///  the tab strip. This is most commonly used when the Multiline property
     ///  is 'true' and you want to know how many rows the tabs are currently
     ///  taking up.
     /// </summary>
@@ -639,11 +642,11 @@ public partial class TabControl : Control
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     [SRDescription(nameof(SR.TabBaseRowCountDescr))]
     public int RowCount
-        => (int)PInvoke.SendMessage(this, PInvoke.TCM_GETROWCOUNT);
+        => (int)PInvokeCore.SendMessage(this, PInvoke.TCM_GETROWCOUNT);
 
     /// <summary>
     ///  The index of the currently selected tab in the strip, if there
-    ///  is one.  If the value is -1, there is currently no selection.  If the
+    ///  is one. If the value is -1, there is currently no selection. If the
     ///  value is 0 or greater, than the value is the index of the currently
     ///  selected tab.
     /// </summary>
@@ -653,13 +656,10 @@ public partial class TabControl : Control
     [SRDescription(nameof(SR.selectedIndexDescr))]
     public int SelectedIndex
     {
-        get => IsHandleCreated ? (int)PInvoke.SendMessage(this, PInvoke.TCM_GETCURSEL) : _selectedIndex;
+        get => IsHandleCreated ? (int)PInvokeCore.SendMessage(this, PInvoke.TCM_GETCURSEL) : _selectedIndex;
         set
         {
-            if (value < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(SR.InvalidLowBoundArgumentEx, nameof(SelectedIndex), value, -1));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
 
             if (SelectedIndex != value)
             {
@@ -684,7 +684,7 @@ public partial class TabControl : Control
                         }
                     }
 
-                    PInvoke.SendMessage(this, PInvoke.TCM_SETCURSEL, (WPARAM)value);
+                    PInvokeCore.SendMessage(this, PInvoke.TCM_SETCURSEL, (WPARAM)value);
 
                     if (!GetState(State.FromCreateHandles) && !GetState(State.SelectFirstControl))
                     {
@@ -713,7 +713,7 @@ public partial class TabControl : Control
 
     /// <summary>
     ///  The selection to the given tab, provided it .equals a tab in the
-    ///  list.  The return value is the index of the tab that was selected,
+    ///  list. The return value is the index of the tab that was selected,
     ///  or -1 if no tab was selected.
     /// </summary>
     [SRCategory(nameof(SR.CatAppearance))]
@@ -741,7 +741,7 @@ public partial class TabControl : Control
 
     /// <summary>
     ///  By default, tabs are big enough to display their text, and any space
-    ///  on the right of the strip is left as such.  However, you can also
+    ///  on the right of the strip is left as such. However, you can also
     ///  set it such that the tabs are stretched to fill out the right extent
     ///  of the strip, if necessary, or you can set it such that all tabs
     ///  the same width.
@@ -859,7 +859,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Occurs before a tabpage is selected as the top tabPage.
+    ///  Occurs before a TabPage is selected as the top TabPage.
     /// </summary>
     [SRCategory(nameof(SR.CatAction))]
     [SRDescription(nameof(SR.TabControlSelectingEventDescr))]
@@ -870,7 +870,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Occurs after a tabpage is selected as the top tabPage.
+    ///  Occurs after a TabPage is selected as the top TabPage.
     /// </summary>
     [SRCategory(nameof(SR.CatAction))]
     [SRDescription(nameof(SR.TabControlSelectedEventDescr))]
@@ -881,7 +881,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Occurs before the visible property of the top tabpage is set to false.
+    ///  Occurs before the visible property of the top TabPage is set to false.
     /// </summary>
     [SRCategory(nameof(SR.CatAction))]
     [SRDescription(nameof(SR.TabControlDeselectingEventDescr))]
@@ -892,7 +892,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Occurs after the visible property of the top tabpage is set to false.
+    ///  Occurs after the visible property of the top TabPage is set to false.
     /// </summary>
     [SRCategory(nameof(SR.CatAction))]
     [SRDescription(nameof(SR.TabControlDeselectedEventDescr))]
@@ -903,7 +903,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  TabControl Onpaint.
+    ///  TabControl OnPaint.
     /// </summary>
     /// <hideinheritance/>
     [Browsable(false)]
@@ -928,7 +928,7 @@ public partial class TabControl : Control
     private int AddNativeTabPage(TabPage tabPage)
     {
         int index = SendMessage(PInvoke.TCM_INSERTITEMW, TabCount + 1, tabPage);
-        PInvoke.PostMessage(this, _tabBaseReLayoutMessage);
+        PInvokeCore.PostMessage(this, _tabBaseReLayoutMessage);
         return index;
     }
 
@@ -936,7 +936,7 @@ public partial class TabControl : Control
     {
         if (IsHandleCreated && ShouldSerializeItemSize())
         {
-            PInvoke.SendMessage(this, PInvoke.TCM_SETITEMSIZE, 0, PARAM.FromLowHigh(_itemSize.Width, _itemSize.Height));
+            PInvokeCore.SendMessage(this, PInvoke.TCM_SETITEMSIZE, 0, PARAM.FromLowHigh(_itemSize.Width, _itemSize.Height));
         }
 
         _cachedDisplayRect = Rectangle.Empty;
@@ -972,7 +972,7 @@ public partial class TabControl : Control
     private void DetachImageList(object? sender, EventArgs e) => ImageList = null;
 
     /// <summary>
-    ///  Allows the user to specify the index in Tabcontrol.TabPageCollection of the tabpage to be hidden.
+    ///  Allows the user to specify the index in TabControl.TabPageCollection of the TabPage to be hidden.
     /// </summary>
     public void DeselectTab(int index)
     {
@@ -991,7 +991,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Allows the user to specify the tabpage in Tabcontrol.TabPageCollection  to be hidden.
+    ///  Allows the user to specify the TabPage in TabControl.TabPageCollection to be hidden.
     /// </summary>
     public void DeselectTab(TabPage tabPage)
     {
@@ -1002,7 +1002,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Allows the user to specify the name of the tabpage in Tabcontrol.TabPageCollection to be hidden.
+    ///  Allows the user to specify the name of the TabPage in TabControl.TabPageCollection to be hidden.
     /// </summary>
     public void DeselectTab(string tabPageName)
     {
@@ -1018,7 +1018,7 @@ public partial class TabControl : Control
         {
             if (_imageList is not null)
             {
-                _imageList.Disposed -= new EventHandler(DetachImageList);
+                _imageList.Disposed -= DetachImageList;
             }
         }
 
@@ -1119,7 +1119,7 @@ public partial class TabControl : Control
             CreateHandle();
         }
 
-        PInvoke.SendMessage(this, PInvoke.TCM_GETITEMRECT, (WPARAM)index, ref rect);
+        PInvokeCore.SendMessage(this, PInvoke.TCM_GETITEMRECT, (WPARAM)index, ref rect);
         return rect;
     }
 
@@ -1139,7 +1139,7 @@ public partial class TabControl : Control
     {
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.TCM_SETIMAGELIST, 0, ImageList!.Handle);
+            PInvokeCore.SendMessage(this, PInvoke.TCM_SETIMAGELIST, 0, ImageList!.Handle);
         }
     }
 
@@ -1156,7 +1156,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  This function is used by the Insert Logic to insert a tabPage in the current TabPage in the TabPageCollection.
+    ///  This function is used by the Insert Logic to insert a TabPage in the current TabPage in the TabPageCollection.
     /// </summary>
     private void InsertItem(int index, TabPage tabPage)
     {
@@ -1181,16 +1181,11 @@ public partial class TabControl : Control
             return false;
         }
 
-        switch (keyData & Keys.KeyCode)
+        return (keyData & Keys.KeyCode) switch
         {
-            case Keys.PageUp:
-            case Keys.PageDown:
-            case Keys.Home:
-            case Keys.End:
-                return true;
-        }
-
-        return base.IsInputKey(keyData);
+            Keys.PageUp or Keys.PageDown or Keys.Home or Keys.End => true,
+            _ => base.IsInputKey(keyData),
+        };
     }
 
     private static void NotifyAboutFocusState(TabPage? selectedTab, bool focused)
@@ -1243,7 +1238,7 @@ public partial class TabControl : Control
         // horizontal and vertical dimensions of the padding rectangle.
         if (!_padding.IsEmpty)
         {
-            PInvoke.SendMessage(this, PInvoke.TCM_SETPADDING, 0, PARAM.FromPoint(_padding));
+            PInvokeCore.SendMessage(this, PInvoke.TCM_SETPADDING, 0, PARAM.FromPoint(_padding));
         }
 
         base.OnHandleCreated(e);
@@ -1251,12 +1246,12 @@ public partial class TabControl : Control
         ApplyItemSize();
         if (_imageList is not null)
         {
-            PInvoke.SendMessage(this, PInvoke.TCM_SETIMAGELIST, 0, _imageList.Handle);
+            PInvokeCore.SendMessage(this, PInvoke.TCM_SETIMAGELIST, 0, _imageList.Handle);
         }
 
         if (ShowToolTips)
         {
-            HWND tooltipHwnd = (HWND)PInvoke.SendMessage(this, PInvoke.TCM_GETTOOLTIPS);
+            HWND tooltipHwnd = (HWND)PInvokeCore.SendMessage(this, PInvoke.TCM_GETTOOLTIPS);
             if (!tooltipHwnd.IsNull)
             {
                 PInvoke.SetWindowPos(
@@ -1314,9 +1309,9 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Actually goes and fires the OnDrawItem event.  Inheriting controls
+    ///  Actually goes and fires the OnDrawItem event. Inheriting controls
     ///  should use this to know when the event is fired [this is preferable to
-    ///  adding an event handler on yourself for this event].  They should,
+    ///  adding an event handler on yourself for this event]. They should,
     ///  however, remember to call base.onDrawItem(e); to ensure the event is
     ///  still fired to external listeners
     /// </summary>
@@ -1326,40 +1321,40 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Actually goes and fires the OnLeave event.  Inheriting controls
+    ///  Actually goes and fires the OnLeave event. Inheriting controls
     ///  should use this to know when the event is fired [this is preferable to
-    ///  adding an event handler on yourself for this event].  They should,
+    ///  adding an event handler on yourself for this event]. They should,
     ///  however, remember to call base.OnLeave(e); to ensure the event is
     ///  still fired to external listeners
-    ///  This listener is overidden so that we can fire SAME ENTER and LEAVE
+    ///  This listener is overridden so that we can fire SAME ENTER and LEAVE
     ///  events on the TabPage.
     ///  TabPage should fire enter when the focus is on the TABPAGE and not when the control
     ///  within the TabPage gets Focused.
-    ///  Similary the Leave event should fire when the TabControl (and hence the TabPage) looses
+    ///  Similarly the Leave event should fire when the TabControl (and hence the TabPage) looses
     ///  Focus. To be Backward compatible we have added new bool which can be set to true
     ///  to the get the NEW SANE ENTER-LEAVE EVENTS ON THE TABPAGE.
     /// </summary>
-    protected override void OnEnter(EventArgs e)
+    protected internal override void OnEnter(EventArgs e)
     {
         base.OnEnter(e);
         SelectedTab?.FireEnter(e);
     }
 
     /// <summary>
-    ///  Actually goes and fires the OnLeave event.  Inheriting controls
+    ///  Actually goes and fires the OnLeave event. Inheriting controls
     ///  should use this to know when the event is fired [this is preferable to
-    ///  adding an event handler on yourself for this event].  They should,
+    ///  adding an event handler on yourself for this event]. They should,
     ///  however, remember to call base.OnLeave(e); to ensure the event is
     ///  still fired to external listeners
-    ///  This listener is overidden so that we can fire SAME ENTER and LEAVE
+    ///  This listener is overridden so that we can fire SAME ENTER and LEAVE
     ///  events on the TabPage.
     ///  TabPage should fire enter when the focus is on the TABPAGE and not when the control
     ///  within the TabPage gets Focused.
-    ///  Similary the Leave event  should fire when the TabControl (and hence the TabPage) looses
+    ///  Similarly the Leave event should fire when the TabControl (and hence the TabPage) looses
     ///  Focus. To be Backward compatible we have added new bool which can be set to true
     ///  to the get the NEW SANE ENTER-LEAVE EVENTS ON THE TABPAGE.
     /// </summary>
-    protected override void OnLeave(EventArgs e)
+    protected internal override void OnLeave(EventArgs e)
     {
         SelectedTab?.FireLeave(e);
 
@@ -1439,9 +1434,9 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Actually goes and fires the onSelectedIndexChanged event.  Inheriting controls
+    ///  Actually goes and fires the onSelectedIndexChanged event. Inheriting controls
     ///  should use this to know when the event is fired [this is preferable to
-    ///  adding an event handler on yourself for this event].  They should,
+    ///  adding an event handler on yourself for this event]. They should,
     ///  however, remember to call base.onSelectedIndexChanged(e); to ensure the event is
     ///  still fired to external listeners
     /// </summary>
@@ -1541,12 +1536,12 @@ public partial class TabControl : Control
 
         int index = ((tabPages.Length > 0) && (SelectedIndex == -1)) ? 0 : SelectedIndex;
 
-        // We don't actually want to remove the windows forms Tabpages - we only
+        // We don't actually want to remove the windows forms TabPages - we only
         // want to remove the corresponding TCITEM structs.
         // So, no RemoveAll()
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.TCM_DELETEALLITEMS);
+            PInvokeCore.SendMessage(this, PInvoke.TCM_DELETEALLITEMS);
         }
 
         _tabPages.Clear();
@@ -1579,7 +1574,7 @@ public partial class TabControl : Control
 
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, (PInvoke.TCM_DELETEALLITEMS));
+            PInvokeCore.SendMessage(this, (PInvoke.TCM_DELETEALLITEMS));
         }
 
         _tabPages.Clear();
@@ -1597,7 +1592,7 @@ public partial class TabControl : Control
 
         if (IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.TCM_DELETEITEM, (WPARAM)index);
+            PInvokeCore.SendMessage(this, PInvoke.TCM_DELETEITEM, (WPARAM)index);
         }
 
         _cachedDisplayRect = Rectangle.Empty;
@@ -1605,12 +1600,12 @@ public partial class TabControl : Control
 
     private void ResetItemSize()
     {
-        ItemSize = DefaultItemSize;
+        ItemSize = s_defaultItemSize;
     }
 
     private void ResetPadding()
     {
-        Padding = DefaultPaddingPoint;
+        Padding = s_defaultPaddingPoint;
     }
 
     private void ResizePages()
@@ -1633,7 +1628,7 @@ public partial class TabControl : Control
             return;
         }
 
-        PInvoke.SendMessage(this, PInvoke.TCM_SETTOOLTIPS, (WPARAM)toolTip.Handle);
+        PInvokeCore.SendMessage(this, PInvoke.TCM_SETTOOLTIPS, (WPARAM)toolTip.Handle);
         GC.KeepAlive(toolTip);
         _controlTipText = toolTip.GetToolTip(this);
     }
@@ -1652,14 +1647,14 @@ public partial class TabControl : Control
         // Make the Updated tab page the currently selected tab page
         if (DesignMode && IsHandleCreated)
         {
-            PInvoke.SendMessage(this, PInvoke.TCM_SETCURSEL, (WPARAM)index);
+            PInvokeCore.SendMessage(this, PInvoke.TCM_SETCURSEL, (WPARAM)index);
         }
 
         _tabPages[index] = value;
     }
 
     /// <summary>
-    ///  Allows the user to specify the index in Tabcontrol.TabPageCollection of the tabpage to be shown.
+    ///  Allows the user to specify the index in TabControl.TabPageCollection of the tabPage to be shown.
     /// </summary>
     public void SelectTab(int index)
     {
@@ -1671,7 +1666,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Allows the user to specify the tabpage in Tabcontrol.TabPageCollection  to be shown.
+    ///  Allows the user to specify the TabPage in TabControl.TabPageCollection to be shown.
     /// </summary>
     public void SelectTab(TabPage tabPage)
     {
@@ -1682,7 +1677,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  Allows the user to specify the name of the tabpage in Tabcontrol.TabPageCollection to be shown.
+    ///  Allows the user to specify the name of the TabPage in TabControl.TabPageCollection to be shown.
     /// </summary>
     public void SelectTab(string tabPageName)
     {
@@ -1693,12 +1688,12 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  This is called by TabControl in response to the KeyDown event to override the selection of tabpages
+    ///  This is called by TabControl in response to the KeyDown event to override the selection of tabPages
     ///  for different key combinations.
-    ///  Control + Tab selects the next tabpage.
-    ///  Control + Shift + Tab selects the previous tabpage.
-    ///  Control + PageDown selects the next tabpage.
-    ///  Control + PageUp selects the previous tabpage.
+    ///  Control + Tab selects the next TabPage.
+    ///  Control + Shift + Tab selects the previous TabPage.
+    ///  Control + PageDown selects the next TabPage.
+    ///  Control + PageUp selects the previous TabPage.
     /// </summary>
     private void SelectNextTab(KeyEventArgs ke, bool forward)
     {
@@ -1751,7 +1746,7 @@ public partial class TabControl : Control
                 }
                 finally
                 {
-                    // tabControlState[State.SelectFirstControl] can be true if the TabControl is not focussed
+                    // tabControlState[State.SelectFirstControl] can be true if the TabControl is not focused
                     // But at the end of this function reset the state !!
                     SetState(State.SelectFirstControl, false);
                     ke.Handled = true;
@@ -1768,12 +1763,12 @@ public partial class TabControl : Control
 
     private bool ShouldSerializeItemSize()
     {
-        return !_itemSize.Equals(DefaultItemSize);
+        return !_itemSize.Equals(s_defaultItemSize);
     }
 
     private new bool ShouldSerializePadding()
     {
-        return !_padding.Equals(DefaultPaddingPoint);
+        return !_padding.Equals(s_defaultPaddingPoint);
     }
 
     /// <summary>
@@ -1815,10 +1810,10 @@ public partial class TabControl : Control
             TabPage[] tabPages = GetTabPages();
             if (index != -1)
             {
-                // Changing the bounds of the tabPage during scaling
-                // will force a layout to occur.  After this layout
-                // the tabpage will then be scaled again resulting
-                // in incorrect sizes.  Suspend Layout in this case.
+                // Changing the bounds of the TabPage during scaling
+                // will force a layout to occur. After this layout
+                // the TabPage will then be scaled again resulting
+                // in incorrect sizes. Suspend Layout in this case.
                 if (_currentlyScaling)
                 {
                     tabPages[index].SuspendLayout();
@@ -1829,7 +1824,7 @@ public partial class TabControl : Control
                 // After changing the Bounds of TabPages, we need to
                 // make TabPages Redraw.
                 // Use Invalidate directly here has no performance
-                // issue, since ReSize is calling low frequence.
+                // issue, since ReSize is calling low frequency.
                 tabPages[index].Invalidate();
 
                 if (_currentlyScaling)
@@ -1937,11 +1932,13 @@ public partial class TabControl : Control
         DRAWITEMSTRUCT* dis = (DRAWITEMSTRUCT*)(nint)m.LParamInternal;
 
         using DrawItemEventArgs e = new(
-            dis->hDC.CreateGraphics(),
+            dis->hDC,
             Font,
             dis->rcItem,
-            (int)dis->itemID,
-            (DrawItemState)(int)dis->itemState);
+            dis->itemID,
+            dis->itemState,
+            ForeColor,
+            BackColor);
 
         OnDrawItem(e);
 
@@ -1950,7 +1947,7 @@ public partial class TabControl : Control
 
     private bool WmSelChange()
     {
-        TabControlCancelEventArgs tcc = new TabControlCancelEventArgs(SelectedTab, SelectedIndex, false, TabControlAction.Selecting);
+        TabControlCancelEventArgs tcc = new(SelectedTab, SelectedIndex, false, TabControlAction.Selecting);
         OnSelecting(tcc);
         if (!tcc.Cancel)
         {
@@ -1960,13 +1957,20 @@ public partial class TabControl : Control
             if (IsAccessibilityObjectCreated && SelectedTab?.ParentInternal is TabControl)
             {
                 SelectedTab.TabAccessibilityObject.RaiseAutomationEvent(UIA_EVENT_ID.UIA_SelectionItem_ElementSelectedEventId);
-                BeginInvoke((MethodInvoker)(() => SelectedTab.TabAccessibilityObject.RaiseAutomationEvent(UIA_EVENT_ID.UIA_AutomationFocusChangedEventId)));
+                BeginInvoke((MethodInvoker)(() =>
+                {
+                    if (IsAccessibilityObjectCreated && SelectedTab?.ParentInternal is TabControl &&
+                         !SelectedTab.IsDisposed && SelectedTab.TabAccessibilityObject is not null)
+                    {
+                        SelectedTab.TabAccessibilityObject.RaiseAutomationEvent(UIA_EVENT_ID.UIA_AutomationFocusChangedEventId);
+                    }
+                }));
             }
         }
         else
         {
             // user Cancelled the Selection of the new Tab.
-            PInvoke.SendMessage(this, PInvoke.TCM_SETCURSEL, (WPARAM)_lastSelection);
+            PInvokeCore.SendMessage(this, PInvoke.TCM_SETCURSEL, (WPARAM)_lastSelection);
             UpdateTabSelection(true);
         }
 
@@ -1993,7 +1997,7 @@ public partial class TabControl : Control
         // if 'cancelled' return from here else..
         // fire Deselected.
         _lastSelection = SelectedIndex;
-        TabControlCancelEventArgs tcc = new TabControlCancelEventArgs(SelectedTab, SelectedIndex, false, TabControlAction.Deselecting);
+        TabControlCancelEventArgs tcc = new(SelectedTab, SelectedIndex, false, TabControlAction.Deselecting);
         OnDeselecting(tcc);
         if (!tcc.Cancel)
         {
@@ -2013,7 +2017,7 @@ public partial class TabControl : Control
 
         // Remove other TabBaseReLayout messages from the message queue
         MSG msg = default;
-        while (PInvoke.PeekMessage(
+        while (PInvokeCore.PeekMessage(
             &msg,
             this,
             (uint)_tabBaseReLayoutMessage,
@@ -2024,7 +2028,7 @@ public partial class TabControl : Control
     }
 
     /// <summary>
-    ///  The tab's window procedure.  Inheriting classes can override this
+    ///  The tab's window procedure. Inheriting classes can override this
     ///  to add extra functionality, but should not forget to call
     ///  base.wndProc(m); to ensure the tab continues to function properly.
     /// </summary>
@@ -2040,7 +2044,7 @@ public partial class TabControl : Control
                 // We use TCM_SETITEMSIZE instead
                 break;
 
-            case PInvoke.WM_NOTIFY:
+            case PInvokeCore.WM_NOTIFY:
             case MessageId.WM_REFLECT_NOTIFY:
                 NMHDR* nmhdr = (NMHDR*)(nint)m.LParamInternal;
                 switch (nmhdr->code)
@@ -2086,7 +2090,7 @@ public partial class TabControl : Control
                         break;
                     case PInvoke.TTN_GETDISPINFOW:
                         // Setting the max width has the added benefit of enabling Multiline tool tips
-                        PInvoke.SendMessage(nmhdr->hwndFrom, PInvoke.TTM_SETMAXTIPWIDTH, 0, SystemInformation.MaxWindowTrackSize.Width);
+                        PInvokeCore.SendMessage(nmhdr->hwndFrom, PInvoke.TTM_SETMAXTIPWIDTH, 0, SystemInformation.MaxWindowTrackSize.Width);
                         WmNeedText(ref m);
                         m.ResultInternal = (LRESULT)1;
                         return;
@@ -2126,7 +2130,7 @@ public partial class TabControl : Control
         fixed (char* pText = text)
         {
             tcitem.pszText = pText;
-            return (int)PInvoke.SendMessage(this, msg, (WPARAM)wParam, ref tcitem);
+            return (int)PInvokeCore.SendMessage(this, msg, (WPARAM)wParam, ref tcitem);
         }
     }
 

@@ -1,4 +1,7 @@
-﻿using System.ComponentModel.Design.Serialization;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.ComponentModel.Design.Serialization;
 using System.ComponentModel;
 
 // - NameCreationServiceImp - Implementing INameCreationService
@@ -7,7 +10,7 @@ using System.ComponentModel;
 // - increment an integer counter until we find a name that isn't already in use.
 namespace DesignSurfaceExt;
 
-internal class NameCreationServiceImp : INameCreationService
+internal sealed class NameCreationServiceImp : INameCreationService
 {
     public NameCreationServiceImp() { }
 
@@ -26,14 +29,13 @@ internal class NameCreationServiceImp : INameCreationService
         {
             if (cc[i] is Component comp && comp.GetType() == type)
             {
-                count++;
-
                 string name = comp.Site.Name;
-                if (name.StartsWith(type.Name))
+                if (name.StartsWith(type.Name, StringComparison.Ordinal))
                 {
+                    count++;
                     try
                     {
-                        int value = int.Parse(name.Substring(type.Name.Length));
+                        int value = int.Parse(name[type.Name.Length..]);
                         if (value < min)
                             min = value;
                         if (value > max)
@@ -73,7 +75,7 @@ internal class NameCreationServiceImp : INameCreationService
             return false;
 
         // - then don't allow a leading underscore
-        if (name.StartsWith("_"))
+        if (name.StartsWith('_'))
             return false;
 
         // - ok, it's a valid name

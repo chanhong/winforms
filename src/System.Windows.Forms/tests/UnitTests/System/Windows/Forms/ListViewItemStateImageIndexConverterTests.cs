@@ -17,10 +17,10 @@ public class ListViewItemStateImageIndexConverterTests
     [Fact]
     public void ListViewItemStateImageIndexConverter_GetStandardValues_Null_Context_ReturnsExpected()
     {
-        var converter = new ListViewItemStateImageIndexConverter();
+        ListViewItemStateImageIndexConverter converter = new();
 
         StandardValuesCollection result = converter.GetStandardValues(context: null);
 
-        Assert.Equal(0, result.Count);
+        Assert.Empty(result);
     }
 }

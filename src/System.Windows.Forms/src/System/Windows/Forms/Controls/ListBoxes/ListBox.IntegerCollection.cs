@@ -150,9 +150,9 @@ public partial class ListBox
 
         int IList.Add(object? item)
         {
-            if (!(item is int))
+            if (item is not int)
             {
-                throw new ArgumentException(nameof(item));
+                throw new ArgumentException(null, nameof(item));
             }
 
             return Add((int)item);
@@ -181,7 +181,7 @@ public partial class ListBox
                 EnsureSpace(items.Count);
                 foreach (object item in items)
                 {
-                    if (!(item is int))
+                    if (item is not int)
                     {
                         throw new ArgumentException(nameof(item));
                     }
@@ -230,9 +230,9 @@ public partial class ListBox
 
         void IList.Remove(object? value)
         {
-            if (!(value is int))
+            if (value is not int)
             {
-                throw new ArgumentException(nameof(value));
+                throw new ArgumentException(null, nameof(value));
             }
 
             Remove((int)value);
@@ -244,7 +244,7 @@ public partial class ListBox
         }
 
         /// <summary>
-        ///  Removes the given item from the array.  If
+        ///  Removes the given item from the array. If
         ///  the item is not in the array, this does nothing.
         /// </summary>
         public void Remove(int item)
@@ -303,9 +303,9 @@ public partial class ListBox
             }
             set
             {
-                if (!(value is int))
+                if (value is not int)
                 {
-                    throw new ArgumentException(nameof(value));
+                    throw new ArgumentException(null, nameof(value));
                 }
                 else
                 {

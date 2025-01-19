@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Drawing;
-using static Interop;
 
 namespace System.Windows.Forms.Design.Behavior;
 
@@ -16,7 +15,7 @@ public sealed partial class BehaviorService
     {
         private readonly BehaviorService _behaviorService;
         private static MouseHook? s_mouseHook;
-        private static readonly List<AdornerWindow> s_adornerWindowList = new();
+        private static readonly List<AdornerWindow> s_adornerWindowList = [];
 
         /// <summary>
         ///  Constructor that parents itself to the Designer Frame and hooks all
@@ -156,7 +155,7 @@ public sealed partial class BehaviorService
         }
 
         /// <summary>
-        ///  The AdornerWindow hooks all Drag/Drop notification so  they can be forwarded to the appropriate
+        ///  The AdornerWindow hooks all Drag/Drop notification so they can be forwarded to the appropriate
         ///  Behavior via the BehaviorService.
         /// </summary>
         protected override void OnDragDrop(DragEventArgs e)
@@ -195,7 +194,7 @@ public sealed partial class BehaviorService
         }
 
         /// <summary>
-        ///  The AdornerWindow hooks all Drag/Drop notification so  they can be forwarded to the appropriate
+        ///  The AdornerWindow hooks all Drag/Drop notification so they can be forwarded to the appropriate
         ///  Behavior via the BehaviorService.
         /// </summary>
         protected override void OnDragEnter(DragEventArgs e)
@@ -203,7 +202,7 @@ public sealed partial class BehaviorService
             ProcessingDrag = true;
 
             // Determine if this is a local drag, if it is, do normal processing otherwise, force a
-            // PropagateHitTest.  We need to force this because the OLE D&D service suspends mouse messages
+            // PropagateHitTest. We need to force this because the OLE D&D service suspends mouse messages
             // when the drag is not local so the mouse hook never sees them.
             if (!IsLocalDrag(e))
             {
@@ -272,7 +271,7 @@ public sealed partial class BehaviorService
 
         /// <summary>
         ///  The AdornerWindow intercepts all designer-related messages and forwards them to the BehaviorService
-        ///  for appropriate actions.  Note that Paint and HitTest messages are correctly parsed and translated
+        ///  for appropriate actions. Note that Paint and HitTest messages are correctly parsed and translated
         ///  to AdornerWindow coords.
         /// </summary>
         protected override unsafe void WndProc(ref Message m)
@@ -289,10 +288,10 @@ public sealed partial class BehaviorService
 
             switch (m.MsgInternal)
             {
-                case PInvoke.WM_PAINT:
+                case PInvokeCore.WM_PAINT:
                     {
                         // Stash off the region we have to update.
-                        using PInvoke.RegionScope hrgn = new(0, 0, 0, 0);
+                        using RegionScope hrgn = new(0, 0, 0, 0);
                         PInvoke.GetUpdateRgn(m.HWND, hrgn, true);
 
                         // The region we have to update in terms of the smallest rectangle that completely encloses
@@ -301,7 +300,7 @@ public sealed partial class BehaviorService
                         PInvoke.GetUpdateRect(m.HWND, &clip, true);
                         Rectangle paintRect = clip;
 
-                        using Region region = hrgn.CreateGdiPlusRegion();
+                        using Region region = hrgn.ToRegion();
 
                         // Call the base class to do its painting.
                         DefWndProc(ref m);
@@ -315,7 +314,7 @@ public sealed partial class BehaviorService
                         break;
                     }
 
-                case PInvoke.WM_NCHITTEST:
+                case PInvokeCore.WM_NCHITTEST:
                     Point pt = PARAM.ToPoint(m.LParamInternal);
                     Point pt1 = PointToClient(default);
                     pt.Offset(pt1.X, pt1.Y);
@@ -326,7 +325,7 @@ public sealed partial class BehaviorService
 
                     break;
 
-                case PInvoke.WM_CAPTURECHANGED:
+                case PInvokeCore.WM_CAPTURECHANGED:
                     base.WndProc(ref m);
                     _behaviorService.OnLoseCapture();
                     break;
@@ -343,11 +342,11 @@ public sealed partial class BehaviorService
         /// </summary>
         private bool WndProcProxy(ref Message m, int x, int y)
         {
-            Point mouseLoc = new Point(x, y);
+            Point mouseLoc = new(x, y);
             _behaviorService.PropagateHitTest(mouseLoc);
             switch (m.MsgInternal)
             {
-                case PInvoke.WM_LBUTTONDOWN:
+                case PInvokeCore.WM_LBUTTONDOWN:
                     if (_behaviorService.OnMouseDown(MouseButtons.Left, mouseLoc))
                     {
                         return false;
@@ -355,7 +354,7 @@ public sealed partial class BehaviorService
 
                     break;
 
-                case PInvoke.WM_RBUTTONDOWN:
+                case PInvokeCore.WM_RBUTTONDOWN:
                     if (_behaviorService.OnMouseDown(MouseButtons.Right, mouseLoc))
                     {
                         return false;
@@ -363,7 +362,7 @@ public sealed partial class BehaviorService
 
                     break;
 
-                case PInvoke.WM_MOUSEMOVE:
+                case PInvokeCore.WM_MOUSEMOVE:
                     if (_behaviorService.OnMouseMove(MouseButtons, mouseLoc))
                     {
                         return false;
@@ -371,7 +370,7 @@ public sealed partial class BehaviorService
 
                     break;
 
-                case PInvoke.WM_LBUTTONUP:
+                case PInvokeCore.WM_LBUTTONUP:
                     if (_behaviorService.OnMouseUp(MouseButtons.Left))
                     {
                         return false;
@@ -379,7 +378,7 @@ public sealed partial class BehaviorService
 
                     break;
 
-                case PInvoke.WM_RBUTTONUP:
+                case PInvokeCore.WM_RBUTTONUP:
                     if (_behaviorService.OnMouseUp(MouseButtons.Right))
                     {
                         return false;
@@ -387,7 +386,7 @@ public sealed partial class BehaviorService
 
                     break;
 
-                case PInvoke.WM_MOUSEHOVER:
+                case PInvokeCore.WM_MOUSEHOVER:
                     if (_behaviorService.OnMouseHover(mouseLoc))
                     {
                         return false;
@@ -395,7 +394,7 @@ public sealed partial class BehaviorService
 
                     break;
 
-                case PInvoke.WM_LBUTTONDBLCLK:
+                case PInvokeCore.WM_LBUTTONDBLCLK:
                     if (_behaviorService.OnMouseDoubleClick(MouseButtons.Left, mouseLoc))
                     {
                         return false;
@@ -403,7 +402,7 @@ public sealed partial class BehaviorService
 
                     break;
 
-                case PInvoke.WM_RBUTTONDBLCLK:
+                case PInvokeCore.WM_RBUTTONDBLCLK:
                     if (_behaviorService.OnMouseDoubleClick(MouseButtons.Right, mouseLoc))
                     {
                         return false;

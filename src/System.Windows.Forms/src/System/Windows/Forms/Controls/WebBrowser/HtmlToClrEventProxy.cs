@@ -11,7 +11,7 @@ namespace System.Windows.Forms;
 /// <summary>
 ///  This class is here for IHTML*3.AttachHandler style eventing.
 ///  We need a way of routing requests for DISPID(0) to a particular CLR event without creating
-///  a public class.  In order to accomplish this we implement IReflect and handle InvokeMethod
+///  a public class. In order to accomplish this we implement IReflect and handle InvokeMethod
 ///  to call back on a CLR event handler.
 /// </summary>
 internal class HtmlToClrEventProxy : UnknownDispatch, IManagedWrapper<IDispatch, IDispatchEx>
@@ -26,7 +26,7 @@ internal class HtmlToClrEventProxy : UnknownDispatch, IManagedWrapper<IDispatch,
     private readonly EventHandler _eventHandler;
     private readonly string _eventName;
 
-    public HtmlToClrEventProxy(object sender, string eventName, EventHandler eventHandler)
+    public HtmlToClrEventProxy(string eventName, EventHandler eventHandler)
     {
         _eventHandler = eventHandler;
         _eventName = eventName;
@@ -64,7 +64,7 @@ internal class HtmlToClrEventProxy : UnknownDispatch, IManagedWrapper<IDispatch,
                 *pid = OnHtmlEventDispId;
                 return HRESULT.S_OK;
             default:
-                *pid = PInvoke.DISPID_UNKNOWN;
+                *pid = PInvokeCore.DISPID_UNKNOWN;
                 return HRESULT.DISP_E_UNKNOWNNAME;
         }
     }
@@ -78,7 +78,7 @@ internal class HtmlToClrEventProxy : UnknownDispatch, IManagedWrapper<IDispatch,
 
         switch (id)
         {
-            case PInvoke.DISPID_UNKNOWN:
+            case PInvokeCore.DISPID_UNKNOWN:
                 *pid = OnHtmlEventDispId;
                 return HRESULT.S_OK;
             case OnHtmlEventDispId:
@@ -88,7 +88,7 @@ internal class HtmlToClrEventProxy : UnknownDispatch, IManagedWrapper<IDispatch,
                 *pid = GetEventNameDispId;
                 return HRESULT.S_OK;
             default:
-                *pid = PInvoke.DISPID_UNKNOWN;
+                *pid = PInvokeCore.DISPID_UNKNOWN;
                 return HRESULT.S_FALSE;
         }
     }

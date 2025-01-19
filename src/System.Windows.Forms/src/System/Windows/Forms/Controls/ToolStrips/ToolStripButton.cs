@@ -12,8 +12,8 @@ public partial class ToolStripButton : ToolStripItem
 {
     private CheckState _checkState = CheckState.Unchecked;
     private CheckState _prevCheckState = CheckState.Unchecked;
-    private const int StandardButtonWidth = 23;
-    private int _standardButtonWidth = StandardButtonWidth;
+    private const int LogicalStandardButtonWidth = 23;
+    private int _standardButtonWidth = LogicalStandardButtonWidth;
 
     private static readonly object s_checkedChangedEvent = new();
     private static readonly object s_checkStateChangedEvent = new();
@@ -95,7 +95,7 @@ public partial class ToolStripButton : ToolStripItem
         get => _checkState;
         set
         {
-            if (value < CheckState.Unchecked || value > CheckState.Indeterminate)
+            if (value is < CheckState.Unchecked or > CheckState.Indeterminate)
             {
                 throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(CheckState));
             }
@@ -134,8 +134,10 @@ public partial class ToolStripButton : ToolStripItem
     protected override bool DefaultAutoToolTip => true;
 
     /// <remarks>
-    ///  This gets called via ToolStripItem.RescaleConstantsForDpi.
-    ///  It's practically calling Initialize on DpiChanging with the new Dpi value.
+    ///  <para>
+    ///   This gets called via ToolStripItem.RescaleConstantsForDpi.
+    ///   It's practically calling Initialize on DpiChanging with the new Dpi value.
+    ///  </para>
     /// </remarks>
     internal override int DeviceDpi
     {
@@ -145,7 +147,7 @@ public partial class ToolStripButton : ToolStripItem
             if (base.DeviceDpi != value)
             {
                 base.DeviceDpi = value;
-                _standardButtonWidth = DpiHelper.LogicalToDeviceUnits(StandardButtonWidth, DeviceDpi);
+                _standardButtonWidth = ScaleHelper.ScaleToDpi(LogicalStandardButtonWidth, DeviceDpi);
             }
         }
     }
@@ -167,10 +169,7 @@ public partial class ToolStripButton : ToolStripItem
     private void Initialize()
     {
         SupportsSpaceKey = true;
-        if (DpiHelper.IsScalingRequirementMet)
-        {
-            _standardButtonWidth = DpiHelper.LogicalToDeviceUnitsX(StandardButtonWidth);
-        }
+        _standardButtonWidth = ScaleHelper.ScaleToInitialSystemDpi(LogicalStandardButtonWidth);
     }
 
     /// <summary>

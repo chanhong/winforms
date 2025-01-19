@@ -51,7 +51,7 @@ public partial class DataGridViewRow
                     return Rectangle.Empty;
                 }
 
-                Rectangle rowRect = _owningDataGridViewRow.DataGridView.RectangleToScreen(_owningDataGridViewRow.DataGridView.GetRowDisplayRectangle(_owningDataGridViewRow.Index, false /*cutOverflow*/));
+                Rectangle rowRect = _owningDataGridViewRow.DataGridView.RectangleToScreen(_owningDataGridViewRow.DataGridView.GetRowDisplayRectangle(_owningDataGridViewRow.Index, cutOverflow: false));
 
                 int horizontalScrollBarHeight = 0;
                 if (_owningDataGridViewRow.DataGridView.HorizontalScrollBarVisible)
@@ -103,6 +103,8 @@ public partial class DataGridViewRow
             }
         }
 
+        internal override bool CanGetNameInternal => false;
+
         public DataGridViewRow? Owner
         {
             get => _owningDataGridViewRow;
@@ -136,13 +138,12 @@ public partial class DataGridViewRow
 
         private static int RowStartIndex => LocalAppContextSwitches.DataGridViewUIAStartRowCountAtZero ? 0 : 1;
 
-        internal override int[] RuntimeId
-            => _runtimeId ??= new int[]
-            {
-                RuntimeIDFirstItem, // first item is static - 0x2a
-                Parent?.GetHashCode() ?? 0,
-                GetHashCode()
-            };
+        internal override int[] RuntimeId => _runtimeId ??=
+        [
+            RuntimeIDFirstItem,
+            Parent?.GetHashCode() ?? 0,
+            GetHashCode()
+        ];
 
         private AccessibleObject SelectedCellsAccessibilityObject
         {
@@ -194,7 +195,7 @@ public partial class DataGridViewRow
 
                 if (_owningDataGridViewRow.DataGridView is not null && _owningDataGridViewRow.DataGridView.IsHandleCreated)
                 {
-                    Rectangle rowBounds = _owningDataGridViewRow.DataGridView.GetRowDisplayRectangle(_owningDataGridViewRow.Index, true /*cutOverflow*/);
+                    Rectangle rowBounds = _owningDataGridViewRow.DataGridView.GetRowDisplayRectangle(_owningDataGridViewRow.Index, cutOverflow: true);
                     if (!rowBounds.IntersectsWith(_owningDataGridViewRow.DataGridView.ClientRectangle))
                     {
                         accState |= AccessibleStates.Offscreen;
@@ -219,7 +220,7 @@ public partial class DataGridViewRow
                     return SR.DataGridView_AccRowCreateNew;
                 }
 
-                StringBuilder sb = new StringBuilder(1024);
+                StringBuilder sb = new(1024);
 
                 int childCount = GetChildCount();
 
@@ -243,6 +244,8 @@ public partial class DataGridViewRow
                 return sb.ToString();
             }
         }
+
+        internal override bool CanGetValueInternal => false;
 
         public override AccessibleObject? GetChild(int index)
         {
@@ -431,7 +434,7 @@ public partial class DataGridViewRow
 
             if ((flags & AccessibleSelection.AddSelection) == AccessibleSelection.AddSelection && (flags & AccessibleSelection.TakeSelection) == 0)
             {
-                if (dataGridView.SelectionMode == DataGridViewSelectionMode.FullRowSelect || dataGridView.SelectionMode == DataGridViewSelectionMode.RowHeaderSelect)
+                if (dataGridView.SelectionMode is DataGridViewSelectionMode.FullRowSelect or DataGridViewSelectionMode.RowHeaderSelect)
                 {
                     _owningDataGridViewRow.Selected = true;
                 }

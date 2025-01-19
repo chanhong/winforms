@@ -9,7 +9,7 @@ public partial class Control
 {
     /// <summary>
     ///  MetafileDCWrapper is used to wrap a metafile DC so that subsequent
-    ///  paint operations are rendered to a temporary bitmap.  When the
+    ///  paint operations are rendered to a temporary bitmap. When the
     ///  wrapper is disposed, it copies the bitmap back to the metafile DC.
     ///
     ///  Example:
@@ -27,7 +27,7 @@ public partial class Control
 
         internal unsafe MetafileDCWrapper(HDC hOriginalDC, Size size)
         {
-            Debug.Assert((OBJ_TYPE)PInvoke.GetObjectType(hOriginalDC) == OBJ_TYPE.OBJ_ENHMETADC,
+            Debug.Assert((OBJ_TYPE)PInvokeCore.GetObjectType(hOriginalDC) == OBJ_TYPE.OBJ_ENHMETADC,
                 "Why wrap a non-Enhanced MetaFile DC?");
 
             if (size.Width < 0 || size.Height < 0)
@@ -37,12 +37,12 @@ public partial class Control
 
             _hMetafileDC = hOriginalDC;
             _destRect = new(size);
-            HDC = PInvoke.CreateCompatibleDC((HDC)default);
+            HDC = PInvokeCore.CreateCompatibleDC(default);
 
-            int planes = PInvoke.GetDeviceCaps(HDC, GET_DEVICE_CAPS_INDEX.PLANES);
-            int bitsPixel = PInvoke.GetDeviceCaps(HDC, GET_DEVICE_CAPS_INDEX.BITSPIXEL);
-            _hBitmap = PInvoke.CreateBitmap(size.Width, size.Height, (uint)planes, (uint)bitsPixel, lpBits: null);
-            _hOriginalBmp = (HBITMAP)PInvoke.SelectObject(HDC, _hBitmap);
+            int planes = PInvokeCore.GetDeviceCaps(HDC, GET_DEVICE_CAPS_INDEX.PLANES);
+            int bitsPixel = PInvokeCore.GetDeviceCaps(HDC, GET_DEVICE_CAPS_INDEX.BITSPIXEL);
+            _hBitmap = PInvokeCore.CreateBitmap(size.Width, size.Height, (uint)planes, (uint)bitsPixel, lpBits: null);
+            _hOriginalBmp = (HBITMAP)PInvokeCore.SelectObject(HDC, _hBitmap);
         }
 
         ~MetafileDCWrapper()
@@ -63,10 +63,10 @@ public partial class Control
             {
                 success = DICopy(_hMetafileDC, HDC, _destRect, bStretch: true);
                 Debug.Assert(success, "DICopy() failed.");
-                PInvoke.SelectObject(HDC, _hOriginalBmp);
-                success = PInvoke.DeleteObject(_hBitmap);
+                PInvokeCore.SelectObject(HDC, _hOriginalBmp);
+                success = PInvokeCore.DeleteObject(_hBitmap);
                 Debug.Assert(success, "DeleteObject() failed.");
-                success = PInvoke.DeleteDC(HDC);
+                success = PInvokeCore.DeleteDC(HDC);
                 Debug.Assert(success, "DeleteObject() failed.");
             }
             finally
@@ -88,7 +88,7 @@ public partial class Control
             long i;
 
             // Get the bitmap from the DC by selecting in a 1x1 pixel temp bitmap
-            HBITMAP hNullBitmap = PInvoke.CreateBitmap(1, 1, 1, 1, null);
+            HBITMAP hNullBitmap = PInvokeCore.CreateBitmap(1, 1, 1, 1, null);
             if (hNullBitmap.IsNull)
             {
                 return false;
@@ -96,16 +96,16 @@ public partial class Control
 
             try
             {
-                HBITMAP hBitmap = (HBITMAP)PInvoke.SelectObject(hdcSrc, hNullBitmap);
+                HBITMAP hBitmap = (HBITMAP)PInvokeCore.SelectObject(hdcSrc, hNullBitmap);
                 if (hBitmap.IsNull)
                 {
                     return false;
                 }
 
                 // Restore original bitmap
-                PInvoke.SelectObject(hdcSrc, hBitmap);
+                PInvokeCore.SelectObject(hdcSrc, hBitmap);
 
-                if (!PInvoke.GetObject(hBitmap, out BITMAP bmp))
+                if (!PInvokeCore.GetObject(hBitmap, out BITMAP bmp))
                 {
                     return false;
                 }
@@ -211,7 +211,7 @@ public partial class Control
             }
             finally
             {
-                PInvoke.DeleteObject(hNullBitmap);
+                PInvokeCore.DeleteObject(hNullBitmap);
             }
 
             return true;

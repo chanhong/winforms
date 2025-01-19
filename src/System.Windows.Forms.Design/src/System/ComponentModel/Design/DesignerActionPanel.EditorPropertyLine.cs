@@ -26,8 +26,8 @@ internal sealed partial class DesignerActionPanel
             : base(serviceProvider, actionPanel)
         {
             _button = new EditorButton();
-            _button.Click += new EventHandler(OnButtonClick);
-            _button.GotFocus += new EventHandler(OnButtonGotFocus);
+            _button.Click += OnButtonClick;
+            _button.GotFocus += OnButtonGotFocus;
 
             AddedControls.Add(_button);
         }
@@ -54,8 +54,9 @@ internal sealed partial class DesignerActionPanel
                     IntegralHeight = false,
                     Font = ActionPanel.Font
                 };
-                listBox.SelectedIndexChanged += new EventHandler(OnListBoxSelectedIndexChanged);
-                listBox.KeyDown += new KeyEventHandler(OnListBoxKeyDown);
+
+                listBox.SelectedIndexChanged += OnListBoxSelectedIndexChanged;
+                listBox.KeyDown += OnListBoxKeyDown;
 
                 TypeConverter.StandardValuesCollection? standardValues = GetStandardValues();
                 if (standardValues is not null)
@@ -75,11 +76,11 @@ internal sealed partial class DesignerActionPanel
                 // All measurement code borrowed from WinForms PropertyGridView.cs
                 int maxWidth = 0;
 
-                // The listbox draws with GDI, not GDI+.  So, we use a normal DC here.
-                using (var hdc = new GetDcScope((HWND)listBox.Handle))
+                // The listbox draws with GDI, not GDI+. So, we use a normal DC here.
+                using (GetDcScope hdc = new((HWND)listBox.Handle))
                 {
-                    using PInvoke.ObjectScope hFont = new(listBox.Font.ToHFONT());
-                    using PInvoke.SelectObjectScope fontSelection = new(hdc, hFont);
+                    using ObjectScope hFont = new(listBox.Font.ToHFONT());
+                    using SelectObjectScope fontSelection = new(hdc, hFont);
 
                     TEXTMETRICW tm = default;
 
@@ -112,8 +113,8 @@ internal sealed partial class DesignerActionPanel
                 }
                 finally
                 {
-                    listBox.SelectedIndexChanged -= new EventHandler(OnListBoxSelectedIndexChanged);
-                    listBox.KeyDown -= new KeyEventHandler(OnListBoxKeyDown);
+                    listBox.SelectedIndexChanged -= OnListBoxSelectedIndexChanged;
+                    listBox.KeyDown -= OnListBoxKeyDown;
                 }
 
                 if (!_ignoreDropDownValue)
@@ -290,12 +291,10 @@ internal sealed partial class DesignerActionPanel
                     int width = EditRegionSize.Height - EditorLineSwatchPadding * 2;
                     int height = width - 1;
                     _swatch = new Bitmap(width, height);
-                    Rectangle rect = new Rectangle(1, 1, width - 2, height - 2);
-                    using (Graphics swatchGraphics = Graphics.FromImage(_swatch))
-                    {
-                        _editor.PaintValue(Value, swatchGraphics, rect);
-                        swatchGraphics.DrawRectangle(SystemPens.ControlDark, new Rectangle(0, 0, width - 1, height - 1));
-                    }
+                    Rectangle rect = new(1, 1, width - 2, height - 2);
+                    using Graphics swatchGraphics = Graphics.FromImage(_swatch);
+                    _editor.PaintValue(Value, swatchGraphics, rect);
+                    swatchGraphics.DrawRectangle(SystemPens.ControlDark, new Rectangle(0, 0, width - 1, height - 1));
                 }
 
                 g.DrawImage(_swatch, new Point(EditRegionRelativeLocation.X + 2, EditorLineSwatchPadding + 5));
@@ -324,7 +323,7 @@ internal sealed partial class DesignerActionPanel
                     return true;
                 }
 
-                // Not passing Alt key event to base class to prevent  closing 'Combobox Tasks window'
+                // Not passing Alt key event to base class to prevent closing 'Combobox Tasks window'
                 else if ((keyData & Keys.Alt) == Keys.Alt)
                 {
                     return true;
@@ -342,7 +341,7 @@ internal sealed partial class DesignerActionPanel
 
             if (ActionPanel.RightToLeft != RightToLeft.Yes)
             {
-                Rectangle editorBounds = new Rectangle(Point.Empty, EditRegionSize);
+                Rectangle editorBounds = new(Point.Empty, EditRegionSize);
                 Size dropDownSize = _dropDownHolder.Size;
                 Point editorLocation = ActionPanel.PointToScreen(EditRegionLocation);
                 Rectangle rectScreen = Screen.FromRectangle(ActionPanel.RectangleToScreen(editorBounds)).WorkingArea;
@@ -366,7 +365,7 @@ internal sealed partial class DesignerActionPanel
             {
                 _dropDownHolder.RightToLeft = ActionPanel.RightToLeft;
 
-                Rectangle editorBounds = new Rectangle(Point.Empty, EditRegionSize);
+                Rectangle editorBounds = new(Point.Empty, EditRegionSize);
                 Size dropDownSize = _dropDownHolder.Size;
                 Point editorLocation = ActionPanel.PointToScreen(EditRegionLocation);
                 Rectangle rectScreen = Screen.FromRectangle(ActionPanel.RectangleToScreen(editorBounds)).WorkingArea;
@@ -452,9 +451,9 @@ internal sealed partial class DesignerActionPanel
                 _parent.ActionPanel.SetDropDownActive(true);
             }
 
-            protected override void OnClosed(EventArgs e)
+            protected override void OnFormClosed(FormClosedEventArgs e)
             {
-                base.OnClosed(e);
+                base.OnFormClosed(e);
                 _parent.ActionPanel.SetDropDownActive(false);
             }
 

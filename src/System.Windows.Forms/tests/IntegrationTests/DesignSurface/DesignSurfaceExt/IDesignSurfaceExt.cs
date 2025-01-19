@@ -1,4 +1,7 @@
-﻿using System.ComponentModel.Design;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.ComponentModel.Design;
 using System.Windows.Forms;
 using System.ComponentModel;
 using System.Drawing;
@@ -15,8 +18,8 @@ public interface IDesignSurfaceExt
 
     // - select the controls alignment mode
     void UseSnapLines();
-    void UseGrid(System.Drawing.Size gridSize);
-    void UseGridWithoutSnapping(System.Drawing.Size gridSize);
+    void UseGrid(Size gridSize);
+    void UseGridWithoutSnapping(Size gridSize);
     void UseNoGuides();
 
     // - method useful to create control without the ToolBox facility

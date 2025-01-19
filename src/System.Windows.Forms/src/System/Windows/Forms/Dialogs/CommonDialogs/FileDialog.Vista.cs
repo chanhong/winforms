@@ -103,7 +103,7 @@ public partial class FileDialog
             | OFN_ENABLESIZING  // These shouldn't be set in options (only set in the flags for the legacy dialog)
             | OFN_EXPLORER;     // These shouldn't be set in options (only set in the flags for the legacy dialog)
 
-        System.Diagnostics.Debug.Assert((UnexpectedOptions & _fileNameFlags) == 0, "Unexpected FileDialog options");
+        Debug.Assert((UnexpectedOptions & _fileNameFlags) == 0, "Unexpected FileDialog options");
 #endif
 
         FILEOPENDIALOGOPTIONS result = (FILEOPENDIALOGOPTIONS)_fileNameFlags & BlittableOptions;
@@ -137,7 +137,7 @@ public partial class FileDialog
             _fileNames = ProcessVistaFiles(dialog);
             if (ProcessFileNames(_fileNames))
             {
-                CancelEventArgs ceevent = new CancelEventArgs();
+                CancelEventArgs ceevent = new();
                 if (NativeWindow.WndProcShouldBeDebuggable)
                 {
                     OnFileOk(ceevent);
@@ -199,7 +199,7 @@ public partial class FileDialog
     {
         if (string.IsNullOrEmpty(filter))
         {
-            return Array.Empty<COMDLG_FILTERSPEC>();
+            return [];
         }
 
         // Expected input types:
@@ -210,7 +210,7 @@ public partial class FileDialog
         string[] tokens = filter.Split('|');
         if (tokens.Length % 2 != 0)
         {
-            return Array.Empty<COMDLG_FILTERSPEC>();
+            return [];
         }
 
         var extensions = new COMDLG_FILTERSPEC[tokens.Length / 2];
@@ -242,7 +242,7 @@ public partial class FileDialog
         return ppszName.ToStringAndCoTaskMemFree()!;
     }
 
-    private readonly FileDialogCustomPlacesCollection _customPlaces = new();
+    private readonly FileDialogCustomPlacesCollection _customPlaces = [];
 
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]

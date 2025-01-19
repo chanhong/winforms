@@ -45,12 +45,12 @@ public partial class CollectionEditor
         {
             switch (m.MsgInternal)
             {
-                case PInvoke.WM_KEYDOWN:
+                case PInvokeCore.WM_KEYDOWN:
                     _lastKeyDown = m;
 
                     // The first thing the ime does on a key it cares about is send a VK_PROCESSKEY, so we use
                     // that to sling focus to the grid.
-                    if (m.WParamInternal == (nuint)VK_PROCESSKEY)
+                    if (m.WParamInternal == VK_PROCESSKEY)
                     {
                         if (PropertyGrid is not null)
                         {
@@ -66,15 +66,15 @@ public partial class CollectionEditor
                         if (PropertyGrid.Focused || PropertyGrid.ContainsFocus)
                         {
                             // Recreate the keystroke to the newly activated window.
-                            PInvoke.SendMessage(PInvoke.GetFocus(), PInvoke.WM_KEYDOWN, _lastKeyDown.WParamInternal, _lastKeyDown.LParamInternal);
+                            PInvokeCore.SendMessage(PInvoke.GetFocus(), PInvokeCore.WM_KEYDOWN, _lastKeyDown.WParamInternal, _lastKeyDown.LParamInternal);
                         }
                     }
 
                     break;
 
-                case PInvoke.WM_CHAR:
+                case PInvokeCore.WM_CHAR:
 
-                    if ((Control.ModifierKeys & (Keys.Control | Keys.Alt)) != 0)
+                    if ((ModifierKeys & (Keys.Control | Keys.Alt)) != 0)
                     {
                         break;
                     }
@@ -94,8 +94,8 @@ public partial class CollectionEditor
                     if (PropertyGrid.Focused || PropertyGrid.ContainsFocus)
                     {
                         HWND hwnd = PInvoke.GetFocus();
-                        PInvoke.SendMessage(hwnd, PInvoke.WM_KEYDOWN, _lastKeyDown.WParamInternal, _lastKeyDown.LParamInternal);
-                        PInvoke.SendMessage(hwnd, PInvoke.WM_CHAR, m.WParamInternal, m.LParamInternal);
+                        PInvokeCore.SendMessage(hwnd, PInvokeCore.WM_KEYDOWN, _lastKeyDown.WParamInternal, _lastKeyDown.LParamInternal);
+                        PInvokeCore.SendMessage(hwnd, PInvokeCore.WM_CHAR, m.WParamInternal, m.LParamInternal);
                         return;
                     }
 

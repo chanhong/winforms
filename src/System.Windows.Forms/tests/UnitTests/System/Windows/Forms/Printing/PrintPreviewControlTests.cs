@@ -8,34 +8,36 @@ namespace System.Windows.Forms.Tests;
 // NB: doesn't require thread affinity
 public class PrintPreviewControlTests
 {
-    private const int emptyColorArgb = 0;
-    private const int blueColorArgb = -16776961;
-    private const int greenColorArgb = -16744448;
-    private const int controlDarkColorArgb = -6250336;
-    private const int appWorkSpaceNoHcColorArgb = -5526613;
-    private const int appWorkSpaceHcColorArgb = -1;
-
-    [Theory]
-    [InlineData(emptyColorArgb, false, appWorkSpaceNoHcColorArgb)]
-    [InlineData(emptyColorArgb, true, controlDarkColorArgb)]
-    [InlineData(blueColorArgb, false, blueColorArgb)]
-    [InlineData(greenColorArgb, true, greenColorArgb)]
-    public void ShowPrintPreviewControl_BackColorIsCorrect(int customBackColorArgb, bool isHighContrast, int expectedBackColorArgb)
+    [Fact]
+    public void ShowPrintPreviewControl_BackColorIsCorrect()
     {
-        var control = new PrintPreviewControl();
+        PrintPreviewControl control = new();
 
-        if (customBackColorArgb != emptyColorArgb)
-        {
-            control.BackColor = Color.FromArgb(customBackColorArgb);
-        }
+        int actualBackColorArgb = control.TestAccessor().Dynamic.GetBackColor(false).ToArgb();
+        Assert.Equal(SystemColors.AppWorkspace.ToArgb(), actualBackColorArgb);
 
-        int actualBackColorArgb = control.TestAccessor().Dynamic.GetBackColor(isHighContrast).ToArgb();
-        Assert.Equal(expectedBackColorArgb, actualBackColorArgb);
+        control.BackColor = Color.Green;
 
+        actualBackColorArgb = control.TestAccessor().Dynamic.GetBackColor(false).ToArgb();
+        Assert.Equal(Color.Green.ToArgb(), actualBackColorArgb);
+    }
+
+    [Fact]
+    public void ShowPrintPreviewControlHighContrast_BackColorIsCorrect()
+    {
+        PrintPreviewControl control = new();
+
+        int actualBackColorArgb = control.TestAccessor().Dynamic.GetBackColor(true).ToArgb();
+
+        Assert.Equal(SystemColors.ControlDarkDark.ToArgb(), actualBackColorArgb);
         // Default AppWorkSpace color in HC theme does not allow to follow HC standards.
-        if (isHighContrast)
-        {
-            Assert.True(!appWorkSpaceHcColorArgb.Equals(actualBackColorArgb));
-        }
+        Assert.False(SystemColors.AppWorkspace.ToArgb().Equals(actualBackColorArgb));
+
+        control.BackColor = Color.Green;
+
+        actualBackColorArgb = control.TestAccessor().Dynamic.GetBackColor(true).ToArgb();
+
+        Assert.Equal(Color.Green.ToArgb(), actualBackColorArgb);
+        Assert.False(SystemColors.AppWorkspace.ToArgb().Equals(actualBackColorArgb));
     }
 }

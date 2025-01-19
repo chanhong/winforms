@@ -63,6 +63,8 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
     private bool _lastPaintWithExplorerStyle;
 
+    private readonly Lock _lock = new();
+
     private static Color InvertColor(Color color)
         => Color.FromArgb(color.A, (byte)~color.R, (byte)~color.G, (byte)~color.B);
 
@@ -96,17 +98,8 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     {
         get
         {
-            const int OutlineIconPaddingDefault = 5;
-
-            if (DpiHelper.IsScalingRequirementMet)
-            {
-                if (OwnerGridView is not null)
-                {
-                    return OwnerGridView.LogicalToDeviceUnits(OutlineIconPaddingDefault);
-                }
-            }
-
-            return OutlineIconPaddingDefault;
+            const int LogicalOutlineIconPadding = 5;
+            return OwnerGridView?.LogicalToDeviceUnits(LogicalOutlineIconPadding) ?? LogicalOutlineIconPadding;
         }
     }
 
@@ -128,16 +121,28 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// </summary>
     public virtual bool AllowMerge => true;
 
-    protected virtual AttributeCollection Attributes => TypeDescriptor.GetAttributes(PropertyType);
+    protected virtual AttributeCollection Attributes => TypeDescriptor.GetAttributes(PropertyType!);
 
     /// <summary>
     ///  Gets the value of the background brush to use. Override this member to cause the entry to paint it's
     ///  background in a different color. The base implementation returns null.
     /// </summary>
-    protected virtual Color BackgroundColor => OwnerGridView.BackColor;
+    protected virtual Color BackgroundColor => OwnerGridView?.BackColor ?? default;
 
     protected virtual Color LabelTextColor
-        => ShouldRenderReadOnly ? OwnerGridView.GrayTextColor : OwnerGridView.TextColor;
+    {
+        get
+        {
+            if (OwnerGridView is null)
+            {
+                return default;
+            }
+
+            return ShouldRenderReadOnly
+                ? OwnerGridView.GrayTextColor
+                : OwnerGridView.TextColor;
+        }
+    }
 
     /// <summary>
     ///  The set of attributes that will be used for browse filtering.
@@ -155,7 +160,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     }
 
     /// <summary>
-    ///  Retrieves the component that is invoking the method on the formatter object.  This may
+    ///  Retrieves the component that is invoking the method on the formatter object. This may
     ///  return null if there is no component responsible for the call.
     /// </summary>
     public virtual IComponent? Component
@@ -173,7 +178,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     [AllowNull]
     protected GridEntryCollection ChildCollection
     {
-        get => _children ??= new GridEntryCollection();
+        get => _children ??= [];
         set
         {
             Debug.Assert(value is null || !Disposed, "Why are we putting new children in after we are disposed?");
@@ -201,7 +206,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
                 CreateChildren();
             }
 
-            return _children ??= new GridEntryCollection();
+            return _children ??= [];
         }
     }
 
@@ -286,7 +291,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     public override bool Expanded
     {
         get => InternalExpanded;
-        set => OwnerGridView.SetExpand(this, value);
+        set => OwnerGridView?.SetExpand(this, value);
     }
 
     internal virtual bool ForceReadOnly => (_flags & Flags.ForceReadOnly) != 0;
@@ -330,7 +335,9 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
             // Accessible clients won't see this unless both events are raised.
 
             // Root item is hidden and should not raise events
-            if (OwnerGridView.IsAccessibilityObjectCreated && GridItemType != GridItemType.Root)
+            if (OwnerGridView is { } ownerGridView
+                && ownerGridView.IsAccessibilityObjectCreated
+                && GridItemType != GridItemType.Root)
             {
                 int id = OwnerGridView.AccessibilityGetGridEntryChildID(this);
                 if (id >= 0)
@@ -355,8 +362,8 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
             _flags |= Flags.Checked;
 
             TypeConverter converter = TypeConverter;
-            UITypeEditor editor = UITypeEditor;
-            object value = Instance;
+            UITypeEditor? editor = UITypeEditor;
+            object? value = Instance;
             bool forceReadOnly = ForceReadOnly;
 
             if (value is not null)
@@ -375,7 +382,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
                 _flags |= Flags.TextEditable;
             }
 
-            bool hasImmutableAttribute = TypeDescriptor.GetAttributes(PropertyType)[typeof(ImmutableObjectAttribute)]!
+            bool hasImmutableAttribute = TypeDescriptor.GetAttributes(PropertyType!)[typeof(ImmutableObjectAttribute)]!
                 .Equals(ImmutableObjectAttribute.Yes);
             bool isImmutable = hasImmutableAttribute || converter.GetCreateInstanceSupported(this);
 
@@ -422,7 +429,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
                 {
                     case UITypeEditorEditStyle.Modal:
                         _flags |= Flags.ModalEditable;
-                        if (!isImmutable && !PropertyType.IsValueType)
+                        if (!isImmutable && !(PropertyType?.IsValueType ?? false))
                         {
                             _flags |= Flags.ReadOnlyEditable;
                         }
@@ -465,7 +472,9 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
                 _hasFocus = value;
 
                 // Notify accessibility applications that keyboard focus has changed.
-                if (OwnerGridView.IsAccessibilityObjectCreated && value)
+                if (OwnerGridView is { } ownerGridView
+                    && ownerGridView.IsAccessibilityObjectCreated
+                    && value)
                 {
                     int id = OwnerGridView.AccessibilityGetGridEntryChildID(this);
                     if (id >= 0)
@@ -482,10 +491,10 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     }
 
     /// <summary>
-    ///  Returns the label including the object name, and properties.  For example, the value
+    ///  Returns the label including the object name, and properties. For example, the value
     ///  of the Font size property on a Button called Button1 would be "Button1.Font.Size"
     /// </summary>
-    public string FullLabel
+    public string? FullLabel
     {
         get
         {
@@ -517,11 +526,12 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
             return new GridItemCollection(Children);
         }
     }
-#nullable disable
+
     /// <summary>
     ///  The <see cref="PropertyGridView"/> that this <see cref="GridEntry"/> belongs to.
     /// </summary>
-    internal virtual PropertyGridView OwnerGridView
+    [DisallowNull]
+    internal virtual PropertyGridView? OwnerGridView
     {
         get => _parent?.OwnerGridView;
         set => throw new NotSupportedException();
@@ -537,7 +547,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// <summary>
     ///  Retrieves the keyword that Visual Studio dynamic help window will use when this entry is selected.
     /// </summary>
-    public virtual string HelpKeyword => _parent?.HelpKeyword ?? string.Empty;
+    public virtual string? HelpKeyword => _parent?.HelpKeyword ?? string.Empty;
 
     /// <summary>
     ///  Returns true when the entry has an <see cref="UITypeEditor"/> that custom paints a value.
@@ -549,7 +559,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
             // Prevent full flag population if possible by not hitting EntryFlags if flags have not been checked yet.
             if (!_flags.HasFlag(Flags.Checked))
             {
-                UITypeEditor editor = UITypeEditor;
+                UITypeEditor? editor = UITypeEditor;
                 if (editor is not null)
                 {
                     if (_flags.HasFlag(Flags.CustomPaint) || _flags.HasFlag(Flags.NoCustomPaint))
@@ -597,11 +607,11 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     ///  Retrieves the component that is invoking the method on the formatter object. This may
     ///  return null if there is no component responsible for the call.
     /// </summary>
-    public object Instance => GetValueOwner() ?? _parent?.Instance;
+    public object? Instance => GetValueOwner() ?? _parent?.Instance;
 
-    public override string Label => PropertyLabel;
+    public override string? Label => PropertyLabel;
 
-    public override PropertyDescriptor PropertyDescriptor => null;
+    public override PropertyDescriptor? PropertyDescriptor => null;
 
     /// <summary>
     ///  Returns the pixel indent of the current GridEntry's label.
@@ -610,14 +620,14 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     {
         get
         {
-            int borderWidth = OwnerGridView.OutlineIconSize + OutlineIconPadding;
+            int borderWidth = (OwnerGridView?.OutlineIconSize ?? 0) + OutlineIconPadding;
             return ((_propertyDepth + 1) * borderWidth) + 1;
         }
     }
 
     internal virtual Point GetLabelToolTipLocation(int mouseX, int mouseY) => _labelTipPoint;
 
-    internal virtual string LabelToolTipText => PropertyLabel;
+    internal virtual string? LabelToolTipText => PropertyLabel;
 
     /// <summary>
     ///  The entry needs a drop down button to invoke its editor.
@@ -640,7 +650,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     {
         get
         {
-            if (!_outlineRect.IsEmpty)
+            if (!_outlineRect.IsEmpty || OwnerGridView is null)
             {
                 return _outlineRect;
             }
@@ -672,7 +682,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
         }
     }
 
-    public GridEntry ParentGridEntry
+    public GridEntry? ParentGridEntry
     {
         get => _parent;
         set
@@ -694,7 +704,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
         }
     }
 
-    public override GridItem Parent
+    public override GridItem? Parent
     {
         get
         {
@@ -709,35 +719,35 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     public virtual string PropertyCategory => CategoryAttribute.Default.Category;
 
     /// <summary>
-    ///  Returns "depth" of this property.  That is, how many parents between
-    ///  this property and the root property.  The root property has a depth of -1.
+    ///  Returns "depth" of this property. That is, how many parents between
+    ///  this property and the root property. The root property has a depth of -1.
     /// </summary>
     public virtual int PropertyDepth => _propertyDepth;
 
     /// <summary>
     ///  Returns the description helpstring for this GridEntry.
     /// </summary>
-    public virtual string PropertyDescription => null;
+    public virtual string? PropertyDescription => null;
 
     /// <summary>
     ///  Returns the label of this property. Usually this is the property name.
     /// </summary>
-    public virtual string PropertyLabel => null;
+    public virtual string? PropertyLabel => null;
 
     /// <summary>
     ///  Returns non-localized name of this property.
     /// </summary>
-    public virtual string PropertyName => PropertyLabel;
+    public virtual string? PropertyName => PropertyLabel;
 
     /// <summary>
     ///  Returns the Type of the value of this <see cref="GridEntry"/>, or null if the value is null.
     /// </summary>
-    public virtual Type PropertyType => PropertyValue?.GetType();
+    public virtual Type? PropertyType => PropertyValue?.GetType();
 
     /// <summary>
     ///  Gets or sets the value for the property that is represented by this <see cref="GridEntry"/>.
     /// </summary>
-    public virtual object PropertyValue
+    public virtual object? PropertyValue
     {
         get => _cacheItems?.LastValue;
         set { }
@@ -754,18 +764,18 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     ///  Returns the type converter for this entry.
     /// </summary>
     internal virtual TypeConverter TypeConverter
-        => _typeConverter ??= TypeDescriptor.GetConverter(PropertyValue ?? PropertyType);
+        => _typeConverter ??= TypeDescriptor.GetConverter((PropertyValue ?? PropertyType)!);
 
     /// <summary>
     ///  Returns the type editor for this entry. This may return null if there is no type editor.
     /// </summary>
-    internal virtual UITypeEditor UITypeEditor
+    internal virtual UITypeEditor? UITypeEditor
     {
         get
         {
             if (Editor is null && PropertyType is not null)
             {
-                Editor = (UITypeEditor)TypeDescriptor.GetEditor(PropertyType, typeof(UITypeEditor));
+                Editor = (UITypeEditor?)TypeDescriptor.GetEditor(PropertyType, typeof(UITypeEditor));
             }
 
             return Editor;
@@ -774,7 +784,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
     // Note: we don't do set because of the value class semantics, etc.
 
-    public sealed override object Value => PropertyValue;
+    public sealed override object? Value => PropertyValue;
 
     internal Point ValueToolTipLocation
     {
@@ -858,11 +868,12 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// <summary>
     ///  Converts the given string of text to a value.
     /// </summary>
-    public object ConvertTextToValue(string text)
+    public object? ConvertTextToValue(string? text)
     {
         if (TypeConverter.CanConvertFrom(this, typeof(string)))
         {
-            return TypeConverter.ConvertFromString(this, text);
+            // We will return an empty string when text is null.
+            return TypeConverter.ConvertFromString(this, text!);
         }
 
         return text;
@@ -872,11 +883,11 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     ///  Create the root grid entry given an object or set of objects.
     /// </summary>
     /// <param name="objects">The objects to build the root entry on.</param>
-    internal static GridEntry CreateRootGridEntry(
+    internal static GridEntry? CreateRootGridEntry(
         PropertyGridView view,
         object[] objects,
         IServiceProvider baseProvider,
-        IDesignerHost currentHost,
+        IDesignerHost? currentHost,
         PropertyTab tab,
         PropertySort initialSortType)
     {
@@ -886,8 +897,20 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
         }
 
         return objects.Length == 1
-            ? new SingleSelectRootGridEntry(view, objects[0], baseProvider, currentHost, tab, initialSortType)
-            : new MultiSelectRootGridEntry(view, objects, baseProvider, currentHost, tab, initialSortType);
+            ? new SingleSelectRootGridEntry(
+                view,
+                objects[0],
+                baseProvider,
+                currentHost,
+                tab,
+                initialSortType)
+            : new MultiSelectRootGridEntry(
+                view,
+                objects,
+                baseProvider,
+                currentHost,
+                tab,
+                initialSortType);
     }
 
     /// <summary>
@@ -910,7 +933,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
             }
             else
             {
-                _children = new GridEntryCollection();
+                _children = [];
             }
 
             return false;
@@ -921,14 +944,14 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
             return true;
         }
 
-        GridEntry[] childProperties = GetChildEntries();
+        GridEntry[]? childProperties = GetChildEntries();
 
         bool expandable = childProperties is not null && childProperties.Length > 0;
 
         if (useExistingChildren && _children is not null && _children.Count > 0)
         {
             bool same = true;
-            if (childProperties.Length == _children.Count)
+            if (childProperties is not null && childProperties.Length == _children.Count)
             {
                 for (int i = 0; i < childProperties.Length; i++)
                 {
@@ -959,7 +982,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
             }
             else
             {
-                _children = new GridEntryCollection();
+                _children = [];
             }
 
             if (InternalExpanded)
@@ -969,7 +992,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
         }
         else
         {
-            if (_children is not null)
+            if (_children is not null && childProperties is not null)
             {
                 _children.Clear();
                 _children.AddRange(childProperties);
@@ -1042,8 +1065,8 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
         try
         {
-            object originalValue = PropertyValue;
-            object value = UITypeEditor.EditValue(this, this, originalValue);
+            object? originalValue = PropertyValue;
+            object? value = UITypeEditor.EditValue(this, this, originalValue);
 
             // Since edit value can push a modal loop there is a chance that this gridentry will be zombied
             // before it returns. Make sure we're not disposed.
@@ -1058,7 +1081,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
                 gridView.CommitValue(this, value);
             }
 
-            if (InternalExpanded)
+            if (InternalExpanded && OwnerGridView is not null)
             {
                 // If the edited property is expanded to show sub-properties, then we want to
                 // preserve the expanded states of it and all of its descendants. RecreateChildren()
@@ -1076,7 +1099,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
         }
         catch (Exception e)
         {
-            if (this.TryGetService(out IUIService uiService))
+            if (this.TryGetService(out IUIService? uiService))
             {
                 uiService.ShowError(e);
             }
@@ -1105,12 +1128,14 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
         }
 
         return entry is not null
+            && entry.PropertyLabel is not null
             && entry.PropertyLabel.Equals(PropertyLabel)
+            && entry.PropertyType is not null
             && entry.PropertyType.Equals(PropertyType)
             && entry.PropertyDepth == PropertyDepth;
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is GridEntry entry && EqualsIgnoreParent(entry))
         {
@@ -1123,13 +1148,16 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// <summary>
     ///  Searches for a value of a given property for a value editor user.
     /// </summary>
-    private object FindPropertyValue(string propertyName, Type propertyType)
+    private object? FindPropertyValue(string propertyName, Type propertyType)
     {
-        object owner = GetValueOwner();
-        PropertyDescriptor property = TypeDescriptor.GetProperties(owner)[propertyName];
-        if (property is not null && property.PropertyType == propertyType)
+        object? owner = GetValueOwner();
+        if (owner is not null)
         {
-            return property.GetValue(owner);
+            PropertyDescriptor? property = TypeDescriptor.GetProperties(owner)[propertyName];
+            if (property is not null && property.PropertyType == propertyType)
+            {
+                return property.GetValue(owner);
+            }
         }
 
         return _parent?.FindPropertyValue(propertyName, propertyType);
@@ -1145,18 +1173,18 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     ///  object being browsed. Walks up the <see cref="GridEntry"/> tree looking for an owner that is an
     ///  <see cref="IComponent"/>.
     /// </summary>
-    public virtual IComponent[] GetComponents()
+    public virtual IComponent[]? GetComponents()
     {
-        IComponent component = Component;
+        IComponent? component = Component;
         if (component is not null)
         {
-            return new IComponent[] { component };
+            return [component];
         }
 
         return null;
     }
 
-    protected int GetLabelTextWidth(string text, Graphics graphics, Font font)
+    protected int GetLabelTextWidth(string? text, Graphics graphics, Font font)
     {
         if (_cacheItems is null)
         {
@@ -1204,7 +1232,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     ///  Gets the owner of the current value. This is usually the value of the root entry,
     ///  which is the object being browsed.
     /// </summary>
-    public object GetValueOwner() => _parent is null ? PropertyValue : _parent.GetValueOwnerInternal();
+    public object? GetValueOwner() => _parent is null ? PropertyValue : _parent.GetValueOwnerInternal();
 
     /// <summary>
     ///  Gets the owner of the current value. This is usually the value of the root entry,
@@ -1214,7 +1242,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     ///  This internal override allows <see cref="CategoryGridEntry"/> to skip to its parent <see cref="PropertyValue"/>
     ///  and <see cref="MultiPropertyDescriptorGridEntry"/> to return it's set of owners.
     /// </devdoc>
-    internal virtual object GetValueOwnerInternal() => PropertyValue;
+    internal virtual object? GetValueOwnerInternal() => PropertyValue;
 
     /// <summary>
     ///  Returns a string with info about the currently selected <see cref="GridEntry"/>.
@@ -1227,10 +1255,10 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// <summary>
     ///  Returns the child <see cref="GridEntry"/> items for this <see cref="GridEntry"/>.
     /// </summary>
-    private GridEntry[] GetChildEntries()
+    private GridEntry[]? GetChildEntries()
     {
-        object value = PropertyValue;
-        Type objectType = PropertyType;
+        object? value = PropertyValue;
+        Type? objectType = PropertyType;
 
         // We don't want to create child entries for null objects.
         if (value is null)
@@ -1238,12 +1266,17 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
             return null;
         }
 
-        GridEntry[] entries = null;
+        GridEntry[]? entries = null;
 
-        var attributes = new Attribute[BrowsableAttributes.Count];
-        BrowsableAttributes.CopyTo(attributes, 0);
+        AttributeCollection? browsableAttributes = BrowsableAttributes;
+        Attribute[]? attributes = null;
+        if (browsableAttributes is not null)
+        {
+            attributes = new Attribute[browsableAttributes.Count];
+            browsableAttributes.CopyTo(attributes, 0);
+        }
 
-        PropertyTab ownerTab = OwnerTab;
+        PropertyTab? ownerTab = OwnerTab;
         Debug.Assert(ownerTab is not null, "No current tab!");
 
         try
@@ -1252,7 +1285,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
             if (!forceReadOnly)
             {
-                forceReadOnly = TypeDescriptorHelper.TryGetAttribute(value, out ReadOnlyAttribute readOnlyAttribute)
+                forceReadOnly = TypeDescriptorHelper.TryGetAttribute(value, out ReadOnlyAttribute? readOnlyAttribute)
                     && !readOnlyAttribute.IsDefaultAttribute();
             }
 
@@ -1263,8 +1296,8 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
             }
 
             // Ask the owning tab for properties if we have one.
-            PropertyDescriptorCollection properties = null;
-            PropertyDescriptor defaultProperty = null;
+            PropertyDescriptorCollection? properties = null;
+            PropertyDescriptor? defaultProperty = null;
             if (ownerTab is not null)
             {
                 properties = ownerTab.GetProperties(this, value, attributes);
@@ -1317,6 +1350,11 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
             {
                 // Otherwise, create the proper GridEntries.
                 bool createInstanceSupported = TypeConverter.GetCreateInstanceSupported(this);
+                if (properties is null)
+                {
+                    return entries;
+                }
+
                 entries = new GridEntry[properties.Count];
                 int index = 0;
 
@@ -1329,7 +1367,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
                     bool hide = false;
                     try
                     {
-                        object owner = value;
+                        object? owner = value;
                         if (value is ICustomTypeDescriptor descriptor)
                         {
                             owner = descriptor.GetPropertyOwner(property);
@@ -1401,9 +1439,9 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// <summary>
     ///  Returns the text value of this property.
     /// </summary>
-    public virtual string GetPropertyTextValue(object value)
+    public virtual string GetPropertyTextValue(object? value)
     {
-        string textValue = null;
+        string? textValue = null;
 
         TypeConverter converter = TypeConverter;
         try
@@ -1425,15 +1463,14 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// </summary>
     public virtual object[] GetPropertyValueList()
     {
-        ICollection values = TypeConverter.GetStandardValues(this);
-        if (values is not null)
+        if (TypeConverter.GetStandardValues(this) is { } values)
         {
             object[] valueArray = new object[values.Count];
             values.CopyTo(valueArray, 0);
             return valueArray;
         }
 
-        return Array.Empty<object>();
+        return [];
     }
 
     public override int GetHashCode() => HashCode.Combine(PropertyLabel, PropertyType, GetType());
@@ -1443,12 +1480,22 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// </summary>
     protected bool GetFlagSet(Flags flags) => (flags & EntryFlags) != 0;
 
-    protected Font GetFont(bool boldFont) => boldFont ? OwnerGridView.GetBoldFont() : OwnerGridView.GetBaseFont();
+    protected Font GetFont(bool boldFont)
+    {
+        if (OwnerGridView is null)
+        {
+            return Control.DefaultFont;
+        }
+
+        return boldFont
+            ? OwnerGridView.GetBoldFont()
+            : OwnerGridView.GetBaseFont();
+    }
 
     /// <summary>
-    ///  Retrieves the requested service.  This may return null if the requested service is not available.
+    ///  Retrieves the requested service. This may return null if the requested service is not available.
     /// </summary>
-    public virtual object GetService(Type serviceType)
+    public virtual object? GetService(Type serviceType)
         => serviceType == typeof(GridItem) ? this : (_parent?.GetService(serviceType));
 
     /// <summary>
@@ -1460,10 +1507,19 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     ///   <see cref="GridEntry"/> needs to be painted.
     ///  </para>
     /// </remarks>
-    public virtual void PaintLabel(Graphics g, Rectangle rect, Rectangle clipRect, bool selected, bool paintFullLabel)
+    public virtual void PaintLabel(
+        Graphics g,
+        Rectangle rect,
+        Rectangle clipRect,
+        bool selected,
+        bool paintFullLabel)
     {
-        PropertyGridView ownerGrid = OwnerGridView;
-        string label = PropertyLabel;
+        if (OwnerGridView is not PropertyGridView ownerGrid)
+        {
+            throw new InvalidOperationException();
+        }
+
+        string? label = PropertyLabel;
         int borderWidth = ownerGrid.OutlineIconSize + OutlineIconPadding;
 
         // Fill the background if necessary.
@@ -1573,7 +1629,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// </summary>
     private void PaintOutlineGlyph(Graphics g, Rectangle r)
     {
-        if (OwnerGridView.IsExplorerTreeSupported)
+        if (OwnerGridView is { } owner && owner.IsExplorerTreeSupported)
         {
             // Draw tree-view glyphs with the current ExplorerTreeView UxTheme
 
@@ -1616,12 +1672,17 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
             bool expanded = InternalExpanded;
 
-            // Invert color if it is not overriden by developer.
+            // Invert color if it is not overridden by developer.
             if (g is not null && ColorInversionNeededInHighContrast)
             {
                 Color textColor = InvertColor(OwnerGrid.LineColor);
                 using var brush = textColor.GetCachedSolidBrushScope();
                 g.FillRectangle(brush, outline);
+            }
+
+            if (g is null)
+            {
+                throw new InvalidOperationException();
             }
 
             if (ColorInversionNeededInHighContrast || !expanded)
@@ -1647,14 +1708,14 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
                 HWND hwnd)
             {
                 Color backgroundColor = ColorInversionNeededInHighContrast ? InvertColor(OwnerGrid.LineColor) : OwnerGrid.LineColor;
-                using PInvoke.CreateDcScope compatibleDC = new(default);
+                using CreateDcScope compatibleDC = new(default);
 
-                int planes = PInvoke.GetDeviceCaps(compatibleDC, GET_DEVICE_CAPS_INDEX.PLANES);
-                int bitsPixel = PInvoke.GetDeviceCaps(compatibleDC, GET_DEVICE_CAPS_INDEX.BITSPIXEL);
-                using HBITMAP compatibleBitmap = PInvoke.CreateBitmap(rectangle.Width, rectangle.Height, (uint)planes, (uint)bitsPixel, lpBits: null);
-                using PInvoke.SelectObjectScope targetBitmapSelection = new(compatibleDC, compatibleBitmap);
+                int planes = PInvokeCore.GetDeviceCaps(compatibleDC, GET_DEVICE_CAPS_INDEX.PLANES);
+                int bitsPixel = PInvokeCore.GetDeviceCaps(compatibleDC, GET_DEVICE_CAPS_INDEX.BITSPIXEL);
+                using HBITMAP compatibleBitmap = PInvokeCore.CreateBitmap(rectangle.Width, rectangle.Height, (uint)planes, (uint)bitsPixel, lpBits: null);
+                using SelectObjectScope targetBitmapSelection = new(compatibleDC, compatibleBitmap);
 
-                using PInvoke.CreateBrushScope brush = new(backgroundColor);
+                using CreateBrushScope brush = new(backgroundColor);
                 compatibleDC.HDC.FillRectangle(new Rectangle(0, 0, rectangle.Width, rectangle.Height), brush);
                 explorerTreeRenderer.DrawBackground(compatibleDC, new Rectangle(0, 0, rectangle.Width, rectangle.Height), hwnd);
 
@@ -1676,7 +1737,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
             bool expanded = InternalExpanded;
 
-            Color penColor = OwnerGridView.TextColor;
+            Color penColor = OwnerGridView?.TextColor ?? default;
 
             if (ColorInversionNeededInHighContrast)
             {
@@ -1724,13 +1785,20 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// <param name="text">
     ///  Optional text representation of the value. If not specified, will use the <see cref="PropertyValue"/> directly.
     /// </param>
-    public virtual void PaintValue(Graphics g, Rectangle rect, Rectangle clipRect, PaintValueFlags paintFlags, string text = null)
+    public virtual void PaintValue(
+        Graphics g,
+        Rectangle rect,
+        Rectangle clipRect,
+        PaintValueFlags paintFlags,
+        string? text = null)
     {
-        PropertyGridView ownerGrid = OwnerGridView;
-        Debug.Assert(ownerGrid is not null);
+        if (OwnerGridView is not PropertyGridView ownerGrid)
+        {
+            throw new InvalidOperationException();
+        }
 
-        Color textColor = ShouldRenderReadOnly ? OwnerGridView.GrayTextColor : ownerGrid.TextColor;
-        object value;
+        Color textColor = ShouldRenderReadOnly ? ownerGrid.GrayTextColor : ownerGrid.TextColor;
+        object? value;
 
         if (text is null)
         {
@@ -1805,7 +1873,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
         if (text.Length > MaximumLengthOfPropertyString)
         {
-            text = text.Substring(0, MaximumLengthOfPropertyString);
+            text = text[..MaximumLengthOfPropertyString];
         }
 
         int textWidth = GetValueTextWidth(text, g, GetFont(valueModified));
@@ -1840,9 +1908,11 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
             rect.Width - 4,
             rect.Height);
 
-        backColor = paintFlags.HasFlag(PaintValueFlags.DrawSelected)
-            ? OwnerGridView.SelectedItemWithFocusBackColor
-            : OwnerGridView.BackColor;
+        backColor = OwnerGridView is not { } owner
+            ? default
+            : paintFlags.HasFlag(PaintValueFlags.DrawSelected)
+                ? owner.SelectedItemWithFocusBackColor
+                : owner.BackColor;
 
         DRAW_TEXT_FORMAT format = DRAW_TEXT_FORMAT.DT_EDITCONTROL | DRAW_TEXT_FORMAT.DT_EXPANDTABS | DRAW_TEXT_FORMAT.DT_NOCLIP
             | DRAW_TEXT_FORMAT.DT_SINGLELINE | DRAW_TEXT_FORMAT.DT_NOPREFIX;
@@ -1882,8 +1952,14 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     {
         try
         {
-            ComponentChangeService?.OnComponentChanging(GetValueOwner(), PropertyDescriptor);
-            return true;
+            object? owner = GetValueOwner();
+            if (owner is not null)
+            {
+                ComponentChangeService?.OnComponentChanging(owner, PropertyDescriptor);
+                return true;
+            }
+
+            return false;
         }
         catch (CheckoutException e) when (e == CheckoutException.Canceled)
         {
@@ -1892,7 +1968,13 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     }
 
     public virtual void OnComponentChanged()
-        => ComponentChangeService?.OnComponentChanged(GetValueOwner(), PropertyDescriptor);
+    {
+        object? owner = GetValueOwner();
+        if (owner is not null)
+        {
+            ComponentChangeService?.OnComponentChanged(owner, PropertyDescriptor);
+        }
+    }
 
     /// <summary>
     ///  Called when the GridEntry is clicked.
@@ -1900,7 +1982,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     public virtual bool OnMouseClick(int x, int y, int count, MouseButtons button)
     {
         // Where are we at?
-        PropertyGridView gridHost = OwnerGridView;
+        PropertyGridView gridHost = OwnerGridView!;
         Debug.Assert(gridHost is not null, "No prop entry host!");
 
         // Make sure it's the left button.
@@ -1970,7 +2052,13 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
         try
         {
-            OwnerGridView.SelectedGridEntry = this;
+            if (OwnerGridView is not PropertyGridView propertyGridView)
+            {
+                return false;
+            }
+
+            propertyGridView.SelectedGridEntry = this;
+
             return true;
         }
         catch (Exception ex) when (!ex.IsCriticalException())
@@ -2011,22 +2099,22 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
     private static PropertyDescriptor[] SortParenProperties(PropertyDescriptor[] props)
     {
-        PropertyDescriptor[] newProperties = null;
+        PropertyDescriptor[]? newProperties = null;
         int newPosition = 0;
 
         // First scan the list and move any parenthesized properties to the front.
         for (int i = 0; i < props.Length; i++)
         {
-            if (props[i].GetAttribute<ParenthesizePropertyNameAttribute>().NeedParenthesis)
+            if (props[i].GetAttribute<ParenthesizePropertyNameAttribute>()?.NeedParenthesis ?? false)
             {
                 newProperties ??= new PropertyDescriptor[props.Length];
                 newProperties[newPosition++] = props[i];
-                props[i] = null;
+                props[i] = null!;
             }
         }
 
         // Second pass, copy any that didn't have the parenthesis.
-        if (newPosition > 0)
+        if (newProperties is not null)
         {
             for (int i = 0; i < props.Length; i++)
             {
@@ -2051,7 +2139,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// <returns>
     ///  The result of the notification.
     /// </returns>
-    protected virtual bool SendNotification(object owner, Notify notification) => false;
+    protected virtual bool SendNotification(object? owner, Notify notification) => false;
 
     /// <summary>
     ///  Sends a notification to the owner of the given <paramref name="entry"/>.
@@ -2108,7 +2196,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// </summary>
     public void Refresh()
     {
-        Type type = PropertyType;
+        Type? type = PropertyType;
         if (type is not null && type.IsArray)
         {
             CreateChildren(useExistingChildren: true);
@@ -2167,7 +2255,7 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
     /// <summary>
     ///  Sets the value of this <see cref="GridEntry"/> from text.
     /// </summary>
-    public bool SetPropertyTextValue(string text)
+    public bool SetPropertyTextValue(string? text)
     {
         bool childrenPrior = _children is not null && _children.Count > 0;
         PropertyValue = ConvertTextToValue(text);
@@ -2180,15 +2268,14 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
     protected virtual void AddEventHandler(object key, Delegate handler)
     {
-        // Locking 'this' here is ok since this is an internal class.
-        lock (this)
+        lock (_lock)
         {
             if (handler is null)
             {
                 return;
             }
 
-            for (EventEntry e = _eventList; e is not null; e = e.Next)
+            for (EventEntry? e = _eventList; e is not null; e = e.Next)
             {
                 if (e.Key == key)
                 {
@@ -2203,19 +2290,18 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
     protected virtual void RaiseEvent(object key, EventArgs e)
     {
-        Delegate handler = GetEventHandler(key);
+        Delegate? handler = GetEventHandler(key);
         if (handler is not null)
         {
             ((EventHandler)handler)(this, e);
         }
     }
 
-    protected virtual Delegate GetEventHandler(object key)
+    protected virtual Delegate? GetEventHandler(object key)
     {
-        // Locking 'this' here is ok since this is an internal class.
-        lock (this)
+        lock (_lock)
         {
-            for (EventEntry e = _eventList; e is not null; e = e.Next)
+            for (EventEntry? e = _eventList; e is not null; e = e.Next)
             {
                 if (e.Key == key)
                 {
@@ -2229,15 +2315,14 @@ internal abstract partial class GridEntry : GridItem, ITypeDescriptorContext
 
     protected virtual void RemoveEventHandler(object key, Delegate handler)
     {
-        // Locking this here is ok since this is an internal class.
-        lock (this)
+        lock (_lock)
         {
             if (handler is null)
             {
                 return;
             }
 
-            for (EventEntry entry = _eventList, previous = null; entry is not null; previous = entry, entry = entry.Next)
+            for (EventEntry? entry = _eventList, previous = null; entry is not null; previous = entry, entry = entry.Next)
             {
                 if (entry.Key == key)
                 {

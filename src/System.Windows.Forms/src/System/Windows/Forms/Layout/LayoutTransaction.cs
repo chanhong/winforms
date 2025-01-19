@@ -5,7 +5,7 @@ namespace System.Windows.Forms.Layout;
 
 // Frequently when you need to do a PreformLayout, you also need to invalidate the
 // PreferredSizeCache (you are laying out because you know that the action has changed
-// the PreferredSize of the control and/or its container).  LayoutTransaction wraps both
+// the PreferredSize of the control and/or its container). LayoutTransaction wraps both
 // of these operations into one, plus adds a check for null to make our code more
 // concise.
 //
@@ -59,16 +59,10 @@ internal sealed class LayoutTransaction : IDisposable
 
     public void Dispose()
     {
-#pragma warning disable IDE0031
-        if (_controlToLayout is not null)
-        {
-            _controlToLayout.ResumeLayout(_resumeLayout);
-
+        _controlToLayout?.ResumeLayout(_resumeLayout);
 #if DEBUG
-            Debug.Assert(_controlToLayout.LayoutSuspendCount == _layoutSuspendCount, "Suspend/Resume layout mismatch!");
+        Debug.Assert(_controlToLayout is null || _controlToLayout.LayoutSuspendCount == _layoutSuspendCount, "Suspend/Resume layout mismatch!");
 #endif
-        }
-#pragma warning restore IDE0031
     }
 
     // This overload should be used when a property has changed that affects preferred size,
@@ -116,7 +110,7 @@ internal sealed class LayoutTransaction : IDisposable
         }
         else
         {
-            LayoutTransaction.DoLayout(elementToLayout, elementCausingLayout, property);
+            DoLayout(elementToLayout, elementCausingLayout, property);
         }
     }
 }

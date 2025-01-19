@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Drawing;
 using Windows.Win32.UI.Accessibility;
 
 namespace System.Windows.Forms;
@@ -197,11 +196,13 @@ public partial class ToolStrip
                     || !hostedControl.SupportsUiaProviders
                     || (hostedControl is Label label && string.IsNullOrEmpty(label.Text));
 
-            // Returns the next or the previous ToolStrip item, that is considered a valid navigation fragment (e.g. a control,
-            //  that supports UIA providers and not a ToolStripControlHost). This method removes hosted ToolStrip
-            //  items that are native controls (their accessible objects are provided by Windows),
-            //  from the accessibility tree. It's necessary, because hosted native controls internally add accessible objects
-            //  to the accessibility tree, and thus create duplicated. To avoid duplicates, remove hosted items with native accessibility objects from the tree.
+            // Returns the next or the previous ToolStrip item, that is considered a valid navigation fragment
+            //  (e.g. a control, that supports UIA providers and not a ToolStripControlHost).
+            //  This method removes hosted ToolStrip items that are native controls
+            //  (their accessible objects are provided by Windows), from the accessibility tree.
+            //  It's necessary, because hosted native controls internally add accessible objects
+            //  to the accessibility tree, and thus create duplicated. To avoid duplicates,
+            //  remove hosted items with native accessibility objects from the tree.
             AccessibleObject? GetFollowingChildFragment(int index, ToolStripItemCollection items, NavigateDirection direction)
             {
                 switch (direction)

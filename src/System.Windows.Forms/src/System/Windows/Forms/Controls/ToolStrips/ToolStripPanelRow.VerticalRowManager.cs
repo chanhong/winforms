@@ -94,14 +94,13 @@ public partial class ToolStripPanelRow
                 return totalSize.Height < DisplayRectangle.Height;
             }
 
-            ToolStripPanelRow.s_toolStripPanelRowCreationDebug.TraceVerbose("VerticalRM.CanMove returns false - not enough room");
             return false;
         }
 
         protected internal override int FreeSpaceFromRow(int spaceToFree)
         {
             int requiredSpace = spaceToFree;
-            // take a look at the last guy.  if his right edge exceeds
+            // take a look at the last guy. if his right edge exceeds
             // the new bounds, then we should go ahead and push him into view.
 
             if (spaceToFree > 0)
@@ -116,7 +115,7 @@ public partial class ToolStripPanelRow
                 Padding cellMargin = lastCellOnRow.Margin;
 
                 // only check margin.left as we are only concerned with getting right edge of
-                // the toolstrip into view. (space after the fact doesnt count).
+                // the toolstrip into view. (space after the fact doesn't count).
                 if (cellMargin.Top >= spaceToFree)
                 {
                     cellMargin.Top -= spaceToFree;
@@ -132,13 +131,8 @@ public partial class ToolStripPanelRow
 
                 lastCellOnRow.Margin = cellMargin;
 
-                // start moving the toolstrips before this guy.
+                // Start moving the toolstrips before this guy.
                 spaceToFree -= MoveUp(Row.Cells.Count - 1, spaceToFree);
-
-                if (spaceToFree > 0)
-                {
-                    spaceToFree -= lastCellOnRow.Shrink(spaceToFree);
-                }
             }
 
             return requiredSpace - Math.Max(0, spaceToFree);
@@ -174,7 +168,6 @@ public partial class ToolStripPanelRow
 
         private int MoveUp(int index, int spaceToFree)
         {
-            ToolStripPanelMouseDebug.TraceVerbose($"MoveUp: {spaceToFree}");
             int freedSpace = 0;
 
             Row.SuspendLayout();
@@ -182,7 +175,6 @@ public partial class ToolStripPanelRow
             {
                 if (spaceToFree == 0 || index < 0)
                 {
-                    ToolStripPanelMouseDebug.TraceVerbose("MoveUp Early EXIT - 0 ");
                     return 0;
                 }
 
@@ -229,7 +221,6 @@ public partial class ToolStripPanelRow
                             }
                         }
 
-                        ToolStripPanelMouseDebug.TraceVerbose($"MoveUp Recovered (Margin only): {spaceToFree}");
                         return spaceToFree;
                     }
                 }
@@ -239,21 +230,17 @@ public partial class ToolStripPanelRow
                 Row.ResumeLayout(true);
             }
 
-            ToolStripPanelMouseDebug.TraceVerbose($"MoveLeft Recovered Partial (Shrink): {freedSpace}");
-
             return freedSpace;
         }
 
         private int MoveDown(int index, int spaceToFree)
         {
-            ToolStripPanelMouseDebug.TraceVerbose($"MoveDown: {spaceToFree}");
             int freedSpace = 0;
             Row.SuspendLayout();
             try
             {
                 if (spaceToFree == 0 || index < 0 || index >= Row.ControlsInternal.Count)
                 {
-                    ToolStripPanelMouseDebug.TraceVerbose("MoveDown Early EXIT - 0 ");
                     return 0;
                 }
 
@@ -315,7 +302,6 @@ public partial class ToolStripPanelRow
                     cellMargin.Top += spaceToFree;
                     cell.Margin = cellMargin;
 
-                    ToolStripPanelMouseDebug.TraceVerbose($"MoveDown Recovered (Margin only): {spaceToFree}");
                     return spaceToFree;
                 }
 
@@ -329,11 +315,9 @@ public partial class ToolStripPanelRow
                     }
 
                     int requiredSpace = spaceToFree - freedSpace;
-                    freedSpace += cell.Shrink(requiredSpace);
 
                     if (spaceToFree >= freedSpace)
                     {
-                        ToolStripPanelMouseDebug.TraceVerbose($"MoveDown Recovered (Shrink): {spaceToFree}");
                         Row.ResumeLayout(true);
                         return spaceToFree;
                     }
@@ -356,8 +340,6 @@ public partial class ToolStripPanelRow
             }
 
             int recoveredSpace = spaceToFree - freedSpace;
-            ToolStripPanelMouseDebug.TraceVerbose($"MoveDown Recovered Partial (Shrink): {recoveredSpace}");
-
             return recoveredSpace;
         }
 
@@ -368,7 +350,7 @@ public partial class ToolStripPanelRow
             // if our bounds have changed - we should shove the toolbars up so they're in view.
             if (Row.Cells.Count > 0)
             {
-                // take a look at the last guy.  if his right edge exceeds
+                // Take a look at the last guy. If his right edge exceeds
                 // the new bounds, then we should go ahead and push him into view.
                 ToolStripPanelCell? lastCell = GetNextVisibleCell(Row.Cells.Count - 1, forward: false);
                 int spaceToFree = (lastCell is not null) ? lastCell.Bounds.Bottom - newBounds.Height : 0;
@@ -382,7 +364,7 @@ public partial class ToolStripPanelRow
                         Padding cellMargin = lastCellOnRow.Margin;
 
                         // only check margin.left as we are only concerned with getting bottom edge of
-                        // the toolstrip into view. (space after the fact doesnt count).
+                        // the toolstrip into view. (space after the fact doesn't count).
                         if (cellMargin.Top >= spaceToFree)
                         {
                             cellMargin.Top -= spaceToFree;
@@ -398,9 +380,7 @@ public partial class ToolStripPanelRow
                             lastCellOnRow.Margin = cellMargin;
                         }
 
-                        spaceToFree -= lastCellOnRow.Shrink(spaceToFree);
-
-                        // start moving the toolstrips before this guy.
+                        // Start moving the toolstrips before this guy.
                         MoveUp(Row.Cells.Count - 1, spaceToFree);
                     }
                 }
@@ -417,7 +397,6 @@ public partial class ToolStripPanelRow
 
         public override void JoinRow(ToolStrip toolStripToDrag, Point locationToDrag)
         {
-            ToolStripPanelMouseDebug.TraceVerbose("Vertical JoinRow called ");
             int index;
 
             if (!Row.ControlsInternal.Contains(toolStripToDrag))
